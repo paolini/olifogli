@@ -19,3 +19,15 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+input {
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--foreground);
+}
+
+button {
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--foreground);
+}
