@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { getDb } from '@/lib/mongodb';
 
 interface Data {
-    [key: string]: any; // Definisci il tipo dei tuoi dati
+    cognome: string;
+    nome: string;
+    risposte: string;
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const client = await clientPromise;
-        const db = client.db('olifogli');
+        const db = await getDb();
 
         const data: Data = await req.json();
         const result = await db.collection('rows').insertOne(data);
