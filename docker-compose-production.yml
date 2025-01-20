@@ -1,0 +1,26 @@
+services:
+  app:
+    image: paolini/olifogli
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/olifogli
+      - NEXTAUTH_URL=https://<your server>/api/auth
+#    ports:
+#      - 3000:3000
+
+    networks:
+      - backend
+
+  db:
+    image: mongo
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./database:/data/db
+    networks:
+      - backend
+
+networks:
+  backend:
