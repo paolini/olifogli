@@ -1,5 +1,6 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
+import { NextRequest } from 'next/server'; // Usa i tipi corretti per Next.js 13+
 
 // Definizione dello schema GraphQL
 const typeDefs = `
@@ -21,6 +22,10 @@ const server = new ApolloServer({
   resolvers,
 });
 
-// Esporta un handler per ogni metodo HTTP
-export const GET = startServerAndCreateNextHandler(server);
-export const POST = startServerAndCreateNextHandler(server);
+export const GET = async (req: NextRequest) => {
+    return startServerAndCreateNextHandler(server)(req); // Ritorna direttamente la Response
+};
+  
+export const POST = async (req: NextRequest) => {
+    return startServerAndCreateNextHandler(server)(req); // Ritorna direttamente la Response
+};
