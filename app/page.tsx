@@ -1,13 +1,13 @@
 "use client"
 import { useState, useEffect } from 'react'
-import { tipo_risposte } from '@/lib/answers'
+import { tipo_risposte, RowWithId } from '@/lib/answers'
 
 export default function Home() {
   return <Table></Table>
 }
 
 function Table() {
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<RowWithId[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,8 +24,12 @@ function Table() {
         } else {
           setError(`Failed to load data. ${data?.error || 'Server error'}`);
         }
-      } catch(err: any) {
-        setError(err.message || "unknown error");
+      } catch(err) {
+        if (err instanceof Error) {
+          setError(err.message || "unknown error");
+        } else {
+          setError("unknown error");
+        }
       } finally {
         setLoading(false);
       }
@@ -71,7 +75,7 @@ function Table() {
     </table>
   </>
 
-  async function fetchData() {
+  async function fetchData(): Promise<{data?: RowWithId[], error?: string}> {
     const response = await fetch('/api/data')
     if (!response.ok) {
       throw new Error('Failed to fetch data')
@@ -135,7 +139,7 @@ function InputRow() {
         setState('Failed to save data');
         setBusy(false)
       }
-    } catch (error) {
+    } catch {
       setState('An error occurred while saving data');
       setBusy(false)
     }
@@ -167,6 +171,6 @@ function Input({type, size, value, setValue, width}:{
   width?: string,
   setValue?: (value: string) => void
 }) {
-  return <input type={type} size={size} value={value} onChange={e => setValue && setValue(e.target.value)} />
+  return <input type={type} width={width} size={size} value={value} onChange={e => setValue && setValue(e.target.value)} />
 }
 

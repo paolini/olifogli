@@ -13,6 +13,14 @@ declare global {
     var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
+console.log(
+    "      _ _  __           _    \n" +
+    "  ___| (_)/ _|___  __ _| (_) \n" +
+    " / _ \\ | |  _/ _ \\/ _` | | | \n" +
+    " \\___/_|_|_| \\___/\\__, |_|_| \n" +
+    "                  |___/      \n" +
+    "\n");
+
 if (!uri) {
     throw new Error("Please add your MongoDB URI to .env.local");
 }

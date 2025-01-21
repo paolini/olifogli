@@ -42,6 +42,11 @@ export interface Row {
     nome: string;
     classe: number;
     sezione: string;
+    scuola: string;
     data_nascita: string;
     risposte: string[];
+}
+
+export interface RowWithId extends Row {
+    _id: string;
 }
