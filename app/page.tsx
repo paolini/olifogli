@@ -70,35 +70,32 @@ function Table() {
           <td>{row.data_nascita}</td>
           <td>{row.scuola}</td>
           { tipo_risposte.map((t, i) => 
-          <td key={i}> {
-            ((t, v) => {
-                return v
-              })(t, row.risposte[i])
-            }
-          </td>)}
+            <td key={i}> {
+              ((t, v) => {
+                  return v
+                })(t, row.risposte[i])
+              }
+            </td>)}
           <td> ?? </td>
         </tr>)}
         <InputRow />
       </tbody>
     </table>
-    <pre>
-      {JSON.stringify(data, null, 2)}
-    </pre>
   </>
 }
 
 function InputRow() {
   const [addRow, {loading, error, data}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
-    update(cache, { data: row }) {
+    update(cache, { data: row,  }) {
       // Recupera i dati attuali dalla cache
       const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
 
       // Aggiorna manualmente l'elenco
-      if (existingRows) {
+      if (existingRows && row) {
         cache.writeQuery({
           query: GET_DATA,
           data: {
-            data: [...existingRows.data, row],
+            data: [...existingRows.data, row.addRow],
           },
         });
       }
@@ -112,12 +109,12 @@ function InputRow() {
   const [scuola, setScuola] = useState<string>('')
   const [risposte, setRisposte] = useState<string[]>(tipo_risposte.map(() => ''))
 
-  return <><tr>
+  return <tr>
     <td><Input value={cognome} setValue={setCognome}/></td>
     <td><Input value={nome} setValue={setNome}/></td>
-    <td><Input value={classe.toString()} setValue={v => setClasse(v)} size={2} width="2em"/></td>
-    <td><Input value={sezione} setValue={setSezione}/></td>
-    <td><Input value={data_nascita} setValue={setDataNascita}/></td>
+    <td><Input value={classe} setValue={v => setClasse(v)} size={2} width="2em"/></td>
+    <td><Input value={sezione} setValue={setSezione} size={2} width="2em"/></td>
+    <td><Input value={data_nascita} setValue={setDataNascita} size={8} width="6em"/></td>
     <td><Input value={scuola} setValue={setScuola}/></td>
     { tipo_risposte.map((t, i) => <td key={i}>{
         ((t,v) => {
@@ -140,8 +137,6 @@ function InputRow() {
     <td><button disabled={loading} onClick={save}>salva</button></td>
     <td>{error && error.message}</td>
   </tr>
-  <tr><td colSpan={10}>{JSON.stringify(data||'---')}</td></tr>
-  </>
 
   async function save() {
     await addRow({variables: {

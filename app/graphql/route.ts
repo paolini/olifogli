@@ -44,7 +44,7 @@ const resolvers = {
             sezione: doc.sezione || '',
             scuola: doc.scuola || '',
             data_nascita: doc.data_nascita || '',
-            risposte: ['','','','','','','','','','','','','','','','','','','',''],
+            risposte: Array.isArray(doc.risposte)? doc.risposte : ['','','','','','','','','','','','','','','','','','','',''],
           }));  
     }
     },
