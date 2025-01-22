@@ -85,17 +85,17 @@ function Table() {
 }
 
 function InputRow() {
-  const [addRow, {loading, error, data}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
-    update(cache, { data: row,  }) {
+  const [addRow, {loading, error}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
+    update(cache, { data }) {
       // Recupera i dati attuali dalla cache
       const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
 
       // Aggiorna manualmente l'elenco
-      if (existingRows && row) {
+      if (existingRows && data) {
         cache.writeQuery({
           query: GET_DATA,
           data: {
-            data: [...existingRows.data, row.addRow],
+            data: [...existingRows.data, data.addRow],
           },
         });
       }
