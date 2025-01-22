@@ -1,43 +1,36 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, gql } from '@apollo/client';
+import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import { tipo_risposte, RowWithId } from '@/lib/answers'
 
 export default function Home() {
-  return <Table></Table>
+  return <ApolloProviderClient>
+    <Table />
+  </ApolloProviderClient>
 }
 
-function Table() {
-  const [rows, setRows] = useState<RowWithId[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadTableData();
-
-    async function loadTableData() {
-      try {
-        setLoading(true);
-        const data = await fetchData();
-        if (data.data) {
-          setRows(data.data);
-          setError(null);
-        } else {
-          setError(`Failed to load data. ${data?.error || 'Server error'}`);
-        }
-      } catch(err) {
-        if (err instanceof Error) {
-          setError(err.message || "unknown error");
-        } else {
-          setError("unknown error");
-        }
-      } finally {
-        setLoading(false);
-      }
+const GET_DATA = gql`
+  query {
+    data {
+      _id
+      cognome
+      nome
+      classe
+      sezione
+      scuola
+      data_nascita
+      risposte
     }
-  }, []);
+  }
+`;
+
+function Table() {
+  const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
 
   if (loading) return <div>Loading...</div>
-  if (error) return <div>Errore: {error}. Prova a ricaricare la pagina.</div>
+  if (error) return <div>Errore: {error.message}</div>
+  if (!data) return <div>No data</div>
 
   return <>
     <table>
@@ -54,7 +47,7 @@ function Table() {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row) => <tr key={row._id}>
+        {data.data.map((row) => <tr key={row._id}>
           <td>{row.cognome}</td>
           <td>{row.nome}</td>
           <td>{row.classe}</td>
@@ -74,14 +67,6 @@ function Table() {
       </tbody>
     </table>
   </>
-
-  async function fetchData(): Promise<{data?: RowWithId[], error?: string}> {
-    const response = await fetch('/api/data')
-    if (!response.ok) {
-      throw new Error('Failed to fetch data')
-    }
-    return response.json()
-  }
 }
 
 function InputRow() {
