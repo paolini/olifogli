@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react'
-import { useQuery, gql } from '@apollo/client';
+import { useQuery, useMutation, gql } from '@apollo/client';
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import { tipo_risposte, RowWithId } from '@/lib/answers'
 
@@ -11,8 +11,23 @@ export default function Home() {
 }
 
 const GET_DATA = gql`
-  query {
+  query{
     data {
+      _id
+      cognome
+      nome
+      classe
+      sezione
+      scuola
+      data_nascita
+      risposte
+    }
+  }
+`;
+
+const ADD_ROW = gql`
+  mutation addRow($cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
+    addRow(cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
       _id
       cognome
       nome
@@ -30,7 +45,7 @@ function Table() {
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
-  if (!data) return <div>No data</div>
+  if (!data) return [] // cannot really happen
 
   return <>
     <table>
@@ -66,27 +81,44 @@ function Table() {
         <InputRow />
       </tbody>
     </table>
+    <pre>
+      {JSON.stringify(data, null, 2)}
+    </pre>
   </>
 }
 
 function InputRow() {
-  const [cognome, setCognome] = useState('')
-  const [nome, setNome] = useState('')
-  const [classe, setClasse] = useState(-1)
-  const [sezione, setSezione] = useState('')
-  const [data_nascita, setDataNascita] = useState('')
-  const [scuola, setScuola] = useState('')
-  const [risposte, setRisposte] = useState(tipo_risposte.map(() => ''))
-  const [state, setState] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [addRow, {loading, error, data}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
+    update(cache, { data: row }) {
+      // Recupera i dati attuali dalla cache
+      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
 
-  return <tr>
-    <td><Input type="text" value={cognome} setValue={setCognome}/></td>
-    <td><Input type="text" value={nome} setValue={setNome}/></td>
-    <td><Input type="number" value={classe.toString()} setValue={v => setClasse(parseInt(v))} size={2} width="2em"/></td>
-    <td><Input type="text" value={sezione} setValue={setSezione}/></td>
-    <td><Input type="date" value={data_nascita} setValue={setDataNascita}/></td>
-    <td><Input type="text" value={scuola} setValue={setScuola}/></td>
+      // Aggiorna manualmente l'elenco
+      if (existingRows) {
+        cache.writeQuery({
+          query: GET_DATA,
+          data: {
+            data: [...existingRows.data, row],
+          },
+        });
+      }
+    }});
+
+  const [cognome, setCognome] = useState<string>('')
+  const [nome, setNome] = useState<string>('')
+  const [classe, setClasse] = useState<string>('')
+  const [sezione, setSezione] = useState<string>('')
+  const [data_nascita, setDataNascita] = useState<string>('')
+  const [scuola, setScuola] = useState<string>('')
+  const [risposte, setRisposte] = useState<string[]>(tipo_risposte.map(() => ''))
+
+  return <><tr>
+    <td><Input value={cognome} setValue={setCognome}/></td>
+    <td><Input value={nome} setValue={setNome}/></td>
+    <td><Input value={classe.toString()} setValue={v => setClasse(v)} size={2} width="2em"/></td>
+    <td><Input value={sezione} setValue={setSezione}/></td>
+    <td><Input value={data_nascita} setValue={setDataNascita}/></td>
+    <td><Input value={scuola} setValue={setScuola}/></td>
     { tipo_risposte.map((t, i) => <td key={i}>{
         ((t,v) => {
           switch (t.t) {
@@ -105,29 +137,22 @@ function InputRow() {
         })(t, risposte[i])
       }
     </td>)}
-    <td><button disabled={busy} onClick={save}>salva</button></td>
-    <td>{state}</td>
+    <td><button disabled={loading} onClick={save}>salva</button></td>
+    <td>{error && error.message}</td>
   </tr>
+  <tr><td colSpan={10}>{JSON.stringify(data||'---')}</td></tr>
+  </>
 
   async function save() {
-    setBusy(true)
-    try {
-      const response = await fetch('/api/insert', {
-        method: 'POST',
-        body: JSON.stringify({ cognome, nome, risposte }),
-      });
-  
-      if (response.ok) {
-        setState('Data saved');
-        setBusy(false)
-      } else {
-        setState('Failed to save data');
-        setBusy(false)
-      }
-    } catch {
-      setState('An error occurred while saving data');
-      setBusy(false)
-    }
+    await addRow({variables: {
+      cognome,
+      nome,
+      classe,
+      sezione,
+      data_nascita,
+      scuola,
+      risposte
+    }})
   }
 }
 
@@ -150,7 +175,7 @@ function ScoreInput({value, setValue}: {
 }
 
 function Input({type, size, value, setValue, width}:{
-  type: string, 
+  type?: string, 
   size?: number, 
   value: string, 
   width?: string,

@@ -5,21 +5,25 @@ import { getDb } from '@/lib/mongodb';
 
 // Definizione dello schema GraphQL
 const typeDefs = `
-  type Query {
-    hello: String
-    data: [Row]
-  }
-
   type Row {
     _id: String
     cognome: String
     nome: String
-    classe: Int
+    classe: String
     sezione: String
     scuola: String
     data_nascita: String
     risposte: [String]
 }
+
+  type Query {
+    hello: String
+    data: [Row]
+  }
+
+  type Mutation {
+    addRow(cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
+  }
 `;
 
 
@@ -34,16 +38,40 @@ const resolvers = {
         console.log(`mapping ${JSON.stringify(results)}`);
         return results.map(doc => ({
             _id: doc._id.toString(),
-            cognome: doc.cognome,
-            nome: doc.nome,
-            classe: doc.classe,
-            sezione: doc.sezione,
-            scuola: doc.scuola,
-            data_nascita: doc.data_nascita,
+            cognome: doc.cognome || '',
+            nome: doc.nome || '',
+            classe: doc.classe || '',
+            sezione: doc.sezione || '',
+            scuola: doc.scuola || '',
+            data_nascita: doc.data_nascita || '',
             risposte: ['','','','','','','','','','','','','','','','','','','',''],
           }));  
     }
-  },
+    },
+    Mutation: {
+      addRow: async (_: unknown, { cognome, nome, classe, sezione, scuola, data_nascita, risposte }: { 
+            cognome: string, 
+            nome: string, 
+            classe: string, 
+            sezione: string, 
+            scuola: string, 
+            data_nascita: string, 
+            risposte: string[] }) => {
+          const db = await getDb();
+          const collection = db.collection('rows');
+          const result = await collection.insertOne({ cognome, nome, classe, sezione, scuola, data_nascita, risposte });
+          return {
+              _id: result.insertedId.toString(),
+              cognome,
+              nome,
+              classe,
+              sezione,
+              scuola,
+              data_nascita,
+              risposte,
+          };
+      }
+  }
 };
 
 // Creazione del server Apollo
