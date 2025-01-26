@@ -166,7 +166,7 @@ function NumberInput({value, setValue}: {
 function ScoreInput({value, setValue}: {
   value: string, 
   setValue: (value: string) => void}) {
-  return <input type="number" value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}}/>
+  return <input type="number" value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}}/>
 }
 
 function Input({type, size, value, setValue, width}:{
