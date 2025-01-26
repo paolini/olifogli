@@ -137,6 +137,12 @@ function InputRow() {
 	      case 'E':
 	      case '-':
 	      case 'X': 
+	        setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
+	        //t.next("input").focus()
+	        const active = document.activeElement;
+  		if (active?.nextElementSibling) {
+    		  (active.nextElementSibling as HTMLElement).focus();
+  		}
 	      case '':
 	        setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
 	      default:
@@ -174,7 +180,7 @@ function InputRow() {
 function ChoiceInput({value, setValue}: {
   value: string, 
   setValue: (value: string) => void}) {
-  return <input style={{width: "1.2em"}}type="text" value={value} size={1} onChange={(e) => setValue(e.target.value)} />
+  return <input style={{width: "1.2em", textAlign:"center"}}type="text" value={value} size={1} onChange={(e) => setValue(e.target.value)} />
 }
 
 function NumberInput({value, setValue}: {
