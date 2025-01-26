@@ -120,14 +120,34 @@ function InputRow() {
         ((t,v) => {
           switch (t.t) {
 
-            case 'choice': return <ChoiceInput value={v} setValue={setValue}/>
-            case 'number': return <NumberInput value={v} setValue={setValue}/>
-            case 'score': return <ScoreInput value={v} setValue={setValue}/>
+            case 'choice': return <ChoiceInput value={v} setValue={setValueC}/>
+            case 'number': return <NumberInput value={v} setValue={setValueN}/>
+            case 'score': return <ScoreInput value={v} setValue={setValueS}/>
             default:
               return '???'
           }
 
-          function setValue(value: string) {
+          function setValueC(value: string) {
+	    switch (value) {
+
+	      case 'A':
+	      case 'B':
+	      case 'C':
+	      case 'D':
+	      case 'E':
+	      case '-':
+	      case 'X': 
+	      case '':
+	        setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
+	      default:
+	    }
+          }
+
+          function setValueN(value: string) {
+            setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
+          }
+
+          function setValueS(value: string) {
             setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
           }
 
