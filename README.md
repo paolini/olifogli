@@ -1,12 +1,20 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
 ## Getting Started
 
-First, run the development server:
+Store your local configuration in the `.env` file. Adjust the followings lines to your needs:
+
+```
+MONGODB_URI=mongodb://127.0.0.1:27017/olifogli?directConnection=true
+NEXTAUTH_SECRET=6aIew1IZKRIM0Zpo2tm347ornHDl3Omt
+```
+
+Then run the development server:
 
 ```bash
 npm run dev
-# or
+```
+
+Or
+```
 yarn dev
 # or
 pnpm dev
@@ -29,8 +37,3 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
