@@ -10,6 +10,7 @@ NEXTAUTH_SECRET=6aIew1IZKRIM0Zpo2tm347ornHDl3Omt
 Then run the development server:
 
 ```bash
+npm ci
 npm run dev
 ```
 
