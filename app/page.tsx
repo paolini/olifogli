@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client';
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
-import { tipo_risposte, RowWithId } from '@/lib/answers'
+import { tipo_risposte, RowWithId, TipoRisposta } from '@/lib/answers'
 
 import packageJson from '../package.json'
 const version = packageJson.version
@@ -163,50 +163,7 @@ function InputRow({row, done}: {
     <td><Input value={sezione} setValue={setSezione} size={2} width="2em"/></td>
     <td><Input value={data_nascita} setValue={setDataNascita} size={8} width="6em"/></td>
     <td><Input value={scuola} setValue={setScuola}/></td>
-    { tipo_risposte.map((t, i) => <td key={i}>{
-        ((t,v) => {
-          switch (t.t) {
-
-            case 'choice': return <ChoiceInput value={v} setValue={setValueC}/>
-            case 'number': return <NumberInput value={v} setValue={setValueN}/>
-            case 'score': return <ScoreInput value={v} setValue={setValueS}/>
-            default:
-              return '???'
-          }
-
-          function setValueC(value: string) {
-	    switch (value) {
-
-	      case 'A':
-	      case 'B':
-	      case 'C':
-	      case 'D':
-	      case 'E':
-	      case '-':
-	      case 'X': 
-	        setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
-	        //t.next("input").focus()
-	        const active = document.activeElement;
-  		if (active?.nextElementSibling) {
-    		  (active.nextElementSibling as HTMLElement).focus();
-  		}
-	      case '':
-	        setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
-	      default:
-	    }
-          }
-
-          function setValueN(value: string) {
-            setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
-          }
-
-          function setValueS(value: string) {
-            setRisposte(r => [...r.slice(0, i), value, ...r.slice(i+1)])
-          }
-
-        })(t, risposte[i])
-      }
-    </td>)}
+    { tipo_risposte.map((t, i) => <InputCell key={i} t={t} risposta={risposte[i]} setRisposta={risposta => setRisposte(old => old.map((r,j) => j===i ? risposta : r))}/>)}
     <td><button disabled={loading} onClick={save}>salva</button></td>
     <td>{error && error.message}</td>
   </tr>
@@ -235,8 +192,60 @@ function InputRow({row, done}: {
         scuola,
         risposte
       }})
+      setCognome('')
+      setNome('')
+      setDataNascita('')
+      setRisposte(tipo_risposte.map(() => ''))
     }
     done && done()
+  }
+}
+
+function InputCell({t, risposta, setRisposta}: {
+  t: TipoRisposta,
+  risposta: string,
+  setRisposta: ((risposta: string) => void)
+}) {
+  return <td>{
+    ((t,v) => {
+      switch (t.t) {
+        case 'choice': return <ChoiceInput value={v} setValue={setValueChoice}/>
+        case 'number': return <NumberInput value={v} setValue={setValueNumber}/>
+        case 'score': return <ScoreInput value={v} setValue={setValueScore}/>
+        default:
+          return '???'
+      }
+    })(t, risposta)
+  }</td>
+
+  function setValueChoice(value: string) {
+    switch (value) {
+
+      case 'A':
+      case 'B':
+      case 'C':
+      case 'D':
+      case 'E':
+      case '-':
+      case 'X': 
+        setRisposta(value)
+        //t.next("input").focus()
+        const active = document.activeElement;
+        if (active?.nextElementSibling) {
+          (active.nextElementSibling as HTMLElement).focus();
+        }
+      case '':
+      setRisposta(value)
+      default:
+    }
+  }
+
+  function setValueNumber(value: string) {
+    setRisposta(value)
+  }
+
+  function setValueScore(value: string) {
+    setRisposta(value)
   }
 }
 
