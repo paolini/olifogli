@@ -44,6 +44,6 @@ jobs:
       with:
         push: true
         context: .
-        tags: paolini/olifogli:latest , paolini/olifogli:${{ github.ref_name }} , paolini/olifogli:${{ github.ref_name }}_${{ env.VERSION }} 
+        tags: paolini/olifogli:latest , paolini/olifogli:${{ github.ref_name }} , paolini/olifogli:${{ env.VERSION }} 
 #        tags: ${{ steps.meta.outputs.tags }}
 #        labels: ${{ steps.meta.outputs.labels }}
