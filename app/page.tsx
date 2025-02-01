@@ -4,8 +4,12 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import { tipo_risposte, RowWithId } from '@/lib/answers'
 
+import packageJson from '../package.json'
+const version = packageJson.version
+
 export default function Home() {
   return <ApolloProviderClient>
+    <h1>Olifogli v. {version}</h1>
     <Table />
   </ApolloProviderClient>
 }
@@ -40,8 +44,24 @@ const ADD_ROW = gql`
   }
 `;
 
+const UPDATE_ROW = gql`
+  mutation updateRow($_id: String!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
+    updateRow(_id: $_id, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
+      _id
+      cognome
+      nome
+      classe
+      sezione
+      scuola
+      data_nascita
+      risposte
+    }
+  }
+`;
+
 function Table() {
   const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
+  const [ currentRowId, setCurrentRowId ] = useState<string>('')
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
@@ -62,29 +82,41 @@ function Table() {
         </tr>
       </thead>
       <tbody>
-        {data.data.map((row) => <tr key={row._id}>
-          <td>{row.cognome}</td>
-          <td>{row.nome}</td>
-          <td>{row.classe}</td>
-          <td>{row.sezione}</td>
-          <td>{row.data_nascita}</td>
-          <td>{row.scuola}</td>
-          { tipo_risposte.map((t, i) => 
-            <td key={i}> {
-              ((t, v) => {
-                  return v
-                })(t, row.risposte[i])
-              }
-            </td>)}
-          <td> ?? </td>
-        </tr>)}
-        <InputRow />
+        {data.data.map((row) => row._id === currentRowId 
+          ? <InputRow key={row._id} row={row} done={() => setCurrentRowId('')}/>
+          : <DataRow key={row._id} row={row} onClick={() => setCurrentRowId(row._id)} />
+        )}
+        {currentRowId 
+        ? <tr><td><button onClick={() => setCurrentRowId('')}>nuova riga</button></td></tr>
+        : <InputRow />}
       </tbody>
     </table>
   </>
 }
 
-function InputRow() {
+function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
+  return <tr style={{cursor: "pointer"}} onClick={() => onClick && onClick()}>
+    <td>{row.cognome}</td>
+    <td>{row.nome}</td>
+    <td>{row.classe}</td>
+    <td>{row.sezione}</td>
+    <td>{row.data_nascita}</td>
+    <td>{row.scuola}</td>
+    { tipo_risposte.map((t, i) => 
+      <td key={i}> {
+        ((t, v) => {
+            return v
+          })(t, row.risposte[i])
+        }
+      </td>)}
+    <td> ?? </td>
+  </tr>
+}
+
+function InputRow({row, done}: {
+  row?: RowWithId,
+  done?: () => void
+}) {
   const [addRow, {loading, error}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
@@ -100,14 +132,29 @@ function InputRow() {
         });
       }
     }});
+  const [updateRow] = useMutation<{ updateRow: RowWithId }>(UPDATE_ROW, {
+    update(cache, { data }) {
+      // Recupera i dati attuali dalla cache
+      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
 
-  const [cognome, setCognome] = useState<string>('')
-  const [nome, setNome] = useState<string>('')
-  const [classe, setClasse] = useState<string>('')
-  const [sezione, setSezione] = useState<string>('')
-  const [data_nascita, setDataNascita] = useState<string>('')
-  const [scuola, setScuola] = useState<string>('')
-  const [risposte, setRisposte] = useState<string[]>(tipo_risposte.map(() => ''))
+      // Aggiorna manualmente l'elenco
+      if (existingRows && data) {
+        cache.writeQuery({
+          query: GET_DATA,
+          data: {
+            data: existingRows.data.map(row => row._id === data.updateRow._id ? data.updateRow : row),
+          },
+        });
+      }
+    }});
+
+  const [cognome, setCognome] = useState<string>(row?.cognome || '')
+  const [nome, setNome] = useState<string>(row?.nome || '')
+  const [classe, setClasse] = useState<string>(row?.classe ? `${row.classe}` : '')
+  const [sezione, setSezione] = useState<string>(row?.sezione || '')
+  const [data_nascita, setDataNascita] = useState<string>(row?.data_nascita || '')
+  const [scuola, setScuola] = useState<string>(row?.scuola || '')
+  const [risposte, setRisposte] = useState<string[]>(row?.risposte || tipo_risposte.map(() => ''))
 
   return <tr>
     <td><Input value={cognome} setValue={setCognome}/></td>
@@ -165,15 +212,31 @@ function InputRow() {
   </tr>
 
   async function save() {
-    await addRow({variables: {
-      cognome,
-      nome,
-      classe,
-      sezione,
-      data_nascita,
-      scuola,
-      risposte
-    }})
+    if (row?._id) {
+      // update
+      await updateRow({variables: {
+        _id: row._id,
+        cognome,
+        nome,
+        classe,
+        sezione,
+        data_nascita,
+        scuola,
+        risposte
+      }})
+    } else {
+      // insert
+      await addRow({variables: {
+        cognome,
+        nome,
+        classe,
+        sezione,
+        data_nascita,
+        scuola,
+        risposte
+      }})
+    }
+    done && done()
   }
 }
 

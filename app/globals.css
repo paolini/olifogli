@@ -31,3 +31,7 @@ button {
   background: var(--background);
   border: 1px solid var(--foreground);
 }
+
+h1 {
+  font-size: 2rem;
+}
