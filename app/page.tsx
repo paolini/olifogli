@@ -197,7 +197,7 @@ function InputRow({row, done}: {
       setDataNascita('')
       setRisposte(tipo_risposte.map(() => ''))
     }
-    done && done()
+    if (done) done()
   }
 }
 

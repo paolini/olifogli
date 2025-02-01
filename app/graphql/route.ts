@@ -84,7 +84,7 @@ const resolvers = {
         risposte: string[] }) => {
       const db = await getDb();
       const collection = db.collection('rows');
-      const result = await collection.updateOne({ _id: new ObjectId(_id) }, { $set: { cognome, nome, classe, sezione, scuola, data_nascita, risposte } });
+      await collection.updateOne({ _id: new ObjectId(_id) }, { $set: { cognome, nome, classe, sezione, scuola, data_nascita, risposte } });
       return {
           _id,
           cognome,
