@@ -206,53 +206,36 @@ function InputCell({t, risposta, setRisposta}: {
   risposta: string,
   setRisposta: ((risposta: string) => void)
 }) {
-  return <td>{
-    ((t,v) => {
-      switch (t.t) {
-        case 'choice': return <ChoiceInput value={v} setValue={setValueChoice}/>
-        case 'number': return <NumberInput value={v} setValue={setValueNumber}/>
-        case 'score': return <ScoreInput value={v} setValue={setValueScore}/>
-        default:
-          return '???'
-      }
-    })(t, risposta)
-  }</td>
-
-  function setValueChoice(value: string) {
-    switch (value) {
-
-      case 'A':
-      case 'B':
-      case 'C':
-      case 'D':
-      case 'E':
-      case '-':
-      case 'X': 
-        setRisposta(value)
-        //t.next("input").focus()
-        const active = document.activeElement;
-        if (active?.nextElementSibling) {
-          (active.nextElementSibling as HTMLElement).focus();
-        }
-      case '':
-      setRisposta(value)
-      default:
-    }
-  }
-
-  function setValueNumber(value: string) {
-    setRisposta(value)
-  }
-
-  function setValueScore(value: string) {
-    setRisposta(value)
-  }
+  return <td>
+    { t.t === 'choice' && <ChoiceInput value={risposta} setValue={setRisposta}/> }
+    { t.t === 'number' && <NumberInput value={risposta} setValue={setRisposta}/> }
+    { t.t === 'score'  && <ScoreInput  value={risposta} setValue={setRisposta}/> }
+  </td>
 }
 
 function ChoiceInput({value, setValue}: {
   value: string, 
   setValue: (value: string) => void}) {
-  return <input style={{width: "1.2em", textAlign:"center"}}type="text" value={value} size={1} onChange={(e) => setValue(e.target.value)} />
+  return <input style={{width: "1.2em", textAlign:"center"}}type="text" value={value} size={1} onChange={onChange} />
+
+  function clean(value: string) {
+    if (value.length === 0) return ''
+    value = value.slice(-1) // last char
+    value = value.toUpperCase()
+    if (!"ABCDE-X".includes(value.toUpperCase())) return ''
+    return value
+  }
+
+  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = clean(e.target.value)
+    setValue(value)
+    if (value.length>0) {
+      const td = e.target.closest("td"); // Trova la cella <td> in cui si trova l'input
+      const next_td = td?.nextElementSibling; // Trova la cella successiva
+      const next_input = next_td?.querySelector("input"); // Trova l'input nella cella successiva
+      if (next_input) (next_input as HTMLElement).focus();
+    }
+  }
 }
 
 function NumberInput({value, setValue}: {
