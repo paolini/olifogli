@@ -143,9 +143,13 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
   //
   const stileNonValide = { cursor: "pointer", backgroundColor: "darkslategray" }
 
-  function depermutaRisposte(risposte: [String], codice: string) {
-    const permutazioniDom = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
-    const permutazioniRisp = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
+  type PermutazioneRisposta = {[from: string]: string}
+  type PermutazioneDomanda = {[from: number]: number}
+
+  /* not used yet
+  function depermutaRisposte(risposte: [string], codice: string) {
+    const permutazioniDom: {[code:string]:PermutazioneDomanda} = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
+    const permutazioniRisp: {[code:string]:PermutazioneRisposta} = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
     return tipo_risposte.map((tipoRisp) => {
       switch (tipoRisp.t) {
         case "choice":
@@ -156,15 +160,16 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
       }
     })
   }
+  */
 
-  function calcolaPunteggi(risposte: [String]) {
+  function calcolaPunteggi(risposte: string[]): number[] {
     const punteggioRisp = {choice: {giusta: 5, vuotanulla: 1, errata: 0}, number: {giusta: 5, vuotanulla: 1, errata: 0}, score: {giusta: "x", vuotanulla: 0, errata: 0}}
     const risposteNeutre = {choice:["-", "X"], number:["-"], score: []}
-    const permutazioniDom = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
-    const permutazioniRisp = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
+    const permutazioniDom: {[code: string]: PermutazioneDomanda} = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
+    const permutazioniRisp: {[code: string]: PermutazioneRisposta} = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
     const risposteCorrette = ["C","A","C","C","A","C","A","C","C","A","C","A",1234,1111,"*","*","*"]
     const codice = "GD"
-    const rispostedeperm = depermutaRisposte(risposte, "GD")
+    // const rispostedeperm = depermutaRisposte(risposte, "GD")
  
     return tipo_risposte.map((tipoRisp) => {
       switch (tipoRisp.t) {
@@ -179,11 +184,11 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
           }
           break
         case "score": 
-	  return risposte[tipoRisp.n-1]*1
+	  return parseFloat(risposte[tipoRisp.n-1])
       }
     })
   }
-  function calcolaPunteggio(risposte: [String]) {
+  function calcolaPunteggio(risposte: string[]) {
     if (risposte.includes("") == false) {
       const punteggi = calcolaPunteggi(risposte)
       const punteggio = punteggi.reduce((a,b) => a + b, 0)
@@ -259,7 +264,7 @@ function InputRow({row, done}: {
       }
     }});
 
-  const [deleteRow] = useMutation<{ deleteRow: { _id: string } }>(DELETE_ROW, {
+  const [deleteRow] = useMutation<{ deleteRow: string }>(DELETE_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
       const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
