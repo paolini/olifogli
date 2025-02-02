@@ -95,6 +95,59 @@ function Table() {
 }
 
 function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
+
+  // per ora non usata, ma per il futuro, quando vorremo mostrare (anche)
+  // le risposte e/o i punteggi depermutati
+  //
+  function depermutaRisposte(risposte: [String], codice: string) {
+    const permutazioniDom = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
+    const permutazioniRisp = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
+    return tipo_risposte.map((tipoRisp) => {
+      switch (tipoRisp.t) {
+        case "choice":
+	  return permutazioniRisp[codice][risposte[permutazioniDom[codice][tipoRisp.n]-1]]
+	case "number":
+	case "score":
+	  return risposte[tipoRisp.n-1]
+      }
+    })
+  }
+
+  function calcolaPunteggi(risposte: [String]) {
+    const punteggioRisp = {choice: {giusta: 5, vuotanulla: 1, errata: 0}, number: {giusta: 5, vuotanulla: 1, errata: 0}, score: {giusta: "x", vuotanulla: 0, errata: 0}}
+    const risposteNeutre = {choice:["-", "X"], number:["-"], score: []}
+    const permutazioniDom = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
+    const permutazioniRisp = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
+    const risposteCorrette = ["C","A","C","C","A","C","A","C","C","A","C","A",1234,1111,"*","*","*"]
+    const testo = "GD"
+    const rispostedeperm = depermutaRisposte(risposte, "GD")
+ 
+    return tipo_risposte.map((tipoRisp) => {
+      switch (tipoRisp.t) {
+        case "choice": 
+ 	case "number":
+ 	  if (risposteNeutre[tipoRisp.t].includes(risposte[tipoRisp.n-1])) {
+	    return punteggioRisp[tipoRisp.t]["vuotanulla"] 
+	  } else if (risposte[tipoRisp.n-1] == permutazioniRisp[testo][risposteCorrette[permutazioniDom[testo][tipoRisp.n]-1]]) {
+	    return punteggioRisp[tipoRisp.t]["giusta"]
+          } else {
+ 	    return punteggioRisp[tipoRisp.t]["errata"]
+          }
+          break
+        case "score": 
+	  return risposte[tipoRisp.n-1]*1
+      }
+    })
+  }
+  function calcolaPunteggio(risposte: [String]) {
+    if (risposte.includes("") == false) {
+      const punteggi = calcolaPunteggi(risposte)
+      const punteggio = punteggi.reduce((a,b) => a + b, 0)
+      return punteggio
+    } else {
+      return "---"
+    }
+  }
   return <tr style={{cursor: "pointer"}} onClick={() => onClick && onClick()}>
     <td>{row.cognome}</td>
     <td>{row.nome}</td>
@@ -109,7 +162,7 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
           })(t, row.risposte[i])
         }
       </td>)}
-    <td> ?? </td>
+    <td> {calcolaPunteggio(row.risposte)} </td>
   </tr>
 }
 
