@@ -29,6 +29,26 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Configure olimanager openid login
+
+Ask to olimanager admins to add the following information to the `oss` table:
+```
+domain: localhost:3000
+issuer: your@email.com
+audience: localhost:3000
+```
+
+They should create a private/public keypair with something like:
+```
+openssl genrsa -out privateKey.pem 512 
+```
+The private key is inserted in olimanager `private_key` field, while public key must be made available in environment variables in this server.
+Edit your `.env` file (use quotes and replace newlines with `\n` to obtain a single line):
+```
+[...]
+OLIMANAGER_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nxxxxxxXXXXXXXXXXXXXXXXXXXXXXXXXXXX/xXXXXXXXXXXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX+XXXXXXXXXXXXXXXXXXXX==\n-----END PUBLIC KEY-----"
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

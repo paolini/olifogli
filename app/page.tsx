@@ -11,6 +11,9 @@ const version = packageJson.version
 export default function Home() {
   return <ApolloProviderClient>
     <h1>Olifogli v. {version}</h1>
+    <div style={{ textAlign: 'right' }}>
+      <a href="/login">login</a>
+    </div>
     <Table />
   </ApolloProviderClient>
 }
