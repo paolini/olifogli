@@ -137,11 +137,9 @@ function Table() {
 }
 
 function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
-  const stileNonValide = { cursor: "pointer", backgroundColor: "darkslategray" }
+  const className = "clickable" + (nonValida(row) ? " invalid" : "")
 
-//  return <tr style={ { cursor: "pointer" nonValida(row) ? ', backgroundColor: "00ffff"' : '' } } onClick={() => onClick && onClick()}>
-//  return <tr style={ { cursor: "pointer" } } onClick={() => onClick && onClick()}>
-  return <tr style={ nonValida(row)? stileNonValide : { cursor: "pointer" } } onClick={() => onClick && onClick()}>
+  return <tr className={className} onClick={() => onClick && onClick()}>
     <td>{row.cognome}</td>
     <td>{row.nome}</td>
     <td>{row.classe}</td>

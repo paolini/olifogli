@@ -35,3 +35,11 @@ button {
 h1 {
   font-size: 2rem;
 }
+
+tr.clickable {
+  cursor: pointer;
+}
+
+tr.invalid {
+  background-color: #f0e873;
+}
