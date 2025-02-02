@@ -60,6 +60,12 @@ const UPDATE_ROW = gql`
   }
 `;
 
+const DELETE_ROW = gql`
+  mutation deleteRow($_id: String!) {
+    deleteRow(_id: $_id)
+  }
+`;
+
 function Table() {
   const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
@@ -220,6 +226,7 @@ function InputRow({row, done}: {
   row?: RowWithId,
   done?: () => void
 }) {
+
   const [addRow, {loading, error}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
@@ -235,6 +242,7 @@ function InputRow({row, done}: {
         });
       }
     }});
+
   const [updateRow] = useMutation<{ updateRow: RowWithId }>(UPDATE_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
@@ -246,6 +254,23 @@ function InputRow({row, done}: {
           query: GET_DATA,
           data: {
             data: existingRows.data.map(row => row._id === data.updateRow._id ? data.updateRow : row),
+          },
+        });
+      }
+    }});
+
+  const [deleteRow] = useMutation<{ deleteRow: { _id: string } }>(DELETE_ROW, {
+    update(cache, { data }) {
+      // Recupera i dati attuali dalla cache
+      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
+
+      // Aggiorna manualmente l'elenco
+      if (existingRows && data) {
+        console.log(`deleting row from cache`, data.deleteRow)
+        cache.writeQuery({
+          query: GET_DATA,
+          data: {
+            data: existingRows.data.filter(row => row._id !== data.deleteRow),
           },
         });
       }
@@ -267,7 +292,10 @@ function InputRow({row, done}: {
     <td><Input value={data_nascita} setValue={setDataNascita} size={8} width="6em"/></td>
     <td><Input value={scuola} setValue={setScuola}/></td>
     { tipo_risposte.map((t, i) => <InputCell key={i} t={t} risposta={risposte[i]} setRisposta={risposta => setRisposte(old => old.map((r,j) => j===i ? risposta : r))}/>)}
-    <td><button disabled={loading} onClick={save}>salva</button></td>
+    <td>
+      <button disabled={loading} onClick={save}>salva</button>
+      { row?._id && <button disabled={loading} onClick={deleteFunction}>elimina</button>}
+    </td>
     <td>{error && error.message}</td>
   </tr>
 
@@ -301,6 +329,11 @@ function InputRow({row, done}: {
       setRisposte(tipo_risposte.map(() => ''))
     }
     if (done) done()
+  }
+
+  async function deleteFunction() {
+    if (!row?._id) throw new Error("cannot delete a row which was not saved")
+    await deleteRow({variables: { _id: row._id }})
   }
 }
 

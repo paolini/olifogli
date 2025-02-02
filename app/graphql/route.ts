@@ -25,6 +25,7 @@ const typeDefs = `
   type Mutation {
     addRow(cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
     updateRow(_id: String, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
+    deleteRow(_id: String): String
   }
 `;
 
@@ -95,7 +96,13 @@ const resolvers = {
           data_nascita,
           risposte,
       }
-    }
+    },
+    deleteRow: async (_: unknown, { _id }: { _id: string }) => {
+      const db = await getDb();
+      const collection = db.collection('rows');
+      await collection.deleteOne({ _id: new ObjectId(_id) });
+      return _id;
+    },
   }
 };
 
