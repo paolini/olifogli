@@ -135,6 +135,8 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
   // per ora non usata, ma per il futuro, quando vorremo mostrare (anche)
   // le risposte e/o i punteggi depermutati
   //
+  const stileNonValide = { cursor: "pointer", backgroundColor: "darkslategray" }
+
   function depermutaRisposte(risposte: [String], codice: string) {
     const permutazioniDom = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
     const permutazioniRisp = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
@@ -155,7 +157,7 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
     const permutazioniDom = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
     const permutazioniRisp = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
     const risposteCorrette = ["C","A","C","C","A","C","A","C","C","A","C","A",1234,1111,"*","*","*"]
-    const testo = "GD"
+    const codice = "GD"
     const rispostedeperm = depermutaRisposte(risposte, "GD")
  
     return tipo_risposte.map((tipoRisp) => {
@@ -164,7 +166,7 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
  	case "number":
  	  if (risposteNeutre[tipoRisp.t].includes(risposte[tipoRisp.n-1])) {
 	    return punteggioRisp[tipoRisp.t]["vuotanulla"] 
-	  } else if (risposte[tipoRisp.n-1] == permutazioniRisp[testo][risposteCorrette[permutazioniDom[testo][tipoRisp.n]-1]]) {
+	  } else if (risposte[tipoRisp.n-1] == permutazioniRisp[codice][risposteCorrette[permutazioniDom[codice][tipoRisp.n]-1]]) {
 	    return punteggioRisp[tipoRisp.t]["giusta"]
           } else {
  	    return punteggioRisp[tipoRisp.t]["errata"]
@@ -185,13 +187,18 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
     }
   }
 
+  // da integrare con un set di condizioni completo
   function nonValida(row: RowWithId) {
-    return row.risposte.includes("")
+    let nonVal = false
+    if (row.risposte.includes("")) nonVal = true
+    if (row.cognome == "") nonVal = true
+    if (row.nome == "") nonVal = true
+    return nonVal
   }
 
 //  return <tr style={ { cursor: "pointer" nonValida(row) ? ', backgroundColor: "00ffff"' : '' } } onClick={() => onClick && onClick()}>
 //  return <tr style={ { cursor: "pointer" } } onClick={() => onClick && onClick()}>
-  return <tr style={ nonValida(row)? { cursor: "pointer", backgroundColor: "darkslategray" } : { cursor: "pointer" } } onClick={() => onClick && onClick()}>
+  return <tr style={ nonValida(row)? stileNonValide : { cursor: "pointer" } } onClick={() => onClick && onClick()}>
     <td>{row.cognome}</td>
     <td>{row.nome}</td>
     <td>{row.classe}</td>
