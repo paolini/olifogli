@@ -184,7 +184,14 @@ function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
       return "---"
     }
   }
-  return <tr style={{cursor: "pointer"}} onClick={() => onClick && onClick()}>
+
+  function nonValida(row: RowWithId) {
+    return row.risposte.includes("")
+  }
+
+//  return <tr style={ { cursor: "pointer" nonValida(row) ? ', backgroundColor: "00ffff"' : '' } } onClick={() => onClick && onClick()}>
+//  return <tr style={ { cursor: "pointer" } } onClick={() => onClick && onClick()}>
+  return <tr style={ nonValida(row)? { cursor: "pointer", backgroundColor: "darkslategray" } : { cursor: "pointer" } } onClick={() => onClick && onClick()}>
     <td>{row.cognome}</td>
     <td>{row.nome}</td>
     <td>{row.classe}</td>
