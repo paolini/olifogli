@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client';
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import { tipo_risposte, RowWithId, TipoRisposta } from '@/lib/answers'
+import CsvImport from '@/app/components/csvImport'
 
 import packageJson from '../package.json'
 const version = packageJson.version
@@ -62,6 +63,8 @@ const UPDATE_ROW = gql`
 function Table() {
   const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
+  const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
+
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
@@ -91,7 +94,40 @@ function Table() {
         : <InputRow />}
       </tbody>
     </table>
+    <CsvImport 
+      columns={["cognome", "nome", "classe", "sezione", "data_nascita", "scuola"]} 
+      numeroRisposte={17}
+      addRow={csvAddRow}
+      />
   </>
+
+  async function csvAddRow(row: string[]) {
+    const data = {
+      cognome: row[0],
+      nome: row[1],
+      classe: row[2],
+      sezione: row[3],
+      data_nascita: row[4],
+      scuola: row[5],
+      risposte: row.slice(6)
+    }
+
+    await addRow({
+      variables: data,
+      update(cache, { data }) {
+        const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
+        if (existingRows && data) {
+          cache.writeQuery({
+            query: GET_DATA,
+            data: {
+              data: [...existingRows.data, data.addRow],
+            },
+          });
+        }
+      }
+    });
+
+   }
 }
 
 function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
