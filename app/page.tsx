@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client';
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
-import { tipo_risposte, RowWithId, TipoRisposta } from '@/lib/answers'
+import { tipo_risposte, RowWithId, TipoRisposta, nonValida, calcolaPunteggio } from '@/lib/answers'
 import CsvImport from '@/app/components/csvImport'
 
 import packageJson from '../package.json'
@@ -137,75 +137,7 @@ function Table() {
 }
 
 function DataRow({row, onClick}: {row: RowWithId, onClick?: () => void}) {
-
-  // per ora non usata, ma per il futuro, quando vorremo mostrare (anche)
-  // le risposte e/o i punteggi depermutati
-  //
   const stileNonValide = { cursor: "pointer", backgroundColor: "darkslategray" }
-
-  type PermutazioneRisposta = {[from: string]: string}
-  type PermutazioneDomanda = {[from: number]: number}
-
-  /* not used yet
-  function depermutaRisposte(risposte: [string], codice: string) {
-    const permutazioniDom: {[code:string]:PermutazioneDomanda} = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
-    const permutazioniRisp: {[code:string]:PermutazioneRisposta} = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
-    return tipo_risposte.map((tipoRisp) => {
-      switch (tipoRisp.t) {
-        case "choice":
-	  return permutazioniRisp[codice][risposte[permutazioniDom[codice][tipoRisp.n]-1]]
-	case "number":
-	case "score":
-	  return risposte[tipoRisp.n-1]
-      }
-    })
-  }
-  */
-
-  function calcolaPunteggi(risposte: string[]): number[] {
-    const punteggioRisp = {choice: {giusta: 5, vuotanulla: 1, errata: 0}, number: {giusta: 5, vuotanulla: 1, errata: 0}, score: {giusta: "x", vuotanulla: 0, errata: 0}}
-    const risposteNeutre = {choice:["-", "X"], number:["-"], score: []}
-    const permutazioniDom: {[code: string]: PermutazioneDomanda} = {"GD":{1: 1,2: 2,3: 3,4: 4,5: 5,6: 6,7: 7,8: 8,9: 9,10: 10,11: 11,12: 12}}
-    const permutazioniRisp: {[code: string]: PermutazioneRisposta} = {"GD":{"A":"A","B":"B","C":"C","D":"D","E":"E"}}
-    const risposteCorrette = ["C","A","C","C","A","C","A","C","C","A","C","A",1234,1111,"*","*","*"]
-    const codice = "GD"
-    // const rispostedeperm = depermutaRisposte(risposte, "GD")
- 
-    return tipo_risposte.map((tipoRisp) => {
-      switch (tipoRisp.t) {
-        case "choice": 
- 	case "number":
- 	  if (risposteNeutre[tipoRisp.t].includes(risposte[tipoRisp.n-1])) {
-	    return punteggioRisp[tipoRisp.t]["vuotanulla"] 
-	  } else if (risposte[tipoRisp.n-1] == permutazioniRisp[codice][risposteCorrette[permutazioniDom[codice][tipoRisp.n]-1]]) {
-	    return punteggioRisp[tipoRisp.t]["giusta"]
-          } else {
- 	    return punteggioRisp[tipoRisp.t]["errata"]
-          }
-          break
-        case "score": 
-	  return parseFloat(risposte[tipoRisp.n-1])
-      }
-    })
-  }
-  function calcolaPunteggio(risposte: string[]) {
-    if (risposte.includes("") == false) {
-      const punteggi = calcolaPunteggi(risposte)
-      const punteggio = punteggi.reduce((a,b) => a + b, 0)
-      return punteggio
-    } else {
-      return "---"
-    }
-  }
-
-  // da integrare con un set di condizioni completo
-  function nonValida(row: RowWithId) {
-    let nonVal = false
-    if (row.risposte.includes("")) nonVal = true
-    if (row.cognome == "") nonVal = true
-    if (row.nome == "") nonVal = true
-    return nonVal
-  }
 
 //  return <tr style={ { cursor: "pointer" nonValida(row) ? ', backgroundColor: "00ffff"' : '' } } onClick={() => onClick && onClick()}>
 //  return <tr style={ { cursor: "pointer" } } onClick={() => onClick && onClick()}>
