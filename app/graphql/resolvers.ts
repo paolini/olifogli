@@ -10,7 +10,6 @@ export const resolvers = {
       const {user} = context 
       if (user) {
         return {
-          email: user.email,
           uid: user.uid,
         };
       } else return null

@@ -27,12 +27,11 @@ if (!handler) {
       const OLIMANAGER_PUBLIC_KEY = process.env.OLIMANAGER_PUBLIC_KEY;
       if (OLIMANAGER_PUBLIC_KEY) {
         jwt.verify(token, OLIMANAGER_PUBLIC_KEY, { algorithms: ['RS256'] });
-        const decoded = jwt.decode(token) as {sub: string, uid: string};
-        const {sub, uid} = decoded;
+        const decoded = jwt.decode(token) as {uid: string};
+        const {uid} = decoded;
         return {
           ...ctx,
           user: { 
-            email: sub,
             uid,
           },
         }

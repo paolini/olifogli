@@ -5,12 +5,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --invalid: #cfd90a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --invalid: #3c3907;
   }
 }
 
@@ -41,5 +43,5 @@ tr.clickable {
 }
 
 tr.invalid {
-  background-color: #f0e873;
+  background-color: var(--invalid);
 }

@@ -34,12 +34,14 @@ export class Schema {
         return cleaned
     }
 
-    computeScore(_: DataRow): string {
+    computeScore(row: DataRow): string {
+        void row // unused
         return "???"
     }
 
-    isValid(_: DataRow): boolean {
-        return false
+    isValid(row: DataRow): boolean {
+        void row // unused
+        return false        
     }
 }
 
