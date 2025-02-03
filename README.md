@@ -46,7 +46,8 @@ The private key is inserted in olimanager `private_key` field, while public key 
 Edit your `.env` file (use quotes and replace newlines with `\n` to obtain a single line):
 ```
 [...]
-OLIMANAGER_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nxxxxxxXXXXXXXXXXXXXXXXXXXXXXXXXXXX/xXXXXXXXXXXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX+XXXXXXXXXXXXXXXXXXXX==\n-----END PUBLIC KEY-----"
+OLIMANAGER_URL="https://olimanager.whatever.it/sso"
+OLIMANAGER_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX==\n-----END PUBLIC KEY-----"
 ```
 
 ## Learn More
