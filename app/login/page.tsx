@@ -1,4 +1,5 @@
 import Error from '../components/Error';
+import OlimanagerLoginButton from '../components/OlimanagerLoginButton';
 
 export default function LoginPage() {
   const methods = []
@@ -10,18 +11,8 @@ export default function LoginPage() {
   }
 
   if (methods.length === 0) {
-    return <Error error="Nessun metodo di login disponibile" />;
+    return <Error error={`Nessun metodo di login disponibile ${OLIMANAGER_URL}`} />;
   }
 
   return methods;
-}
-
-function OlimanagerLoginButton({url}:{url: string}) {
-  const callbackUrl = encodeURIComponent(`${window.location.origin}/api/auth/callback`);
-  const loginUrl = `${url}?url=${callbackUrl}`;
-  return (
-    <a href="/login">
-      Accedi tramite olimanager
-    </a>
-  );
 }

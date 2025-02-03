@@ -9,18 +9,23 @@ const ME = gql`
       }
   }`
 
-const UserProfile = () => {
+export default function UserProfile() {
   const { data, loading, error } = useQuery(ME);
   const me = data?.me;
   if (loading) return <Loading />
   if (error) return <Error error={error} />
 
-  return <div>
-    {me 
-      ? me.email 
-      : <a href="/login">login</a>
-    }
-  </div>
-};
+  if (me) return <LoggedInUserProfile me={me} />
 
-export default UserProfile;
+  return <a href="/login">login</a>
+}
+
+function LoggedInUserProfile({me}:{me: {email: string}}) {
+  return <div>
+    <p>
+      {me.email}
+      <br/>
+      <a href="/api/auth/logout">logout</a>
+    </p>
+  </div>
+}
