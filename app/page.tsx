@@ -4,15 +4,15 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import { tipo_risposte, RowWithId, TipoRisposta, nonValida, calcolaPunteggio } from '@/lib/answers'
 import CsvImport from '@/app/components/csvImport'
-
 import packageJson from '../package.json'
+import UserProfile from '@/app/components/UserProfile'
 const version = packageJson.version
 
 export default function Home() {
   return <ApolloProviderClient>
     <h1>Olifogli v. {version}</h1>
     <div style={{ textAlign: 'right' }}>
-      <a href="/login">login</a>
+      <UserProfile />
     </div>
     <Table />
   </ApolloProviderClient>
