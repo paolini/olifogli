@@ -40,15 +40,11 @@ export const tipo_risposte: TipoRisposta[] = [
 export interface Row {
     cognome: string;
     nome: string;
-    classe: number;
+    classe: string;
     sezione: string;
     scuola: string;
     data_nascita: string;
     risposte: string[];
-}
-
-export interface RowWithId extends Row {
-    _id: string;
 }
 
 // per ora non usata, ma per il futuro, quando vorremo mostrare (anche)
@@ -109,11 +105,4 @@ export function calcolaPunteggio(risposte: string[]) {
   }
 }
 
-// da integrare con un set di condizioni completo
-export function nonValida(row: RowWithId) {
-  let nonVal = false
-  if (row.risposte.includes("")) nonVal = true
-  if (row.cognome == "") nonVal = true
-  if (row.nome == "") nonVal = true
-  return nonVal
-}
+
