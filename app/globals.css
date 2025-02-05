@@ -41,5 +41,6 @@ tr.clickable {
 }
 
 tr.invalid {
-  background-color: #f0e873;
+/*  background-color: #f0e873; */
+  background-color: gray;
 }

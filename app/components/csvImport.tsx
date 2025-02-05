@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import Papa from "papaparse";
 
+import { Distrettuale } from '@/lib/schema'
+
 interface CSVRow {
   [key: string]: string;
 }
@@ -31,6 +33,7 @@ export default function CsvImport({columns, numeroRisposte, addRow}:{
   };
 
   return <div className="p-4 border rounded-lg shadow-md">
+      Caricamento di dati tramite file CSV  &nbsp; &nbsp;
       <input type="file" accept=".csv" onChange={handleFileUpload} className="mb-2" />
       { error && <div className="text-red-500">{error}</div>}
       <br />
@@ -117,6 +120,8 @@ function CsvTable({data, columns, numeroRisposte, setData, importRow}: {
         while (true) {
             const row = data.shift()
             if (row === undefined) break
+            // bisognerebbe chiamare il metodo isValid della gara giusta
+            if (! Distrettuale.isValid(row)) break
             await importRow(row)
             setData(data)
         }

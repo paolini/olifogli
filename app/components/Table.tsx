@@ -7,6 +7,13 @@ import { Schema, DataRow, AvailableAnswers } from '@/lib/schema'
 export interface RowWithId extends DataRow {
     _id: string;
 }
+type CriterioOrd = {
+  numcampo: number,
+  nomecampo: string,
+  direzione: number
+}
+
+const CriterioStandard: CriterioOrd = {numcampo: 0, nomecampo: "cognome", direzione: 1}
 
 const GET_DATA = gql`
   query{
@@ -63,12 +70,72 @@ export default function Table({schema}:{schema:Schema}) {
   const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
   const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
+  const [criteriCerca, setCriteriCerca] = useState({})
+  const [criteriOrdina, setCriteriOrdina] = useState({})
 
   
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
   if (!data) return [] // cannot really happen
-  const rows = data.data
+  var rows = data.data
+
+  function Confronta(campo: string, camporow1: string, camporow2: string): number {
+    const campiStringhe: string[] = ["nome", "cognome"]
+    const campiNumero: string[] = ["classe", "codice", "punteggio"]
+    const campiData: string[] = ["data_nascita"]
+
+    if (campiStringhe.includes(campo)) {
+      return (
+        (camporow1.toUpper() > camporow2.toUpper())? 1 :
+          (camporow1.toUpper() < camporow2.toUpper())?  -1 : 0
+      )
+    }
+    if (campiNumero.includes(campo)) {
+      return (
+        (camporow1 - camporow2 > 0)? 1 :
+          (camporow1 - camporow2 < 0)? -1 : 0
+      )
+    }
+    if (campiData.includes(campo)) {
+      return (
+        (Date(camporow1) > Date(camporow2))? 1 :
+          (Date(camporow1) < Date(camporow2))? -1 : 0
+      )
+    }
+  }
+  
+
+  function ConfrontaCriteri(row1: RowWithId, row2: RowWithId, criteri: CriterioOrd[]): number {
+    let i: number = 0
+    let res: number = 0
+
+    while (i < criteri.length) {
+      res = Confronta(criteri[i].nomecampo, row1[criteri[i].nomecampo], row2[criteri[i].nomecampo])
+      if (! res == 0) {
+        return res * criteri[i].direzione
+      }
+      i++
+    }
+    return res
+  }
+
+  function TableOrdina(rows: RowWithId[], criteriOrd: CriterioOrd[]): RowWithId[] {
+    const row0: RowWothId = rows[0]
+    var rowssort: RowWithId[] = [...rows.slice(1)]
+    //rowssort[2].risposte[3] = "X"
+    rowssort.sort((a: RowWithId, b: RowWithId) => ConfrontaCriteri(a, b, criteriOrd))
+    rowssort.unshift(row0)
+    return (
+      (criteriOrd.length == 0)? rows : rowssort
+    )
+  }
+
+  function TableSearch(rows: RowWithId[], criteriCerca: CriterioOrd[]): RowWithId[] {
+    return rows
+  }
+
+//  rows = TableOrdina(rows, {numcampo: 0, nomecampo: "cognome", direzione: 1} as CriterioOrd)
+  rows = TableOrdina(rows, CriterioStandard)
 
   return <>
     <table>
@@ -80,7 +147,8 @@ export default function Table({schema}:{schema:Schema}) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row) => row._id === currentRowId 
+        {
+         rows.map((row) => row._id === currentRowId 
           ? <InputRow schema={schema} key={row._id} row={row} done={() => setCurrentRowId('')}/>
           : <TableRow schema={schema} key={row._id} row={row} onClick={() => setCurrentRowId(row._id)} />
         )}

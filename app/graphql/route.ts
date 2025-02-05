@@ -28,6 +28,7 @@ if (!handler) {
       if (OLIMANAGER_PUBLIC_KEY) {
         jwt.verify(token, OLIMANAGER_PUBLIC_KEY, { algorithms: ['RS256'] });
         const decoded = jwt.decode(token) as {sub: string, uid: string};
+	console.log("decoded", JSON.stringify(decoded))
         const {sub, uid} = decoded;
         return {
           ...ctx,
