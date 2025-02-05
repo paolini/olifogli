@@ -1,11 +1,12 @@
 import { useQuery, gql } from '@apollo/client';
 import Loading from './Loading';
 import Error from './Error';
+import { User } from '../graphql/types';
 
 const ME = gql`
   query Me {
     me {
-      email
+      uid
       }
   }`
 
@@ -20,10 +21,10 @@ export default function UserProfile() {
   return <a href="/login">login</a>
 }
 
-function LoggedInUserProfile({me}:{me: {email: string}}) {
+function LoggedInUserProfile({me}:{me: User}) {
   return <div>
     <p>
-      {me.email}
+      {me.uid}
       <br/>
       <a href="/api/auth/logout">logout</a>
     </p>

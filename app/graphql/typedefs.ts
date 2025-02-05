@@ -12,7 +12,6 @@ export const typeDefs = `
   }
 
   type User {
-    email: String
     uid: Int
   }
 
