@@ -70,14 +70,15 @@ export default function Table({schema}:{schema:Schema}) {
   const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
   const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
-  const [criteriCerca, setCriteriCerca] = useState({})
-  const [criteriOrdina, setCriteriOrdina] = useState({})
+  const [criteriCerca, setCriteriCerca] = useState([])
+  const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([CriterioStandard])
 
   
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
   if (!data) return [] // cannot really happen
-  var rows = data.data
+  const rows = data.data
+  
 
   function Confronta(campo: string, camporow1: string, camporow2: string): number {
     const campiStringhe: string[] = ["nome", "cognome"]
@@ -120,24 +121,31 @@ export default function Table({schema}:{schema:Schema}) {
   }
 
   function TableOrdina(rows: RowWithId[], criteriOrd: CriterioOrd[]): RowWithId[] {
-    const row0: RowWothId = rows[0]
-    var rowssort: RowWithId[] = [...rows.slice(1)]
-    //rowssort[2].risposte[3] = "X"
+    const rowssort: RowWithId[] = [...rows]
     rowssort.sort((a: RowWithId, b: RowWithId) => ConfrontaCriteri(a, b, criteriOrd))
-    rowssort.unshift(row0)
+//    rowssort.unshift(row0)
     return (
       (criteriOrd.length == 0)? rows : rowssort
     )
   }
 
   function TableSearch(rows: RowWithId[], criteriCerca: CriterioOrd[]): RowWithId[] {
-    return rows
+    if (criteriCerca.length >= 0) {
+      return rows
+    }
   }
 
 //  rows = TableOrdina(rows, {numcampo: 0, nomecampo: "cognome", direzione: 1} as CriterioOrd)
-  rows = TableOrdina(rows, CriterioStandard)
+  if (0>1) {
+    setCriteriCerca([...criteriCerca, criterioStandard])
+    setCriteriOrdina([...criteriOrdina])
+    rows = TableSearch(rows, criteriCerca)
+    (void) _
+  }
+  rows = TableOrdina(rows, criteriOrdina)
 
   return <>
+    <pre>{JSON.stringify(criteriOrdina.length)}</pre>
     <table>
       <thead>
         <tr>
