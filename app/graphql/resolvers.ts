@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/mongodb';
+import { getUsers, getRows } from '@/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';
 
@@ -6,17 +7,16 @@ import { Context } from './types';
 export const resolvers = {
   Query: {
     hello: () => 'Hello, world!',
-    me: (_:unknown, __: unknown, context: Context) => {
-      const {user} = context 
-      if (user) {
-        return {
-          uid: user.uid,
-        };
+    me: async (_:unknown, __: unknown, context: Context) => {
+      const {user_id} = context 
+      if (user_id) {
+        const users = await getUsers();
+        const user = await users.findOne({ _id: user_id });
+        return user
       } else return null
     },
     data: async () => {
-        const db = await getDb();
-        const collection = db.collection('rows');
+        const collection = await getRows();
         const results = await collection.find({}).toArray();
         return results.map(doc => ({
             _id: doc._id.toString(),
@@ -38,10 +38,13 @@ export const resolvers = {
         sezione: string, 
         scuola: string, 
         data_nascita: string, 
-        risposte: string[] }) => {
-      const db = await getDb();
-      const collection = db.collection('rows');
-      const result = await collection.insertOne({ cognome, nome, classe, sezione, scuola, data_nascita, risposte });
+        risposte: string[] 
+      }, context: Context) => {
+      const collection = await getRows();
+      const updatedOn = new Date();
+      const updatedBy = context.user_id;
+      const result = await collection.insertOne({ updatedOn, updatedBy, 
+          cognome, nome, classe, sezione, scuola, data_nascita, risposte });
       return {
           _id: result.insertedId.toString(),
           cognome,
