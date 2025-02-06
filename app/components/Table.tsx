@@ -12,6 +12,7 @@ const GET_DATA = gql`
   query{
     data {
       _id
+      updatedOn
       cognome
       nome
       classe
@@ -38,10 +39,11 @@ const ADD_ROW = gql`
   }
 `;
 
-const UPDATE_ROW = gql`
-  mutation updateRow($_id: String!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
-    updateRow(_id: $_id, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
+const PATCH_ROW = gql`
+  mutation PatchRow($_id: String!, $updatedOn: Timestamp!, $cognome: String, $nome: String, $classe: String, $sezione: String, $scuola: String, $data_nascita: String, $risposte: [String!]) {
+    patchRow(_id: $_id, updatedOn: $updatedOn, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
       _id
+      updatedOn
       cognome
       nome
       classe
@@ -145,7 +147,7 @@ function InputRow({schema, row, done}: {
   row?: RowWithId,
   done?: () => void
 }) {
-  const [addRow, {loading, error}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
+  const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
       const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
@@ -161,7 +163,7 @@ function InputRow({schema, row, done}: {
       }
     }});
 
-  const [updateRow] = useMutation<{ updateRow: RowWithId }>(UPDATE_ROW, {
+  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = useMutation<{ patchRow: RowWithId }>(PATCH_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
       const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
@@ -171,13 +173,13 @@ function InputRow({schema, row, done}: {
         cache.writeQuery({
           query: GET_DATA,
           data: {
-            data: existingRows.data.map(row => row._id === data.updateRow._id ? data.updateRow : row),
+            data: existingRows.data.map(row => (row._id === data.patchRow._id ? data.patchRow : row))
           },
         });
       }
     }});
 
-  const [deleteRow] = useMutation<{ deleteRow: string }>(DELETE_ROW, {
+  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useMutation<{ deleteRow: string }>(DELETE_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
       const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
@@ -202,6 +204,12 @@ function InputRow({schema, row, done}: {
   const [scuola, setScuola] = useState<string>(row?.scuola || '')
   const [risposte, setRisposte] = useState<string[]>(row?.risposte || schema.answers.map(() => ''))
 
+  const loading = addLoading || patchLoading || deleteLoading
+  const error = addError || patchError || deleteError
+
+  if (loading) return <tr><td>...</td></tr>
+  if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
+
   return <tr>
     <td><Input value={cognome} setValue={setCognome}/></td>
     <td><Input value={nome} setValue={setNome}/></td>
@@ -214,14 +222,20 @@ function InputRow({schema, row, done}: {
       <button disabled={loading} onClick={save}>salva</button>
       { row?._id && <button disabled={loading} onClick={deleteFunction}>elimina</button>}
     </td>
-    <td>{error && error.message}</td>
   </tr>
+
+  function dismissError() {
+    if (addError) return addReset()
+    if (patchError) return patchReset()
+    if (deleteError) return deleteReset()
+  }
 
   async function save() {
     if (row?._id) {
-      // update
-      await updateRow({variables: {
+      // patch
+      await patchRow({variables: {
         _id: row._id,
+        updatedOn: row.updatedOn || new Date(),
         cognome,
         nome,
         classe,

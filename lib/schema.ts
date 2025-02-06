@@ -11,6 +11,7 @@ export type Info = {
 }
 
 export type DataRow = Info & {
+    updatedOn?: string;
     risposte: string[];
 }
 
