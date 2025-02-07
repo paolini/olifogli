@@ -14,7 +14,7 @@ export async function getUsers() {
 export interface Sheet {
     name: string;
     schema: string;
-    params: any;
+    params: string;
 }
 
 export async function getSheets() {

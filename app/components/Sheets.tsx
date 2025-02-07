@@ -97,6 +97,8 @@ function SheetForm({}) {
     });
     const [name, setName] = useState('');
 
+    if (error) return <div className="error">Errore: {error.message}</div>;
+
     return <div>
         <Input value={name} setValue={setName}/>
         <button disabled={loading} onClick={create}>Crea</button>

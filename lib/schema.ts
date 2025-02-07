@@ -47,9 +47,9 @@ export class Schema {
 }
 
 export class Distrettuale extends Schema {
-    params: any
-    
-    constructor(params: any = {}) {
+    params: string
+
+    constructor(params: string='{}') {
         super(
             [   "cognome", "nome", "data_nascita", 
                 "classe", "sezione", "scuola"],
@@ -73,6 +73,6 @@ export class Distrettuale extends Schema {
     } 
 }
 
-const schemas = {
+export const schemas = {
     "distrettuale": new Distrettuale()
 }
