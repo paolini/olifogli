@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/mongodb';
-import { getUsers, getRows } from '@/lib/models';
+import { getUsers, getSheets, getRows } from '@/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';
 import { GraphQLScalarType, Kind, ValueNode } from "graphql";
@@ -35,6 +35,7 @@ const Timestamp = new GraphQLScalarType({
 export const resolvers = {
   Query: {
     hello: () => 'Hello, world!',
+
     me: async (_:unknown, __: unknown, context: Context) => {
       const {user_id} = context 
       if (user_id) {
@@ -43,6 +44,18 @@ export const resolvers = {
         return user
       } else return null
     },
+
+    sheets: async () => {
+      const collection = await getSheets();
+      const results = await collection.find({}).toArray();
+      return results.map(doc => ({
+          _id: doc._id.toString(),
+          name: doc.name,
+          schema: doc.schema,
+          params: doc.params,
+      }));
+    },
+
     data: async () => {
         const collection = await getRows();
         const results = await collection.find({}).toArray();
@@ -61,6 +74,23 @@ export const resolvers = {
   },
 
   Mutation: {
+    addSheet: async (_: unknown, { name, schema, params }: { name: string, schema: string, params: string }) => {
+      const collection = await getSheets();
+      const result = await collection.insertOne({ name, schema, params });
+      return {
+          _id: result.insertedId.toString(),
+          name,
+          schema,
+          params,
+      };
+    },
+
+    deleteSheet: async (_: unknown, { _id }: { _id: string }) => {
+      const collection = await getSheets();
+      await collection.deleteOne({ _id: new ObjectId(_id) });
+      return _id;
+    },
+
     addRow: async (_: unknown, { cognome, nome, classe, sezione, scuola, data_nascita, risposte }: { 
         cognome: string,
         nome: string, 

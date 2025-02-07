@@ -3,6 +3,7 @@ import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il pe
 import UserProfile from '@/app/components/UserProfile'
 import { Distrettuale } from '@/lib/schema'
 import Table from '@/app/components/Table'
+import Sheets from '@/app/components/Sheets'
 import packageJson from '../package.json'
 const version = packageJson.version
 
@@ -12,6 +13,7 @@ export default function Home() {
     <div style={{ textAlign: 'right' }}>
       <UserProfile />
     </div>
+    <Sheets />
     <Table schema={new Distrettuale()}/>
   </ApolloProviderClient>
 }

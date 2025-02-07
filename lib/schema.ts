@@ -47,13 +47,17 @@ export class Schema {
 }
 
 export class Distrettuale extends Schema {
-    constructor() {
+    params: any
+    
+    constructor(params: any = {}) {
         super(
-            [   "cognome", "nome", "classe", "sezione", "scuola", "data_nascita"], 
+            [   "cognome", "nome", "data_nascita", 
+                "classe", "sezione", "scuola"],
             [   "choice", "choice", "choice", "choice", 
                 "choice", "choice", "choice", "choice", 
                 "choice", "choice", "choice", "choice", 
                 "number", "number", "score", "score", "score"])
+        this.params = params
     }
 
     computeScore(row: DataRow): string {
@@ -67,4 +71,8 @@ export class Distrettuale extends Schema {
         if (row.nome == "") return false
         return true
     } 
+}
+
+const schemas = {
+    "distrettuale": new Distrettuale()
 }
