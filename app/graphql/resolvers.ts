@@ -30,6 +30,34 @@ const Timestamp = new GraphQLScalarType({
   }
 });
 
+const ObjectIdType = new GraphQLScalarType({
+  name: "ObjectId",
+  description: "A custom scalar for MongoDB ObjectID",
+  
+  parseValue(value: unknown): ObjectId {
+    switch(typeof value) {
+      case "string":
+      case "number":
+        return new ObjectId(value); // Converte in ObjectId
+      case "object":
+        if (value instanceof ObjectId) return value; // Se è già un ObjectId, lo ritorna
+      default:
+        throw new Error("ObjectId must be a 24 digit hex string or a 12 byte Buffer");
+    }
+  },
+
+  serialize(value: unknown): string {
+    if (value instanceof ObjectId) return value.toString(); // Converte in stringa
+    throw new Error("ObjectId expected");
+  },
+
+  parseLiteral(ast: ValueNode): ObjectId {
+    if (ast.kind === Kind.STRING) {
+      return new ObjectId(ast.value); // Converte in ObjectId
+    }
+    throw new Error("ObjectId must be a 24 digit hex string");
+  }
+});
 
 // Definizione dei resolver
 export const resolvers = {
@@ -47,20 +75,14 @@ export const resolvers = {
 
     sheets: async () => {
       const collection = await getSheets();
-      const results = await collection.find({}).toArray();
-      return results.map(doc => ({
-          _id: doc._id.toString(),
-          name: doc.name,
-          schema: doc.schema,
-          params: doc.params,
-      }));
+      return await collection.find({}).toArray();
     },
 
     data: async () => {
         const collection = await getRows();
         const results = await collection.find({}).toArray();
         return results.map(doc => ({
-            _id: doc._id.toString(),
+            _id: doc._id,
             updatedOn: doc.updatedOn,
             cognome: doc.cognome || '',
             nome: doc.nome || '',
@@ -77,17 +99,12 @@ export const resolvers = {
     addSheet: async (_: unknown, { name, schema, params }: { name: string, schema: string, params: string }) => {
       const collection = await getSheets();
       const result = await collection.insertOne({ name, schema, params });
-      return {
-          _id: result.insertedId.toString(),
-          name,
-          schema,
-          params,
-      };
+      return await collection.findOne({ _id: result.insertedId });
     },
 
-    deleteSheet: async (_: unknown, { _id }: { _id: string }) => {
+    deleteSheet: async (_: unknown, { _id }: { _id: ObjectId }) => {
       const collection = await getSheets();
-      await collection.deleteOne({ _id: new ObjectId(_id) });
+      await collection.deleteOne({ _id });
       return _id;
     },
 
@@ -107,21 +124,11 @@ export const resolvers = {
       const updatedBy = createdBy;
       const result = await collection.insertOne({ updatedOn, updatedBy, createdOn, createdBy,
           cognome, nome, classe, sezione, scuola, data_nascita, risposte });
-      return {
-          _id: result.insertedId.toString(),
-          updatedOn: updatedOn.toISOString(),
-          cognome,
-          nome,
-          classe,
-          sezione,
-          scuola,
-          data_nascita,
-          risposte,
-      };
+      return await collection.findOne({ _id: result.insertedId });
     },
 
     patchRow: async (_: unknown, { _id, updatedOn, cognome, nome, classe, sezione, scuola, data_nascita, risposte }: {
-        _id: string,
+        _id: ObjectId,
         updatedOn: Date,
         cognome: string, 
         nome: string, 
@@ -131,7 +138,7 @@ export const resolvers = {
         data_nascita: string, 
         risposte: string[] }, context: Context) => {
       const collection = await getRows();
-      const row = await collection.findOne({ _id: new ObjectId(_id) });
+      const row = await collection.findOne({ _id });
       if (!row) throw new Error('Row not found');
       if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
       const $set = {
@@ -140,17 +147,18 @@ export const resolvers = {
         updatedBy: context.user_id,
       }
       await collection.updateOne({ _id: row._id }, { $set });
-      return {_id, ...$set};
+      return await collection.findOne({ _id });
     },
 
-    deleteRow: async (_: unknown, { _id }: { _id: string }) => {
+    deleteRow: async (_: unknown, { _id }: { _id: ObjectId }) => {
       const db = await getDb();
       const collection = db.collection('rows');
-      await collection.deleteOne({ _id: new ObjectId(_id) });
+      await collection.deleteOne({ _id });
       return _id;
     },
   },
 
   Timestamp,
+  ObjectId: ObjectIdType,
 };
 

@@ -41,7 +41,7 @@ const ADD_ROW = gql`
 `;
 
 const PATCH_ROW = gql`
-  mutation PatchRow($_id: String!, $updatedOn: Timestamp!, $cognome: String, $nome: String, $classe: String, $sezione: String, $scuola: String, $data_nascita: String, $risposte: [String!]) {
+  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $cognome: String, $nome: String, $classe: String, $sezione: String, $scuola: String, $data_nascita: String, $risposte: [String!]) {
     patchRow(_id: $_id, updatedOn: $updatedOn, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
       _id
       updatedOn
@@ -57,7 +57,7 @@ const PATCH_ROW = gql`
 `;
 
 const DELETE_ROW = gql`
-  mutation deleteRow($_id: String!) {
+  mutation deleteRow($_id: ObjectId!) {
     deleteRow(_id: $_id)
   }
 `;

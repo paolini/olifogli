@@ -1,16 +1,17 @@
 // Definizione dello schema GraphQL
 export const typeDefs = `
   scalar Timestamp
+  scalar ObjectId
 
   type Sheet {
-    _id: String
+    _id: ObjectId
     name: String
     schema: String
     params: String
   }
 
   type Row {
-    _id: String
+    _id: ObjectId
     updatedOn: Timestamp
     cognome: String
     nome: String
@@ -22,7 +23,7 @@ export const typeDefs = `
   }
 
   type User {
-    _id: String
+    _id: ObjectId
     uid: Int
     name: String
   }
@@ -36,10 +37,10 @@ export const typeDefs = `
 
   type Mutation {
     addSheet(name: String, schema: String, params: String): Sheet
-    deleteSheet(_id: String): String
+    deleteSheet(_id: ObjectId): String
 
     addRow(cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
-    patchRow(_id: String, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
-    deleteRow(_id: String): String
+    patchRow(_id: ObjectId, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
+    deleteRow(_id: ObjectId): ObjectId
   }
 `

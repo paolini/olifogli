@@ -30,7 +30,7 @@ const ADD_SHEET = gql`
 `;
 
 const DELETE_SHEET = gql`
-    mutation DeleteSheet($_id: String!) {
+    mutation DeleteSheet($_id: ObjectId!) {
         deleteSheet(_id: $_id)
     }
 `;
@@ -59,7 +59,7 @@ function SheetsTable({}) {
             </tr>
         </thead>
         <tbody>
-            {sheets.map(sheet => <SheetRow sheet={sheet} />)}
+            {sheets.map(sheet => <SheetRow key={sheet._id} sheet={sheet} />)}
         </tbody>
     </table>
 }
