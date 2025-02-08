@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client';
 import CsvImport from '@/app/components/csvImport'
-import { Schema, DataRow, AvailableAnswers } from '@/lib/schema'
+import { Schema, Info, DataRow, AvailableAnswers, AvailableFields } from '@/lib/schema'
 
 export interface RowWithId extends DataRow {
     _id: string;
@@ -196,14 +196,10 @@ function InputRow({schema, row, done}: {
       }
     }});
 
-  const [cognome, setCognome] = useState<string>(row?.cognome || '')
-  const [nome, setNome] = useState<string>(row?.nome || '')
-  const [classe, setClasse] = useState<string>(row?.classe ? `${row.classe}` : '')
-  const [sezione, setSezione] = useState<string>(row?.sezione || '')
-  const [data_nascita, setDataNascita] = useState<string>(row?.data_nascita || '')
-  const [scuola, setScuola] = useState<string>(row?.scuola || '')
+  const [fields, setFields] = useState<Info>(Object.fromEntries(schema.fields.map(
+      f => [f, row?.[f] || ''])))
   const [risposte, setRisposte] = useState<string[]>(row?.risposte || schema.answers.map(() => ''))
-
+    
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
 
@@ -211,12 +207,11 @@ function InputRow({schema, row, done}: {
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
 
   return <tr>
-    <td><Input value={cognome} setValue={setCognome}/></td>
-    <td><Input value={nome} setValue={setNome}/></td>
-    <td><Input value={classe} setValue={v => setClasse(v)} size={2} width="2em"/></td>
-    <td><Input value={sezione} setValue={setSezione} size={2} width="2em"/></td>
-    <td><Input value={data_nascita} setValue={setDataNascita} size={8} width="6em"/></td>
-    <td><Input value={scuola} setValue={setScuola}/></td>
+    { schema.fields.map(field => 
+      <td key={field}>
+        <Input value={fields[field]||''} setValue={v => setFields(fields => ({...fields, [field]: v}))}/>
+      </td>
+    )}
     { schema.answers.map((t, i) => <InputCell key={i} t={t} risposta={risposte[i]} setRisposta={risposta => setRisposte(old => old.map((r,j) => j===i ? risposta : r))}/>)}
     <td>
       <button disabled={loading} onClick={save}>salva</button>
@@ -236,28 +231,21 @@ function InputRow({schema, row, done}: {
       await patchRow({variables: {
         _id: row._id,
         updatedOn: row.updatedOn || new Date(),
-        cognome,
-        nome,
-        classe,
-        sezione,
-        data_nascita,
-        scuola,
+        ...fields,
         risposte
       }})
     } else {
       // insert
       await addRow({variables: {
-        cognome,
-        nome,
-        classe,
-        sezione,
-        data_nascita,
-        scuola,
+        ...fields,
         risposte
       }})
-      setCognome('')
-      setNome('')
-      setDataNascita('')
+      setFields(fields => ({
+        ...fields,
+        cognome: '',
+        nome: '',
+        data_nascita: '',
+      }))
       setRisposte(schema.answers.map(() => ''))
     }
     if (done) done()
