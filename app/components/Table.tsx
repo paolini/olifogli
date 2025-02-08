@@ -2,18 +2,25 @@
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client';
 import CsvImport from '@/app/components/csvImport'
-import { Schema, DataRow, AvailableAnswers } from '@/lib/schema'
+import { Schema, DataRow, AvailableAnswers, AvailableFields } from '@/lib/schema'
 
 export interface RowWithId extends DataRow {
     _id: string;
 }
+
 type CriterioOrd = {
   numcampo: number,
-  nomecampo: string,
+  nomecampo: AvailableFields,
   direzione: number
 }
 
-const CriterioStandard: CriterioOrd = {numcampo: 0, nomecampo: "cognome", direzione: 1}
+type CriterioCerca = {
+  nomecampo: AvailableFields,
+  value: string
+}
+
+const criterioStandard: CriterioOrd = {numcampo: 0, nomecampo: "cognome", direzione: 1}
+const criterioStandard2: CriterioOrd = {numcampo: 0, nomecampo: "nome", direzione: 1}
 
 const GET_DATA = gql`
   query{
@@ -70,8 +77,8 @@ export default function Table({schema}:{schema:Schema}) {
   const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
   const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
-  const [criteriCerca, setCriteriCerca] = useState([])
-  const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([CriterioStandard])
+  const [criteriCerca, setCriteriCerca] = useState<CriterioCerca[]>([])
+  const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([criterioStandard, criterioStandard2])
 
   
   if (loading) return <div>Loading...</div>
@@ -87,22 +94,23 @@ export default function Table({schema}:{schema:Schema}) {
 
     if (campiStringhe.includes(campo)) {
       return (
-        (camporow1.toUpper() > camporow2.toUpper())? 1 :
-          (camporow1.toUpper() < camporow2.toUpper())?  -1 : 0
+        (camporow1.toUpperCase() > camporow2.toUpperCase())? 1 :
+          (camporow1.toUpperCase() < camporow2.toUpperCase())?  -1 : 0
       )
     }
     if (campiNumero.includes(campo)) {
       return (
-        (camporow1 - camporow2 > 0)? 1 :
-          (camporow1 - camporow2 < 0)? -1 : 0
+        (parseFloat(camporow1) - parseFloat(camporow2) > 0)? 1 :
+          (parseFloat(camporow1) - parseFloat(camporow2) < 0)? -1 : 0
       )
     }
     if (campiData.includes(campo)) {
       return (
-        (Date(camporow1) > Date(camporow2))? 1 :
-          (Date(camporow1) < Date(camporow2))? -1 : 0
+        (Date.parse(camporow1) > Date.parse(camporow2))? 1 :
+          (Date.parse(camporow1) < Date.parse(camporow2))? -1 : 0
       )
     }
+    return 0
   }
   
 
@@ -111,8 +119,8 @@ export default function Table({schema}:{schema:Schema}) {
     let res: number = 0
 
     while (i < criteri.length) {
-      res = Confronta(criteri[i].nomecampo, row1[criteri[i].nomecampo], row2[criteri[i].nomecampo])
-      if (! res == 0) {
+      res = Confronta(criteri[i].nomecampo, row1[criteri[i].nomecampo] || "", row2[criteri[i].nomecampo] || "")
+      if (! (res == 0)) {
         return res * criteri[i].direzione
       }
       i++
@@ -129,23 +137,61 @@ export default function Table({schema}:{schema:Schema}) {
     )
   }
 
-  function TableSearch(rows: RowWithId[], criteriCerca: CriterioOrd[]): RowWithId[] {
-    if (criteriCerca.length >= 0) {
-      return rows
+  function aggiornaCriteriCerca(nomecampo: AvailableFields, value: string): boolean {
+    var i
+    let cera = false
+    let critCerca = [...criteriCerca]
+    for (i = 0; i < critCerca.length; i++) {
+      if (critCerca[i]["nomecampo"] == nomecampo) {
+        cera = true
+        if (value != "") {
+          critCerca[i]["value"] = value
+          setCriteriCerca([...critCerca])
+          break
+        } else {
+          setCriteriCerca([...critCerca.slice(0,i), ...critCerca.slice(i + 1)])
+        }
+      }
     }
+    if (cera == false) {
+      setCriteriCerca([...critCerca, {nomecampo: nomecampo, value: value}])
+    }
+  return true
+  }
+
+//function TableCerca(rows: RowWithId[], criteriCerca: CriterioOrd[]): RowWithId[] {
+  function TableCerca(rows: RowWithId[]): RowWithId[] {
+    let rowsOk = [...rows]
+    if (criteriCerca.length >= 0) {
+      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter((riga) => riga[a.nomecampo].includes(a.value) )})
+    }
+    return rowsOk
+  }
+
+  function InputCerca({type, size, value, setValue, width, nomecampo}:{
+    type?: string, 
+    size?: number, 
+    value: string, 
+    width?: string,
+    setValue?: (value: string) => void
+    nomecampo: AvailableFields
+  }) {
+    void nomecampo 
+    return <> Cerca tra i cognomi &nbsp; <input type={type} width={width} size={size} value={value} onChange={e => {aggiornaCriteriCerca("cognome", e.target.value); setValue && setValue(e.target.value)} } /> </>
   }
 
 //  rows = TableOrdina(rows, {numcampo: 0, nomecampo: "cognome", direzione: 1} as CriterioOrd)
   if (0>1) {
-    setCriteriCerca([...criteriCerca, criterioStandard])
-    setCriteriOrdina([...criteriOrdina])
-    rows = TableSearch(rows, criteriCerca)
-    (void) _
+    setCriteriCerca(criteriCerca => [...criteriCerca, criterioStandard])
+    setCriteriOrdina(criteriOrdina => [...criteriOrdina])
+    const rows2 = TableCerca(rows, criteriCerca)
+    void rows2
   }
-  rows = TableOrdina(rows, criteriOrdina)
+  const rowsToDisplay = TableCerca(rows, criteriCerca)
+  const rowsDisplay = TableOrdina(rowsToDisplay, criteriOrdina)
 
   return <>
-    <pre>{JSON.stringify(criteriOrdina.length)}</pre>
+    <pre>{JSON.stringify(criteriCerca)}</pre>
     <table>
       <thead>
         <tr>
@@ -156,7 +202,7 @@ export default function Table({schema}:{schema:Schema}) {
       </thead>
       <tbody>
         {
-         rows.map((row) => row._id === currentRowId 
+         rowsDisplay.map((row) => row._id === currentRowId 
           ? <InputRow schema={schema} key={row._id} row={row} done={() => setCurrentRowId('')}/>
           : <TableRow schema={schema} key={row._id} row={row} onClick={() => setCurrentRowId(row._id)} />
         )}
@@ -170,6 +216,7 @@ export default function Table({schema}:{schema:Schema}) {
       numeroRisposte={17}
       addRow={csvAddRow}
       />
+    <InputCerca />
   </>
 
   async function csvAddRow(row: string[]) {

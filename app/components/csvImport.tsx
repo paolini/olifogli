@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import Papa from "papaparse";
 
-import { Distrettuale } from '@/lib/schema'
+//import { Distrettuale } from '@/lib/schema'
 
 interface CSVRow {
   [key: string]: string;
@@ -121,7 +121,7 @@ function CsvTable({data, columns, numeroRisposte, setData, importRow}: {
             const row = data.shift()
             if (row === undefined) break
             // bisognerebbe chiamare il metodo isValid della gara giusta
-            if (! Distrettuale.isValid(row)) break
+            //if (! Distrettuale.isValid(row)) break
             await importRow(row)
             setData(data)
         }
