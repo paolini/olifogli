@@ -11,6 +11,17 @@ export async function getUsers() {
     return db.collection<User>('users');
 }
 
+export interface Sheet {
+    name: string;
+    schema: string;
+    params: string;
+}
+
+export async function getSheets() {
+    const db = await getDb();
+    return db.collection<Sheet>('sheets');
+}
+
 export interface Row {
     cognome: string;
     nome: string;
