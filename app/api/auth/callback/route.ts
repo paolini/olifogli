@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { serialize } from "cookie";
 import jwt from "jsonwebtoken";
 
-import {getDb} from "@/lib/mongodb"
-import {User} from "@/lib/models";
+import {getDb} from "@/app/lib/mongodb"
+import {User} from "@/app/lib/models";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);

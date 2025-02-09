@@ -36,11 +36,11 @@ export function ChoiceInput({value, setValue}: {
 export function NumberInput({value, setValue}: {
   value: string, 
   setValue: (value: string) => void}) {
-  return <input type="number" value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "3em"}}/>
+  return <input value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "3em"}}/>
 }
 
 export function ScoreInput({value, setValue}: {
   value: string, 
   setValue: (value: string) => void}) {
-  return <input type="number" value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}}/>
+  return <input value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}}/>
 }

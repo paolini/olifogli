@@ -51,3 +51,27 @@ tr.invalid {
 tr.error {
   background-color: var(--error);
 }
+
+.schema-cognome {
+  max-width: 20ex;
+}
+
+.schema-nome {
+  max-width: 20ex;
+}
+
+.schema-data_nascita {
+  max-width: 10ex;
+}
+
+.schema-classe {
+  max-width: 5ex;
+}
+
+.schema-sezione {
+  max-width: 5ex;
+}
+
+.schema-scuola {
+  max-width: 20ex;
+}

@@ -1,7 +1,7 @@
 "use client"
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import UserProfile from '@/app/components/UserProfile'
-import { Distrettuale } from '@/lib/schema'
+import { Distrettuale } from '@/app/lib/schema'
 import Table from '@/app/components/Table'
 import Sheets from '@/app/components/Sheets'
 import packageJson from '../package.json'
@@ -14,7 +14,7 @@ export default function Home() {
       <UserProfile />
     </div>
     <Sheets />
-    <Table schema={new Distrettuale()}/>
   </ApolloProviderClient>
 }
 
+//<Table schema={new Distrettuale()}/>

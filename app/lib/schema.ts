@@ -76,3 +76,5 @@ export class Distrettuale extends Schema {
 export const schemas = {
     "distrettuale": new Distrettuale()
 }
+
+export type AvailableSchemas = keyof typeof schemas

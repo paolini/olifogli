@@ -2,17 +2,18 @@
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client';
 import CsvImport from '@/app/components/csvImport'
-import { Schema, Info, DataRow, AvailableAnswers, AvailableFields } from '@/lib/schema'
+import { schemas, Schema, Info, DataRow, AvailableAnswers, AvailableSchemas } from '@/app/lib/schema'
 import { Input, ChoiceInput, NumberInput, ScoreInput } from '@/app/components/Input'
 
 export interface RowWithId extends DataRow {
     _id: string;
 }
 
-const GET_DATA = gql`
-  query{
-    data {
+const GET_ROWS = gql`
+  query getRows($sheet_id: ObjectId!) {
+    rows(sheet_id: $sheet_id) {
       _id
+      isValid
       updatedOn
       cognome
       nome
@@ -26,8 +27,8 @@ const GET_DATA = gql`
 `;
 
 const ADD_ROW = gql`
-  mutation addRow($cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
-    addRow(cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
+  mutation addRow($sheet_id: ObjectId!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
+    addRow(sheet_id: $sheet_id, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
       _id
       cognome
       nome
@@ -62,34 +63,34 @@ const DELETE_ROW = gql`
   }
 `;
 
-export default function Table({schema}:{schema:Schema}) {
-  const { loading, error, data } = useQuery<{data:RowWithId[]}>(GET_DATA);
+export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaName: AvailableSchemas}) {
+  const schema = schemas[schemaName];
+  const { loading, error, data } = useQuery<{rows:RowWithId[]}>(GET_ROWS, {variables: {sheet_id}});
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
   const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
 
-  
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
   if (!data) return [] // cannot really happen
-  const rows = data.data
+  const rows = data.rows
 
   return <>
     <table>
       <thead>
         <tr>
-            {schema.fields.map(field => <th key={field}>{field}</th>)}
+            {schema.fields.map(field => <th key={field} className={`schema-${field}`}>{field}</th>)}
             {schema.answers.map((t, i) => <th key={i}>{i+1}</th>)}
           <th>punti</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row) => row._id === currentRowId 
-          ? <InputRow schema={schema} key={row._id} row={row} done={() => setCurrentRowId('')}/>
+          ? <InputRow sheet_id={sheet_id} schema={schema} key={row._id} row={row} done={() => setCurrentRowId('')}/>
           : <TableRow schema={schema} key={row._id} row={row} onClick={() => setCurrentRowId(row._id)} />
         )}
         {currentRowId 
         ? <tr><td><button onClick={() => setCurrentRowId('')}>nuova riga</button></td></tr>
-        : <InputRow schema={schema}/>}
+        : <InputRow sheet_id={sheet_id} schema={schema}/>}
       </tbody>
     </table>
     <CsvImport 
@@ -113,10 +114,10 @@ export default function Table({schema}:{schema:Schema}) {
     await addRow({
       variables: data,
       update(cache, { data }) {
-        const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
+        const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_ROWS });
         if (existingRows && data) {
           cache.writeQuery({
-            query: GET_DATA,
+            query: GET_ROWS,
             data: {
               data: [...existingRows.data, data.addRow],
             },
@@ -138,12 +139,13 @@ function TableRow({schema, row, onClick}: {
   return <tr className={className} onClick={() => onClick && onClick()}>
     { schema.fields.map(field => <td key={field}>{row[field]}</td>) }
     { schema.answers.map((answerType,i) => 
-      <td key={i}>{row.risposte[i]}</td>)}
+      <td className={`schema-${answerType}`} key={i} style={{width: "8ex"}}>{row.risposte[i]}</td>)}
     <td> {schema.computeScore(row)} </td>
   </tr>
 }
 
-function InputRow({schema, row, done}: {
+function InputRow({sheet_id, schema, row, done}: {
+  sheet_id: string,
   schema: Schema, 
   row?: RowWithId,
   done?: () => void
@@ -151,14 +153,15 @@ function InputRow({schema, row, done}: {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
-      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
+      const existingRows = cache.readQuery<{ rows: RowWithId[] }>({ query: GET_ROWS });
 
+      console.log({existingRows,data,cache})
       // Aggiorna manualmente l'elenco
       if (existingRows && data) {
         cache.writeQuery({
-          query: GET_DATA,
+          query: GET_ROWS,
           data: {
-            data: [...existingRows.data, data.addRow],
+            rows: [...existingRows.rows, data.addRow],
           },
         });
       }
@@ -167,12 +170,12 @@ function InputRow({schema, row, done}: {
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = useMutation<{ patchRow: RowWithId }>(PATCH_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
-      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
+      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_ROWS });
 
       // Aggiorna manualmente l'elenco
       if (existingRows && data) {
         cache.writeQuery({
-          query: GET_DATA,
+          query: GET_ROWS,
           data: {
             data: existingRows.data.map(row => (row._id === data.patchRow._id ? data.patchRow : row))
           },
@@ -183,13 +186,13 @@ function InputRow({schema, row, done}: {
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useMutation<{ deleteRow: string }>(DELETE_ROW, {
     update(cache, { data }) {
       // Recupera i dati attuali dalla cache
-      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_DATA });
+      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_ROWS });
 
       // Aggiorna manualmente l'elenco
       if (existingRows && data) {
         console.log(`deleting row from cache`, data.deleteRow)
         cache.writeQuery({
-          query: GET_DATA,
+          query: GET_ROWS,
           data: {
             data: existingRows.data.filter(row => row._id !== data.deleteRow),
           },
@@ -209,7 +212,7 @@ function InputRow({schema, row, done}: {
 
   return <tr>
     { schema.fields.map(field => 
-      <td key={field}>
+      <td key={field} className={`schema-${field}`}>
         <Input value={fields[field]||''} setValue={v => setFields(fields => ({...fields, [field]: v}))}/>
       </td>
     )}
@@ -238,6 +241,7 @@ function InputRow({schema, row, done}: {
     } else {
       // insert
       await addRow({variables: {
+        sheet_id,
         ...fields,
         risposte
       }})

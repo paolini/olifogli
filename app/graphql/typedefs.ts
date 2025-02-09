@@ -1,5 +1,7 @@
+import { gql } from '@apollo/client'
+
 // Definizione dello schema GraphQL
-export const typeDefs = `
+export const typeDefs = gql`
   scalar Timestamp
   scalar ObjectId
 
@@ -12,6 +14,7 @@ export const typeDefs = `
 
   type Row {
     _id: ObjectId
+    isValid: Boolean
     updatedOn: Timestamp
     cognome: String
     nome: String
@@ -31,7 +34,8 @@ export const typeDefs = `
   type Query {
     hello: String
     sheets: [Sheet]
-    data: [Row]
+    sheet: Sheet
+    rows(sheet_id: ObjectId): [Row]
     me: User
   }
 
@@ -39,7 +43,7 @@ export const typeDefs = `
     addSheet(name: String, schema: String, params: String): Sheet
     deleteSheet(_id: ObjectId): String
 
-    addRow(cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
+    addRow(sheet_id: ObjectId, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
     patchRow(_id: ObjectId, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
     deleteRow(_id: ObjectId): ObjectId
   }

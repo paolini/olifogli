@@ -3,9 +3,7 @@ import { gql, useQuery, useMutation } from '@apollo/client';
 import Loading from '@/app/components/Loading';
 import Error from '@/app/components/Error';
 import { Input } from '@/app/components/Input';
-import { Sheet } from '@/lib/models';
-
-type SheetWithId = Sheet & { _id: string };
+import { Sheet, SheetWithId } from '@/app/lib/models';
 
 const GET_SHEETS = gql`
     query GetSheets {
@@ -73,7 +71,7 @@ function SheetRow({sheet}:{sheet:SheetWithId}) {
 
     return <tr key={sheet._id}>
         <td>
-            {sheet.name}
+            <a href={`/sheet/${sheet._id}`}>{sheet.name}</a>
         </td>
         <td>
             {sheet.schema}
