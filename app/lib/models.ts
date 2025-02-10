@@ -36,6 +36,7 @@ export type Info = {
 
 export interface Row extends Info {
     risposte: string[];
+    punti: string;
 
     sheet_id: ObjectId;
     is_valid: boolean;

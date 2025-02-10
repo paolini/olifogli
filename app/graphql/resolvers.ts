@@ -2,8 +2,9 @@ import { getDb } from '@/app/lib/mongodb';
 import { getUsersCollection, getSheetsCollection, getRowsCollection } from '@/app/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';
-import { AvailableSchemas } from '@/app/lib/schema';
+import { schemas, AvailableSchemas } from '@/app/lib/schema';
 import { ObjectIdType, Timestamp } from './types';
+import { Info } from '@/app/lib/models'
 
 // Definizione dei resolver
 export const resolvers = {
@@ -60,51 +61,57 @@ export const resolvers = {
       return _id;
     },
 
-    addRow: async (_: unknown, { sheet_id, cognome, nome, classe, sezione, scuola, data_nascita, risposte }: { 
+    addRow: async (_: unknown, payload: Info & { 
         sheet_id: ObjectId,
-        cognome: string,
-        nome: string, 
-        classe: string, 
-        sezione: string, 
-        scuola: string, 
-        data_nascita: string, 
         risposte: string[] 
       }, context: Context) => {
-      const collection = await getRowsCollection();
+      const sheetsCollection = await getSheetsCollection();
+      const sheet = await sheetsCollection.findOne({_id: payload.sheet_id})
+      if (!sheet) throw Error(`invalid sheet_id ${payload.sheet_id}`)
+      const schema = schemas[sheet.schema]
+      const rowsCollection = await getRowsCollection();
       const createdOn = new Date();
       const updatedOn = createdOn;
       const createdBy = context.user_id;
       const updatedBy = createdBy;
       // TODO: check if user can write to sheet_id
-      const is_valid = false; // TODO compute this!
-      const result = await collection.insertOne({ sheet_id, is_valid, updatedOn, updatedBy, createdOn, createdBy,
-          cognome, nome, classe, sezione, scuola, data_nascita, risposte });
-      return await collection.findOne({ _id: result.insertedId });
+      const cleaned = schema.clean(payload)
+      const is_valid = schema.isValid(cleaned); // TODO compute this!
+      const punti = schema.computeScore(cleaned);
+      const result = await rowsCollection.insertOne({ 
+        ...cleaned, 
+        sheet_id: payload.sheet_id, 
+        is_valid, 
+        punti,
+        updatedOn, updatedBy, createdOn, createdBy,
+       });
+      return await rowsCollection.findOne({ _id: result.insertedId });
     },
 
-    patchRow: async (_: unknown, { _id, updatedOn, cognome, nome, classe, sezione, scuola, data_nascita, risposte }: {
+    patchRow: async (_: unknown, payload: Info & {
         _id: ObjectId,
         updatedOn: Date,
-        cognome: string, 
-        nome: string, 
-        classe: string, 
-        sezione: string, 
-        scuola: string, 
-        data_nascita: string, 
         risposte: string[] }, context: Context) => {
-      const collection = await getRowsCollection();
-      const row = await collection.findOne({ _id });
+      const rowsCollection = await getRowsCollection();
+      const row = await rowsCollection.findOne({ _id: payload._id });
       if (!row) throw new Error('Row not found');
-      if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
-      const is_valid = false; // TODO compute this!
+      const sheetsCollection = await getSheetsCollection();
+      const sheet = await sheetsCollection.findOne({_id: row.sheet_id})
+      if (!sheet) throw new Error('Sheet not found')
+      const schema = schemas[sheet.schema]
+      if (row.updatedOn && row.updatedOn.getTime() !== payload.updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
+      const cleaned = schema.clean(payload)
+      const is_valid = schema.isValid(cleaned)
+      const punti = schema.computeScore(cleaned)
       const $set = {
+        ...cleaned,
         is_valid,
-        cognome, nome, classe, sezione, scuola, data_nascita, risposte,
+        punti,
         updatedOn: new Date(),
         updatedBy: context.user_id,
       }
-      await collection.updateOne({ _id: row._id }, { $set });
-      return await collection.findOne({ _id });
+      await rowsCollection.updateOne({ _id: payload._id }, { $set });
+      return await rowsCollection.findOne({ _id: payload._id });
     },
 
     deleteRow: async (_: unknown, { _id }: { _id: ObjectId }) => {

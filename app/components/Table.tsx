@@ -1,10 +1,11 @@
 "use client"
 import { useState } from 'react'
+import { WithId, ObjectId } from 'mongodb'
 import { useQuery, useMutation, gql, StoreObject } from '@apollo/client';
 import CsvImport from '@/app/components/csvImport'
 import { availableFields, schemas, Schema, DataRow, AvailableAnswers, AvailableSchemas } from '@/app/lib/schema'
 import { Input, ChoiceInput, NumberInput, ScoreInput } from '@/app/components/Input'
-import { Info } from '@/app/lib/models'
+import { Row, Info } from '@/app/lib/models'
 
 export interface RowWithId extends DataRow {
     _id: string;
@@ -15,7 +16,7 @@ const GET_ROWS = gql`
   query getRows($sheet_id: ObjectId!) {
     rows(sheet_id: $sheet_id) {
       _id
-      isValid
+      is_valid
       updatedOn
       ${availableFields.join('\n')}
       risposte
@@ -53,8 +54,8 @@ const DELETE_ROW = gql`
 
 export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaName: AvailableSchemas}) {
   const schema = schemas[schemaName];
-  const { loading, error, data } = useQuery<{rows:RowWithId[]}>(GET_ROWS, {variables: {sheet_id}});
-  const [ currentRowId, setCurrentRowId ] = useState<string>('')
+  const { loading, error, data } = useQuery<{rows:WithId<Row>[]}>(GET_ROWS, {variables: {sheet_id}});
+  const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [addRow] = useMutation<{ addRow: StoreObject }>(ADD_ROW);
 
   if (loading) return <div>Loading...</div>
@@ -73,11 +74,11 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
       </thead>
       <tbody>
         {rows.map((row) => row._id === currentRowId 
-          ? <InputRow sheet_id={sheet_id} schema={schema} key={row._id} row={row} done={() => setCurrentRowId('')}/>
-          : <TableRow schema={schema} key={row._id} row={row} onClick={() => setCurrentRowId(row._id)} />
+          ? <InputRow sheet_id={sheet_id} schema={schema} key={row._id.toString()} row={row} done={() => setCurrentRowId(null)}/>
+          : <TableRow schema={schema} key={row._id.toString()} row={row} onClick={() => setCurrentRowId(row._id)} />
         )}
         {currentRowId 
-        ? <tr><td><button onClick={() => setCurrentRowId('')}>nuova riga</button></td></tr>
+        ? <tr><td><button onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
         : <InputRow sheet_id={sheet_id} schema={schema}/>}
       </tbody>
     </table>
@@ -129,23 +130,23 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
 
 function TableRow({schema, row, onClick}: {
     schema: Schema,
-    row: RowWithId, 
+    row: WithId<Row>, 
     onClick?: () => void,
 }) {
-  const className = "clickable" + (schema.isValid(row) ? "" : " invalid")
+  const className = "clickable" + (row.is_valid ? "" : " invalid")
 
   return <tr className={className} onClick={() => onClick && onClick()}>
     { schema.fields.map(field => <td className={`schema-${field}`} key={field}>{row[field]}</td>) }
     { schema.answers.map((answerType,i) => 
       <td className={`schema-${answerType}`} key={i} style={{width: "8ex"}}>{row.risposte[i]}</td>)}
-    <td> {schema.computeScore(row)} </td>
+    <td> {row.punti} </td>
   </tr>
 }
 
 function InputRow({sheet_id, schema, row, done}: {
   sheet_id: string,
   schema: Schema, 
-  row?: RowWithId,
+  row?: WithId<Row>,
   done?: () => void
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {

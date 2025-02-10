@@ -8,8 +8,8 @@ export const availableAnswers = ["choice", "number", "score"]
 export type AvailableAnswers = (typeof availableAnswers)[number]
 
 export type DataRow = Info & {
-    sheet_id: string;
-    updatedOn: string;
+//    sheet_id: string;
+//    updatedOn: string;
     risposte: string[];
 }
 
@@ -30,8 +30,6 @@ export class Schema {
         const cleaned: DataRow = {
             ...emptyInfo,
             risposte: [],
-            sheet_id: data.sheet_id,
-            updatedOn: data.updatedOn,
         }
         for (const field of this.fields) {
             cleaned[field] = data[field] || ""
