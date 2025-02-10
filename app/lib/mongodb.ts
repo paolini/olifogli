@@ -6,13 +6,12 @@ const options: object = {};
 
 let clientPromise: Promise<MongoClient>;
 
-let mainStarted = false;
-
 declare global {
     // Aggiungiamo un tipo globale per evitare errori multipli
     // durante lo sviluppo
     // eslint-disable-next-line no-var
     var _mongoClientPromise: Promise<MongoClient> | undefined;
+    // eslint-disable-next-line no-var
     var _mainStarted: boolean | undefined;
 }
 
@@ -35,7 +34,6 @@ if (process.env.NODE_ENV === 'development') {
 } else {
     const client = new MongoClient(uri, options);
     clientPromise = client.connect();
-    mainStarted = true;
     main();
 }
 

@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react'
-import { useQuery, useMutation, gql } from '@apollo/client';
+import { useQuery, useMutation, gql, StoreObject } from '@apollo/client';
 import CsvImport from '@/app/components/csvImport'
 import { schemas, Schema, Info, DataRow, AvailableAnswers, AvailableSchemas } from '@/app/lib/schema'
 import { Input, ChoiceInput, NumberInput, ScoreInput } from '@/app/components/Input'
@@ -152,20 +152,21 @@ function InputRow({sheet_id, schema, row, done}: {
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
     update(cache, { data }) {
-      // Recupera i dati attuali dalla cache
-      const existingRows = cache.readQuery<{ rows: RowWithId[] }>({ query: GET_ROWS });
-
-      console.log({existingRows,data,cache})
-      // Aggiorna manualmente l'elenco
-      if (existingRows && data) {
-        cache.writeQuery({
-          query: GET_ROWS,
-          data: {
-            rows: [...existingRows.rows, data.addRow],
+      if (!data) return;          
+      const newRow = data.addRow; // Assumendo che la mutazione restituisca la nuova riga          
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            // Controlla se la riga è già presente per evitare duplicati
+            if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
+              return existingRows;
+            }
+            return [...existingRows, newRow];
           },
-        });
-      }
-    }});
+        },
+      });
+    }
+  });
 
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = useMutation<{ patchRow: RowWithId }>(PATCH_ROW, {
     update(cache, { data }) {

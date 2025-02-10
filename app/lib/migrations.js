@@ -5,7 +5,7 @@
  * Le migrazioni devono essere autoconsistenti.
  */
 const migrations = { 
-    _20240202_test_migration_0: async function(db) {
+    _20240202_test_migration_0: async function(/*db*/) {
         return true
     }
 }

@@ -24,12 +24,12 @@ export const resolvers = {
       return await collection.find({}).toArray();
     },
 
-    sheet: async (_: any, { _id }: { _id: ObjectId }) => {
+    sheet: async (_: unknown, { _id }: { _id: ObjectId }) => {
       const collection = await getSheetsCollection();
       return await collection.findOne({ _id });
     },
 
-    rows: async (_: any, { sheet_id }: { sheet_id: ObjectId }, context: Context) => {
+    rows: async (_: unknown, { sheet_id }: { sheet_id: ObjectId }/*, context: Context*/) => {
         const collection = await getRowsCollection();
         const results = await collection.find({sheet_id}).toArray();
         return results.map(doc => ({

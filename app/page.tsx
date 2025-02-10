@@ -1,8 +1,6 @@
 "use client"
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
 import UserProfile from '@/app/components/UserProfile'
-import { Distrettuale } from '@/app/lib/schema'
-import Table from '@/app/components/Table'
 import Sheets from '@/app/components/Sheets'
 import packageJson from '../package.json'
 const version = packageJson.version
