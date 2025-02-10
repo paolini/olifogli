@@ -25,13 +25,16 @@ export async function getSheetsCollection() {
     return db.collection<Sheet>('sheets');
 }
 
-export interface Row {
+export type Info = {
     cognome: string;
     nome: string;
     classe: string;
     sezione: string;
     scuola: string;
     data_nascita: string;
+}
+
+export interface Row extends Info {
     risposte: string[];
 
     sheet_id: ObjectId;

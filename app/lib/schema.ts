@@ -1,4 +1,5 @@
 import { calcolaPunteggio } from "./answers"
+import { Info } from "./models"
 
 export const availableFields = ["cognome", "nome", "classe", "sezione", "scuola", "data_nascita"] as const
 export type AvailableFields = (typeof availableFields)[number]
@@ -6,14 +7,15 @@ export type AvailableFields = (typeof availableFields)[number]
 export const availableAnswers = ["choice", "number", "score"]
 export type AvailableAnswers = (typeof availableAnswers)[number]
 
-export type Info = {
-    [key in AvailableFields]?: string;
-}
-
 export type DataRow = Info & {
-    updatedOn?: string;
+    sheet_id: string;
+    updatedOn: string;
     risposte: string[];
 }
+
+const emptyInfo: Info =  {
+    ...Object.fromEntries(availableFields.map(f => [f,''])),
+} as Info;
 
 export class Schema {
     fields: AvailableFields[] = [];
@@ -25,7 +27,12 @@ export class Schema {
     }
 
     clean(data: DataRow): DataRow {
-        const cleaned: DataRow = {risposte: []}
+        const cleaned: DataRow = {
+            ...emptyInfo,
+            risposte: [],
+            sheet_id: data.sheet_id,
+            updatedOn: data.updatedOn,
+        }
         for (const field of this.fields) {
             cleaned[field] = data[field] || ""
         }
@@ -37,12 +44,12 @@ export class Schema {
 
     computeScore(row: DataRow): string {
         void row // unused
-        return "???"
+        return "???" // implemented in derived class
     }
 
     isValid(row: DataRow): boolean {
         void row // unused
-        return false        
+        return false // implemented in derived class
     }
 }
 

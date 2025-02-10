@@ -2,8 +2,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, gql, StoreObject } from '@apollo/client';
 import CsvImport from '@/app/components/csvImport'
-import { schemas, Schema, Info, DataRow, AvailableAnswers, AvailableSchemas } from '@/app/lib/schema'
+import { availableFields, schemas, Schema, DataRow, AvailableAnswers, AvailableSchemas } from '@/app/lib/schema'
 import { Input, ChoiceInput, NumberInput, ScoreInput } from '@/app/components/Input'
+import { Info } from '@/app/lib/models'
 
 export interface RowWithId extends DataRow {
     _id: string;
@@ -16,12 +17,7 @@ const GET_ROWS = gql`
       _id
       isValid
       updatedOn
-      cognome
-      nome
-      classe
-      sezione
-      scuola
-      data_nascita
+      ${availableFields.join('\n')}
       risposte
     }
   }
@@ -31,12 +27,7 @@ const ADD_ROW = gql`
   mutation addRow($sheet_id: ObjectId!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
     addRow(sheet_id: $sheet_id, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
       _id
-      cognome
-      nome
-      classe
-      sezione
-      scuola
-      data_nascita
+      ${availableFields.join('\n')}
       risposte
     }
   }
@@ -48,12 +39,7 @@ const PATCH_ROW = gql`
       _id
       __typename
       updatedOn
-      cognome
-      nome
-      classe
-      sezione
-      scuola
-      data_nascita
+      ${availableFields.join('\n')}
       risposte
     }
   }
@@ -69,7 +55,7 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
   const schema = schemas[schemaName];
   const { loading, error, data } = useQuery<{rows:RowWithId[]}>(GET_ROWS, {variables: {sheet_id}});
   const [ currentRowId, setCurrentRowId ] = useState<string>('')
-  const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
+  const [addRow] = useMutation<{ addRow: StoreObject }>(ADD_ROW);
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
@@ -95,7 +81,7 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
         : <InputRow sheet_id={sheet_id} schema={schema}/>}
       </tbody>
     </table>
-    <CsvImport 
+    csv import<CsvImport 
       columns={schema.fields} 
       numeroRisposte={17}
       addRow={csvAddRow}
@@ -104,31 +90,41 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
 
   async function csvAddRow(row: string[]) {
     const data = {
-      cognome: row[0],
-      nome: row[1],
-      classe: row[2],
-      sezione: row[3],
-      data_nascita: row[4],
-      scuola: row[5],
+      ...Object.fromEntries(schema.fields.map((f,i) => [f,row[i]])),
+      sheet_id,
       risposte: row.slice(6)
     }
 
     await addRow({
       variables: data,
       update(cache, { data }) {
-        const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_ROWS });
-        if (existingRows && data) {
-          cache.writeQuery({
-            query: GET_ROWS,
-            data: {
-              data: [...existingRows.data, data.addRow],
+        if (!data) return;          
+        const newRow = data.addRow;        
+        cache.modify({
+          fields: {
+            rows(existingRows = [], { readField }) {
+              // Controlla se la riga è già presente per evitare duplicati
+              if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
+                return existingRows;
+              }
+              return [...existingRows, cache.writeFragment({
+                id: cache.identify(newRow),
+                fragment: gql`
+                  fragment NewRow on RowWithId {
+                    _id
+                    __typename
+                    ${availableFields.join('\n')}
+                    risposte
+                  }
+                `,
+                data: newRow
+              })];
             },
-          });
-        }
+          },
+        });
       }
     });
-
-   }
+  }
 }
 
 function TableRow({schema, row, onClick}: {
@@ -199,7 +195,7 @@ function InputRow({sheet_id, schema, row, done}: {
     }});
 
   const [fields, setFields] = useState<Info>(Object.fromEntries(schema.fields.map(
-      f => [f, row?.[f] || ''])))
+      f => [f, row?.[f] || ''])) as Info)
   const [risposte, setRisposte] = useState<string[]>(row?.risposte || schema.answers.map(() => ''))
     
   const loading = addLoading || patchLoading || deleteLoading
@@ -271,4 +267,3 @@ function InputCell({t, risposta, setRisposta}: {
     { t === 'score'  && <ScoreInput  value={risposta} setValue={setRisposta}/> }
   </td>
 }
-
