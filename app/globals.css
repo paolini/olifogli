@@ -52,26 +52,26 @@ tr.error {
   background-color: var(--error);
 }
 
-.schema-cognome {
+.schema-cognome, .schema-cognome input {
   max-width: 20ex;
 }
 
-.schema-nome {
+.schema-nome, .schema-nome input {
   max-width: 20ex;
 }
 
-.schema-data_nascita {
+.schema-data_nascita, .schema-data_nascita input {
   max-width: 10ex;
 }
 
-.schema-classe {
+.schema-classe, .schema-classe input {
   max-width: 5ex;
 }
 
-.schema-sezione {
+.schema-sezione, .schema-sezione input { 
   max-width: 5ex;
 }
 
-.schema-scuola {
+.schema-scuola, .schema-scuola input {
   max-width: 20ex;
 }
