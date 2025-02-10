@@ -7,6 +7,7 @@ import { Input, ChoiceInput, NumberInput, ScoreInput } from '@/app/components/In
 
 export interface RowWithId extends DataRow {
     _id: string;
+    __typename: string;
 }
 
 const GET_ROWS = gql`
@@ -45,6 +46,7 @@ const PATCH_ROW = gql`
   mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $cognome: String, $nome: String, $classe: String, $sezione: String, $scuola: String, $data_nascita: String, $risposte: [String!]) {
     patchRow(_id: $_id, updatedOn: $updatedOn, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
       _id
+      __typename
       updatedOn
       cognome
       nome
@@ -168,37 +170,32 @@ function InputRow({sheet_id, schema, row, done}: {
     }
   });
 
-  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = useMutation<{ patchRow: RowWithId }>(PATCH_ROW, {
+  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
     update(cache, { data }) {
-      // Recupera i dati attuali dalla cache
-      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_ROWS });
+      const updatedRow = data?.patchRow;
+      if (!updatedRow) return;
 
-      // Aggiorna manualmente l'elenco
-      if (existingRows && data) {
-        cache.writeQuery({
-          query: GET_ROWS,
-          data: {
-            data: existingRows.data.map(row => (row._id === data.patchRow._id ? data.patchRow : row))
-          },
-        });
-      }
+      cache.modify({
+        id: cache.identify(updatedRow),
+        fields: Object.fromEntries(
+          Object.entries(updatedRow).map(([key, value]) => [key, () => value])
+        ),
+      });
+
     }});
 
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useMutation<{ deleteRow: string }>(DELETE_ROW, {
     update(cache, { data }) {
-      // Recupera i dati attuali dalla cache
-      const existingRows = cache.readQuery<{ data: RowWithId[] }>({ query: GET_ROWS });
+      const deletedId = data?.deleteRow;
+      if (!deletedId) return;
 
-      // Aggiorna manualmente l'elenco
-      if (existingRows && data) {
-        console.log(`deleting row from cache`, data.deleteRow)
-        cache.writeQuery({
-          query: GET_ROWS,
-          data: {
-            data: existingRows.data.filter(row => row._id !== data.deleteRow),
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
           },
-        });
-      }
+        },
+      });
     }});
 
   const [fields, setFields] = useState<Info>(Object.fromEntries(schema.fields.map(
