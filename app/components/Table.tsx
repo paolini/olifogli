@@ -135,7 +135,7 @@ function TableRow({schema, row, onClick}: {
   const className = "clickable" + (schema.isValid(row) ? "" : " invalid")
 
   return <tr className={className} onClick={() => onClick && onClick()}>
-    { schema.fields.map(field => <td key={field}>{row[field]}</td>) }
+    { schema.fields.map(field => <td className={`schema-${field}`} key={field}>{row[field]}</td>) }
     { schema.answers.map((answerType,i) => 
       <td className={`schema-${answerType}`} key={i} style={{width: "8ex"}}>{row.risposte[i]}</td>)}
     <td> {schema.computeScore(row)} </td>

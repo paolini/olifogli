@@ -52,12 +52,16 @@ tr.error {
   background-color: var(--error);
 }
 
+th {
+  text-align: left;
+}
+
 .schema-cognome, .schema-cognome input {
-  max-width: 20ex;
+  max-width: 16ex;
 }
 
 .schema-nome, .schema-nome input {
-  max-width: 20ex;
+  max-width: 16ex;
 }
 
 .schema-data_nascita, .schema-data_nascita input {
@@ -74,4 +78,16 @@ tr.error {
 
 .schema-scuola, .schema-scuola input {
   max-width: 20ex;
+}
+
+.schema-choice, .schema-choice input {
+  max-width: 2ex;
+}
+
+.schema-number, .schema-number input {
+  max-width: 3ex;
+}
+
+.schema-score, .schema-score input {
+  max-width: 3ex;
 }
