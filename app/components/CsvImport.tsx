@@ -1,3 +1,4 @@
+"use client"
 import Papa from "papaparse";
 import { useState } from "react";
 import { gql, StoreObject, useMutation } from "@apollo/client"

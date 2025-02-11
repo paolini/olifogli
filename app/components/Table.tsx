@@ -2,8 +2,7 @@
 import { useState } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useQuery, useMutation, gql, StoreObject } from '@apollo/client';
-import CsvImport from '@/app/components/csvImport'
-import { availableFields, schemas, Schema, DataRow, AvailableAnswers, AvailableSchemas } from '@/app/lib/schema'
+import { availableFields, schemas, Schema, DataRow, AvailableAnswers, AvailableSchemas, AvailableFields } from '@/app/lib/schema'
 import { Input, ChoiceInput, NumberInput, ScoreInput } from '@/app/components/Input'
 import { Row, Info } from '@/app/lib/models'
 
@@ -71,7 +70,7 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
     <table>
       <thead>
         <tr>
-            {schema.fields.map(field => <th key={field} className={`schema-${field}`}>{field}</th>)}
+            {schema.fields.map(field => <th key={field} className={`schema-${field}`}>{columnTitle(field)}</th>)}
             {schema.answers.map((t, i) => <th key={i}>{i+1}</th>)}
           <th>punti</th>
         </tr>
@@ -88,6 +87,15 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
     </table>
   </>
 
+  function columnTitle(field: AvailableFields) {
+    switch (field) {
+      case 'dataNascita': return 'nascita'
+      case 'classe': return 'cls'
+      case 'sezione': return 'sez'
+      default:
+          return field
+    }
+  }
 }
 
 function TableRow({schema, row, onClick}: {
@@ -95,7 +103,7 @@ function TableRow({schema, row, onClick}: {
     row: WithId<Row>, 
     onClick?: () => void,
 }) {
-  const className = "clickable" + (row.isValid ? "" : " invalid")
+  const className = `clickable${row.isValid ? "" : " alert"}`
 
   return <tr className={className} onClick={() => onClick && onClick()}>
     {/*<td><pre>{JSON.stringify({row})}</pre></td>*/}
@@ -112,74 +120,55 @@ function InputRow({sheetId, schema, row, done}: {
   row?: WithId<Row>,
   done?: () => void
 }) {
-  const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useMutation<{ addRow: RowWithId }>(ADD_ROW, {
-    update(cache, { data }) {
-      if (!data) return;          
-      const newRow = data.addRow; // Assumendo che la mutazione restituisca la nuova riga          
-      cache.modify({
-        fields: {
-          rows(existingRows = [], { readField }) {
-            // Controlla se la riga è già presente per evitare duplicati
-            if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
-              return existingRows;
-            }
-            return [...existingRows, newRow];
-          },
-        },
-      });
-    }
-  });
-
-  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
-    update(cache, { data }) {
-      const updatedRow = data?.patchRow;
-      if (!updatedRow) return;
-
-      cache.modify({
-        id: cache.identify(updatedRow),
-        fields: Object.fromEntries(
-          Object.entries(updatedRow).map(([key, value]) => [key, () => value])
-        ),
-      });
-
-    }});
-
-  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useMutation<{ deleteRow: string }>(DELETE_ROW, {
-    update(cache, { data }) {
-      const deletedId = data?.deleteRow;
-      if (!deletedId) return;
-
-      cache.modify({
-        fields: {
-          rows(existingRows = [], { readField }) {
-            return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
-          },
-        },
-      });
-    }});
-
+  const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow();
+  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow();
+  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow(); 
   const [fields, setFields] = useState<Info>(Object.fromEntries(schema.fields.map(
       f => [f, row?.[f] || ''])) as Info)
   const [risposte, setRisposte] = useState<string[]>(row?.risposte || schema.answers.map(() => ''))
     
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
+  const modified = hasBeenModified();
 
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
 
-  return <tr>
+  return <tr className={modified ? "alert": ""}>
     { schema.fields.map(field => 
       <td key={field} className={`schema-${field}`}>
-        <Input value={fields[field]||''} setValue={v => setFields(fields => ({...fields, [field]: v}))}/>
+        <Input 
+          value={fields[field]||''} 
+          setValue={v => setFields(fields => ({...fields, [field]: v}))}
+          onEnter={save}
+          />
       </td>
     )}
-    { schema.answers.map((t, i) => <InputCell key={i} t={t} risposta={risposte[i]} setRisposta={risposta => setRisposte(old => old.map((r,j) => j===i ? risposta : r))}/>)}
+    { schema.answers.map((t, i) => 
+      <InputCell 
+        key={i} 
+        t={t} 
+        risposta={risposte[i]} 
+        setRisposta={risposta => setRisposte(old => old.map((r,j) => j===i ? risposta : r))}
+        onEnter={save}
+        />)}
     <td>
       <button disabled={loading} onClick={save}>salva</button>
       { row?._id && <button disabled={loading} onClick={deleteFunction}>elimina</button>}
     </td>
   </tr>
+
+  function hasBeenModified() {
+    for (const field of schema.fields) {
+      if (!row && fields[field] !== '') return true;
+      if (row && fields[field] !== row[field]) return true;
+    }
+    for (let i=0; i<schema.answers.length; ++i) {
+      if (!row && risposte[i] !== '') return true;
+      if (row && risposte[i] != row.risposte[i]) return true;
+    }
+    return false;
+  }
 
   function dismissError() {
     if (addError) return addReset()
@@ -220,14 +209,66 @@ function InputRow({sheetId, schema, row, done}: {
   }
 }
 
-function InputCell({t, risposta, setRisposta}: {
+function InputCell({t, risposta, setRisposta, onEnter}: {
   t: AvailableAnswers,
   risposta: string,
-  setRisposta: ((risposta: string) => void)
+  setRisposta: ((risposta: string) => void),
+  onEnter?: () => void,
 }) {
   return <td>
-    { t === 'choice' && <ChoiceInput value={risposta} setValue={setRisposta}/> }
-    { t === 'number' && <NumberInput value={risposta} setValue={setRisposta}/> }
-    { t === 'score'  && <ScoreInput  value={risposta} setValue={setRisposta}/> }
+    { t === 'choice' && <ChoiceInput value={risposta} setValue={setRisposta} onEnter={onEnter}/> }
+    { t === 'number' && <NumberInput value={risposta} setValue={setRisposta} onEnter={onEnter}/> }
+    { t === 'score'  && <ScoreInput  value={risposta} setValue={setRisposta} onEnter={onEnter}/> }
   </td>
+}
+
+function useAddRow() {
+  return useMutation<{ addRow: RowWithId }>(ADD_ROW, {
+    update(cache, { data }) {
+      if (!data) return;          
+      const newRow = data.addRow; // Assumendo che la mutazione restituisca la nuova riga          
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            // Controlla se la riga è già presente per evitare duplicati
+            if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
+              return existingRows;
+            }
+            return [...existingRows, newRow];
+          },
+        },
+      });
+    }
+  });
+}
+
+function usePatchRow() {
+  return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
+    update(cache, { data }) {
+      const updatedRow = data?.patchRow;
+      if (!updatedRow) return;
+
+      cache.modify({
+        id: cache.identify(updatedRow),
+        fields: Object.fromEntries(
+          Object.entries(updatedRow).map(([key, value]) => [key, () => value])
+        ),
+      });
+    }});
+}
+
+function useDeleteRow() {
+  return useMutation<{ deleteRow: string }>(DELETE_ROW, {
+    update(cache, { data }) {
+      const deletedId = data?.deleteRow;
+      if (!deletedId) return;
+
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
+          },
+        },
+      });
+    }});
 }

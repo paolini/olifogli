@@ -1,5 +1,5 @@
 import Table from '@/app/components/Table';
-import CsvImport from '@/app/components/csvImport';
+import CsvImport from '@/app/components/CsvImport';
 import { ObjectId } from 'mongodb';
 import { getSheetsCollection } from '@/app/lib/models';
 import ApolloProviderClient from '@/app/ApolloProviderClient';

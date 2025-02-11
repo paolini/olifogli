@@ -5,7 +5,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --invalid: #cfd90a;
+  --alert: #cfd90a;
   --error: #eb7b7b;
 }
 
@@ -13,7 +13,7 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
-    --invalid: #3c3907;
+    --alert: #3c3907;
     --error: #c71717;
   }
 }
@@ -44,12 +44,12 @@ tr.clickable {
   cursor: pointer;
 }
 
-tr.invalid {
-  background-color: var(--invalid);
-}
-
 tr.error {
   background-color: var(--error);
+}
+
+tr.alert {
+  background-color: var(--alert);
 }
 
 th {

@@ -1,17 +1,30 @@
-export function Input({type, size, value, setValue, width}:{
+import { KeyboardEvent } from "react"
+
+export function Input({type, size, value, setValue, width, onEnter}:{
   type?: string, 
   size?: number, 
   value: string, 
   width?: string,
-  setValue?: (value: string) => void
+  setValue?: (value: string) => void,
+  onEnter?: () => void,
 }) {
-  return <input type={type} width={width} size={size} value={value} onChange={e => setValue && setValue(e.target.value)} />
+  return <input type={type} width={width} size={size} value={value} onChange={e => setValue && setValue(e.target.value)} onKeyDown={onKeyDown} />
+
+  function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
+    if (onEnter && e.key === "Enter") onEnter()
+  }
 }
 
-export function ChoiceInput({value, setValue}: {
+export function ChoiceInput({value, setValue, onEnter}:{
   value: string, 
-  setValue: (value: string) => void}) {
-  return <input style={{width: "1.2em", textAlign:"center"}}type="text" value={value} size={1} onChange={onChange} />
+  setValue: (value: string) => void,
+  onEnter?: () => void,
+  }) {
+  return <input style={{width: "1.2em", textAlign:"center"}}type="text" value={value} size={1} onChange={onChange} onKeyDown={onKeyDown}/>
+
+  function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
+    if (onEnter && e.key === "Enter") onEnter()
+  }
 
   function clean(value: string) {
     if (value.length === 0) return ''
@@ -33,14 +46,26 @@ export function ChoiceInput({value, setValue}: {
   }
 }
 
-export function NumberInput({value, setValue}: {
+export function NumberInput({value, setValue, onEnter}: {
   value: string, 
-  setValue: (value: string) => void}) {
-  return <input value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "3em"}}/>
+  setValue: (value: string) => void,
+  onEnter?: () => void,
+}) {
+  return <input value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "3em"}} onKeyDown={onKeyDown}/>
+
+  function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
+    if (onEnter && e.key === "Enter") onEnter()
+  }
 }
 
-export function ScoreInput({value, setValue}: {
+export function ScoreInput({value, setValue, onEnter}: {
   value: string, 
-  setValue: (value: string) => void}) {
-  return <input value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}}/>
+  setValue: (value: string) => void,
+  onEnter?: () => void,
+  }) {
+  return <input value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}} onKeyDown={onKeyDown}/>
+
+  function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
+    if (onEnter && e.key === "Enter") onEnter()
+  }
 }
