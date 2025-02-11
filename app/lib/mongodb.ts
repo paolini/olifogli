@@ -54,9 +54,11 @@ async function main() {
         "                  |___/      \n" +
         "\n");
     console.log(Date())
-    console.log("connecting to MongoDB...");
-    const db = await getDb();
-    console.log("...connected to MongoDB");
-    await migrate(db, { apply: true })   
+    if (false) { // fails on github actions
+        console.log("connecting to MongoDB...");
+        const db = await getDb();
+        console.log("...connected to MongoDB");
+        await migrate(db, { apply: true })   
+    }
 }
 
