@@ -15,6 +15,7 @@ export const typeDefs = gql`
   type Row {
     _id: ObjectId
     isValid: Boolean
+    punti: String
     updatedOn: Timestamp
     cognome: String
     nome: String

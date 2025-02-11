@@ -10,6 +10,6 @@ export default async function SheetPage({ params }:{params: Promise<{sheetId: st
     if (!sheet) return <div>Sheet not found</div>;
     return <ApolloProviderClient> 
         <h1>{sheet.name} [{sheet.schema}]</h1>
-        <Table sheetId={sheet._id.toString()} schemaName={sheet.schema} />;
+        <Table sheetId={sheet._id.toString()} schemaName={sheet.schema} />
     </ApolloProviderClient>
 }

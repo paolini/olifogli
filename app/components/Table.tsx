@@ -17,6 +17,7 @@ const GET_ROWS = gql`
     rows(sheetId: $sheetId) {
       _id
       isValid
+      punti
       updatedOn
       ${availableFields.join('\n')}
       risposte
@@ -28,6 +29,8 @@ const ADD_ROW = gql`
   mutation addRow($sheetId: ObjectId!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $dataNascita: String!, $risposte: [String!]!) {
     addRow(sheetId: $sheetId, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, dataNascita: $dataNascita, risposte: $risposte) {
       _id
+      isValid
+      punti
       ${availableFields.join('\n')}
       risposte
     }
@@ -40,6 +43,8 @@ const PATCH_ROW = gql`
       _id
       __typename
       updatedOn
+      isValid
+      punti
       ${availableFields.join('\n')}
       risposte
     }
@@ -82,7 +87,7 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
         : <InputRow sheetId={sheetId} schema={schema}/>}
       </tbody>
     </table>
-    csv import<CsvImport 
+    <CsvImport 
       columns={schema.fields} 
       numeroRisposte={17}
       addRow={csvAddRow}
@@ -136,6 +141,7 @@ function TableRow({schema, row, onClick}: {
   const className = "clickable" + (row.isValid ? "" : " invalid")
 
   return <tr className={className} onClick={() => onClick && onClick()}>
+    {/*<td><pre>{JSON.stringify({row})}</pre></td>*/}
     { schema.fields.map(field => <td className={`schema-${field}`} key={field}>{row[field]}</td>) }
     { schema.answers.map((answerType,i) => 
       <td className={`schema-${answerType}`} key={i} style={{width: "8ex"}}>{row.risposte[i]}</td>)}

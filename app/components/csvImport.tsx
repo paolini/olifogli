@@ -31,6 +31,7 @@ export default function CsvImport({columns, numeroRisposte, addRow}:{
   };
 
   return <div className="p-4 border rounded-lg shadow-md">
+    csv import {}
       <input type="file" accept=".csv" onChange={handleFileUpload} className="mb-2" />
       { error && <div className="text-red-500">{error}</div>}
       <br />
