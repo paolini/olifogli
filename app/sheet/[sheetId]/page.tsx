@@ -1,7 +1,8 @@
 import Table from '@/app/components/Table';
+import CsvImport from '@/app/components/csvImport';
 import { ObjectId } from 'mongodb';
 import { getSheetsCollection } from '@/app/lib/models';
-import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
+import ApolloProviderClient from '@/app/ApolloProviderClient';
 
 export default async function SheetPage({ params }:{params: Promise<{sheetId: string}>}) {
     const sheetId = (await params).sheetId;
@@ -11,5 +12,6 @@ export default async function SheetPage({ params }:{params: Promise<{sheetId: st
     return <ApolloProviderClient> 
         <h1>{sheet.name} [{sheet.schema}]</h1>
         <Table sheetId={sheet._id.toString()} schemaName={sheet.schema} />
+        <CsvImport sheetId={sheet._id.toString()} schemaName={sheet.schema} />
     </ApolloProviderClient>
 }

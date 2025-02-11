@@ -25,7 +25,7 @@ const GET_ROWS = gql`
   }
 `;
 
-const ADD_ROW = gql`
+export const ADD_ROW = gql`
   mutation addRow($sheetId: ObjectId!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $dataNascita: String!, $risposte: [String!]!) {
     addRow(sheetId: $sheetId, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, dataNascita: $dataNascita, risposte: $risposte) {
       _id
@@ -61,7 +61,6 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
   const schema = schemas[schemaName];
   const { loading, error, data } = useQuery<{rows:WithId<Row>[]}>(GET_ROWS, {variables: {sheetId}});
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
-  const [addRow] = useMutation<{ addRow: StoreObject }>(ADD_ROW);
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
@@ -87,50 +86,8 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
         : <InputRow sheetId={sheetId} schema={schema}/>}
       </tbody>
     </table>
-    <CsvImport 
-      columns={schema.fields} 
-      numeroRisposte={17}
-      addRow={csvAddRow}
-      />
   </>
 
-  async function csvAddRow(row: string[]) {
-    const data = {
-      ...Object.fromEntries(schema.fields.map((f,i) => [f,row[i]])),
-      sheetId,
-      risposte: row.slice(6)
-    }
-
-    await addRow({
-      variables: data,
-      update(cache, { data }) {
-        if (!data) return;          
-        const newRow = data.addRow;        
-        cache.modify({
-          fields: {
-            rows(existingRows = [], { readField }) {
-              // Controlla se la riga è già presente per evitare duplicati
-              if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
-                return existingRows;
-              }
-              return [...existingRows, cache.writeFragment({
-                id: cache.identify(newRow),
-                fragment: gql`
-                  fragment NewRow on RowWithId {
-                    _id
-                    __typename
-                    ${availableFields.join('\n')}
-                    risposte
-                  }
-                `,
-                data: newRow
-              })];
-            },
-          },
-        });
-      }
-    });
-  }
 }
 
 function TableRow({schema, row, onClick}: {

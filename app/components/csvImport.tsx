@@ -1,16 +1,22 @@
-import { useState } from "react";
-
 import Papa from "papaparse";
+import { useState } from "react";
+import { gql, StoreObject, useMutation } from "@apollo/client"
+import { ADD_ROW } from "./Table";
+import { schemas, AvailableSchemas, availableFields } from "../lib/schema";
+
 
 interface CSVRow {
   [key: string]: string;
 }
 
-export default function CsvImport({columns, numeroRisposte, addRow}:{
-    columns: string[],
-    numeroRisposte: number,
-    addRow: (row: string[]) => Promise<void>
+export default function CsvImport({schemaName, sheetId}:{
+    schemaName: AvailableSchemas,
+    sheetId: string,
 }) {
+  const schema = schemas[schemaName]
+  const columns = schema.fields;
+  const numeroRisposte = 17;
+  const [addRow] = useMutation<{ addRow: StoreObject }>(ADD_ROW);
   const [data, setData] = useState<string[][]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -35,8 +41,47 @@ export default function CsvImport({columns, numeroRisposte, addRow}:{
       <input type="file" accept=".csv" onChange={handleFileUpload} className="mb-2" />
       { error && <div className="text-red-500">{error}</div>}
       <br />
-      { data.length > 0 && <CsvTable data={data} columns={columns} numeroRisposte={numeroRisposte} setData={setData} importRow={addRow}/>}
+      { data.length > 0 && <CsvTable data={data} columns={columns} numeroRisposte={numeroRisposte} setData={setData} importRow={importRow}/>}
   </div>
+
+  async function importRow(row: string[]) {
+    const data = {
+    ...Object.fromEntries(schema.fields.map((f,i) => [f,row[i]])),
+    sheetId,
+    risposte: row.slice(6)
+    }
+
+    await addRow({
+        variables: data,
+        update(cache, { data }) {
+            if (!data) return;          
+            const newRow = data.addRow;        
+            cache.modify({
+            fields: {
+                rows(existingRows = [], { readField }) {
+                // Controlla se la riga è già presente per evitare duplicati
+                if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
+                    return existingRows;
+                }
+                return [...existingRows, cache.writeFragment({
+                    id: cache.identify(newRow),
+                    fragment: gql`
+                    fragment NewRow on RowWithId {
+                        _id
+                        __typename
+                        ${availableFields.join('\n')}
+                        risposte
+                    }
+                    `,
+                    data: newRow
+                })];
+                },
+            },
+            });
+        }
+    });
+    }
+  
 }
 
 function CsvTable({data, columns, numeroRisposte, setData, importRow}: {
