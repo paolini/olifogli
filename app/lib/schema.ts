@@ -1,14 +1,14 @@
 import { calcolaPunteggio } from "./answers"
 import { Info } from "./models"
 
-export const availableFields = ["cognome", "nome", "classe", "sezione", "scuola", "data_nascita"] as const
+export const availableFields = ["cognome", "nome", "classe", "sezione", "scuola", "dataNascita"] as const
 export type AvailableFields = (typeof availableFields)[number]
 
 export const availableAnswers = ["choice", "number", "score"]
 export type AvailableAnswers = (typeof availableAnswers)[number]
 
 export type DataRow = Info & {
-//    sheet_id: string;
+//    sheetId: string;
 //    updatedOn: string;
     risposte: string[];
 }
@@ -56,7 +56,7 @@ export class Distrettuale extends Schema {
 
     constructor(params: string='{}') {
         super(
-            [   "cognome", "nome", "data_nascita", 
+            [   "cognome", "nome", "dataNascita", 
                 "classe", "sezione", "scuola"],
             [   "choice", "choice", "choice", "choice", 
                 "choice", "choice", "choice", "choice", 

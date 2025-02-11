@@ -21,7 +21,7 @@ export const typeDefs = gql`
     classe: String
     sezione: String
     scuola: String
-    data_nascita: String
+    dataNascita: String
     risposte: [String]
   }
 
@@ -35,7 +35,7 @@ export const typeDefs = gql`
     hello: String
     sheets: [Sheet]
     sheet: Sheet
-    rows(sheet_id: ObjectId): [Row]
+    rows(sheetId: ObjectId): [Row]
     me: User
   }
 
@@ -43,8 +43,8 @@ export const typeDefs = gql`
     addSheet(name: String, schema: String, params: String): Sheet
     deleteSheet(_id: ObjectId): String
 
-    addRow(sheet_id: ObjectId, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
-    patchRow(_id: ObjectId, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, data_nascita: String, risposte: [String]): Row
+    addRow(sheetId: ObjectId, cognome: String, nome: String, classe: String, sezione: String, scuola: String, dataNascita: String, risposte: [String]): Row
+    patchRow(_id: ObjectId, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, dataNascita: String, risposte: [String]): Row
     deleteRow(_id: ObjectId): ObjectId
   }
 `

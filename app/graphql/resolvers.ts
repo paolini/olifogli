@@ -12,10 +12,10 @@ export const resolvers = {
     hello: () => 'Hello, world!',
 
     me: async (_:unknown, __: unknown, context: Context) => {
-      const {user_id} = context 
-      if (user_id) {
+      const {userId} = context 
+      if (userId) {
         const users = await getUsersCollection();
-        const user = await users.findOne({ _id: user_id });
+        const user = await users.findOne({ _id: userId });
         return user
       } else return null
     },
@@ -30,21 +30,10 @@ export const resolvers = {
       return await collection.findOne({ _id });
     },
 
-    rows: async (_: unknown, { sheet_id }: { sheet_id: ObjectId }/*, context: Context*/) => {
+    rows: async (_: unknown, { sheetId }: { sheetId: ObjectId }/*, context: Context*/) => {
         const collection = await getRowsCollection();
-        const results = await collection.find({sheet_id}).toArray();
-        return results.map(doc => ({
-            _id: doc._id,
-            is_valid: doc.is_valid,
-            updatedOn: doc.updatedOn,
-            cognome: doc.cognome || '',
-            nome: doc.nome || '',
-            classe: doc.classe || '',
-            sezione: doc.sezione || '',
-            scuola: doc.scuola || '',
-            data_nascita: doc.data_nascita || '',
-            risposte: Array.isArray(doc.risposte)? doc.risposte : ['','','','','','','','','','','','','','','','','','','',''],
-          }));  
+        const results = await collection.find({sheetId}).toArray();
+        return results
     }
   },
 
@@ -62,26 +51,26 @@ export const resolvers = {
     },
 
     addRow: async (_: unknown, payload: Info & { 
-        sheet_id: ObjectId,
+        sheetId: ObjectId,
         risposte: string[] 
       }, context: Context) => {
       const sheetsCollection = await getSheetsCollection();
-      const sheet = await sheetsCollection.findOne({_id: payload.sheet_id})
-      if (!sheet) throw Error(`invalid sheet_id ${payload.sheet_id}`)
+      const sheet = await sheetsCollection.findOne({_id: payload.sheetId})
+      if (!sheet) throw Error(`invalid sheetId ${payload.sheetId}`)
       const schema = schemas[sheet.schema]
       const rowsCollection = await getRowsCollection();
       const createdOn = new Date();
       const updatedOn = createdOn;
-      const createdBy = context.user_id;
+      const createdBy = context.userId;
       const updatedBy = createdBy;
-      // TODO: check if user can write to sheet_id
+      // TODO: check if user can write to sheetId
       const cleaned = schema.clean(payload)
-      const is_valid = schema.isValid(cleaned); // TODO compute this!
+      const isValid = schema.isValid(cleaned); // TODO compute this!
       const punti = schema.computeScore(cleaned);
       const result = await rowsCollection.insertOne({ 
         ...cleaned, 
-        sheet_id: payload.sheet_id, 
-        is_valid, 
+        sheetId: payload.sheetId, 
+        isValid, 
         punti,
         updatedOn, updatedBy, createdOn, createdBy,
        });
@@ -96,19 +85,19 @@ export const resolvers = {
       const row = await rowsCollection.findOne({ _id: payload._id });
       if (!row) throw new Error('Row not found');
       const sheetsCollection = await getSheetsCollection();
-      const sheet = await sheetsCollection.findOne({_id: row.sheet_id})
+      const sheet = await sheetsCollection.findOne({_id: row.sheetId})
       if (!sheet) throw new Error('Sheet not found')
       const schema = schemas[sheet.schema]
       if (row.updatedOn && row.updatedOn.getTime() !== payload.updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
       const cleaned = schema.clean(payload)
-      const is_valid = schema.isValid(cleaned)
+      const isValid = schema.isValid(cleaned)
       const punti = schema.computeScore(cleaned)
       const $set = {
         ...cleaned,
-        is_valid,
+        isValid,
         punti,
         updatedOn: new Date(),
-        updatedBy: context.user_id,
+        updatedBy: context.userId,
       }
       await rowsCollection.updateOne({ _id: payload._id }, { $set });
       return await rowsCollection.findOne({ _id: payload._id });

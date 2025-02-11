@@ -64,7 +64,7 @@ th {
   max-width: 16ex;
 }
 
-.schema-data_nascita, .schema-data_nascita input {
+.schema-dataNascita, .schema-dataNascita input {
   max-width: 10ex;
 }
 

@@ -17,7 +17,7 @@ if (!handler) {
   handler = startServerAndCreateNextHandler<NextRequest,Context>(server, {
     context: async (req, res): Promise<Context> => { 
       const session = JSON.parse(req.cookies.get('session')?.value || '{}');
-      if (session.user_id) return {req, res, user_id: new ObjectId(session.user_id as string)};
+      if (session.user_id) return {req, res, userId: new ObjectId(session.userId as string)};
       return {req, res};
     }
   });

@@ -43,7 +43,7 @@ export interface Row {
     classe: string;
     sezione: string;
     scuola: string;
-    data_nascita: string;
+    dataNascita: string;
     risposte: string[];
 }
 

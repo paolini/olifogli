@@ -31,15 +31,15 @@ export type Info = {
     classe: string;
     sezione: string;
     scuola: string;
-    data_nascita: string;
+    dataNascita: string;
 }
 
 export interface Row extends Info {
     risposte: string[];
     punti: string;
 
-    sheet_id: ObjectId;
-    is_valid: boolean;
+    sheetId: ObjectId;
+    isValid: boolean;
 
     createdOn?: Date;
     createdBy?: ObjectId;

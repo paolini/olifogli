@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
   const decoded = jwt.decode(token) as {uid: string};
   const {uid} = decoded;
   
-  const user_id = await get_user_from_uid(uid)
+  const userId = await getUserFromUid(uid)
 
-  const session = { user_id }
+  const session = { userId }
 
   // Crea il cookie della sessione
   const cookie = serialize("session", JSON.stringify(session), {
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   return response;
 }
 
-async function get_user_from_uid(uid:string) {
+async function getUserFromUid(uid:string) {
   const db = await getDb()
   const user = await db.collection<User>('users').findOne({uid})
   if (user!==null) return user._id

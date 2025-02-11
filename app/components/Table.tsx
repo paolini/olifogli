@@ -13,10 +13,10 @@ export interface RowWithId extends DataRow {
 }
 
 const GET_ROWS = gql`
-  query getRows($sheet_id: ObjectId!) {
-    rows(sheet_id: $sheet_id) {
+  query getRows($sheetId: ObjectId!) {
+    rows(sheetId: $sheetId) {
       _id
-      is_valid
+      isValid
       updatedOn
       ${availableFields.join('\n')}
       risposte
@@ -25,8 +25,8 @@ const GET_ROWS = gql`
 `;
 
 const ADD_ROW = gql`
-  mutation addRow($sheet_id: ObjectId!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $data_nascita: String!, $risposte: [String!]!) {
-    addRow(sheet_id: $sheet_id, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
+  mutation addRow($sheetId: ObjectId!, $cognome: String!, $nome: String!, $classe: String!, $sezione: String!, $scuola: String!, $dataNascita: String!, $risposte: [String!]!) {
+    addRow(sheetId: $sheetId, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, dataNascita: $dataNascita, risposte: $risposte) {
       _id
       ${availableFields.join('\n')}
       risposte
@@ -35,8 +35,8 @@ const ADD_ROW = gql`
 `;
 
 const PATCH_ROW = gql`
-  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $cognome: String, $nome: String, $classe: String, $sezione: String, $scuola: String, $data_nascita: String, $risposte: [String!]) {
-    patchRow(_id: $_id, updatedOn: $updatedOn, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, data_nascita: $data_nascita, risposte: $risposte) {
+  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $cognome: String, $nome: String, $classe: String, $sezione: String, $scuola: String, $dataNascita: String, $risposte: [String!]) {
+    patchRow(_id: $_id, updatedOn: $updatedOn, cognome: $cognome, nome: $nome, classe: $classe, sezione: $sezione, scuola: $scuola, dataNascita: $dataNascita, risposte: $risposte) {
       _id
       __typename
       updatedOn
@@ -52,9 +52,9 @@ const DELETE_ROW = gql`
   }
 `;
 
-export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaName: AvailableSchemas}) {
+export default function Table({sheetId, schemaName}:{sheetId: string, schemaName: AvailableSchemas}) {
   const schema = schemas[schemaName];
-  const { loading, error, data } = useQuery<{rows:WithId<Row>[]}>(GET_ROWS, {variables: {sheet_id}});
+  const { loading, error, data } = useQuery<{rows:WithId<Row>[]}>(GET_ROWS, {variables: {sheetId}});
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [addRow] = useMutation<{ addRow: StoreObject }>(ADD_ROW);
 
@@ -74,12 +74,12 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
       </thead>
       <tbody>
         {rows.map((row) => row._id === currentRowId 
-          ? <InputRow sheet_id={sheet_id} schema={schema} key={row._id.toString()} row={row} done={() => setCurrentRowId(null)}/>
+          ? <InputRow sheetId={sheetId} schema={schema} key={row._id.toString()} row={row} done={() => setCurrentRowId(null)}/>
           : <TableRow schema={schema} key={row._id.toString()} row={row} onClick={() => setCurrentRowId(row._id)} />
         )}
         {currentRowId 
         ? <tr><td><button onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
-        : <InputRow sheet_id={sheet_id} schema={schema}/>}
+        : <InputRow sheetId={sheetId} schema={schema}/>}
       </tbody>
     </table>
     csv import<CsvImport 
@@ -92,7 +92,7 @@ export default function Table({sheet_id, schemaName}:{sheet_id: string, schemaNa
   async function csvAddRow(row: string[]) {
     const data = {
       ...Object.fromEntries(schema.fields.map((f,i) => [f,row[i]])),
-      sheet_id,
+      sheetId,
       risposte: row.slice(6)
     }
 
@@ -133,7 +133,7 @@ function TableRow({schema, row, onClick}: {
     row: WithId<Row>, 
     onClick?: () => void,
 }) {
-  const className = "clickable" + (row.is_valid ? "" : " invalid")
+  const className = "clickable" + (row.isValid ? "" : " invalid")
 
   return <tr className={className} onClick={() => onClick && onClick()}>
     { schema.fields.map(field => <td className={`schema-${field}`} key={field}>{row[field]}</td>) }
@@ -143,8 +143,8 @@ function TableRow({schema, row, onClick}: {
   </tr>
 }
 
-function InputRow({sheet_id, schema, row, done}: {
-  sheet_id: string,
+function InputRow({sheetId, schema, row, done}: {
+  sheetId: string,
   schema: Schema, 
   row?: WithId<Row>,
   done?: () => void
@@ -236,7 +236,7 @@ function InputRow({sheet_id, schema, row, done}: {
     } else {
       // insert
       await addRow({variables: {
-        sheet_id,
+        sheetId,
         ...fields,
         risposte
       }})
@@ -244,7 +244,7 @@ function InputRow({sheet_id, schema, row, done}: {
         ...fields,
         cognome: '',
         nome: '',
-        data_nascita: '',
+        dataNascita: '',
       }))
       setRisposte(schema.answers.map(() => ''))
     }

@@ -3,6 +3,7 @@ import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il pe
 import UserProfile from '@/app/components/UserProfile'
 import Sheets from '@/app/components/Sheets'
 import packageJson from '../package.json'
+import Link from 'next/link';
 const version = packageJson.version
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
     <div style={{ textAlign: 'right' }}>
       <UserProfile />
     </div>
+    <Link href="users">utenti</Link>
     <Sheets />
   </ApolloProviderClient>
 }
