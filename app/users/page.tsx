@@ -1,5 +1,6 @@
 import { WithId } from "mongodb"
 import { User, getUsersCollection } from "../lib/models"
+import Link from "next/link"
 
 export default async function Users() {
     const collection = await getUsersCollection();
@@ -15,7 +16,7 @@ export default async function Users() {
             </thead>
             <tbody>
                 {users.map((user:WithId<User>) => <tr key={user._id.toString()}>
-                    <td>{user.uid}</td>
+                    <td><Link href={`/user/${user._id}`}>{user.uid}</Link></td>
                 </tr>)}
             </tbody>
         </table>
