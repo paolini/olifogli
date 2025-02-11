@@ -19,8 +19,14 @@ if (!uri) {
     throw new Error("Please add your MongoDB URI to .env.local");
 }
 
+/*if (process.env.SKIP_DB) {
+    console.log("skipping MongoDB connection");
+    clientPromise = Promise.resolve({} as MongoClient);
+} else */
+
 if (process.env.NODE_ENV === 'development') {
     if (!global._mongoClientPromise) {
+        console.log("connecting to MongoDB... (development)");
         const client = new MongoClient(uri, options);
         global._mongoClientPromise = client.connect();
     }
@@ -30,8 +36,8 @@ if (process.env.NODE_ENV === 'development') {
         global._mainStarted = true;
         main();
     }
-
 } else {
+    console.log("connecting to MongoDB... (production)");
     const client = new MongoClient(uri, options);
     clientPromise = client.connect();
     main();
