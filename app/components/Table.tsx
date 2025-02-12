@@ -20,7 +20,7 @@ type CriterioCerca = {
 }
 
 const criterioStandard: CriterioOrd = {numcampo: 0, nomecampo: "cognome", direzione: 1}
-const criterioStandard2: CriterioOrd = {numcampo: 0, nomecampo: "nome", direzione: 1}
+const criterioStandard2: CriterioOrd = {numcampo: 1, nomecampo: "nome", direzione: 1}
 
 const GET_DATA = gql`
   query{
@@ -79,16 +79,22 @@ export default function Table({schema}:{schema:Schema}) {
   const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
   const [criteriCerca, setCriteriCerca] = useState<CriterioCerca[]>([])
   const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([criterioStandard, criterioStandard2])
+  const [inputAttivo, setInputAttivo] = useState<object>({})
 
   
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
   if (!data) return [] // cannot really happen
   const rows = data.data
-  
+
+//  function componentDidMount(){
+//    if (inputAttivo) {
+//      inputAttivo.focus()
+//    }
+//  }
 
   function Confronta(campo: string, camporow1: string, camporow2: string): number {
-    const campiStringhe: string[] = ["nome", "cognome"]
+    const campiStringhe: string[] = ["nome", "cognome", "sezione"]
     const campiNumero: string[] = ["classe", "codice", "punteggio"]
     const campiData: string[] = ["data_nascita"]
 
@@ -114,33 +120,64 @@ export default function Table({schema}:{schema:Schema}) {
   }
   
 
-  function ConfrontaCriteri(row1: RowWithId, row2: RowWithId, criteri: CriterioOrd[]): number {
+  function ConfrontaCriteri(row1: RowWithId, row2: RowWithId): number {
     let i: number = 0
     let res: number = 0
 
-    while (i < criteri.length) {
-      res = Confronta(criteri[i].nomecampo, row1[criteri[i].nomecampo] || "", row2[criteri[i].nomecampo] || "")
+    while (i < criteriOrdina.length) {
+      res = Confronta(criteriOrdina[i].nomecampo, row1[criteriOrdina[i].nomecampo] || "", row2[criteriOrdina[i].nomecampo] || "")
       if (! (res == 0)) {
-        return res * criteri[i].direzione
+        return res * criteriOrdina[i].direzione
       }
       i++
     }
     return res
   }
 
-  function TableOrdina(rows: RowWithId[], criteriOrd: CriterioOrd[]): RowWithId[] {
+  function TableOrdina(rows: RowWithId[]): RowWithId[] {
     const rowssort: RowWithId[] = [...rows]
-    rowssort.sort((a: RowWithId, b: RowWithId) => ConfrontaCriteri(a, b, criteriOrd))
+    rowssort.sort((a: RowWithId, b: RowWithId) => ConfrontaCriteri(a, b))
 //    rowssort.unshift(row0)
     return (
-      (criteriOrd.length == 0)? rows : rowssort
+      (criteriOrdina.length == 0)? rows : rowssort
     )
   }
 
-  function aggiornaCriteriCerca(nomecampo: AvailableFields, value: string): boolean {
-    var i
-    let cera = false
-    let critCerca = [...criteriCerca]
+  function CambiaOrdine({ nomecampo } : { nomecampo: AvailableFields} ): void {
+
+    function cambiaOrd() {
+      aggiornaCriteriOrdina(nomecampo)
+    }
+
+    return <span onClick={cambiaOrd}>&plusmn;</span>
+  }
+
+  function aggiornaCriteriOrdina(nomecampo: AvailableFields): void {
+    let i: number
+    let cera: boolean = false
+    const critOrdina: CriterioOrd[] = [...criteriOrdina]
+
+    for (i = 0; i < critOrdina.length; i++) {
+      if (critOrdina[i]["nomecampo"] == nomecampo) {
+        cera = true
+        if (critOrdina[i]["direzione"] > 0) {
+          critOrdina[i]["direzione"] = -1
+          setCriteriOrdina([...critOrdina])
+        } else {
+          setCriteriOrdina([...critOrdina.slice(0,i), ...critOrdina.slice(i + 1)])
+        break
+        }
+      }
+    }
+    if (cera == false) {
+      setCriteriOrdina([...critOrdina, {nomecampo: nomecampo, direzione: 1}])
+    }
+  }
+
+  function aggiornaCriteriCerca(nomecampo: AvailableFields, value: string): void {
+    let i: number
+    let cera: boolean = false
+    const critCerca: CriterioCerca[] = [...criteriCerca]
     for (i = 0; i < critCerca.length; i++) {
       if (critCerca[i]["nomecampo"] == nomecampo) {
         cera = true
@@ -156,59 +193,77 @@ export default function Table({schema}:{schema:Schema}) {
     if (cera == false) {
       setCriteriCerca([...critCerca, {nomecampo: nomecampo, value: value}])
     }
-  return true
   }
 
-//function TableCerca(rows: RowWithId[], criteriCerca: CriterioOrd[]): RowWithId[] {
   function TableCerca(rows: RowWithId[]): RowWithId[] {
-    let rowsOk = [...rows]
+    let rowsOk: RowWithId[] = [...rows]
     if (criteriCerca.length >= 0) {
-      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter((riga) => riga[a.nomecampo].includes(a.value) )})
+      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter(riga => riga[a.nomecampo].includes(a.value) )})
     }
     return rowsOk
   }
 
-  function InputCerca({type, size, value, setValue, width, nomecampo}:{
-    type?: string, 
+  function InputCerca({size, value,// setValue, 
+    width, nomecampo}:{
+    //type?: string, 
     size?: number, 
     value: string, 
     width?: string,
-    setValue?: (value: string) => void
+//    setValue?: (value: string) => void,
     nomecampo: AvailableFields
   }) {
-    void nomecampo 
-    return <> Cerca tra i cognomi &nbsp; <input type={type} width={width} size={size} value={value} onChange={e => {aggiornaCriteriCerca("cognome", e.target.value); setValue && setValue(e.target.value)} } /> </>
+
+    function Battuta(e: React.ChangeEvent<HTMLInputElement>) {
+      aggiornaCriteriCerca(nomecampo as string, e.target.value)
+      setInputAttivo(e.target)
+    }
+
+//    return <><input ref={input => input && input.focus()} type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} nomecampo={nomecampo as string} /> </>
+    return <><input type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} nomecampo={nomecampo as string} /> </>
   }
 
-//  rows = TableOrdina(rows, {numcampo: 0, nomecampo: "cognome", direzione: 1} as CriterioOrd)
-  if (0>1) {
-    setCriteriCerca(criteriCerca => [...criteriCerca, criterioStandard])
-    setCriteriOrdina(criteriOrdina => [...criteriOrdina])
-    const rows2 = TableCerca(rows, criteriCerca)
-    void rows2
-  }
-  const rowsToDisplay = TableCerca(rows, criteriCerca)
-  const rowsDisplay = TableOrdina(rowsToDisplay, criteriOrdina)
+  const rowsToDisplay: RowWithId[] = TableCerca(rows)
+  const rowsDisplay: RowWithId[] = TableOrdina(rowsToDisplay)
 
   return <>
-    <pre>{JSON.stringify(criteriCerca)}</pre>
+    <pre>{JSON.stringify(inputAttivo.id)}</pre>
+    <span>Ordinamento per {criteriOrdina.map(a => a.direzione > 0? a.nomecampo + ":asc" + "  " : a.nomecampo + ":disc").join("  ")}</span>
     <table>
       <thead>
         <tr>
-            {schema.fields.map(field => <th key={field}>{field}</th>)}
-            {schema.answers.map((t, i) => <th key={i}>{i+1}</th>)}
+            {schema.fields.map(field => <th scope="col" key={field}>{field}&nbsp;
+            <CambiaOrdine
+               nomecampo={field}
+            />
+            </th>)
+            }
+            {schema.answers.map((t, i) => <th scope="col" key={i}>{i+1}</th>)}
           <th>punti</th>
+        </tr>
+        <tr>
+            {schema.fields.map(field => <th key={"cerca"+field}>
+            <InputCerca 
+              type="text" 
+              nomecampo={field} 
+              placeholder="cerca" 
+              value={criteriCerca.filter(crit => crit["nomecampo"] == field).length > 0 ? criteriCerca.filter(crit => crit["nomecampo"] == field)[0].value : ""}
+            /></th>)}
+            {schema.answers.map((t, i) => <th key={i}>&nbsp;</th>)}
+          <th>&nbsp;</th>
         </tr>
       </thead>
       <tbody>
         {
-         rowsDisplay.map((row) => row._id === currentRowId 
+          rowsDisplay.map((row) => row._id === currentRowId 
           ? <InputRow schema={schema} key={row._id} row={row} done={() => setCurrentRowId('')}/>
           : <TableRow schema={schema} key={row._id} row={row} onClick={() => setCurrentRowId(row._id)} />
-        )}
-        {currentRowId 
-        ? <tr><td><button onClick={() => setCurrentRowId('')}>nuova riga</button></td></tr>
-        : <InputRow schema={schema}/>}
+          )
+        }
+        {
+          currentRowId 
+          ? <tr><td><button onClick={() => setCurrentRowId('')}>nuova riga</button></td></tr>
+          : <InputRow schema={schema}/>
+        }
       </tbody>
     </table>
     <CsvImport 
@@ -216,7 +271,6 @@ export default function Table({schema}:{schema:Schema}) {
       numeroRisposte={17}
       addRow={csvAddRow}
       />
-    <InputCerca />
   </>
 
   async function csvAddRow(row: string[]) {
