@@ -9,7 +9,7 @@ export interface RowWithId extends DataRow {
 }
 
 type CriterioOrd = {
-  numcampo: number,
+  numcampo?: number,
   nomecampo: AvailableFields,
   direzione: number
 }
@@ -79,7 +79,7 @@ export default function Table({schema}:{schema:Schema}) {
   const [addRow] = useMutation<{ addRow: RowWithId }>(ADD_ROW);
   const [criteriCerca, setCriteriCerca] = useState<CriterioCerca[]>([])
   const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([criterioStandard, criterioStandard2])
-  const [inputAttivo, setInputAttivo] = useState<object>({})
+//  const [inputAttivo, setInputAttivo] = useState<object>({})
 
   
   if (loading) return <div>Loading...</div>
@@ -143,7 +143,7 @@ export default function Table({schema}:{schema:Schema}) {
     )
   }
 
-  function CambiaOrdine({ nomecampo } : { nomecampo: AvailableFields} ): void {
+  function CambiaOrdine({ nomecampo } : { nomecampo: AvailableFields} ) {
 
     function cambiaOrd() {
       aggiornaCriteriOrdina(nomecampo)
@@ -198,7 +198,7 @@ export default function Table({schema}:{schema:Schema}) {
   function TableCerca(rows: RowWithId[]): RowWithId[] {
     let rowsOk: RowWithId[] = [...rows]
     if (criteriCerca.length >= 0) {
-      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter(riga => riga[a.nomecampo].includes(a.value) )})
+      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter(riga => (riga[a.nomecampo]||'').includes(a.value) )})
     }
     return rowsOk
   }
@@ -210,23 +210,23 @@ export default function Table({schema}:{schema:Schema}) {
     value: string, 
     width?: string,
 //    setValue?: (value: string) => void,
-    nomecampo: AvailableFields
+    nomecampo: AvailableFields,
   }) {
 
     function Battuta(e: React.ChangeEvent<HTMLInputElement>) {
-      aggiornaCriteriCerca(nomecampo as string, e.target.value)
-      setInputAttivo(e.target)
+      aggiornaCriteriCerca(nomecampo, e.target.value)
+      //setInputAttivo(e.target)
     }
 
 //    return <><input ref={input => input && input.focus()} type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} nomecampo={nomecampo as string} /> </>
-    return <><input type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} nomecampo={nomecampo as string} /> </>
+    return <input type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} placeholder="cerca"/>
   }
 
   const rowsToDisplay: RowWithId[] = TableCerca(rows)
   const rowsDisplay: RowWithId[] = TableOrdina(rowsToDisplay)
 
   return <>
-    <pre>{JSON.stringify(inputAttivo.id)}</pre>
+    {/*<pre>{JSON.stringify(inputAttivo.id)}</pre>*/}
     <span>Ordinamento per {criteriOrdina.map(a => a.direzione > 0? a.nomecampo + ":asc" + "  " : a.nomecampo + ":disc").join("  ")}</span>
     <table>
       <thead>
@@ -243,9 +243,7 @@ export default function Table({schema}:{schema:Schema}) {
         <tr>
             {schema.fields.map(field => <th key={"cerca"+field}>
             <InputCerca 
-              type="text" 
               nomecampo={field} 
-              placeholder="cerca" 
               value={criteriCerca.filter(crit => crit["nomecampo"] == field).length > 0 ? criteriCerca.filter(crit => crit["nomecampo"] == field)[0].value : ""}
             /></th>)}
             {schema.answers.map((t, i) => <th key={i}>&nbsp;</th>)}
