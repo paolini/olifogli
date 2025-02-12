@@ -93,7 +93,7 @@ export default function Table({schema}:{schema:Schema}) {
 //    }
 //  }
 
-  function Confronta(campo: string, camporow1: string, camporow2: string): number {
+  function confronta(campo: string, camporow1: string, camporow2: string): number {
     const campiStringhe: string[] = ["nome", "cognome", "sezione"]
     const campiNumero: string[] = ["classe", "codice", "punteggio"]
     const campiData: string[] = ["data_nascita"]
@@ -120,12 +120,12 @@ export default function Table({schema}:{schema:Schema}) {
   }
   
 
-  function ConfrontaCriteri(row1: RowWithId, row2: RowWithId): number {
+  function confrontaCriteri(row1: RowWithId, row2: RowWithId): number {
     let i: number = 0
     let res: number = 0
 
     while (i < criteriOrdina.length) {
-      res = Confronta(criteriOrdina[i].nomecampo, row1[criteriOrdina[i].nomecampo] || "", row2[criteriOrdina[i].nomecampo] || "")
+      res = confronta(criteriOrdina[i].nomecampo, row1[criteriOrdina[i].nomecampo] || "", row2[criteriOrdina[i].nomecampo] || "")
       if (! (res == 0)) {
         return res * criteriOrdina[i].direzione
       }
@@ -134,22 +134,13 @@ export default function Table({schema}:{schema:Schema}) {
     return res
   }
 
-  function TableOrdina(rows: RowWithId[]): RowWithId[] {
+  function tableOrdina(rows: RowWithId[]): RowWithId[] {
     const rowssort: RowWithId[] = [...rows]
-    rowssort.sort((a: RowWithId, b: RowWithId) => ConfrontaCriteri(a, b))
+    rowssort.sort((a: RowWithId, b: RowWithId) => confrontaCriteri(a, b))
 //    rowssort.unshift(row0)
     return (
       (criteriOrdina.length == 0)? rows : rowssort
     )
-  }
-
-  function CambiaOrdine({ nomecampo } : { nomecampo: AvailableFields} ) {
-
-    function cambiaOrd() {
-      aggiornaCriteriOrdina(nomecampo)
-    }
-
-    return <span onClick={cambiaOrd}>&plusmn;</span>
   }
 
   function aggiornaCriteriOrdina(nomecampo: AvailableFields): void {
@@ -203,27 +194,8 @@ export default function Table({schema}:{schema:Schema}) {
     return rowsOk
   }
 
-  function InputCerca({size, value,// setValue, 
-    width, nomecampo}:{
-    //type?: string, 
-    size?: number, 
-    value: string, 
-    width?: string,
-//    setValue?: (value: string) => void,
-    nomecampo: AvailableFields,
-  }) {
-
-    function Battuta(e: React.ChangeEvent<HTMLInputElement>) {
-      aggiornaCriteriCerca(nomecampo, e.target.value)
-      //setInputAttivo(e.target)
-    }
-
-//    return <><input ref={input => input && input.focus()} type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} nomecampo={nomecampo as string} /> </>
-    return <input type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} placeholder="cerca"/>
-  }
-
   const rowsToDisplay: RowWithId[] = TableCerca(rows)
-  const rowsDisplay: RowWithId[] = TableOrdina(rowsToDisplay)
+  const rowsDisplay: RowWithId[] = tableOrdina(rowsToDisplay)
 
   return <>
     {/*<pre>{JSON.stringify(inputAttivo.id)}</pre>*/}
@@ -234,6 +206,7 @@ export default function Table({schema}:{schema:Schema}) {
             {schema.fields.map(field => <th scope="col" key={field}>{field}&nbsp;
             <CambiaOrdine
                nomecampo={field}
+               aggiornaCriteriOrdina={aggiornaCriteriOrdina}
             />
             </th>)
             }
@@ -245,6 +218,7 @@ export default function Table({schema}:{schema:Schema}) {
             <InputCerca 
               nomecampo={field} 
               value={criteriCerca.filter(crit => crit["nomecampo"] == field).length > 0 ? criteriCerca.filter(crit => crit["nomecampo"] == field)[0].value : ""}
+              aggiornaCriteriCerca={aggiornaCriteriCerca}
             /></th>)}
             {schema.answers.map((t, i) => <th key={i}>&nbsp;</th>)}
           <th>&nbsp;</th>
@@ -298,6 +272,35 @@ export default function Table({schema}:{schema:Schema}) {
     });
 
    }
+}
+
+function InputCerca({size, value, aggiornaCriteriCerca, // setValue, 
+  width, nomecampo}:{
+  //type?: string, 
+  size?: number, 
+  value: string, 
+  width?: string,
+//    setValue?: (value: string) => void,
+  nomecampo: AvailableFields,
+  aggiornaCriteriCerca: (nomecampo: AvailableFields, value: string) => void
+}) {
+
+  function Battuta(e: React.ChangeEvent<HTMLInputElement>) {
+    aggiornaCriteriCerca(nomecampo, e.target.value)
+    //setInputAttivo(e.target)
+  }
+
+//    return <><input ref={input => input && input.focus()} type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} nomecampo={nomecampo as string} /> </>
+  return <input type="text" size={value == ""? 1 : value.length + 1} value={value} onChange={Battuta} placeholder="cerca"/>
+}
+
+
+
+function CambiaOrdine({ nomecampo, aggiornaCriteriOrdina } : { 
+  nomecampo: AvailableFields,
+  aggiornaCriteriOrdina: (nomecampo: AvailableFields) => void
+} ) {
+return <span onClick={() => aggiornaCriteriOrdina(nomecampo)}>&plusmn;</span>
 }
 
 function TableRow({schema, row, onClick}: {
