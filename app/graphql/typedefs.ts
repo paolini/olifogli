@@ -47,5 +47,7 @@ export const typeDefs = gql`
     addRow(sheetId: ObjectId, cognome: String, nome: String, classe: String, sezione: String, scuola: String, dataNascita: String, risposte: [String]): Row
     patchRow(_id: ObjectId, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, dataNascita: String, risposte: [String]): Row
     deleteRow(_id: ObjectId): ObjectId
+    
+    addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
   }
 `

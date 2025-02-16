@@ -1,10 +1,12 @@
 import { getDb } from '@/app/lib/mongodb';
-import { getUsersCollection, getSheetsCollection, getRowsCollection } from '@/app/lib/models';
+import { getUsersCollection, getSheetsCollection, getRowsCollection, Row } from '@/app/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';
 import { schemas, AvailableSchemas } from '@/app/lib/schema';
 import { ObjectIdType, Timestamp } from './types';
 import { Info } from '@/app/lib/models'
+
+import { test } from '@/app/lib/olimanager';
 
 // Definizione dei resolver
 export const resolvers = {
@@ -58,7 +60,6 @@ export const resolvers = {
       const sheet = await sheetsCollection.findOne({_id: payload.sheetId})
       if (!sheet) throw Error(`invalid sheetId ${payload.sheetId}`)
       const schema = schemas[sheet.schema]
-      const rowsCollection = await getRowsCollection();
       const createdOn = new Date();
       const updatedOn = createdOn;
       const createdBy = context.userId;
@@ -67,6 +68,7 @@ export const resolvers = {
       const cleaned = schema.clean(payload)
       const isValid = schema.isValid(cleaned); // TODO compute this!
       const punti = schema.computeScore(cleaned);
+      const rowsCollection = await getRowsCollection();
       const result = await rowsCollection.insertOne({ 
         ...cleaned, 
         sheetId: payload.sheetId, 
@@ -104,11 +106,45 @@ export const resolvers = {
     },
 
     deleteRow: async (_: unknown, { _id }: { _id: ObjectId }) => {
-      const db = await getDb();
-      const collection = db.collection('rows');
+      const collection = await getRowsCollection() 
       await collection.deleteOne({ _id });
       return _id;
     },
+
+    addRows: async (_: unknown, {sheetId, columns, rows}: { 
+      sheetId: ObjectId,
+      columns: string[],
+      nAnswers: number,
+      rows: string[][]
+    }, context: Context) => {
+      const sheetsCollection = await getSheetsCollection();
+      const sheet = await sheetsCollection.findOne({_id: sheetId})
+      if (!sheet) throw Error(`invalid sheetId ${sheetId}`)
+      const schema = schemas[sheet.schema]
+      const createdOn = new Date()
+      const createdBy = context.userId;
+      const updatedOn = createdOn
+      const updatedBy = createdBy
+      const objectRows = rows.map(row => ({
+          ...Object.fromEntries(columns.map((column,i)=>[column,row[i]])),
+          risposte: row.slice(columns.length)}))
+      const validatedRows: Row[] = objectRows
+        .map(row => schema.clean(row as Row))
+        .map(row => ({
+          ...row, 
+          isValid: schema.isValid(row),
+          punti: schema.computeScore(row), 
+          sheetId,
+          createdBy,
+          createdOn,
+          updatedBy,
+          updatedOn,
+          }))
+      const collection = await getRowsCollection();
+      const res = await collection.insertMany(validatedRows);
+      return res.insertedCount;
+    }
+
   },
 
   Timestamp,

@@ -18,6 +18,14 @@
   }
 }
 
+.bg-error {
+  background: var(--error)
+}
+
+.bg-alert {
+  background: var(--alert)
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -54,6 +62,11 @@ tr.alert {
 
 th {
   text-align: left;
+}
+
+td {
+  overflow: hidden; 
+  text-overflow: ellipsis;
 }
 
 .schema-cognome, .schema-cognome input {

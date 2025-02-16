@@ -195,6 +195,9 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
 
   return <>
     {/*<pre>{JSON.stringify(inputAttivo.id)}</pre>*/}
+    <span>{rows.length} righe</span>
+    {rowsDisplay.length < rows.length && <span>({rowsDisplay.length} visualizzate)</span>}
+    <br />
     <span>Ordinamento per {criteriOrdina.map(a => a.direzione > 0? a.nomecampo + ":asc" + "  " : a.nomecampo + ":disc").join("  ")}</span>
     <table>
       <thead>
@@ -270,7 +273,7 @@ function CambiaOrdine({ nomecampo, aggiornaCriteriOrdina } : {
   nomecampo: AvailableFields,
   aggiornaCriteriOrdina: (nomecampo: AvailableFields) => void
 } ) {
-return <span onClick={() => aggiornaCriteriOrdina(nomecampo)}>&plusmn;</span>
+return <span style={{cursor: "pointer"}} onClick={() => aggiornaCriteriOrdina(nomecampo)}>&plusmn;</span>
 }
 
 function TableRow({schema, row, onClick}: {
@@ -281,7 +284,6 @@ function TableRow({schema, row, onClick}: {
   const className = `clickable${row.isValid ? "" : " alert"}`
 
   return <tr className={className} onClick={() => onClick && onClick()}>
-    {/*<td><pre>{JSON.stringify({row})}</pre></td>*/}
     { schema.fields.map(field => <td className={`schema-${field}`} key={field}>{row[field]}</td>) }
     { schema.answers.map((answerType,i) => 
       <td className={`schema-${answerType}`} key={i} style={{width: "8ex"}}>{row.risposte[i]}</td>)}

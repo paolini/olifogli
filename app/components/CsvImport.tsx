@@ -1,11 +1,19 @@
 "use client"
 import Papa from "papaparse";
 import { useState } from "react";
-import { gql, StoreObject, useMutation } from "@apollo/client"
-import { ADD_ROW } from "./Table";
-import { schemas, AvailableSchemas, availableFields } from "../lib/schema";
+import { gql, useApolloClient, useMutation } from "@apollo/client"
+import { schemas, AvailableSchemas } from "../lib/schema";
+import Error from './Error'
 
 //import { Distrettuale } from '@/lib/schema'
+const ADD_ROWS = gql`
+    mutation addRows(
+        $sheetId: ObjectId!, 
+        $columns: [String!]!,
+        $rows: [[String!]!]!
+    ) {
+        addRows(sheetId: $sheetId, columns: $columns, rows: $rows) 
+    }`
 
 interface CSVRow {
   [key: string]: string;
@@ -18,11 +26,22 @@ export default function CsvImport({schemaName, sheetId}:{
   const schema = schemas[schemaName]
   const columns = schema.fields;
   const numeroRisposte = 17;
-  const [addRow] = useMutation<{ addRow: StoreObject }>(ADD_ROW);
+  const client = useApolloClient();
+  const [addRows] = useMutation(ADD_ROWS);
   const [data, setData] = useState<string[][]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  return <div className="p-4 border rounded-lg shadow-md">
+      Caricamento di dati tramite file CSV  &nbsp; &nbsp;
+      <input type="file" disabled={data.length>0} accept=".csv" onChange={handleFileUpload} className="mb-2" />
+      { error && <Error error={error} />}
+      <br />
+      { data.length > 0 
+        && <CsvTable data={data} columns={columns} numeroRisposte={numeroRisposte} setData={setData} importRows={importRows}/>
+        }
+  </div>
+
+  function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -38,60 +57,40 @@ export default function CsvImport({schemaName, sheetId}:{
     });
   };
 
-  return <div className="p-4 border rounded-lg shadow-md">
-      Caricamento di dati tramite file CSV  &nbsp; &nbsp;
-      <input type="file" accept=".csv" onChange={handleFileUpload} className="mb-2" />
-      { error && <div className="text-red-500">{error}</div>}
-      <br />
-      { data.length > 0 && <CsvTable data={data} columns={columns} numeroRisposte={numeroRisposte} setData={setData} importRow={importRow}/>}
-  </div>
-
-  async function importRow(row: string[]) {
-    const data = {
-    ...Object.fromEntries(schema.fields.map((f,i) => [f,row[i]])),
-    sheetId,
-    risposte: row.slice(6)
+  async function importRows(rows: string[][]): Promise<number> {
+    const variables = {
+        sheetId,
+        columns,
+        nAnswers: numeroRisposte,
+        rows,
     }
 
-    await addRow({
-        variables: data,
-        update(cache, { data }) {
-            if (!data) return;          
-            const newRow = data.addRow;        
-            cache.modify({
-            fields: {
-                rows(existingRows = [], { readField }) {
-                // Controlla se la riga è già presente per evitare duplicati
-                if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
-                    return existingRows;
-                }
-                return [...existingRows, cache.writeFragment({
-                    id: cache.identify(newRow),
-                    fragment: gql`
-                    fragment NewRow on RowWithId {
-                        _id
-                        __typename
-                        ${availableFields.join('\n')}
-                        risposte
-                    }
-                    `,
-                    data: newRow
-                })];
-                },
-            },
-            });
+    try {
+        const res = await addRows({variables});
+        
+        if (!res.data) {
+            console.log(`res.data`, res.errors);
+            if (res.errors) setError(res.errors?.map(e => `${e}`).join(', '))
+            else setError(`Qualcosa è andato storto`)
+            return 0
         }
-    });
-    }
-  
+        await client.reFetchObservableQueries();
+        setData([]);
+        return res.data.addRow;
+    } catch(error) {
+        setError(`${error}`)
+        return 0
+    }    
+    
+  }
 }
 
-function CsvTable({data, columns, numeroRisposte, setData, importRow}: {
+function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
     data: string[][],
     columns: string[],
     numeroRisposte: number,
     setData: (data: string[][]) => void,
-    importRow: (row: string[]) => Promise<void>
+    importRows: (rows: string[][]) => Promise<number>
 }) {
     const [action, setAction] = useState<'move'|'delete'|'deleteRow'|'done'|'busy'>('move')
     const [selectedFirstCol, setSelectedFirstCol] = useState<number>(-1)
@@ -162,14 +161,7 @@ function CsvTable({data, columns, numeroRisposte, setData, importRow}: {
 
     async function doImport() {
         setAction('busy')
-        while (true) {
-            const row = data.shift()
-            if (row === undefined) break
-            // bisognerebbe chiamare il metodo isValid della gara giusta
-            //if (! Distrettuale.isValid(row)) break
-            await importRow(row)
-            setData(data)
-        }
+        const res = await importRows(data.map(row => row.slice(0,columns.length)))
         setAction('done')
     }
 
