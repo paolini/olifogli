@@ -36,7 +36,12 @@ export const resolvers = {
         const collection = await getRowsCollection();
         const results = await collection.find({sheetId}).toArray();
         return results
-    }
+    },
+
+    olimanager: async (_: unknown) => {
+        return await test()
+    },
+
   },
 
   Mutation: {

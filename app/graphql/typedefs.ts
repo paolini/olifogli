@@ -38,6 +38,7 @@ export const typeDefs = gql`
     sheet: Sheet
     rows(sheetId: ObjectId): [Row]
     me: User
+    olimanager: String
   }
 
   type Mutation {
