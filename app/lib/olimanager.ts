@@ -1,4 +1,4 @@
-const { gql, request, GraphQLClient } = require('graphql-request');
+import { gql, request, GraphQLClient } from 'graphql-request';
 
 const payload = {
     "operationName":"SubscriptionsTable",
@@ -134,6 +134,7 @@ export async function test() {
         healtCheck
     }`
     const URL = process.env.OLIMANAGER_GRAPHQL
+    if (!URL) throw new Error("OLIMANAGER_GRAPHQL not set")
     console.log(`query ${URL}`)
     const data = await request(URL, document)
     console.log(data)
