@@ -17,6 +17,8 @@ export const typeDefs = gql`
     isValid: Boolean
     punti: String
     updatedOn: Timestamp
+    id: String
+    zona: String
     cognome: String
     nome: String
     classe: String

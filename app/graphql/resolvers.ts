@@ -1,4 +1,3 @@
-import { getDb } from '@/app/lib/mongodb';
 import { getUsersCollection, getSheetsCollection, getRowsCollection, Row } from '@/app/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';

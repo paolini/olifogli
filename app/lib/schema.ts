@@ -1,7 +1,7 @@
 import { calcolaPunteggio } from "./answers"
 import { Info } from "./models"
 
-export const availableFields = ["cognome", "nome", "classe", "sezione", "scuola", "dataNascita"] as const
+export const availableFields = ["id","zona","cognome", "nome", "classe", "sezione", "scuola", "dataNascita"] as const
 export type AvailableFields = (typeof availableFields)[number]
 
 export const availableAnswers = ["choice", "number", "score"]
@@ -51,6 +51,32 @@ export class Schema {
     }
 }
 
+export class Archimede extends Schema {
+    params: string
+
+    constructor(params: string='{}') {
+        super(
+            [   "cognome", "nome", "dataNascita", 
+                "classe", "sezione", "scuola"],
+            [   "choice", "choice", "choice", "choice", 
+                "choice", "choice", "choice", "choice", 
+                "choice", "choice", "choice", "choice", ])
+        this.params = params
+    }
+
+    computeScore(row: DataRow): string {
+        return `${calcolaPunteggio(row.risposte)}`
+    }
+
+    // da integrare con un set di condizioni completo
+    isValid(row: DataRow): boolean {
+        if (row.risposte.includes("")) return false
+        if (row.cognome == "") return false
+        if (row.nome == "") return false
+        return true
+    } 
+}
+
 export class Distrettuale extends Schema {
     params: string
 
@@ -78,8 +104,36 @@ export class Distrettuale extends Schema {
     } 
 }
 
+export class AmmissioneSenior extends Schema {
+    params: string
+
+    constructor(params: string='{}') {
+        super(
+            [   "id", "zona", "cognome", "nome", "scuola" ],
+            [   "choice", "choice", "choice", "choice", 
+                "choice", "choice", "choice", "choice", 
+                "choice", "choice", "choice", "choice", 
+                "number", "number", "score", "score", "score"])
+        this.params = params
+    }
+
+    computeScore(row: DataRow): string {
+        return `${calcolaPunteggio(row.risposte)}`
+    }
+
+    // da integrare con un set di condizioni completo
+    isValid(row: DataRow): boolean {
+        if (row.risposte.includes("")) return false
+        if (row.cognome == "") return false
+        if (row.nome == "") return false
+        return true
+    } 
+}
+
 export const schemas = {
-    "distrettuale": new Distrettuale()
+    "archimede": new Archimede(),
+    "distrettuale": new Distrettuale(),
+    "ammissioneSenior": new AmmissioneSenior(),
 }
 
 export type AvailableSchemas = keyof typeof schemas

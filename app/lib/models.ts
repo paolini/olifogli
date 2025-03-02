@@ -26,6 +26,8 @@ export async function getSheetsCollection() {
 }
 
 export type Info = {
+    id: string;
+    zona: string;
     cognome: string;
     nome: string;
     classe: string;

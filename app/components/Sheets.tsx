@@ -94,20 +94,28 @@ function SheetForm({}) {
         refetchQueries: [{query: GET_SHEETS}]
     });
     const [name, setName] = useState('');
+    const [schema, setSchema] = useState('');
 
     if (error) return <div className="error">Errore: {error.message}</div>;
 
     return <div>
+        <select name="schema" value={schema} onChange={e => setSchema(e.target.value)}>
+            <option value="">Scegli uno schema</option>
+            <option value="distrettuale">Distrettuale</option>
+            <option value="archimede">Archimede</option>
+            <option value="ammissioneSenior">Ammissione Senior</option>
+        </select>
         <Input value={name} setValue={setName}/>
-        <button disabled={loading} onClick={create}>Crea</button>
+        <button disabled={loading||schema==""||name==""} onClick={create}>Crea</button>
     </div>;
 
     async function create() {
         await addSheet({variables: {
             name,
-            schema: "distrettuale",
+            schema: schema,
             params: "{}"
         }});
         setName('');
+        setSchema('');
     }
 }

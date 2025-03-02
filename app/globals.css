@@ -69,6 +69,14 @@ td {
   text-overflow: ellipsis;
 }
 
+.schema-id, .schema-id input {
+  max-width: 5ex;
+}
+
+.schema-zona, .schema-zona input {
+  max-width: 10ex;
+}
+
 .schema-cognome, .schema-cognome input {
   max-width: 16ex;
 }

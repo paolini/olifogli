@@ -26,6 +26,7 @@ export default function CsvImport({schemaName, sheetId}:{
   const schema = schemas[schemaName]
   const columns = schema.fields;
   const numeroRisposte = 17;
+  const [delimiter, setDelimiter] = useState<string>('')
   const client = useApolloClient();
   const [addRows] = useMutation(ADD_ROWS);
   const [data, setData] = useState<string[][]>([])
@@ -33,7 +34,20 @@ export default function CsvImport({schemaName, sheetId}:{
 
   return <div className="p-4 border rounded-lg shadow-md">
       Caricamento di dati tramite file CSV  &nbsp; &nbsp;
-      <input type="file" disabled={data.length>0} accept=".csv" onChange={handleFileUpload} className="mb-2" />
+        <input type="file" 
+            disabled={data.length>0} 
+            accept=".csv" 
+            onChange={handleFileUpload} 
+            className="mb-2"         
+            onClick={event => { (event.target as HTMLInputElement).value = '' }}
+        />
+        {} Delimitatore:
+        <select value={delimiter} onChange={(e) => setDelimiter(e.target.value)}>
+            <option value="">detect</option>
+            <option value="\t">tab</option>
+            <option value=",">comma</option>
+            <option value=";">semicolon</option>
+        </select>  
       { error && <Error error={error} />}
       <br />
       { data.length > 0 
@@ -46,6 +60,7 @@ export default function CsvImport({schemaName, sheetId}:{
     if (!file) return;
 
     Papa.parse<CSVRow>(file, {
+      delimiter: delimiter,
       header: false, // Se il CSV ha intestazioni
       skipEmptyLines: true,
       complete: (result) => {
@@ -92,19 +107,26 @@ function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
     setData: (data: string[][]) => void,
     importRows: (rows: string[][]) => Promise<number>
 }) {
-    const [action, setAction] = useState<'move'|'delete'|'deleteRow'|'done'|'busy'>('move')
+    const actions = {
+        done: 'Procedi con l\'importazione',
+        move: 'Sposta colonna',
+        delete: 'Elimina colonna',
+        deleteRow: 'Elimina riga',
+        cancel: 'Annulla importazione',
+    }
+    type Action = keyof typeof actions
+    const [action, setAction] = useState<Action|'busy'>('move')
     const [selectedFirstCol, setSelectedFirstCol] = useState<number>(-1)
     const [selectedLastCol, setSelectedLastCol] = useState<number>(-1)
     const allColumns = [...columns, ...Array.from({length: numeroRisposte}, (_, i) => i+1)]
-  
+    const hideFrom = data.length>200 ? 100 : data.length
+    const hideTo = data.length>200 ? data.length-100 : 0
+
     return <>
         Numero righe: <b>{data.length}</b>
         <br/>
-        <select disabled={action==="busy"} value={action} onChange={(e) => setAction(e.target.value as 'move'|'delete')}>
-            <option value="done">Procedi con l&apos;importazione</option>
-            <option value="move">Sposta colonna</option>
-            <option value="delete">Elimina colonna</option>
-            <option value="deleteRow">Elimina riga</option>
+        <select disabled={action==="busy"} value={action} onChange={(e) => setAction(e.target.value as Action)}>
+            {Object.entries(actions).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
         </select> {}
         { action==="move" && selectedFirstCol < 0 && <b>Seleziona la colonna da spostare</b>}
         { action==="move" && selectedFirstCol >= 0 && <b>Seleziona la colonna di destinazione</b> }
@@ -112,6 +134,7 @@ function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
         { action==="delete" && <b>Seleziona la colonna da eliminare</b>}
         { action==="deleteRow" && <b>Seleziona la riga da eliminare</b>}
         { action==="done" && <button onClick={doImport}>importa i dati</button>}
+        { action==="cancel" && <button onClick={() => setData([])}>Annulla importazione</button>}
         <table><thead>
             <tr>
                 { action==="deleteRow" && <th></th>}
@@ -129,12 +152,15 @@ function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
             </tr>
         </thead>
         <tbody>
-            {data.map((row, index) => <tr key={index}>
-                { action==="deleteRow" && <td><button onClick={() => setData(data.filter((_, i) => i !== index))}>elimina</button></td>}
-                {row.map((value, index) => (
-                    <td key={index} style={{backgroundColor: ((selectedFirstCol <= index && index <= selectedLastCol) ? "#f3ff7a":"")}}>{value}</td>
-                ))}
-            </tr>)}
+            {data.map((row, index) => (index<hideFrom || index>=hideTo) 
+                ? <tr key={index}>
+                    { action==="deleteRow" && <td><button onClick={() => setData(data.filter((_, i) => i !== index))}>elimina</button></td>}
+                    {row.map((value, index) => (
+                        <td key={index} style={{backgroundColor: ((selectedFirstCol <= index && index <= selectedLastCol) ? "#f3ff7a":"")}}>{value}</td>
+                    ))}
+                </tr>
+                : (index===hideFrom && <tr key={index}><td colSpan={columns.length + numeroRisposte}>...</td></tr>)    
+            )}
         </tbody>
         </table>
     </>
