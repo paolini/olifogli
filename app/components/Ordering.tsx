@@ -68,12 +68,10 @@ export function InputCerca({field, type, criteria, size}:{
 }
 
 function tableOrdina(criteriOrdina: CriterioOrd[], rows: WithId<Row>[]): WithId<Row>[] {
+    if (criteriOrdina.length == 0) return rows
     const rowssort: WithId<Row>[] = [...rows]
     rowssort.sort((a: WithId<Row>, b: WithId<Row>) => confrontaCriteri(criteriOrdina, a, b))
-//    rowssort.unshift(row0)
-    return (
-      (criteriOrdina.length == 0)? rows : rowssort
-    )
+    return rowssort
   }
 
 function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2: WithId<Row>): number {
@@ -81,7 +79,7 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
     let res: number = 0
 
     while (i < criteriOrdina.length) {
-      res = confronta(criteriOrdina[i].nomecampo, row1.data[criteriOrdina[i].nomecampo] || "", row2.data[criteriOrdina[i].nomecampo] || "")
+      res = confronta(criteriOrdina[i].nomecampo, row1?.data[criteriOrdina[i].nomecampo] || "", row2?.data[criteriOrdina[i].nomecampo] || "")
       if (! (res == 0)) {
         return res * criteriOrdina[i].direzione
       }
