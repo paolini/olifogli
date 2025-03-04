@@ -3,7 +3,8 @@ import { ObjectId } from 'mongodb';
 import { Context } from './types';
 import { schemas, AvailableSchemas } from '@/app/lib/schema';
 import { ObjectIdType, Timestamp } from './types';
-import { Info } from '@/app/lib/models'
+import { Data } from '@/app/lib/models';
+import { GraphQLJSON } from "graphql-type-json";
 
 import { test } from '@/app/lib/olimanager';
 
@@ -56,57 +57,50 @@ export const resolvers = {
       return _id;
     },
 
-    addRow: async (_: unknown, payload: Info & { 
-        sheetId: ObjectId,
-        risposte: string[] 
-      }, context: Context) => {
+    addRow: async (_: unknown, {sheetId, data}: {sheetId: ObjectId, data: Data}, context: Context) => {
       const sheetsCollection = await getSheetsCollection();
-      const sheet = await sheetsCollection.findOne({_id: payload.sheetId})
-      if (!sheet) throw Error(`invalid sheetId ${payload.sheetId}`)
+      const sheet = await sheetsCollection.findOne({_id: sheetId})
+      if (!sheet) throw Error(`invalid sheetId ${sheetId}`)
       const schema = schemas[sheet.schema]
       const createdOn = new Date();
       const updatedOn = createdOn;
       const createdBy = context.userId;
       const updatedBy = createdBy;
       // TODO: check if user can write to sheetId
-      const cleaned = schema.clean(payload)
-      const isValid = schema.isValid(cleaned); // TODO compute this!
-      const punti = schema.computeScore(cleaned);
+      data = schema.clean(data)
+      const isValid = schema.isValid(data); // TODO compute this!
       const rowsCollection = await getRowsCollection();
       const result = await rowsCollection.insertOne({ 
-        ...cleaned, 
-        sheetId: payload.sheetId, 
+        data, 
+        sheetId, 
         isValid, 
-        punti,
         updatedOn, updatedBy, createdOn, createdBy,
        });
       return await rowsCollection.findOne({ _id: result.insertedId });
     },
 
-    patchRow: async (_: unknown, payload: Info & {
+    patchRow: async (_: unknown, {_id, updatedOn, data}: {
         _id: ObjectId,
         updatedOn: Date,
-        risposte: string[] }, context: Context) => {
+        data: Data }, context: Context) => {
       const rowsCollection = await getRowsCollection();
-      const row = await rowsCollection.findOne({ _id: payload._id });
+      const row = await rowsCollection.findOne({ _id });
       if (!row) throw new Error('Row not found');
       const sheetsCollection = await getSheetsCollection();
       const sheet = await sheetsCollection.findOne({_id: row.sheetId})
       if (!sheet) throw new Error('Sheet not found')
       const schema = schemas[sheet.schema]
-      if (row.updatedOn && row.updatedOn.getTime() !== payload.updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
-      const cleaned = schema.clean(payload)
-      const isValid = schema.isValid(cleaned)
-      const punti = schema.computeScore(cleaned)
+      if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
+      data = schema.clean(data)
+      const isValid = schema.isValid(data)
       const $set = {
-        ...cleaned,
+        data,
         isValid,
-        punti,
         updatedOn: new Date(),
         updatedBy: context.userId,
       }
-      await rowsCollection.updateOne({ _id: payload._id }, { $set });
-      return await rowsCollection.findOne({ _id: payload._id });
+      await rowsCollection.updateOne({ _id }, { $set });
+      return await rowsCollection.findOne({ _id });
     },
 
     deleteRow: async (_: unknown, { _id }: { _id: ObjectId }) => {
@@ -130,14 +124,12 @@ export const resolvers = {
       const updatedOn = createdOn
       const updatedBy = createdBy
       const objectRows = rows.map(row => ({
-          ...Object.fromEntries(columns.map((column,i)=>[column,row[i]])),
-          risposte: row.slice(columns.length)}))
+          ...Object.fromEntries(columns.map((column,i)=>[column,row[i]]))}))
       const validatedRows: Row[] = objectRows
-        .map(row => schema.clean(row as Row))
-        .map(row => ({
-          ...row, 
-          isValid: schema.isValid(row),
-          punti: schema.computeScore(row), 
+        .map(row => schema.clean(row as Data))
+        .map(data => ({
+          data, 
+          isValid: schema.isValid(data),
           sheetId,
           createdBy,
           createdOn,
@@ -153,5 +145,6 @@ export const resolvers = {
 
   Timestamp,
   ObjectId: ObjectIdType,
+  JSON: GraphQLJSON,
 };
 

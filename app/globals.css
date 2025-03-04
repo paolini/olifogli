@@ -62,6 +62,8 @@ tr.alert {
 
 th {
   text-align: left;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 td {
@@ -101,14 +103,19 @@ td {
   max-width: 20ex;
 }
 
-.schema-choice, .schema-choice input {
-  max-width: 2ex;
-}
-
-.schema-number, .schema-number input {
+.type-ChoiceAnswer, .type-ChoiceAnswer input {
   max-width: 3ex;
 }
 
-.schema-score, .schema-score input {
-  max-width: 3ex;
+.type-NumberAnswer, .type-NumberAnswer input {
+  max-width: 4ex;
 }
+
+.type-ScoreAnswer, .type-ScoreAnswer input {
+  max-width: 4ex;
+}
+
+.schema-punti, .schema-punti input {
+  max-width: 4ex;
+}
+

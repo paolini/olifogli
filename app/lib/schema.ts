@@ -1,78 +1,85 @@
-import { calcolaPunteggio } from "./answers"
-import { Info } from "./models"
+import { Data } from "@/app/lib/models";
 
-export const availableFields = ["id","zona","cognome", "nome", "classe", "sezione", "scuola", "dataNascita"] as const
-export type AvailableFields = (typeof availableFields)[number]
+const Id = "Id"
+const Zona = "Zona"
+const Codice = "Codice"
+const Cognome = "Cognome"
+const Nome = "Nome"
+const Classe = "Classe"
+const Sezione = "Sezione"
+const Scuola = "Scuola"
+const DataNascita = "DataNascita"
+const ChoiceAnswer = "ChoiceAnswer"
+const NumberAnswer = "NumberAnswer"
+const ScoreAnswer = "ScoreAnswer"
+const Computed = "Computed"
+const Frozen = "Frozen"
 
-export const availableAnswers = ["choice", "number", "score"]
-export type AvailableAnswers = (typeof availableAnswers)[number]
-
-export type DataRow = Info & {
-//    sheetId: string;
-//    updatedOn: string;
-    risposte: string[];
-}
-
-const emptyInfo: Info =  {
-    ...Object.fromEntries(availableFields.map(f => [f,''])),
-} as Info;
+type Fields = Data
 
 export class Schema {
-    fields: AvailableFields[] = [];
-    answers: AvailableAnswers[] = [];
+    fields: Fields
     
-    constructor(fields: AvailableFields[], answers: AvailableAnswers[]) {
+    constructor(fields: Fields) {
         this.fields = fields;
-        this.answers = answers;
     }
 
-    clean(data: DataRow): DataRow {
-        const cleaned: DataRow = {
-            ...emptyInfo,
-            risposte: [],
-        }
-        for (const field of this.fields) {
-            cleaned[field] = data[field] || ""
-        }
-        this.answers.forEach((answer, i) => {
-            cleaned.risposte[i] = data.risposte[i] || ""
-        })
+    clean(data: Data): Data {
+        const cleaned: Data = Object.fromEntries(Object.entries(this.fields).map(([field, type]) => [field, data[field] || ""]))
         return cleaned
     }
 
-    computeScore(row: DataRow): string {
-        void row // unused
-        return "???" // implemented in derived class
-    }
-
-    isValid(row: DataRow): boolean {
-        void row // unused
-        return false // implemented in derived class
-    }
+    // da integrare con un set di condizioni completo
+    isValid(row: Data): boolean {
+        Object.entries(this.fields).map(([field, type]) => {
+            if (type !== Computed && row[field] == "") return false
+        })
+        return true
+    } 
 }
 
 export class Archimede extends Schema {
     params: string
 
     constructor(params: string='{}') {
-        super(
-            [   "cognome", "nome", "dataNascita", 
-                "classe", "sezione", "scuola"],
-            [   "choice", "choice", "choice", "choice", 
-                "choice", "choice", "choice", "choice", 
-                "choice", "choice", "choice", "choice", ])
+        super({
+            codice: Codice,
+            cognome: Cognome,
+            nome: Nome,
+            dataNascita: DataNascita,
+            classe: Classe,
+            sezione: Sezione,
+            scuola: Scuola,
+            r01: ChoiceAnswer,
+            r02: ChoiceAnswer,
+            r03: ChoiceAnswer,
+            r04: ChoiceAnswer,
+            r05: ChoiceAnswer,
+            r06: ChoiceAnswer,
+            r07: ChoiceAnswer,
+            r08: ChoiceAnswer,
+            r09: ChoiceAnswer,
+            r10: ChoiceAnswer,
+            r11: ChoiceAnswer,
+            r12: ChoiceAnswer,
+            punti: Computed,
+        })
         this.params = params
     }
 
-    computeScore(row: DataRow): string {
-        return `${calcolaPunteggio(row.risposte)}`
+    clean(data: Data): Data {
+        const cleaned: Data = Object.fromEntries(Object.entries(this.fields).map(([field, type]) => [field, data[field] || ""]))
+        return {
+            ...cleaned,
+            punti: "???" // da calcolare in base al codice e alle permutazioni
+        }
     }
 
     // da integrare con un set di condizioni completo
-    isValid(row: DataRow): boolean {
-        if (row.risposte.includes("")) return false
-        if (row.cognome == "") return false
-        if (row.nome == "") return false
+    isValid(row: Data): boolean {
+        Object.entries(this.fields).map(([field, type]) => {
+            if (type !== Computed && row[field] == "") return false
+        })
         return true
     } 
 }
@@ -81,53 +88,66 @@ export class Distrettuale extends Schema {
     params: string
 
     constructor(params: string='{}') {
-        super(
-            [   "cognome", "nome", "dataNascita", 
-                "classe", "sezione", "scuola"],
-            [   "choice", "choice", "choice", "choice", 
-                "choice", "choice", "choice", "choice", 
-                "choice", "choice", "choice", "choice", 
-                "number", "number", "score", "score", "score"])
+        super({
+            cognome: Frozen,
+            nome: Frozen,
+            classe: Frozen,
+            sezione: Frozen,
+            scuola: Frozen,
+            r01: ChoiceAnswer,
+            r02: ChoiceAnswer,
+            r03: ChoiceAnswer,
+            r04: ChoiceAnswer,
+            r05: ChoiceAnswer,
+            r06: ChoiceAnswer,
+            r07: ChoiceAnswer,
+            r08: ChoiceAnswer,
+            r09: ChoiceAnswer,
+            r10: ChoiceAnswer,
+            r11: ChoiceAnswer,
+            r12: ChoiceAnswer,
+            r13: NumberAnswer,
+            r14: NumberAnswer,
+            r15: ScoreAnswer,
+            r16: ScoreAnswer,
+            r17: ScoreAnswer,
+            punti: Computed,
+        })
         this.params = params
     }
-
-    computeScore(row: DataRow): string {
-        return `${calcolaPunteggio(row.risposte)}`
-    }
-
-    // da integrare con un set di condizioni completo
-    isValid(row: DataRow): boolean {
-        if (row.risposte.includes("")) return false
-        if (row.cognome == "") return false
-        if (row.nome == "") return false
-        return true
-    } 
 }
 
 export class AmmissioneSenior extends Schema {
     params: string
 
     constructor(params: string='{}') {
-        super(
-            [   "id", "zona", "cognome", "nome", "scuola" ],
-            [   "choice", "choice", "choice", "choice", 
-                "choice", "choice", "choice", "choice", 
-                "choice", "choice", "choice", "choice", 
-                "number", "number", "score", "score", "score"])
+        super({
+            id: Id,
+            zona: Zona,
+            cognome: Frozen,
+            nome: Frozen,
+            scuola: Frozen,
+            r01: ChoiceAnswer,
+            r02: ChoiceAnswer,
+            r03: ChoiceAnswer,
+            r04: ChoiceAnswer,
+            r05: ChoiceAnswer,
+            r06: ChoiceAnswer,
+            r07: ChoiceAnswer,
+            r08: ChoiceAnswer,
+            r09: ChoiceAnswer,
+            r10: ChoiceAnswer,
+            r11: ChoiceAnswer,
+            r12: ChoiceAnswer,
+            r13: NumberAnswer,
+            r14: NumberAnswer,
+            r15: ScoreAnswer,
+            r16: ScoreAnswer,
+            r17: ScoreAnswer,
+            punti: Computed,
+        })
         this.params = params
     }
-
-    computeScore(row: DataRow): string {
-        return `${calcolaPunteggio(row.risposte)}`
-    }
-
-    // da integrare con un set di condizioni completo
-    isValid(row: DataRow): boolean {
-        if (row.risposte.includes("")) return false
-        if (row.cognome == "") return false
-        if (row.nome == "") return false
-        return true
-    } 
 }
 
 export const schemas = {

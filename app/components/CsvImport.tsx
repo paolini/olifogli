@@ -24,8 +24,7 @@ export default function CsvImport({schemaName, sheetId}:{
     sheetId: string,
 }) {
   const schema = schemas[schemaName]
-  const columns = schema.fields;
-  const numeroRisposte = 17;
+  const columns = Object.keys(schema.fields);
   const [delimiter, setDelimiter] = useState<string>('')
   const client = useApolloClient();
   const [addRows] = useMutation(ADD_ROWS);
@@ -51,7 +50,7 @@ export default function CsvImport({schemaName, sheetId}:{
       { error && <Error error={error} />}
       <br />
       { data.length > 0 
-        && <CsvTable data={data} columns={columns} numeroRisposte={numeroRisposte} setData={setData} importRows={importRows}/>
+        && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows}/>
         }
   </div>
 
@@ -76,7 +75,6 @@ export default function CsvImport({schemaName, sheetId}:{
     const variables = {
         sheetId,
         columns,
-        nAnswers: numeroRisposte,
         rows,
     }
 
@@ -100,10 +98,9 @@ export default function CsvImport({schemaName, sheetId}:{
   }
 }
 
-function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
+function CsvTable({data, columns, setData, importRows}: {
     data: string[][],
     columns: string[],
-    numeroRisposte: number,
     setData: (data: string[][]) => void,
     importRows: (rows: string[][]) => Promise<number>
 }) {
@@ -118,7 +115,6 @@ function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
     const [action, setAction] = useState<Action|'busy'>('move')
     const [selectedFirstCol, setSelectedFirstCol] = useState<number>(-1)
     const [selectedLastCol, setSelectedLastCol] = useState<number>(-1)
-    const allColumns = [...columns, ...Array.from({length: numeroRisposte}, (_, i) => i+1)]
     const hideFrom = data.length>200 ? 100 : data.length
     const hideTo = data.length>200 ? data.length-100 : 0
 
@@ -138,13 +134,13 @@ function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
         <table><thead>
             <tr>
                 { action==="deleteRow" && <th></th>}
-                {allColumns.map((t, index) => <th key={index}>
+                {columns.map((t, index) => <th key={index}>
                     {selectedFirstCol<0 ? t : <button onClick={() => moveColumns(index)}>{t}</button>}
                 </th>)}
             </tr>
             <tr>
                 { action==="deleteRow" && <th></th>}
-                {Array.from({length: columns.length + numeroRisposte}, (_,i) => i).map(index => 
+                {Array.from({length: columns.length}, (_,i) => i).map(index => 
                     <td key={index}>
                     { action==="move" && selectedFirstCol === -1 && <button onClick={() => {setSelectedFirstCol(index);setSelectedLastCol(index)}}>sposta</button> }
                     { action==="delete" && <button onClick={() => deleteColumn(index)}>elimina</button>}
@@ -159,7 +155,7 @@ function CsvTable({data, columns, numeroRisposte, setData, importRows}: {
                         <td key={index} style={{backgroundColor: ((selectedFirstCol <= index && index <= selectedLastCol) ? "#f3ff7a":"")}}>{value}</td>
                     ))}
                 </tr>
-                : (index===hideFrom && <tr key={index}><td colSpan={columns.length + numeroRisposte}>...</td></tr>)    
+                : (index===hideFrom && <tr key={index}><td colSpan={columns.length}>...</td></tr>)    
             )}
         </tbody>
         </table>

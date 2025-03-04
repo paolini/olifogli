@@ -1,5 +1,19 @@
 import { KeyboardEvent } from "react"
 
+export function InputCell({type, value, setValue, onEnter}: {
+  type: string,
+  value: string,
+  setValue: ((value: string) => void),
+  onEnter?: () => void,
+}) {
+  switch(type) {
+    case 'ChoiceAnswer': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter}/>
+    case 'NumberAnswer': return <NumberInput value={value} setValue={setValue} onEnter={onEnter}/>
+    case 'ScoreAnswer': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter}/>
+    default: return <Input value={value} setValue={setValue} onEnter={onEnter}/>
+  }
+}
+
 export function Input({type, size, value, setValue, width, onEnter}:{
   type?: string, 
   size?: number, 

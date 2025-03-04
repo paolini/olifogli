@@ -25,23 +25,15 @@ export async function getSheetsCollection() {
     return db.collection<Sheet>('sheets');
 }
 
-export type Info = {
-    id: string;
-    zona: string;
-    cognome: string;
-    nome: string;
-    classe: string;
-    sezione: string;
-    scuola: string;
-    dataNascita: string;
+export type Data = {
+  [key: string]: string
 }
 
-export interface Row extends Info {
-    risposte: string[];
-    punti: string;
-
+export interface Row {
     sheetId: ObjectId;
     isValid: boolean;
+
+    data: Data;
 
     createdOn?: Date;
     createdBy?: ObjectId;

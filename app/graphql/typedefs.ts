@@ -4,6 +4,7 @@ import { gql } from '@apollo/client'
 export const typeDefs = gql`
   scalar Timestamp
   scalar ObjectId
+  scalar JSON
 
   type Sheet {
     _id: ObjectId
@@ -15,17 +16,8 @@ export const typeDefs = gql`
   type Row {
     _id: ObjectId
     isValid: Boolean
-    punti: String
     updatedOn: Timestamp
-    id: String
-    zona: String
-    cognome: String
-    nome: String
-    classe: String
-    sezione: String
-    scuola: String
-    dataNascita: String
-    risposte: [String]
+    data: JSON
   }
 
   type User {
@@ -47,8 +39,8 @@ export const typeDefs = gql`
     addSheet(name: String, schema: String, params: String): Sheet
     deleteSheet(_id: ObjectId): String
 
-    addRow(sheetId: ObjectId, cognome: String, nome: String, classe: String, sezione: String, scuola: String, dataNascita: String, risposte: [String]): Row
-    patchRow(_id: ObjectId, updatedOn: Timestamp, cognome: String, nome: String, classe: String, sezione: String, scuola: String, dataNascita: String, risposte: [String]): Row
+    addRow(sheetId: ObjectId, data: JSON, answers: [String]): Row
+    patchRow(_id: ObjectId, updatedOn: Timestamp, data: JSON, answers: [String]): Row
     deleteRow(_id: ObjectId): ObjectId
     
     addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
