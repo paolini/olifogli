@@ -1,5 +1,4 @@
 import { MongoClient } from 'mongodb';
-import migrate from './migrations';
 
 const uri: string = process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli';
 const options: object = {};
@@ -60,11 +59,5 @@ async function main() {
         "                  |___/      \n" +
         "\n");
     console.log(Date())
-    if (false) { // fails on github actions
-        console.log("connecting to MongoDB...");
-        const db = await getDb();
-        console.log("...connected to MongoDB");
-        await migrate(db, { apply: true })   
-    }
 }
 
