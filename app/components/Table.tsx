@@ -75,18 +75,19 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
               <th scope="col" key={field} className={`schema-${field} type-${type}`}>
               {columnTitle(field)}&nbsp;
                 <CambiaOrdine
-                  nomecampo={field}
+                  field={field}
+                  type={type}
                   criteria={criteria}
                 />
               </th>)}
         </tr>
         <tr>
             {Object.entries(schema.fields).map(([field,type]) => <th key={"cerca"+field}>
-                { !["ChoiceAnswer", "NumberAnswer", "ScoreAnswer", "Computed"].includes(type) 
-                  && <InputCerca 
-                    field={field} 
-                    criteria={criteria}
-                  /> } 
+              <InputCerca 
+                field={field}
+                type={type}
+                criteria={criteria}
+              /> 
               </th>)}
           <th>&nbsp;</th>
         </tr>

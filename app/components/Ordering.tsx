@@ -35,22 +35,28 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
     </>
 }
 
-export function CambiaOrdine({ nomecampo, criteria } : { 
-  nomecampo: string,
+export function CambiaOrdine({ field, type, criteria } : { 
+  field: string,
+  type: string,
   criteria: Criteria
 } ) {
-    return <span style={{cursor: "pointer"}} onClick={() => aggiornaCriteriOrdina(criteria, nomecampo)}>&plusmn;</span>
+    if ([ "ChoiceAnswer", "NumberAnswer", "ScoreAnswer", "Computed" ].includes(type))
+        return <></>
+    return <span style={{cursor: "pointer"}} onClick={() => aggiornaCriteriOrdina(criteria, field)}>&plusmn;</span>
 }
 
 export function filtraEOrdina(criteria: Criteria, rows: WithId<Row>[]): WithId<Row>[] {
     return tableOrdina(criteria.criteriOrdina, tableCerca(criteria, rows))
 }
 
-export function InputCerca({field, criteria, size}:{
+export function InputCerca({field, type, criteria, size}:{
   field: string,
+  type: string,
   criteria: Criteria,
   size?: number
 }) {
+    if (["ChoiceAnswer", "NumberAnswer", "ScoreAnswer", "Computed"].includes(type))
+        return <></>
 
     const value = criteria.criteriCerca.filter(crit => crit["nomecampo"] == field).length > 0 ? criteria.criteriCerca.filter(crit => crit["nomecampo"] == field)[0].value : "";
 
