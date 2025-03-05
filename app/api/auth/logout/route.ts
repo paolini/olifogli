@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serialize } from "cookie";
-import { myAbsoluteUrl } from "../callback/route";
+import {myAbsoluteUrl} from "../util";
 
 export async function GET(req: NextRequest) {
     // clear the auth_token cookie

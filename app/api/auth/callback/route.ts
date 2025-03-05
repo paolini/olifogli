@@ -4,14 +4,7 @@ import jwt from "jsonwebtoken";
 
 import {getDb} from "@/app/lib/mongodb"
 import {User} from "@/app/lib/models";
-
-export function myAbsoluteUrl(req: NextRequest, path: string) {
-  // Usa l'host corretto
-  const host = req.headers.get("host"); 
-  const protocol = req.nextUrl.protocol || "https:"; 
-  const url = new URL(path, `${protocol}//${host}`);
-  return url
-}
+import {myAbsoluteUrl} from "../util";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
