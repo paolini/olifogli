@@ -26,8 +26,13 @@ export const typeDefs = gql`
     name: String
   }
 
+  type Config {
+    OLIMANAGER_URL: String
+  }
+
   type Query {
     hello: String
+    config: Config
     sheets: [Sheet]
     sheet: Sheet
     rows(sheetId: ObjectId): [Row]

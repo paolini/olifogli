@@ -15,9 +15,10 @@ const server = new ApolloServer<Context>({
 let handler;
 if (!handler) {
   handler = startServerAndCreateNextHandler<NextRequest,Context>(server, {
-    context: async (req, res): Promise<Context> => { 
+    context: async (req, res): Promise<Context> => {
       const session = JSON.parse(req.cookies.get('session')?.value || '{}');
-      if (session.user_id) return {req, res, userId: new ObjectId(session.userId as string)};
+
+      if (session.userId) return {req, res, userId: new ObjectId(session.userId as string)};
       return {req, res};
     }
   });

@@ -13,6 +13,12 @@ export const resolvers = {
   Query: {
     hello: () => 'Hello, world!',
 
+    config: async () => {
+      return {
+        OLIMANAGER_URL: process.env.OLIMANAGER_URL,
+      }
+    },
+
     me: async (_:unknown, __: unknown, context: Context) => {
       const {userId} = context 
       if (userId) {
