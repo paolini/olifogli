@@ -5,6 +5,14 @@ import jwt from "jsonwebtoken";
 import {getDb} from "@/app/lib/mongodb"
 import {User} from "@/app/lib/models";
 
+export function myAbsoluteUrl(req: NextRequest, path: string) {
+  // Usa l'host corretto
+  const host = req.headers.get("host"); 
+  const protocol = req.nextUrl.protocol || "https:"; 
+  const url = new URL(path, `${protocol}//${host}`);
+  return url
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const token = url.searchParams.get("token");
@@ -31,11 +39,11 @@ export async function GET(req: NextRequest) {
     path: "/", // Valido per tutte le rotte
   });
 
-  // Ottieni l'URL di redirect (o la home page se non specificato)
-  const redirectTo = url.searchParams.get("next") || "/";
-  
-  // Crea la risposta di redirect e aggiungi il cookie
-  const response = NextResponse.redirect(new URL(redirectTo, req.url));
+  const nextParam = url.searchParams.get("next");
+  const redirectTo = nextParam?.startsWith('/') ? nextParam : "/";
+
+  const redirectUrl = myAbsoluteUrl(req, redirectTo);
+  const response = NextResponse.redirect(redirectUrl);
   response.headers.set("Set-Cookie", cookie); // Imposta il cookie nella risposta
 
   return response;
