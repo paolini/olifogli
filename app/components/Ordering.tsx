@@ -1,6 +1,6 @@
 import { useState, Dispatch, SetStateAction } from 'react'
 import { WithId } from 'mongodb'
-import { Row, Data } from '@/app/lib/models'
+import { Row } from '@/app/lib/models'
 
 export type CriterioOrd = {
   numcampo?: number,
@@ -89,16 +89,9 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
   }
 
 function confronta(campo: string, camporow1: string, camporow2: string): number {
-  const campiStringhe: string[] = ["nome", "cognome", "sezione"]
   const campiNumero: string[] = ["classe", "codice", "punteggio"]
   const campiData: string[] = ["data_nascita"]
 
-  if (campiStringhe.includes(campo)) {
-    return (
-      (camporow1.toUpperCase() > camporow2.toUpperCase())? 1 :
-        (camporow1.toUpperCase() < camporow2.toUpperCase())?  -1 : 0
-    )
-  }
   if (campiNumero.includes(campo)) {
     return (
       (parseFloat(camporow1) - parseFloat(camporow2) > 0)? 1 :
@@ -111,7 +104,10 @@ function confronta(campo: string, camporow1: string, camporow2: string): number 
         (Date.parse(camporow1) < Date.parse(camporow2))? -1 : 0
     )
   }
-  return 0
+  return (
+      (camporow1.toUpperCase() > camporow2.toUpperCase())? 1 :
+        (camporow1.toUpperCase() < camporow2.toUpperCase())?  -1 : 0
+    )
 }
 
 function aggiornaCriteriOrdina({criteriOrdina, setCriteriOrdina}: Criteria, nomecampo: string): void {
