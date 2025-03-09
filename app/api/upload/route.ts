@@ -3,6 +3,7 @@ import { writeFile } from 'fs/promises';
 import path from 'path';
 import { mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
+import { ObjectId } from 'mongodb';
 import { getScansCollection } from '@/app/lib/models';
 
 
@@ -21,6 +22,14 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const sheetId = formData.get('sheetId');
+    if (!sheetId) {
+        return NextResponse.json({ error: 'Missing sheetId' }, { status: 400 });
+    }
+
+    if (typeof sheetId !== 'string') {
+        return NextResponse.json({ error: 'Invalid sheetId' }, { status: 400 });
+    }
+
     // const secret = formData.get('secret');
 
     const SCANS_SPOOL_DIR = await getSCANS_SPOOL_DIR();
@@ -60,6 +69,13 @@ export async function POST(req: NextRequest) {
     await writeFile(filePath, buffer);
 
     const scansCollection = await getScansCollection();
+    await scansCollection.insertOne({
+        sheetId: new ObjectId(sheetId),
+        jobId: job_id,
+        status: 'queued',
+        message: 'in attesa di elaborazione',
+        timestamp: new Date(),
+    })
 
     return NextResponse.json({ 
         job_id

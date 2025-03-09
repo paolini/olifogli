@@ -39,6 +39,14 @@ export const typeDefs = gql`
     message: String
   }
 
+  type ScanResults {
+    _id: ObjectId
+    sheetId: ObjectId
+    jobId: String
+    image: String
+    data: JSON
+  }
+
   type Query {
     hello: String
     me: User
@@ -47,6 +55,7 @@ export const typeDefs = gql`
     sheet(sheetId: ObjectId): Sheet
     rows(sheetId: ObjectId): [Row]
     scans(sheetId: ObjectId): [Scan]
+    scanResults(sheetId: ObjectId, jobId: String): [ScanResults]
     olimanager: String # testing
   }
 

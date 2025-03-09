@@ -1,4 +1,4 @@
-import { getUsersCollection, getSheetsCollection, getRowsCollection, getScansCollection, Row } from '@/app/lib/models';
+import { getUsersCollection, getSheetsCollection, getRowsCollection, getScansCollection, getScanResultsCollection, Row } from '@/app/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';
 import { schemas, AvailableSchemas } from '@/app/lib/schema';
@@ -53,8 +53,17 @@ export const resolvers = {
           _id: "$jobId",
           lastScan: { $first: "$$ROOT" }
         }},
-        { $replaceRoot: { newRoot: "$lastScan" } }
+        { $replaceRoot: { newRoot: "$lastScan" } },
+        { $sort: { timestamp: -1 } },
       ])
+      return results.toArray();
+    },
+
+    scanResults: async (_: unknown, { sheetId, jobId }: { sheetId: ObjectId, jobId: string }) => {
+      const collection = await getScanResultsCollection();
+      const results = await collection.aggregate([
+        { $match: { sheetId, jobId } },
+      ]);
       return results.toArray();
     },
 

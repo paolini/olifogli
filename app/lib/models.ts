@@ -49,9 +49,22 @@ export interface Scan {
     jobId: string;
     status: string;
     message?: string;
+    timestamp: Date;
 }
 
 export async function getScansCollection() {
     const db = await getDb();
     return db.collection<Scan>('scans');
+}
+
+export interface ScanResults {
+    sheetId: ObjectId;
+    jobId: string;
+    image: string;
+    data: Data;
+}
+
+export async function getScanResultsCollection() {
+    const db = await getDb();
+    return db.collection<ScanResults>('scan_results');
 }
