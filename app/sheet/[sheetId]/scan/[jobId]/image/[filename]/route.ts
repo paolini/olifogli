@@ -5,10 +5,8 @@ import { join } from 'path';
 
 const SCANS_DATA_DIR = process.env.SCANS_DATA_DIR || '';
 
-export async function GET(req: NextRequest, { params }: { params: { sheetId: string, jobId: string, filename: string } }) {
-    const sheetId = new ObjectId(params.sheetId);
-    const jobId = params.jobId;
-    const filename = params.filename;
+export async function GET(req: Request, { params }: { params: Promise<{ sheetId: string, jobId: string, filename: string }> }) {
+    const {sheetId, jobId, filename} = await params;
     
     if (!SCANS_DATA_DIR) {
         console.log(`environment variable SCANS_DATA_DIR not set`);
@@ -17,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { sheetId: str
     
     // TODO check permissions
 
-    const filePath = join(SCANS_DATA_DIR, params.sheetId, params.jobId, params.filename);
+    const filePath = join(SCANS_DATA_DIR, sheetId, jobId, filename);
 
     try {
         const file = await readFile(filePath);
