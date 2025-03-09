@@ -50,6 +50,15 @@ OLIMANAGER_URL="https://olimanager.whatever.it/sso"
 OLIMANAGER_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXX==\n-----END PUBLIC KEY-----"
 ```
 
+## integration with OMRChecker
+
+Vedi https://github.com/fph/archiomr worker.py
+
+```
+SCANS_SPOOL_DIR=<path_to_spool_directory>
+SCANS_DATA_DIR=<path_to_data_directory>
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

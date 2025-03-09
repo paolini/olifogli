@@ -1,4 +1,4 @@
-import { getUsersCollection, getSheetsCollection, getRowsCollection, Row } from '@/app/lib/models';
+import { getUsersCollection, getSheetsCollection, getRowsCollection, getScansCollection, Row } from '@/app/lib/models';
 import { ObjectId } from 'mongodb';
 import { Context } from './types';
 import { schemas, AvailableSchemas } from '@/app/lib/schema';
@@ -33,15 +33,29 @@ export const resolvers = {
       return await collection.find({}).toArray();
     },
 
-    sheet: async (_: unknown, { _id }: { _id: ObjectId }) => {
+    sheet: async (_: unknown, { sheetId }: { sheetId: ObjectId }) => {
       const collection = await getSheetsCollection();
-      return await collection.findOne({ _id });
+      return await collection.findOne({ _id: sheetId });
     },
 
     rows: async (_: unknown, { sheetId }: { sheetId: ObjectId }/*, context: Context*/) => {
         const collection = await getRowsCollection();
         const results = await collection.find({sheetId}).toArray();
         return results
+    },
+
+    scans: async (_: unknown, { sheetId }: { sheetId: ObjectId }) => {
+      const collection = await getScansCollection();
+      const results = await collection.aggregate([
+        { $match: { sheetId } },
+        { $sort: { jobId: 1, timestamp: -1 } },
+        { $group: {
+          _id: "$jobId",
+          lastScan: { $first: "$$ROOT" }
+        }},
+        { $replaceRoot: { newRoot: "$lastScan" } }
+      ])
+      return results.toArray();
     },
 
     olimanager: async (_: unknown) => {

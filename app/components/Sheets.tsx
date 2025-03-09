@@ -3,7 +3,8 @@ import { gql, useQuery, useMutation } from '@apollo/client';
 import Loading from '@/app/components/Loading';
 import Error from '@/app/components/Error';
 import { Input } from '@/app/components/Input';
-import { Sheet, SheetWithId } from '@/app/lib/models';
+import { Sheet } from '@/app/lib/models';
+import { WithId } from 'mongodb';
 
 const GET_SHEETS = gql`
     query GetSheets {
@@ -41,7 +42,7 @@ export default function Sheets({}) {
 }
 
 function SheetsTable({}) {
-    const { loading, error, data } = useQuery<{sheets: [SheetWithId]}>(GET_SHEETS);
+    const { loading, error, data } = useQuery<{sheets: [WithId<Sheet>]}>(GET_SHEETS);
 
     if (loading) return <Loading />;
     if (error) return <Error error={error} />;
@@ -57,19 +58,19 @@ function SheetsTable({}) {
             </tr>
         </thead>
         <tbody>
-            {sheets.map(sheet => <SheetRow key={sheet._id} sheet={sheet} />)}
+            {sheets.map(sheet => <SheetRow key={sheet._id.toString()} sheet={sheet} />)}
         </tbody>
     </table>
 }
 
-function SheetRow({sheet}:{sheet:SheetWithId}) {
+function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
     const [deleteSheet, {loading, error}] = useMutation<{deleteSheet:string}>(DELETE_SHEET, {
         refetchQueries: [{query: GET_SHEETS}]
     });
 
     if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
 
-    return <tr key={sheet._id}>
+    return <tr key={sheet._id.toString()}>
         <td>
             <a href={`/sheet/${sheet._id}`}>{sheet.name}</a>
         </td>

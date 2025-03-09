@@ -30,14 +30,24 @@ export const typeDefs = gql`
     OLIMANAGER_URL: String
   }
 
+  type Scan {
+    _id: ObjectId
+    timestamp: Timestamp
+    sheetId: ObjectId
+    jobId: String
+    status: String
+    message: String
+  }
+
   type Query {
     hello: String
+    me: User
     config: Config
     sheets: [Sheet]
-    sheet: Sheet
+    sheet(sheetId: ObjectId): Sheet
     rows(sheetId: ObjectId): [Row]
-    me: User
-    olimanager: String
+    scans(sheetId: ObjectId): [Scan]
+    olimanager: String # testing
   }
 
   type Mutation {

@@ -18,8 +18,6 @@ export interface Sheet {
     params: string;
 }
 
-export type SheetWithId = Sheet & { _id: string };
-
 export async function getSheetsCollection() {
     const db = await getDb();
     return db.collection<Sheet>('sheets');
@@ -44,4 +42,16 @@ export interface Row {
 export async function getRowsCollection() {
     const db = await getDb();
     return db.collection<Row>('rows');
+}
+
+export interface Scan {
+    sheetId: ObjectId;
+    jobId: string;
+    status: string;
+    message?: string;
+}
+
+export async function getScansCollection() {
+    const db = await getDb();
+    return db.collection<Scan>('scans');
 }
