@@ -34,7 +34,7 @@ export function useCriteria(schema: Schema): Criteria {
 export function Ordering({ criteria }: { criteria: Criteria }) {
     return <><span>
       Ordinamento per {[...criteria.criteriOrdina,null].map((criterio,i) => <>
-        {i>0 && <span> + </span>}
+        {i>0 && <span key={`s-${i}`}> + </span>}
         <select 
           key={i} 
           value={criterio?criterioToString(criterio):""}

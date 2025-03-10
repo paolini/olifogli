@@ -72,12 +72,7 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
         <tr>
             {Object.entries(schema.fields).map(([field,type]) => 
               <th scope="col" key={field} className={`schema-${field} type-${type}`}>
-              {columnTitle(field)}&nbsp;
-                <CambiaOrdine
-                  field={field}
-                  type={type}
-                  criteria={criteria}
-                />
+              {columnTitle(field)}
               </th>)}
         </tr>
       </thead>
