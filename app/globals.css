@@ -7,16 +7,20 @@
   --foreground: #171717;
   --alert: #cfd90a;
   --error: #eb7b7b;
+  --secondary: #2929ee;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
     --alert: #3c3907;
     --error: #c71717;
+    --secondary: #6868fc;
   }
 }
+*/
 
 .bg-error {
   background: var(--error)
@@ -30,6 +34,11 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+a {
+  font-weight: bold;
+  color: var(--secondary);
 }
 
 input {
@@ -69,6 +78,16 @@ th {
 td {
   overflow: hidden; 
   text-overflow: ellipsis;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+table, 
+th, 
+td {
+  border: 1px solid gray;
 }
 
 .schema-id, .schema-id input {
