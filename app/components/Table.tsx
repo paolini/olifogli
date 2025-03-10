@@ -55,7 +55,7 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
   const schema = schemas[schemaName];
   const { loading, error, data } = useQuery<{rows:WithId<Row>[]}>(GET_ROWS, {variables: {sheetId}});
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
-  const criteria = useCriteria()
+  const criteria = useCriteria(schema)
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Errore: {error.message}</div>
@@ -63,9 +63,8 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
   const rows = filtraEOrdina(criteria, data.rows)
 
   return <>
-    {/*<pre>{JSON.stringify(inputAttivo.id)}</pre>*/}
-    <span>{rows.length} righe</span>
-    {rows.length < data.rows.length && <span>({rows.length} visualizzate)</span>}
+    <span>{data. rows.length} righe</span>
+    {rows.length < data.rows.length && <span> ({rows.length} visualizzate)</span>}
     <br />
     <Ordering criteria={criteria}/>
     <table>
@@ -80,16 +79,6 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
                   criteria={criteria}
                 />
               </th>)}
-        </tr>
-        <tr>
-            {Object.entries(schema.fields).map(([field,type]) => <th key={"cerca"+field}>
-              <InputCerca 
-                field={field}
-                type={type}
-                criteria={criteria}
-              /> 
-              </th>)}
-          <th>&nbsp;</th>
         </tr>
       </thead>
       <tbody>
