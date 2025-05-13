@@ -3,10 +3,13 @@ import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il pe
 import UserProfile from '@/app/components/UserProfile'
 import Sheets from '@/app/components/Sheets'
 import packageJson from '../package.json'
-import Link from 'next/link';
+import Link from 'next/link'
+import { useSession } from "next-auth/react"
+
+
 const version = packageJson.version
 
-export default function Home() {
+export default function Page() {
   return <ApolloProviderClient>
     <h1>Olifogli v. {version}</h1>
     <div style={{ textAlign: 'right' }}>

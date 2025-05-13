@@ -4,7 +4,11 @@ Store your local configuration in the `.env` file. Adjust the followings lines t
 
 ```
 MONGODB_URI=mongodb://127.0.0.1:27017/olifogli?directConnection=true
-NEXTAUTH_SECRET=6aIew1IZKRIM0Zpo2tm347ornHDl3Omt
+NEXTAUTH_SECRET=<random_string>
+NEXTAUTH_URL=http://localhost:3000
+OLIMANAGER_OAUTH_CLIENT_ID=...
+OLIMANAGER_OAUTH_CLIENT_SECRET=...
+OLIMANAGER_URL=https://staging.olimpiadi-scientifiche.it
 ```
 
 Then run the development server:

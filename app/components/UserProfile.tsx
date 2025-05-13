@@ -1,31 +1,21 @@
-import { useQuery, gql } from '@apollo/client';
-import Loading from './Loading';
-import Error from './Error';
-
-const ME = gql`
-  query Me {
-    me {
-      name
-      }
-  }`
+import { useSession, signIn, signOut } from "next-auth/react"
+import Button from "@/app/components/Button"
 
 export default function UserProfile() {
-  const { data, loading, error } = useQuery(ME);
-  const me = data?.me;
-  if (loading) return <Loading />
-  if (error) return <Error error={error} />
+  const { data: session } = useSession()
 
-  if (me) return <LoggedInUserProfile me={me} />
-
-  return <a href="/login">login</a>
+  return <div className="px-1">
+    { session 
+      ? <LoggedInUserProfile user={session.user} /> 
+      : <Button onClick={() => signIn()}>Login</Button>
+    }
+  </div>
 }
 
-function LoggedInUserProfile({me}:{me: {name: string}}) {
-  return <div>
-    <p>
-      {me.name}
+function LoggedInUserProfile({user}:{user: {email?: string|null|undefined}|undefined}) {
+  return <p>
+      {user?.email || "<no email>"}
       <br/>
-      <a href="/api/auth/logout">logout</a>
-    </p>
-  </div>
+      <button onClick={() => signOut()}>Logout</button>
+  </p>
 }
