@@ -1,7 +1,7 @@
 "use client"
 import OlimanagerLoginButton from '../components/OlimanagerLoginButton';
 import ApolloProviderClient from '../ApolloProviderClient';
-import { useQuery, useMutation, StoreObject, gql } from '@apollo/client';
+import { useQuery, gql } from '@apollo/client';
 import Error from '../components/Error';
 
 const query = gql`
