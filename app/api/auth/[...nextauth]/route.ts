@@ -4,7 +4,6 @@ const {
   OLIMANAGER_OAUTH_CLIENT_ID, 
   OLIMANAGER_OAUTH_CLIENT_SECRET, 
   OLIMANAGER_URL, // example: https://staging.olimpiadi-scientifiche.it
-  NEXTAUTH_URL, // example: http://localhost:3000
 } = process.env
 
 function providers() {
@@ -18,54 +17,20 @@ function providers() {
       id: "olimanager",
       name: "olimpiadi-scientifiche",
       checks: ['pkce'],
+      idToken: false,
+      issuer: `${OLIMANAGER_URL}/o`.replace('https://', 'http://'),
+      //wellKnown: `${OLIMANAGER_URL}/o/.well-known/openid-configuration`,
       clientId: OLIMANAGER_OAUTH_CLIENT_ID,
       clientSecret: OLIMANAGER_OAUTH_CLIENT_SECRET,
-      authorization: `${OLIMANAGER_URL}/o/authorize/`,
-      token: {
-        url: `${OLIMANAGER_URL}/o/token/`,
-        /*
-        request: async (context) => {
-          const { provider, params } = context
-          const basicAuth = Buffer
-            .from(`${provider.clientId}:${provider.clientSecret}`)
-            .toString("base64")
-
-          if (!provider.token) throw new Error("Missing provider token URL")
-
-          const URL = `${OLIMANAGER_URL}/o/token/`
-          console.log("fetch URL", URL)
-
-          const res = await fetch(URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              "Authorization": `Basic ${basicAuth}`, // ✅ auth via header
-            },
-            body: new URLSearchParams({
-              ...Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)])),
-              grant_type: "authorization_code",
-              code: params.code as string,
-              redirect_uri: `${NEXTAUTH_URL}/api/auth/callback/${provider.id}`,
-              // redirect_uri: `${context.req.headers.origin}/api/auth/callback/olimanager`, // TODO: check if this is needed
-              }
-            )
-          })
-
-          console.log("token res", res.status, res.statusText, await res.text())
-
-          const data = await res.json()
-
-          if (!res.ok) {
-            throw new Error(JSON.stringify(data))
-          }
-
-          return data
-        },*/
+      authorization: {
+        url: `${OLIMANAGER_URL}/o/authorize/`,
+        params: { scope: "email" }, // niente "openid" // era "read write"
       },
+      token: `${OLIMANAGER_URL}/o/token/`,
       userinfo: `${OLIMANAGER_URL}/o/userinfo/`,
       profile(profile: any) {
         return {
-          id: profile.id,
+          id: profile.sub,
           name: profile.username,
           email: profile.email,
         }
