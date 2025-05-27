@@ -1,4 +1,4 @@
-import { useState, Dispatch, SetStateAction } from 'react'
+import { useState, Dispatch, SetStateAction, Fragment } from 'react'
 import { WithId } from 'mongodb'
 import { Row } from '@/app/lib/models'
 import { Schema } from '@/app/lib/schema'
@@ -33,7 +33,7 @@ export function useCriteria(schema: Schema): Criteria {
 
 export function Ordering({ criteria }: { criteria: Criteria }) {
     return <><span>
-      Ordinamento per {[...criteria.criteriOrdina,null].map((criterio,i) => <>
+      Ordinamento per {[...criteria.criteriOrdina,null].map((criterio,i) => <span key={`c-${i}`}>
         {i>0 && <span key={`s-${i}`}> + </span>}
         <select 
           key={i} 
@@ -47,19 +47,18 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
             const c2 = {nomecampo:field,direzione:-1}
             const v1 = criterioToString(c1)
             const v2 = criterioToString(c2)
-            return <>
-              <option key={v1} value={v1}>{v1}</option>
-              <option key={v2} value={v2}>{v2}</option>
-              </>
+            return <Fragment key={field}>
+              <option value={v1}>{v1}</option>
+              <option value={v2}>{v2}</option>
+            </Fragment>
           }
           )}
         </select>
-      </>)}
+      </span>)}
     </span><br />
     <span>
       Filtra per {[...criteria.criteriCerca,null].map((criterio,i) => {
-
-        return <>
+        return <Fragment key={`f-${i}`}>
         {i>0 && <span> + </span>}
           <select key={`s-${i}`} value={criterio?criterio.nomecampo:""} onChange={e => cambiaCriterioCerca(i, e.target.value)}>
             <option key="" value="">{criterio?"rimuovi":(i>0?"aggiungi":"scegli campo")}</option>
@@ -68,7 +67,7 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
             })}
           </select>
           {criterio && <InputCerca key={`i-${i}`} field={criterio?criterio.nomecampo:""} type={criteria.schema.fields[criterio?criterio.nomecampo:""]} criteria={criteria} />}
-        </>
+        </Fragment>
       })}
     </span>
     </>
