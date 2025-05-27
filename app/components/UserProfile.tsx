@@ -9,6 +9,9 @@ export default function UserProfile() {
       ? <LoggedInUserProfile user={session.user} /> 
       : <Button onClick={() => signIn()}>Login</Button>
     }
+    <pre>
+      {JSON.stringify({session}, null, 2)}
+    </pre>
   </div>
 }
 
@@ -16,6 +19,6 @@ function LoggedInUserProfile({user}:{user: {email?: string|null|undefined}|undef
   return <p>
       {user?.email || "<no email>"}
       <br/>
-      <button onClick={() => signOut()}>Logout</button>
+      <Button onClick={() => signOut()}>Logout</Button>
   </p>
 }

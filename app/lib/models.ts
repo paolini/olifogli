@@ -2,9 +2,27 @@ import { ObjectId } from 'mongodb';
 import { getDb } from './mongodb'
 import { AvailableSchemas } from './schema';
 
+export interface Account {
+    provider: string;
+    providerAccountId: string;
+    user_id: ObjectId;
+    accessToken?: string;
+    refreshToken?: string,
+    idToken: string;
+    expiresAt?: Date | null;
+    updatedAt?: Date | null;
+}
+
+export async function getAccountsCollection() {
+    const db = await getDb();
+    return db.collection<Account>('accounts');
+}
+
 export interface User {
-    uid: string;
     name: string;
+    email: string;
+    createdAt?: Date;
+    lastLogin?: Date;
 }
 
 export async function getUsersCollection() {

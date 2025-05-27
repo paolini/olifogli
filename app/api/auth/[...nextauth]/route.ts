@@ -1,4 +1,7 @@
+import { sign } from "crypto"
 import NextAuth, { NextAuthOptions } from "next-auth"
+
+import { getUsersCollection, getAccountsCollection } from "@/app/lib/models"
 
 const { 
   OLIMANAGER_OAUTH_CLIENT_ID, 
@@ -30,11 +33,15 @@ function providers() {
       token: `${OLIMANAGER_URL}/o/token/`,
       userinfo: `${OLIMANAGER_URL}/o/userinfo/`,
       profile(profile: any) {
+        console.log("Profile ottenuto da Olimanager:", JSON.stringify({profile}, null, 2))
+        // verrà passato alla callback signIn
         return {
           id: profile.sub,
-          name: profile.username,
+          name: `${profile?.name} ${profile?.surname}`,
           email: profile.email,
-        }
+          school: profile?.school || null,
+          roles: profile?.roles || [],
+        }        
       },
     })
   }
@@ -46,14 +53,87 @@ export const authOptions = {
   debug: true,
   // Configure one or more authentication providers
   providers: providers(),
-/*  callbacks: {
-    async jwt({ token, account }: any) {
-      if (account?.access_token) {
-        console.log("Access Token ottenuto:", account.access_token)
-      }
+  callbacks: {
+    async jwt({ token, user, account }: any) {
+      console.log("JWT callback:", JSON.stringify({ token, user, account }, null, 2))
+      if (user) {
+          token.user_id = user.user_id 
+          token.name = user.name
+          token.email = user.email
+      }    
+
+      // Memorizza l'access token, se disponibile
+      if (account?.access_token) token.accessToken = account.access_token
+    
       return token
+    },
+
+    async session({ session, token }: any) {
+      console.log("Session callback:", JSON.stringify({ session, token }, null, 2))
+      if (token.user_id) session.user._id = token.user_id
+      // session.accessToken = token.accessToken // serve?
+      return session
+    },
+
+    /*
+    signIn: async ({ user, account }: any) => {
+      console.log("User signed in:", JSON.stringify({user, account}, null, 2))
+      if (account?.provider === "olimanager") {
+        // Qui potremmo fare qualcosa con l'utente, come salvarlo nel database
+        // o verificare se è autorizzato a fare qualcosa.
+        console.log("Olimanager user:", user)
+      }
+      return true // Permetti il login
+    },*/
+
+    signIn: async ({ user, account }: any) => {
+      console.log("SignIn callback:", JSON.stringify({ user, account }, null, 2))
+      const users = await getUsersCollection()
+      const accounts = await getAccountsCollection()
+    
+      // Trova o crea l'utente
+      let existingUser = await users.findOne({ email: user.email })
+    
+      if (!existingUser) {
+        const newUser = {
+          email: user.email,
+          name: user.name,
+          createdAt: new Date(),
+          lastLogin: new Date(),
+        }
+        const result = await users.insertOne(newUser)
+        existingUser = { _id: result.insertedId, ...newUser }
+        console.log("Utente creato:", existingUser)
+      }
+
+      // aggiorna l'user, verrà passato alla callback jwt per l'inserimento nel token
+      user.user_id = existingUser._id.toString()
+    
+      // Trova o aggiorna l'account
+      await accounts.updateOne(
+        {
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+        },
+        {
+          $set: {
+            userId: existingUser._id,
+            accessToken: account.access_token,
+            refreshToken: account.refresh_token,
+            expiresAt: account.expires_at ? new Date(account.expires_at * 1000) : null,
+            idToken: account.id_token,
+            updatedAt: new Date(),
+            school: user?.school || null,
+            roles: user?.roles || [],
+          }
+        },
+        { upsert: true }
+      )
+    
+      console.log("Login completato per", user.email)
+      return true
     }
-  }*/
+  },
 }
 
 const handler = NextAuth(authOptions)
