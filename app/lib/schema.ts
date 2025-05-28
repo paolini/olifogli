@@ -2,12 +2,14 @@ import { Data } from "@/app/lib/models";
 
 const Id = "Id"
 const Zona = "Zona"
+const ZonaId = "ZonaId"
 const Codice = "Codice"
 const Cognome = "Cognome"
 const Nome = "Nome"
 const Classe = "Classe"
 const Sezione = "Sezione"
 const Scuola = "Scuola"
+const ScuolaId = "ScuolaId"
 const DataNascita = "DataNascita"
 const ChoiceAnswer = "ChoiceAnswer"
 const NumberAnswer = "NumberAnswer"
@@ -123,10 +125,12 @@ export class AmmissioneSenior extends Schema {
     constructor(params: string='{}') {
         super({
             id: Id,
-            zona: Zona,
             cognome: Frozen,
             nome: Frozen,
+            scuola_id: Frozen,
             scuola: Frozen,
+            zona_id: Frozen,
+            zona: Frozen,
             r01: ChoiceAnswer,
             r02: ChoiceAnswer,
             r03: ChoiceAnswer,

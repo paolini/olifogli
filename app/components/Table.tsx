@@ -127,8 +127,16 @@ function TableRow({schema, row, onClick}: {
   const className = `clickable${row.isValid ? "" : " alert"}`
 
   return <tr className={className} onClick={() => onClick && onClick()}>
-    { Object.entries(schema.fields).map(([field,type]) => <td className={`schema-${field} type-${type}`} key={field}>{row.data[field]}</td>) }
+    { Object.entries(schema.fields).map(([field,type]) => <TableCell field={field} type={type} value={row.data[field]}/>) }
   </tr>
+}
+
+function TableCell({field, type, value}:{
+  field: string,
+  type: string,
+  value: string,
+}) {
+  return <td className={`schema-${field} type-${type}`} key={field}>{value}</td>
 }
 
 function InputRow({sheetId, schema, row, done}: {
@@ -146,20 +154,23 @@ function InputRow({sheetId, schema, row, done}: {
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
   const modified = hasBeenModified();
+  const frozenTypes = ['Id', 'Frozen', 'Computed'];
 
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
 
   return <tr className={modified ? "alert": ""}>
     { Object.entries(schema.fields).map(([field,type]) => 
-      <td key={field} className={`schema-${field} type-${type}`}>
-        <InputCell
-          type={type}
-          value={fields[field]||''} 
-          setValue={v => setFields(fields => ({...fields, [field]: v}))}
-          onEnter={save}
-          />
-      </td>
+      frozenTypes.includes(type)
+        ? <TableCell key={field} field={field} type={type} value={fields[field]||''} />
+        : <td key={field} className={`schema-${field} type-${type}`}>
+            <InputCell
+              type={type}
+              value={fields[field]||''} 
+              setValue={v => setFields(fields => ({...fields, [field]: v}))}
+              onEnter={save}
+              />
+          </td>
     )}
     <td>
       <button disabled={loading} onClick={save}>salva</button>

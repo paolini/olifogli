@@ -90,8 +90,8 @@ td {
   border: 1px solid gray;
 }
 
-.schema-id, .schema-id input {
-  max-width: 5ex;
+.schema-id, .schema-id input, .schema-zona_id, .schema-scuola_id {
+  max-width: 7ex;
 }
 
 .schema-zona, .schema-zona input {

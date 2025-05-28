@@ -118,6 +118,9 @@ function CsvTable({data, columns, setData, importRows}: {
     const hideFrom = data.length>200 ? 100 : data.length
     const hideTo = data.length>200 ? data.length-100 : 0
 
+    if (data.length === 0) return <Error error="tabella vuota" />
+    const first_row = data[0];
+
     return <>
         Numero righe: <b>{data.length}</b>
         <br/>
@@ -140,7 +143,7 @@ function CsvTable({data, columns, setData, importRows}: {
             </tr>
             <tr>
                 { action==="deleteRow" && <th></th>}
-                {Array.from({length: columns.length}, (_,i) => i).map(index => 
+                {first_row.map((_, index) => 
                     <td key={index}>
                     { action==="move" && selectedFirstCol === -1 && <button onClick={() => {setSelectedFirstCol(index);setSelectedLastCol(index)}}>sposta</button> }
                     { action==="delete" && <button onClick={() => deleteColumn(index)}>elimina</button>}
