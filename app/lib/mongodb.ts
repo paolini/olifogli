@@ -10,31 +10,18 @@ declare global {
     // durante lo sviluppo
     // eslint-disable-next-line no-var
     var _mongoClientPromise: Promise<MongoClient> | undefined;
-    // eslint-disable-next-line no-var
-    var _mainStarted: boolean | undefined;
 }
 
-if (!uri) {
-    throw new Error("Please add your MongoDB URI to .env.local");
-}
-
-/*if (process.env.SKIP_DB) {
-    console.log("skipping MongoDB connection");
-    clientPromise = Promise.resolve({} as MongoClient);
-} else */
+if (!uri) throw new Error("Please add your MongoDB URI to .env.local")
 
 if (process.env.NODE_ENV === 'development') {
     if (!global._mongoClientPromise) {
         console.log("connecting to MongoDB... (development)");
         const client = new MongoClient(uri, options);
         global._mongoClientPromise = client.connect();
-    }
-    clientPromise = global._mongoClientPromise;
-
-    if (!global._mainStarted) {
-        global._mainStarted = true;
         main();
     }
+    clientPromise = global._mongoClientPromise;
 } else {
     console.log("connecting to MongoDB... (production)");
     const client = new MongoClient(uri, options);

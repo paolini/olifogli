@@ -33,7 +33,7 @@ function providers() {
       token: `${OLIMANAGER_URL}/o/token/`,
       userinfo: `${OLIMANAGER_URL}/o/userinfo/`,
       profile(profile: any) {
-        console.log("Profile ottenuto da Olimanager:", JSON.stringify({profile}, null, 2))
+        // console.log("Profile ottenuto da Olimanager:", JSON.stringify({profile}, null, 2))
         // verrà passato alla callback signIn
         return {
           id: profile.sub,
@@ -50,18 +50,20 @@ function providers() {
 
 export const authOptions = {
   secret: NEXTAUTH_SECRET, // FONDAMENTALE per produzione per firmare i JWT di sessione!
-  debug: true,
+  debug: false,
   // Configure one or more authentication providers
   providers: providers(),
   callbacks: {
     async jwt({ token, user, account }: any) {
-      console.log("JWT callback:", JSON.stringify({ token, user, account }, null, 2))
+      // console.log("JWT callback:", JSON.stringify({ token, user, account }, null, 2))
       if (user) {
+          // solo al login
           token.user_id = user.user_id 
           token.name = user.name
           token.email = user.email
       }    
 
+      // ad ogni richiesta
       // Memorizza l'access token, se disponibile
       if (account?.access_token) token.accessToken = account.access_token
     
@@ -69,25 +71,14 @@ export const authOptions = {
     },
 
     async session({ session, token }: any) {
-      console.log("Session callback:", JSON.stringify({ session, token }, null, 2))
+      // console.log("Session callback:", JSON.stringify({ session, token }, null, 2))
       if (token.user_id) session.user._id = token.user_id
-      // session.accessToken = token.accessToken // serve?
+      // session.accessToken = token.accessToken // se servisse...
       return session
     },
 
-    /*
     signIn: async ({ user, account }: any) => {
-      console.log("User signed in:", JSON.stringify({user, account}, null, 2))
-      if (account?.provider === "olimanager") {
-        // Qui potremmo fare qualcosa con l'utente, come salvarlo nel database
-        // o verificare se è autorizzato a fare qualcosa.
-        console.log("Olimanager user:", user)
-      }
-      return true // Permetti il login
-    },*/
-
-    signIn: async ({ user, account }: any) => {
-      console.log("SignIn callback:", JSON.stringify({ user, account }, null, 2))
+      // console.log("SignIn callback:", JSON.stringify({ user, account }, null, 2))
       const users = await getUsersCollection()
       const accounts = await getAccountsCollection()
     
@@ -103,7 +94,7 @@ export const authOptions = {
         }
         const result = await users.insertOne(newUser)
         existingUser = { _id: result.insertedId, ...newUser }
-        console.log("Utente creato:", existingUser)
+        console.log("nuovo utente creato:", existingUser)
       }
 
       // aggiorna l'user, verrà passato alla callback jwt per l'inserimento nel token
@@ -130,7 +121,8 @@ export const authOptions = {
         { upsert: true }
       )
     
-      console.log("Login completato per", user.email)
+      console.log(`Utente ${existingUser.email} (${existingUser._id}) ha effettuato il login`)
+
       return true
     }
   },

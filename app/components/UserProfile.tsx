@@ -9,9 +9,6 @@ export default function UserProfile() {
       ? <LoggedInUserProfile user={session.user} /> 
       : <Button onClick={() => signIn()}>Login</Button>
     }
-    <pre>
-      {JSON.stringify({session}, null, 2)}
-    </pre>
   </div>
 }
 
