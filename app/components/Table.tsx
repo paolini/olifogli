@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useQuery, useMutation, StoreObject, gql } from '@apollo/client';
 import { Schema, schemas, AvailableSchemas } from '@/app/lib/schema'
@@ -77,13 +77,10 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
         </tr>
       </thead>
       <tbody>
-        { rows.map((row) => row._id === currentRowId 
-        ? <InputRow sheetId={sheetId} schema={schema} key={row._id.toString()} row={row} done={() => setCurrentRowId(null)}/>
-        : <TableRow schema={schema} key={row._id.toString()} row={row} onClick={() => setCurrentRowId(row._id)} />
-        )}
-        {currentRowId 
-        ? <tr><td><button onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
-        : <InputRow sheetId={sheetId} schema={schema}/>}
+        { rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheetId} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
+        { currentRowId 
+          ? <tr><td><button onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
+          : <InputRow sheetId={sheetId} schema={schema}/>}
       </tbody>
     </table>
   </>
@@ -119,6 +116,19 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
   }
 }
 
+const MyRow = memo(MyRowInternal)
+
+function MyRowInternal({current, sheetId, schema, row, setCurrentRowId}: {
+  current: boolean,
+  sheetId: string,
+  schema: Schema,
+  row: WithId<Row>,
+  setCurrentRowId: (id: ObjectId|null) => void
+}) {
+  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)}/>
+  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} />
+}
+
 function TableRow({schema, row, onClick}: {
     schema: Schema,
     row: WithId<Row>, 
@@ -127,7 +137,7 @@ function TableRow({schema, row, onClick}: {
   const className = `clickable${row.isValid ? "" : " alert"}`
 
   return <tr className={className} onClick={() => onClick && onClick()}>
-    { Object.entries(schema.fields).map(([field,type]) => <TableCell field={field} type={type} value={row.data[field]}/>) }
+    { Object.entries(schema.fields).map(([field,type]) => <TableCell key={field} field={field} type={type} value={row.data[field]}/>) }
   </tr>
 }
 
