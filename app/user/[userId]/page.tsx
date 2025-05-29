@@ -9,6 +9,6 @@ export default async function UserPage({ params }:{params: Promise<{userId: stri
     const user = await (usersCollection.findOne({_id: new ObjectId(userId)}));    
     if (!user) return <Error error="User not found" />;
     return <ApolloProviderClient> 
-        <h1>{user.uid}</h1>
+        <h1>{user.email}</h1>
     </ApolloProviderClient>
 }

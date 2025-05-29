@@ -18,7 +18,7 @@ export default async function Users() {
             </thead>
             <tbody>
                 {users.map((user:WithId<User>) => <tr key={user._id.toString()}>
-                    <td><Link href={`/user/${user._id}`}>{user.uid}</Link></td>
+                    <td><Link href={`/user/${user._id}`}>{user.email}</Link></td>
                 </tr>)}
             </tbody>
         </table>
