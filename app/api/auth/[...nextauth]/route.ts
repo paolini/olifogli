@@ -9,11 +9,12 @@ const {
   NEXTAUTH_SECRET,
 } = process.env
 
-type OLIMANAGER_TOKEN = {
-  user_id?: string,
-  name?: string | null,
-  email?: string | null,
-  accessToken?: string,
+export type OLIMANAGER_TOKEN = {
+  user_id?: string
+  name?: string | null
+  email?: string | null
+  accessToken?: string
+  is_admin?: boolean
 }
 
 type OLIMANAGER_PROFILE = {
@@ -39,6 +40,7 @@ type SESSION_USER = {
   school?: unknown[]
   roles?: string[]
   image?: string | null | undefined
+  is_admin?: boolean
 }
 
 type ACCOUNT = {
@@ -145,7 +147,6 @@ const authOptions: AuthOptions = {
       const users = await getUsersCollection()
       const accounts = await getAccountsCollection()
     
-      
       // Trova o crea l'utente
       let existingUser = await users.findOne({ email: user.email })
     
@@ -163,6 +164,7 @@ const authOptions: AuthOptions = {
 
       // aggiorna l'user, verrà passato alla callback jwt per l'inserimento nel token
       user._id = existingUser._id.toString()
+      user.is_admin = existingUser.is_admin || false
     
       // Trova o aggiorna l'account
       if (account) {

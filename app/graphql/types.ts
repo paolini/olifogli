@@ -5,7 +5,8 @@ import { GraphQLScalarType, Kind, ValueNode } from "graphql";
 export type Context = {
   req: NextRequest
   res: Response|undefined
-  userId?: ObjectId
+  user_id?: ObjectId
+  is_admin?: boolean
 }
 
 export const Timestamp = new GraphQLScalarType({
