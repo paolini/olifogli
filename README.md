@@ -10,6 +10,8 @@ OLIMANAGER_OAUTH_CLIENT_ID=...
 OLIMANAGER_OAUTH_CLIENT_SECRET=...
 OLIMANAGER_URL=https://staging.olimpiadi-scientifiche.it
 ADMIN_EMAILS=myemail@somewhere.com
+SCANS_SPOOL_DIR=<path_to_spool_directory>
+SCANS_DATA_DIR=<path_to_data_directory>
 ```
 
 Then run the development server:
@@ -36,12 +38,9 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## integration with OMRChecker
 
-Vedi https://github.com/fph/archiomr worker.py
+See https://github.com/fph/archiomr/blob/main/worker.py
 
-```
-SCANS_SPOOL_DIR=<path_to_spool_directory>
-SCANS_DATA_DIR=<path_to_data_directory>
-```
+set SCANS_SPOOL_DIR and SCANS_DATA_DIR to enable
 
 ## Learn More
 
