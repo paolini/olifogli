@@ -232,7 +232,7 @@ async function get_authenticated_user(context: Context) {
   const user_id = check_authenticated(context)
   const users = await getUsersCollection()
   const user = await users.findOne({ _id: user_id })
-  if (!user) throw Error('utente non trovato')
+  if (!user) throw Error(`utente non trovato ${user_id}`)
   return user
 }
 
