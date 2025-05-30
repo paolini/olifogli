@@ -19,7 +19,8 @@ let handler;
 if (!handler) {
   handler = startServerAndCreateNextHandler<NextRequest,Context>(server, {
     context: async (req, res): Promise<Context> => {
-      const {user_id } = await getToken({ req }) as OLIMANAGER_TOKEN
+      const token = await getToken({ req }) as OLIMANAGER_TOKEN
+      const user_id = token?.user_id
       return {req, res, user_id: user_id ? new ObjectId(user_id) : undefined};
     }
   });
