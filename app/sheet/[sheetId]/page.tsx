@@ -1,13 +1,15 @@
 "use client"
-import { gql, useQuery, TypedDocumentNode } from '@apollo/client';
-import ApolloProviderClient from '@/app/ApolloProviderClient';
-import { Sheet } from '@/app/lib/models';
-import { useParams } from 'next/navigation';
-import Loading from '@/app/components/Loading';
-import Error from '@/app/components/Error';
-import Table from '@/app/components/Table';
-import CsvImport from '@/app/components/CsvImport';
-import ScansImport from '@/app/components/ScansImport';
+import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
+import ApolloProviderClient from '@/app/ApolloProviderClient'
+import { useParams } from 'next/navigation'
+
+import { Sheet } from '@/app/lib/models'
+import Loading from '@/app/components/Loading'
+import Error from '@/app/components/Error'
+import Table from '@/app/components/Table'
+import CsvImport from '@/app/components/CsvImport'
+import ScansImport from '@/app/components/ScansImport'
+import NavBar from '@/app/components/NavBar'
 
 const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -17,12 +19,13 @@ const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
             schema
         }
     }
-`; 
+`
 
 export default function SheetPage() {
     const params = useParams<{ sheetId: string }>();
     const sheetId = params.sheetId;
     return <ApolloProviderClient>
+        <NavBar />
         <SheetContent sheetId={sheetId}/>
     </ApolloProviderClient>
 }
