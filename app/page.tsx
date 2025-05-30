@@ -1,11 +1,9 @@
 "use client"
 import ApolloProviderClient from '@/app/ApolloProviderClient'; // Modifica il percorso se necessario
-import UserProfile from '@/app/components/UserProfile'
-import Sheets from '@/app/components/Sheets'
-import packageJson from '../package.json'
-import Link from 'next/link'
-import { useSession } from "next-auth/react"
 
+import UserProfile from '@/app/components/UserProfile'
+import Splash from '@/app/components/Splash'
+import packageJson from '../package.json'
 
 const version = packageJson.version
 
@@ -15,9 +13,6 @@ export default function Page() {
     <div style={{ textAlign: 'right' }}>
       <UserProfile />
     </div>
-    <Link href="users">utenti</Link>
-    <Sheets />
+    <Splash />
   </ApolloProviderClient>
 }
-
-//<Table schema={new Distrettuale()}/>

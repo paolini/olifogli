@@ -156,6 +156,7 @@ const authOptions: AuthOptions = {
           name: user.name || '', 
           createdAt: new Date(),
           lastLogin: new Date(),
+          is_admin: true, // TODO: da rimuovere !!!!!!!!!!!
         }
         const result = await users.insertOne(newUser)
         existingUser = { _id: result.insertedId, ...newUser }
