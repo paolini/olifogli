@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSession } from "next-auth/react"
 import { gql, useQuery, useMutation } from '@apollo/client';
 import Loading from '@/app/components/Loading';
 import Error from '@/app/components/Error';
@@ -35,6 +36,8 @@ const DELETE_SHEET = gql`
 `;
 
 export default function Sheets({}) {
+    const { data: session } = useSession()
+    const user = session?.user
     return <div>
         <SheetsTable />
         <SheetForm />
@@ -42,12 +45,14 @@ export default function Sheets({}) {
 }
 
 function SheetsTable({}) {
-    const { loading, error, data } = useQuery<{sheets: [WithId<Sheet>]}>(GET_SHEETS);
+    const { loading, error, data } = useQuery<{sheets: WithId<Sheet>[]}>(GET_SHEETS);
 
     if (loading) return <Loading />;
     if (error) return <Error error={error} />;
     if (!data) return <div>No data</div>;
     const sheets = data.sheets;
+
+    if (sheets.length === 0) return <div className="bg-alert">Nessun foglio disponibile</div>
 
     return <table>
         <thead>
@@ -91,13 +96,13 @@ function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
 }
 
 function SheetForm({}) {
-    const [addSheet, {loading, error}] = useMutation<{addSheet:Sheet}>(ADD_SHEET, {
+    const [addSheet, {loading, error, reset }] = useMutation<{addSheet:Sheet}>(ADD_SHEET, {
         refetchQueries: [{query: GET_SHEETS}]
     });
     const [name, setName] = useState('');
     const [schema, setSchema] = useState('');
 
-    if (error) return <div className="error">Errore: {error.message}</div>;
+    if (error) return <Error error={error} dismiss={reset}/>;
 
     return <div>
         <select name="schema" value={schema} onChange={e => setSchema(e.target.value)}>
