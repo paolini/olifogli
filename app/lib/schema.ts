@@ -158,15 +158,34 @@ export class AmmissioneSenior extends Schema {
             r10: ChoiceAnswer,
             r11: ChoiceAnswer,
             r12: ChoiceAnswer,
-            r13: NumberAnswer,
-            r14: NumberAnswer,
-            r15: ScoreAnswer,
-            r16: ScoreAnswer,
-            r17: ScoreAnswer,
+            r13: ChoiceAnswer,
+            r14: ChoiceAnswer,
+            r15: ChoiceAnswer,
+            r16: ChoiceAnswer,
+            r17: ChoiceAnswer,
+            r18: ChoiceAnswer,
+            r19: ChoiceAnswer,
+            r20: ChoiceAnswer,
             punti: Computed,
         })
         this.params = params
         this.name = "ammissione_senior"
+    }
+
+    csv_header(): string[] {
+        return [
+            ...super.csv_header(),
+            "stringa risposte",
+        ]
+    }
+
+    csv_row(row: Data): string[] {
+        const baseRow = super.csv_row(row)
+        const answers = Object.entries(this.fields)
+            .filter(([field, type]) => type === ChoiceAnswer)
+            .map(([field, _]) => row[field] || "X")
+            .join("")
+        return [...baseRow, answers]
     }
 }
 
