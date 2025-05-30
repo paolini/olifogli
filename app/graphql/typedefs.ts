@@ -23,7 +23,9 @@ export const typeDefs = gql`
   type User {
     _id: ObjectId
     uid: Int
+    email: String
     name: String
+    is_admin: Boolean
   }
 
   type Config {

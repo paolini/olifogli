@@ -8,7 +8,6 @@ import { GraphQLJSON } from "graphql-type-json";
 
 import { test } from '@/app/lib/olimanager'
 import { User, Sheet } from '@/app/lib/models'
-import { get } from 'http';
 
 // TODO: check permissions!!
 

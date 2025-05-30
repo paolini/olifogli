@@ -3,8 +3,10 @@ import { useSession, signIn } from "next-auth/react"
 
 import Sheets from './Sheets'
 import Button from './Button'
+import useProfile from '@/app/lib/useProfile'
 
 export default function Splash() {
+  const profile = useProfile()
   const { data: session } = useSession()
 
   if (!session) return null
@@ -14,7 +16,8 @@ export default function Splash() {
   </div>
 
   return <div>
-    <Link href="users">utenti</Link>
+    <pre>{JSON.stringify({profile})}</pre>
+    { profile?.is_admin && <Link href="users">utenti</Link>}
     <Sheets />
   </div>
 }
