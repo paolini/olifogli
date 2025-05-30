@@ -6,7 +6,6 @@ export type Context = {
   req: NextRequest
   res: Response|undefined
   user_id?: ObjectId
-  is_admin?: boolean
 }
 
 export const Timestamp = new GraphQLScalarType({

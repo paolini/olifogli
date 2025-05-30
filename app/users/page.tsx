@@ -13,12 +13,14 @@ export default async function Users() {
         <table>
             <thead>
                 <tr>
-                    <th>uid</th>
+                    <th>email</th>
+                    <th>admin</th>
                 </tr>
             </thead>
             <tbody>
                 {users.map((user:WithId<User>) => <tr key={user._id.toString()}>
                     <td><Link href={`/user/${user._id}`}>{user.email}</Link></td>
+                    <td>{user?.is_admin ? '✓' : ''}</td>
                 </tr>)}
             </tbody>
         </table>

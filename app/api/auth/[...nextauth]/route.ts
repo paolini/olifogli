@@ -156,7 +156,7 @@ const authOptions: AuthOptions = {
           name: user.name || '', 
           createdAt: new Date(),
           lastLogin: new Date(),
-          is_admin: true, // TODO: da rimuovere !!!!!!!!!!!
+          is_admin: false,
         }
         const result = await users.insertOne(newUser)
         existingUser = { _id: result.insertedId, ...newUser }
@@ -165,7 +165,7 @@ const authOptions: AuthOptions = {
 
       // aggiorna l'user, verrà passato alla callback jwt per l'inserimento nel token
       user._id = existingUser._id.toString()
-      user.is_admin = existingUser.is_admin || false
+      // user.is_admin = existingUser.is_admin || false
     
       // Trova o aggiorna l'account
       if (account) {
@@ -193,6 +193,8 @@ const authOptions: AuthOptions = {
       }
     
       console.log(`Utente ${existingUser.email} (${existingUser._id}) ha effettuato il login`)
+
+      // console.log("Sessione creata:", JSON.stringify({ user, account }, null, 2))
 
       return true
     }

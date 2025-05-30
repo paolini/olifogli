@@ -7,6 +7,8 @@ import Button from './Button'
 export default function Splash() {
   const { data: session } = useSession()
 
+  if (!session) return null
+
   if (!session?.user) return <div>
     <Button className="px-10 py-5" onClick={() => signIn()}>LOGIN</Button>
   </div>
