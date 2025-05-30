@@ -21,9 +21,11 @@ type Fields = Data
 
 export class Schema {
     fields: Fields
+    name: string
     
     constructor(fields: Fields) {
-        this.fields = fields;
+        this.fields = fields
+        this.name = "foglio"
     }
 
     clean(data: Data): Data {
@@ -38,6 +40,17 @@ export class Schema {
         })
         return true
     } 
+
+    csv_header(): string[] {
+        return Object.keys(this.fields)
+    }
+
+    csv_row(row: Data): string[] {
+        return Object.entries(this.fields).map(([field, type]) => {
+            if (type === Computed) return "???" // da calcolare in base al codice e alle permutazioni
+            return row[field] || ""
+        })
+    }
 }
 
 export class Archimede extends Schema {
@@ -67,6 +80,7 @@ export class Archimede extends Schema {
             punti: Computed,
         })
         this.params = params
+        this.name = "archimede"
     }
 
     clean(data: Data): Data {
@@ -116,6 +130,7 @@ export class Distrettuale extends Schema {
             punti: Computed,
         })
         this.params = params
+        this.name = "distrettuale"
     }
 }
 
@@ -151,6 +166,7 @@ export class AmmissioneSenior extends Schema {
             punti: Computed,
         })
         this.params = params
+        this.name = "ammissione_senior"
     }
 }
 

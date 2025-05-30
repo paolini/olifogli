@@ -17,8 +17,7 @@ export default function Button({ children, className, onClick, variant = 'defaul
     disabled: 'bg-gray-300 text-gray-500 cursor-not-allowed'.split(' '),
   };
 
-  return (
-    <button
+  return <button
       onClick={onClick}
       disabled={disabled}
       className={classNames(...baseStyles, ...(disabled ? variants.disabled : variants[variant]), ...className ? className.split(' ') : [])}
@@ -26,5 +25,5 @@ export default function Button({ children, className, onClick, variant = 'defaul
     >
       {children}
     </button>
-  );
+  
 }

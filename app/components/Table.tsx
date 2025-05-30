@@ -3,9 +3,11 @@ import { useState, memo } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useQuery, useMutation, StoreObject, gql } from '@apollo/client';
 import { Schema, schemas, AvailableSchemas } from '@/app/lib/schema'
+
 import { InputCell } from '@/app/components/Input'
 import { Row, Data } from '@/app/lib/models'
 import { Ordering, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
+import CsvExport from '@/app/components/CsvExport'
 
 export interface RowWithId extends Row {
     __typename: string;
@@ -62,7 +64,7 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
   const rows = filtraEOrdina(criteria, data.rows)
 
   return <>
-    <span>{data. rows.length} righe</span>
+    <span>{data.rows.length} righe</span>
     {rows.length < data.rows.length && <span> ({rows.length} visualizzate)</span>}
     <br />
     <Ordering criteria={criteria}/>
@@ -82,6 +84,7 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
           : <InputRow sheetId={sheetId} schema={schema}/>}
       </tbody>
     </table>
+    <CsvExport schema={schema} rows={rows}/>
   </>
 
   function columnTitle(field: string) {
