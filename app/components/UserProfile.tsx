@@ -4,6 +4,8 @@ import Button from "@/app/components/Button"
 export default function UserProfile() {
   const { data: session } = useSession()
 
+  if (!session?.user) return null
+
   return <div className="px-1">
     { session 
       ? <LoggedInUserProfile user={session.user} /> 
