@@ -5,10 +5,9 @@ import { useQuery, useMutation, StoreObject, gql } from '@apollo/client';
 import { Schema, schemas, AvailableSchemas } from '@/app/lib/schema'
 import { InputCell } from '@/app/components/Input'
 import { Row, Data } from '@/app/lib/models'
-import { Ordering, CambiaOrdine, InputCerca, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
+import { Ordering, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
 
 export interface RowWithId extends Row {
-    _id: string;
     __typename: string;
 }
 

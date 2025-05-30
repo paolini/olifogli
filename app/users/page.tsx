@@ -1,12 +1,37 @@
-import { WithId } from "mongodb"
-import { User, getUsersCollection } from "../lib/models"
+"use client"
+import { gql, useQuery } from '@apollo/client'
+import ApolloProviderClient from '@/app/ApolloProviderClient'
 import Link from "next/link"
 
-export const dynamic = 'force-dynamic'
+import { User } from "@/app/lib/models"
+import NavBar from "../components/NavBar"
+import Loading from "../components/Loading"
+import Error from "../components/Error"
 
-export default async function Users() {
-    const collection = await getUsersCollection();
-    const users = await collection.find({}).toArray();
+const USERS_QUERY = gql`
+    query GetUsers {
+        users {
+            _id
+            email
+            is_admin
+        }
+    }
+`
+
+export default function Page() {
+      return <ApolloProviderClient>
+        <NavBar />
+        <Users />
+      </ApolloProviderClient>
+}
+
+function Users() {
+    const { data, loading, error } = useQuery<{ users: User[] }>(USERS_QUERY)
+
+    if (loading) return <Loading />
+    if (error) return <Error error={error} />
+
+    const users = data?.users || []
 
     return <>
         <h1>utenti</h1>
@@ -18,8 +43,8 @@ export default async function Users() {
                 </tr>
             </thead>
             <tbody>
-                {users.map((user:WithId<User>) => <tr key={user._id.toString()}>
-                    <td><Link href={`/user/${user._id}`}>{user.email}</Link></td>
+                {users.map(user => <tr key={user._id.toString()}>
+                    <td>{user.email}</td>
                     <td>{user?.is_admin ? '✓' : ''}</td>
                 </tr>)}
             </tbody>

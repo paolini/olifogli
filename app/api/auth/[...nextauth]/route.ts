@@ -1,6 +1,6 @@
 import NextAuth, { AuthOptions, NextAuthOptions } from "next-auth"
 
-import { getUsersCollection, getAccountsCollection } from "@/app/lib/models"
+import { getUsersCollection, getAccountsCollection } from "@/app/lib/mongodb"
 
 const { 
   OLIMANAGER_OAUTH_CLIENT_ID, 

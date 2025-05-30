@@ -39,6 +39,7 @@ export default function Sheets({}) {
     const { data: session } = useSession()
     const user = session?.user
     return <div>
+        <h1>Fogli</h1>
         <SheetsTable />
         <SheetForm />
     </div>;

@@ -1,9 +1,9 @@
-import { getUsersCollection, getSheetsCollection, getRowsCollection, getScansCollection, getScanResultsCollection, Row } from '@/app/lib/models';
-import { ObjectId, WithId } from 'mongodb';
+import { getUsersCollection, getSheetsCollection, getRowsCollection, getScansCollection, getScanResultsCollection } from '@/app/lib/mongodb'
+import { ObjectId, WithId, WithoutId } from 'mongodb';
 import { Context } from './types';
 import { schemas, AvailableSchemas } from '@/app/lib/schema';
 import { ObjectIdType, Timestamp } from './types';
-import { Data } from '@/app/lib/models';
+import { Data, Row } from '@/app/lib/models';
 import { GraphQLJSON } from "graphql-type-json";
 
 import { test } from '@/app/lib/olimanager'
@@ -26,6 +26,13 @@ export const resolvers = {
       if (!context?.user_id) return null // no throw if not authenticated
       const user = await get_authenticated_user(context)
       return user
+    },
+
+    users: async (_: unknown, __: unknown, context: Context) => {
+      const user = await get_authenticated_user(context)
+      check_admin(user)
+      const collection = await getUsersCollection()
+      return await collection.find({}).toArray()
     },
 
     sheets: async (_: unknown, {}, context: Context) => {
@@ -189,7 +196,7 @@ export const resolvers = {
       const updatedBy = createdBy
       const objectRows = rows.map(row => ({
           ...Object.fromEntries(columns.map((column,i)=>[column,row[i]]))}))
-      const validatedRows: Row[] = objectRows
+      const validatedRows: WithoutId<Row>[] = objectRows
         .map(row => schema.clean(row as Data))
         .map(data => ({
           data, 

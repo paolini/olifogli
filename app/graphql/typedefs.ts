@@ -52,6 +52,7 @@ export const typeDefs = gql`
   type Query {
     hello: String
     me: User
+    users: [User]
     config: Config
     sheets: [Sheet]
     sheet(sheetId: ObjectId): Sheet

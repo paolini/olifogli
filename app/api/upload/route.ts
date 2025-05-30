@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import path from 'path';
-import { mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import { ObjectId } from 'mongodb';
-import { getScansCollection } from '@/app/lib/models';
+import { NextRequest, NextResponse } from 'next/server'
+import { writeFile } from 'fs/promises'
+import path from 'path'
+import { mkdir } from 'fs/promises'
+import { existsSync } from 'fs'
+import { ObjectId } from 'mongodb'
+import { getScansCollection } from '@/app/lib/mongodb'
 
 
 async function getSCANS_SPOOL_DIR() {

@@ -1,4 +1,6 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, WithoutId } from 'mongodb'
+
+import { Account, User, Sheet, Row, Scan, ScanResults } from './models'
 
 const uri: string = process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli'
 const options: object = {};
@@ -67,3 +69,32 @@ async function main(client: MongoClient) {
     }
 }
 
+export async function getAccountsCollection() {
+    const db = await getDb();
+    return db.collection<WithoutId<Account>>('accounts');
+}
+
+export async function getUsersCollection() {
+    const db = await getDb()
+    return db.collection<WithoutId<User>>('users')
+}
+
+export async function getSheetsCollection() {
+    const db = await getDb()
+    return db.collection<WithoutId<Sheet>>('sheets')
+}
+
+export async function getRowsCollection() {
+    const db = await getDb()
+    return db.collection<WithoutId<Row>>('rows')
+}
+
+export async function getScansCollection() {
+    const db = await getDb()
+    return db.collection<WithoutId<Scan>>('scans')
+}
+
+export async function getScanResultsCollection() {
+    const db = await getDb()
+    return db.collection<WithoutId<ScanResults>>('scan_results')
+}

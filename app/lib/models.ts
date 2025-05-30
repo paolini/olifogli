@@ -1,8 +1,8 @@
-import { ObjectId } from 'mongodb';
-import { getDb } from './mongodb'
+import { ObjectId } from 'bson';
 import { AvailableSchemas } from './schema';
 
 export interface Account {
+    _id: ObjectId
     provider: string
     providerAccountId: string
     user_id: ObjectId
@@ -13,12 +13,8 @@ export interface Account {
     updatedAt?: Date | null
 }
 
-export async function getAccountsCollection() {
-    const db = await getDb();
-    return db.collection<Account>('accounts');
-}
-
 export interface User {
+    _id: ObjectId
     name: string
     email: string
     is_admin?: boolean
@@ -26,21 +22,12 @@ export interface User {
     lastLogin?: Date
 }
 
-export async function getUsersCollection() {
-    const db = await getDb()
-    return db.collection<User>('users')
-}
-
 export interface Sheet {
+    _id: ObjectId
     name: string
     schema: AvailableSchemas
     params: string
     owner_id: ObjectId
-}
-
-export async function getSheetsCollection() {
-    const db = await getDb()
-    return db.collection<Sheet>('sheets')
 }
 
 export type Data = {
@@ -48,6 +35,7 @@ export type Data = {
 }
 
 export interface Row {
+    _id: ObjectId
     sheetId: ObjectId
     isValid: boolean
 
@@ -59,12 +47,8 @@ export interface Row {
     updatedBy?: ObjectId
 }
 
-export async function getRowsCollection() {
-    const db = await getDb()
-    return db.collection<Row>('rows')
-}
-
 export interface Scan {
+    _id: ObjectId
     sheetId: ObjectId
     jobId: string
     status: string
@@ -72,19 +56,11 @@ export interface Scan {
     timestamp: Date
 }
 
-export async function getScansCollection() {
-    const db = await getDb()
-    return db.collection<Scan>('scans')
-}
-
 export interface ScanResults {
+    _id: ObjectId
     sheetId: ObjectId
     jobId: string
     image: string
     data: Data
 }
 
-export async function getScanResultsCollection() {
-    const db = await getDb()
-    return db.collection<ScanResults>('scan_results')
-}
