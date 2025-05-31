@@ -1,13 +1,10 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import { NextRequest } from 'next/server'; // Usa i tipi corretti per Next.js 13+
-import { ObjectId } from 'mongodb';
-import { getToken } from "next-auth/jwt"
 
 import { typeDefs } from './typedefs'
 import { resolvers } from './resolvers'
-import { Context } from './types'
-import { OLIMANAGER_TOKEN } from '../api/auth/[...nextauth]/route'
+import { Context, get_context } from './types'
 
 // Creazione del server Apollo
 const server = new ApolloServer<Context>({
@@ -18,12 +15,8 @@ const server = new ApolloServer<Context>({
 let handler;
 if (!handler) {
   handler = startServerAndCreateNextHandler<NextRequest,Context>(server, {
-    context: async (req, res): Promise<Context> => {
-      const token = await getToken({ req }) as OLIMANAGER_TOKEN
-      const user_id = token?.user_id
-      return {req, res, user_id: user_id ? new ObjectId(user_id) : undefined};
-    }
-  });
+    context: get_context
+  })
 }
 
 // Esporta il gestore per GET e POST

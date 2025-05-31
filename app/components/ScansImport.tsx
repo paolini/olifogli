@@ -1,18 +1,19 @@
 "use client"
-import { useState } from "react";
-import { useRef } from 'react';
-import { gql, useQuery, TypedDocumentNode } from '@apollo/client';
-import { ErrorBoundary } from 'react-error-boundary';
-import { Scan, ScanResults } from "@/app/lib/models";
-import Button from "./Button";
-import Error from "./Error";
-import Loading from "./Loading";
-import { useApolloClient } from '@apollo/client';
+import { useState, useRef } from "react";
+import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
+import { ErrorBoundary } from 'react-error-boundary'
+import { Scan, ScanResults, Sheet } from "@/app/lib/models"
+import Button from "./Button"
+import Error from "./Error"
+import Loading from "./Loading"
+import { useApolloClient } from '@apollo/client'
+import { myTimestamp } from "../lib/util";
+import { schemas } from "../lib/schema";
 
-export default function ScansImport({sheetId}:{sheetId: string}) {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [error, setError] = useState<string|null>(null);
-    const [busy, setBusy] = useState(false);
+export default function ScansImport({sheet}:{sheet: Sheet}) {
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [error, setError] = useState<string|null>(null)
+    const [busy, setBusy] = useState(false)
     const client = useApolloClient();
 
     function handleClick() {
@@ -20,11 +21,11 @@ export default function ScansImport({sheetId}:{sheetId: string}) {
     };
 
     return <div className="p-4 border rounded-lg shadow-md">
-        Caricamento scansioni OCR {}
+        <h2>Caricamento scansioni OCR</h2>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <ScansLog sheetId={sheetId} />
+            <ScansLog sheet={sheet} />
             <div className="flex flex-col items-center gap-4">
-                { error && <Error error={error} /> }
+                { error && <Error error={error} dismiss={()=>setError('')}/> }
                 <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />
                 <label htmlFor="scansFileInput" onClick={handleClick} className="cursor-pointer">
                     <Button disabled={busy}>Choose File</Button>
@@ -34,33 +35,33 @@ export default function ScansImport({sheetId}:{sheetId: string}) {
     </div>
 
     async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-        if (!event.target.files) return;
-        const file = event.target.files[0];
-        setBusy(true);
+        console.log('handleFileChange', event.target.files)
+        if (!event.target.files) return
+        const file = event.target.files[0]
+        setBusy(true)
+        event.target.value = ''
         await handleUpload(file)
-        setBusy(false);
-        client.refetchQueries({
-            include: [SCANS_QUERY],
-        });
-    };
+        setBusy(false)
+        client.refetchQueries({ include: [SCANS_QUERY] })
+    }
 
     async function handleUpload(file: File) {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('sheetId', sheetId.toString());
+        formData.append('sheetId', sheet._id.toString());
         
         const response = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
-        });
+        })
 
         if (response.ok) {
-            const data = await response.json();
+            const data = await response.json()
         } else {
-            const data = await response.json();
-            setError(data?.error || "upload failed");
+            const data = await response.json()
+            setError(data?.error || "upload failed")
         }
-    };
+    }
 }
 
 
@@ -87,20 +88,20 @@ const SCANS_QUERY: TypedDocumentNode<{scans: Scan[]}, {sheetId: string}>  = gql`
     }
 `;
 
-function ScansLog({sheetId}:{sheetId: string}) {
-    const { data, error } = useQuery(SCANS_QUERY, { variables: { sheetId }, pollInterval: 3000 });
+function ScansLog({sheet}:{sheet: Sheet}) {
+    const { data, error } = useQuery(SCANS_QUERY, { variables: { sheetId: sheet._id.toString() }, pollInterval: 3000 });
 
     if (error) return <Error error={error} />
     if (!data) return <Loading />
 
     const scans = data.scans;
 
-    return <div>
-        {scans.map(scan => <div key={scan.jobId}>
-            [job {scan.jobId}] {scan.message}
-            {scan.status === "completed" && <ScanResultsTable sheetId={sheetId} jobId={scan.jobId} />}
-        </div>)}
-    </div>
+    return <ul className="list-disc pl-5 space-y-2">
+        {scans.map(scan => <li key={scan.jobId}>
+                <b>[{myTimestamp(scan.timestamp)}]</b> {scan.message}
+                {scan.status === "completed" && <ScanResultsTable sheet={sheet} jobId={scan.jobId} />}
+            </li>)}
+    </ul>
 }
 
 type ScanResultsWithId = ScanResults & {_id: string};
@@ -117,29 +118,39 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
     }
 `;
 
-function ScanResultsTable({sheetId, jobId}:{sheetId: string, jobId: string}) {
-    const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId, jobId } });
+function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
+    const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId: sheet._id.toString(), jobId } })
     if (error) return <Error error={error} />
     if (!data) return <Loading />
-    const rows = data.scanResults;
+    const rows = data.scanResults
+    const schema = schemas[sheet.schema]
 
     if (rows.length === 0) return <p>Nessun dato acquisito</p>;
     
-    const headers = Object.keys(rows[0].data);
     return <>
         <table>
             <thead>
                 <tr>
-                    <th>Image</th>
-                    {headers.map(header => <th key={header}>{header}</th>)}
+                    <th>scan</th>
                 </tr>
             </thead>
             <tbody>
-                {rows.map(row => <tr key={row._id}>
-                    <td><a href={`/sheet/${sheetId}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
-                    {headers.map(header => <td key={header}>{row.data[header]}</td>)}
-                </tr>)}
+                {rows.map(row => 
+                    <ScanRow key={row._id} sheet={sheet} jobId={jobId} headers={Object.keys(row.data)} row={row} />)
+                }
             </tbody>
         </table>
     </>
+}
+
+function ScanRow({sheet, jobId, headers, row}:{
+    sheet: Sheet,
+    jobId: string,
+    headers: string[],
+    row: ScanResultsWithId
+}) {
+    return <tr key={row._id}>
+        <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
+        <td><pre>{JSON.stringify(row,null,2)}</pre></td>
+    </tr>
 }

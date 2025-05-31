@@ -10,6 +10,7 @@ import { Row, Data } from '@/app/lib/models'
 import { Ordering, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
 import ErrorElement from '@/app/components/Error'
 import Loading from '@/app/components/Loading'
+import { myTimestamp } from '../lib/util';
 
 export interface RowWithId extends Row {
     __typename: string;
@@ -131,19 +132,12 @@ export default function Table({ref, sheetId, schemaName}:{
           }
           return obj
       })
-      const now = new Date();
-
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
-
-      const HH = String(now.getHours()).padStart(2, '0');
-      const MM = String(now.getMinutes()).padStart(2, '0');
+      const filename = myTimestamp(new Date()).replace(':', '-').replace(' ', '_') + '.csv'
 
       downloadCSVWithPapa(
           schema.csv_header(),
           rows.map(row => schema.csv_row(row.data)),
-          `${schema.name}-${yyyy}-${mm}-${dd}-${HH}-${MM}.csv`
+          filename
       )
   }
 }

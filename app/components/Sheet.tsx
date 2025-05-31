@@ -52,7 +52,7 @@ function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
         }
         { tab === 'scans' && 
-            <ScansImport sheetId={sheet._id} />
+            <ScansImport sheet={sheet} />
         }
     </>
 }

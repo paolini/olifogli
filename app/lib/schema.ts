@@ -1,4 +1,4 @@
-import { Data } from "@/app/lib/models";
+import { Data, ScanResults } from "@/app/lib/models";
 
 const Id = "Id"
 const Zona = "Zona"
@@ -50,6 +50,10 @@ export class Schema {
             if (type === Computed) return "???" // da calcolare in base al codice e alle permutazioni
             return row[field] || ""
         })
+    }
+
+    scan_to_data(scan: ScanResults): Data {
+        throw new Error(`scan_to_data not implemented for schema "${this.name}"`)
     }
 }
 
@@ -186,6 +190,27 @@ export class AmmissioneSenior extends Schema {
             .map(([field, _]) => row[field] || "X")
             .join("")
         return [...baseRow, answers]
+    }
+
+    scan_to_data(scan: ScanResults): Data {
+        /*
+        example scan.data:
+          "data": {
+            "score": "0",
+            "StudentCode": "012345678901234567890123456789",
+            "TestCode": "012345678",
+            "Answer1": "ABCDE",
+            "Answer2": "ABCDE",
+            "Answer3": "ABCDE",
+            ...
+            "Answer20": "ABCDE"
+        }
+        */
+        const data: Data = {}
+        data.id = scan.data.StudentCode || ""
+
+        // TO BE COMPLETED
+        return this.clean(data)
     }
 }
 

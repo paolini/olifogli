@@ -1,11 +1,18 @@
 import { NextRequest } from 'next/server'; // Usa i tipi corretti per Next.js 13+
 import { ObjectId } from 'mongodb';
 import { GraphQLScalarType, Kind, ValueNode } from "graphql";
+import { OLIMANAGER_TOKEN } from '@/app/api/auth/[...nextauth]/route'
+import { getToken } from "next-auth/jwt"
 
 export type Context = {
   req: NextRequest
-  res: Response|undefined
   user_id?: ObjectId
+}
+
+export async function get_context(req: NextRequest): Promise<Context> {
+  const token = await getToken({ req }) as OLIMANAGER_TOKEN
+  const user_id = token?.user_id
+  return {req, user_id: user_id ? new ObjectId(user_id) : undefined};
 }
 
 export const Timestamp = new GraphQLScalarType({
