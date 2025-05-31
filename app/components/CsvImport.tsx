@@ -19,9 +19,10 @@ interface CSVRow {
   [key: string]: string;
 }
 
-export default function CsvImport({schemaName, sheetId}:{
+export default function CsvImport({schemaName, sheetId, done}:{
     schemaName: AvailableSchemas,
     sheetId: string,
+    done: () => void,
 }) {
   const schema = schemas[schemaName]
   const columns = Object.keys(schema.fields);
@@ -50,7 +51,7 @@ export default function CsvImport({schemaName, sheetId}:{
       { error && <Error error={error} />}
       <br />
       { data.length > 0 
-        && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows}/>
+        && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows} done={done}/>
         }
   </div>
 
@@ -98,16 +99,18 @@ export default function CsvImport({schemaName, sheetId}:{
   }
 }
 
-function CsvTable({data, columns, setData, importRows}: {
+function CsvTable({data, columns, setData, importRows, done}: {
     data: string[][],
     columns: string[],
     setData: (data: string[][]) => void,
-    importRows: (rows: string[][]) => Promise<number>
+    importRows: (rows: string[][]) => Promise<number>,
+    done: () => void
 }) {
     const actions = {
         done: 'Procedi con l\'importazione',
         move: 'Sposta colonna',
-        delete: 'Elimina colonna',
+        delete: 'Svuota colonna',
+        deleteFirstRow: 'Elimina prima riga', 
         deleteRow: 'Elimina riga',
         cancel: 'Annulla importazione',
     }
@@ -115,54 +118,90 @@ function CsvTable({data, columns, setData, importRows}: {
     const [action, setAction] = useState<Action|'busy'>('move')
     const [selectedFirstCol, setSelectedFirstCol] = useState<number>(-1)
     const [selectedLastCol, setSelectedLastCol] = useState<number>(-1)
-    const hideFrom = data.length>200 ? 100 : data.length
-    const hideTo = data.length>200 ? data.length-100 : 0
+    const [maxShownRows, setMaxShownRows] = useState<number>(20)
+    const [removedLineCount, setRemovedLineCount] = useState<number>(0)
 
     if (data.length === 0) return <Error error="tabella vuota" />
     const first_row = data[0];
 
+    const filled_columns = [...columns]
+
+    for (let i = columns.length; i < first_row.length; i++) {
+        filled_columns[i] = ''
+    }
+
+    const crop_data = data.slice(0, maxShownRows)
+
     return <>
         Numero righe: <b>{data.length}</b>
+        { removedLineCount > 0 && <>
+            <br />
+            <span className="bg-alert p-1">Righe eliminate:</span> <b>{removedLineCount}</b>
+        </>}
         <br/>
-        <select disabled={action==="busy"} value={action} onChange={(e) => setAction(e.target.value as Action)}>
+        <select className="my-1 p-1" disabled={action==="busy"} value={action} onChange={(e) => selectAction(e.target.value as Action)}>
             {Object.entries(actions).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
         </select> {}
         { action==="move" && selectedFirstCol < 0 && <b>Seleziona la colonna da spostare</b>}
         { action==="move" && selectedFirstCol >= 0 && <b>Seleziona la colonna di destinazione</b> }
-        { action==="move" && selectedFirstCol >=0 && <button onClick={() => {setSelectedFirstCol(-1);setSelectedLastCol(-1)}}>Annulla spostamento</button>}
+        { action==="move" && selectedFirstCol >=0 && <button className="mx-1 p-1" onClick={() => {setSelectedFirstCol(-1);setSelectedLastCol(-1)}}>Annulla spostamento</button>}
         { action==="delete" && <b>Seleziona la colonna da eliminare</b>}
+        { action==="deleteFirstRow" && <button className="bg-alert p-1" onClick={() => {deleteRow(0);selectAction("move")}}>Elimina la prima riga</button>}
         { action==="deleteRow" && <b>Seleziona la riga da eliminare</b>}
-        { action==="done" && <button onClick={doImport}>importa i dati</button>}
-        { action==="cancel" && <button onClick={() => setData([])}>Annulla importazione</button>}
+        { action==="done" && <button className="bg-alert p-1" onClick={doImport}>importa i dati</button>}
+        { action==="cancel" && <button className="bg-alert p-1" onClick={() => setData([])}>Annulla importazione</button>}
         <table><thead>
             <tr>
-                { action==="deleteRow" && <th></th>}
-                {columns.map((t, index) => <th key={index}>
-                    {selectedFirstCol<0 ? t : <button onClick={() => moveColumns(index)}>{t}</button>}
+                <th>#</th>
+                {filled_columns.map((t, index) => <th key={index}>
+                    { ["move", "delete"].includes(action) 
+                        ? <button className="px-1" onClick={() => clickColumn(index)}>{t||'▿'}</button>
+                        : t
+                    }
                 </th>)}
-            </tr>
-            <tr>
-                { action==="deleteRow" && <th></th>}
-                {first_row.map((_, index) => 
-                    <td key={index}>
-                    { action==="move" && selectedFirstCol === -1 && <button onClick={() => {setSelectedFirstCol(index);setSelectedLastCol(index)}}>sposta</button> }
-                    { action==="delete" && <button onClick={() => deleteColumn(index)}>elimina</button>}
-                    </td>)}
             </tr>
         </thead>
         <tbody>
-            {data.map((row, index) => (index<hideFrom || index>=hideTo) 
-                ? <tr key={index}>
-                    { action==="deleteRow" && <td><button onClick={() => setData(data.filter((_, i) => i !== index))}>elimina</button></td>}
+            {crop_data.map((row, index) => <tr key={index}>
+                    { action==="deleteRow" 
+                        ? <td><button onClick={() => deleteRow(index)}>elimina</button></td>
+                        : <td><i>{index+1}</i></td>
+                    }
                     {row.map((value, index) => (
                         <td key={index} style={{backgroundColor: ((selectedFirstCol <= index && index <= selectedLastCol) ? "#f3ff7a":"")}}>{value}</td>
                     ))}
                 </tr>
-                : (index===hideFrom && <tr key={index}><td colSpan={columns.length}>...</td></tr>)    
             )}
+            {crop_data.length < data.length &&
+                <tr>
+                    <td colSpan={columns.length}>
+                        <button onClick={() => setMaxShownRows(maxShownRows*2)}>Mostra altre righe</button>
+                    </td>
+                </tr>
+            }
         </tbody>
         </table>
     </>
+
+    function selectAction(action: Action) {
+        setAction(action)
+        setSelectedFirstCol(-1)
+        setSelectedLastCol(-1)
+    }
+
+    function clickColumn(index: number) {
+        if (action === 'move') {
+            if (selectedFirstCol < 0) {
+                setSelectedFirstCol(index)
+                setSelectedLastCol(index)
+            } else {
+                moveColumns(index)
+            }
+        } 
+        if (action === 'delete') {
+            deleteColumn(index)
+        }
+    }
 
     function moveColumns(to: number) {
         setData(data.map(row => {
@@ -184,10 +223,30 @@ function CsvTable({data, columns, setData, importRows}: {
         }))
     }
 
+    function deleteRow(index: number) {
+        setData(data.filter((_, i) => i !== index))
+        setRemovedLineCount(removedLineCount + 1)
+    }
+
     async function doImport() {
         setAction('busy')
         const res = await importRows(data.map(row => row.slice(0,columns.length)))
+        done()
         setAction('done')
     }
 
 }
+
+function myZip(arr1: string[], arr2: string[]) {
+    const maxLength = Math.max(arr1.length, arr2.length);
+    const result = [];
+  
+    for (let i = 0; i < maxLength; i++) {
+      result.push([
+        i < arr1.length ? arr1[i] : '',
+        i < arr2.length ? arr2[i] : ''
+      ]);
+    }
+  
+    return result;
+  }

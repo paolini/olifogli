@@ -10,7 +10,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function Button({ children, className, onClick, variant = 'default', disabled, ...props }: ButtonProps) {
-  const baseStyles = 'px-4 py-2 rounded-lg font-medium transition'.split(' ');
+  const baseStyles = 'px-4 py-2 font-medium transition'.split(' ');
   const variants = {
     default: 'bg-blue-600 text-white hover:bg-blue-700'.split(' '),
     outline: 'border border-gray-300 text-gray-700 hover:bg-gray-100'.split(' '),

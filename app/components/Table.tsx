@@ -1,13 +1,15 @@
 "use client"
-import { useState, memo } from 'react'
+import { useState, memo, useImperativeHandle, Ref } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useQuery, useMutation, StoreObject, gql } from '@apollo/client';
 import { Schema, schemas, AvailableSchemas } from '@/app/lib/schema'
+import Papa from "papaparse"
 
 import { InputCell } from '@/app/components/Input'
 import { Row, Data } from '@/app/lib/models'
 import { Ordering, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
-import CsvExport from '@/app/components/CsvExport'
+import ErrorElement from '@/app/components/Error'
+import Loading from '@/app/components/Loading'
 
 export interface RowWithId extends Row {
     __typename: string;
@@ -52,14 +54,19 @@ const DELETE_ROW = gql`
   }
 `;
 
-export default function Table({sheetId, schemaName}:{sheetId: string, schemaName: AvailableSchemas}) {
-  const schema = schemas[schemaName];
+export default function Table({ref, sheetId, schemaName}:{
+    ref: Ref<{csv_download: () => void}>,
+    sheetId: string, 
+    schemaName: AvailableSchemas,
+  }) {
+  const schema = schemas[schemaName]
   const { loading, error, data } = useQuery<{rows:WithId<Row>[]}>(GET_ROWS, {variables: {sheetId}});
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const criteria = useCriteria(schema)
-
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>Errore: {error.message}</div>
+  useImperativeHandle(ref, () => ({csv_download}))
+  
+  if (error) return <ErrorElement error={error}/>
+  if (loading || !data) return <Loading />
   if (!data) return [] // cannot really happen
   const rows = filtraEOrdina(criteria, data.rows)
 
@@ -84,7 +91,6 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
           : <InputRow sheetId={sheetId} schema={schema}/>}
       </tbody>
     </table>
-    <CsvExport schema={schema} rows={rows}/>
   </>
 
   function columnTitle(field: string) {
@@ -115,6 +121,30 @@ export default function Table({sheetId, schemaName}:{sheetId: string, schemaName
       default:
           return field
     }
+  }
+
+  async function csv_download() {
+      const data = rows.map(row => {
+          const obj: Record<string, string> = {}
+          for (const key in schema.fields) {
+              obj[key] = row.data[key] || ''
+          }
+          return obj
+      })
+      const now = new Date();
+
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+
+      const HH = String(now.getHours()).padStart(2, '0');
+      const MM = String(now.getMinutes()).padStart(2, '0');
+
+      downloadCSVWithPapa(
+          schema.csv_header(),
+          rows.map(row => schema.csv_row(row.data)),
+          `${schema.name}-${yyyy}-${mm}-${dd}-${HH}-${MM}.csv`
+      )
   }
 }
 
@@ -283,4 +313,21 @@ function useDeleteRow() {
         },
       });
     }});
+}
+
+function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dati.csv") {
+  const csv = Papa.unparse({
+      fields: fields,
+      data: rows
+  }); // converte array di oggetti o array di array
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

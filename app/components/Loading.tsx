@@ -1,3 +1,5 @@
+import { SyncLoader } from "react-spinners"
+
 export default function Loading({}) {
-    return <div>Loading...</div>;
+    return <SyncLoader />
 }
