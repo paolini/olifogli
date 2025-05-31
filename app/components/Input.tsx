@@ -1,16 +1,18 @@
 import { KeyboardEvent } from "react"
+import { Field } from "../lib/schema"
 
-export function InputCell({type, value, setValue, onEnter}: {
-  type: string,
+export function InputCell({field, value, setValue, onEnter}: {
+  field: Field,
   value: string,
   setValue: ((value: string) => void),
   onEnter?: () => void,
 }) {
-  switch(type) {
-    case 'ChoiceAnswer': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter}/>
-    case 'NumberAnswer': return <NumberInput value={value} setValue={setValue} onEnter={onEnter}/>
-    case 'ScoreAnswer': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter}/>
-    default: return <Input value={value} setValue={setValue} onEnter={onEnter}/>
+  switch(field.widget) {
+    case 'ChoiceInput': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter}/>
+    case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter}/>
+    case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter}/>
+    case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter}/>
+    default: return <span>[invalid widget "{field.widget}"]</span>
   }
 }
 
@@ -60,7 +62,7 @@ export function ChoiceInput({value, setValue, onEnter}:{
   }
 }
 
-export function NumberInput({value, setValue, onEnter}: {
+export function NumericInput({value, setValue, onEnter}: {
   value: string, 
   setValue: (value: string) => void,
   onEnter?: () => void,

@@ -2,7 +2,7 @@
 import { useState, memo, useImperativeHandle, Ref } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useQuery, useMutation, StoreObject, gql } from '@apollo/client';
-import { Schema, schemas, AvailableSchemas } from '@/app/lib/schema'
+import { Schema, schemas, AvailableSchemas, Field } from '@/app/lib/schema'
 import Papa from "papaparse"
 
 import { InputCell } from '@/app/components/Input'
@@ -79,9 +79,9 @@ export default function Table({ref, sheetId, schemaName}:{
     <table>
       <thead>
         <tr>
-            {Object.entries(schema.fields).map(([field,type]) => 
-              <th scope="col" key={field} className={`schema-${field} type-${type}`}>
-              {columnTitle(field)}
+            {schema.fields.map(field => 
+              <th scope="col" key={field.name} className={field.css_style}>
+              {field.header}
               </th>)}
         </tr>
       </thead>
@@ -93,36 +93,6 @@ export default function Table({ref, sheetId, schemaName}:{
       </tbody>
     </table>
   </>
-
-  function columnTitle(field: string) {
-    switch (field) {
-      case 'dataNascita': return 'nascita'
-      case 'classe': return 'cls'
-      case 'sezione': return 'sez'
-      case 'r01': return '1'
-      case 'r02': return '2'
-      case 'r03': return '3'
-      case 'r04': return '4'
-      case 'r05': return '5'
-      case 'r06': return '6'
-      case 'r07': return '7'
-      case 'r08': return '8'
-      case 'r09': return '9'
-      case 'r10': return '10'
-      case 'r11': return '11'
-      case 'r12': return '12'
-      case 'r13': return '13'
-      case 'r14': return '14'
-      case 'r15': return '15'
-      case 'r16': return '16'
-      case 'r17': return '17'
-      case 'r18': return '18'
-      case 'r19': return '19'
-      case 'r20': return '20'
-      default:
-          return field
-    }
-  }
 
   async function csv_download() {
       const data = rows.map(row => {
@@ -163,16 +133,15 @@ function TableRow({schema, row, onClick}: {
   const className = `clickable${row.isValid ? "" : " alert"}`
 
   return <tr className={className} onClick={() => onClick && onClick()}>
-    { Object.entries(schema.fields).map(([field,type]) => <TableCell key={field} field={field} type={type} value={row.data[field]}/>) }
+    { schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
   </tr>
 }
 
-function TableCell({field, type, value}:{
-  field: string,
-  type: string,
+function TableCell({field, value}:{
+  field: Field,
   value: string,
 }) {
-  return <td className={`schema-${field} type-${type}`} key={field}>{value}</td>
+  return <td key={field.name} className={field.css_style}>{value}</td>
 }
 
 function InputRow({sheetId, schema, row, done}: {
@@ -181,32 +150,30 @@ function InputRow({sheetId, schema, row, done}: {
   row?: WithId<Row>,
   done?: () => void
 }) {
-  const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow();
-  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow();
-  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow(); 
-  const [fields, setFields] = useState<Data>(Object.fromEntries(Object.entries(schema.fields).map(
-      ([f,t]) => [f, row?.data[f] || ''])))
+  const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
+  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
+  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
+  const [fields, setFields] = useState<Data>(Object.fromEntries(schema.fields.map(f => [f.name, row?.data[f.name] || ''])))
     
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
-  const modified = hasBeenModified();
-  const frozenTypes = ['Id', 'Frozen', 'Computed'];
+  const modified = hasBeenModified()
 
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
 
   return <tr className={modified ? "alert": ""}>
-    { Object.entries(schema.fields).map(([field,type]) => 
-      frozenTypes.includes(type)
-        ? <TableCell key={field} field={field} type={type} value={fields[field]||''} />
-        : <td key={field} className={`schema-${field} type-${type}`}>
+    { schema.fields.map(field => 
+      field.editable
+      ? <td key={field.name} className={field.css_style}>
             <InputCell
-              type={type}
-              value={fields[field]||''} 
-              setValue={v => setFields(fields => ({...fields, [field]: v}))}
+              field={field}
+              value={fields[field.name]||''} 
+              setValue={v => setFields(fields => ({...fields, [field.name]: v}))}
               onEnter={save}
               />
           </td>
+      : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
     )}
     <td>
       <button disabled={loading} onClick={save}>salva</button>
@@ -215,9 +182,9 @@ function InputRow({sheetId, schema, row, done}: {
   </tr>
 
   function hasBeenModified() {
-    for (const field of Object.keys(schema.fields)) {
-      if (!row && fields[field] !== '') return true;
-      if (row && fields[field] !== row.data[field]) return true;
+    for (const field of schema.fields) {
+      if (!row && fields[field.name] !== '') return true;
+      if (row && fields[field.name] !== row.data[field.name]) return true;
     }
     return false;
   }

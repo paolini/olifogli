@@ -1,55 +1,99 @@
 import { Data, ScanResults } from "@/app/lib/models";
 
-const Id = "Id"
-const Zona = "Zona"
-const ZonaId = "ZonaId"
-const Codice = "Codice"
-const Cognome = "Cognome"
-const Nome = "Nome"
-const Classe = "Classe"
-const Sezione = "Sezione"
-const Scuola = "Scuola"
-const ScuolaId = "ScuolaId"
-const DataNascita = "DataNascita"
-const ChoiceAnswer = "ChoiceAnswer"
-const NumberAnswer = "NumberAnswer"
-const ScoreAnswer = "ScoreAnswer"
-const Computed = "Computed"
-const Frozen = "Frozen"
+export class Field {
+    name: string // used as key in data structures
+    header: string // used as human-readable header in UI
+    css_style: string // used in CSS
+    editable: boolean
+    widget: string // identify the HTML input widget
 
-type Fields = Data
+    constructor(name: string, header?: string) {
+        this.name = name
+        this.header = header || name
+        this.css_style = `field-${this.name}`
+        this.editable = true
+        this.widget = 'Input'
+    }
+
+    clean(value: string): string {
+        return value.trim()
+    }
+
+    isValid(value: string): boolean {
+        return value !== ""
+    }
+}
+    
+export class ComputedField extends Field {
+    constructor(name: string) {
+        super(name)
+        this.editable = false
+    }
+
+    valueIsValid(_: string): boolean {
+        return true
+    }
+}
+
+export class ChoiceAnswerField extends Field {
+    constructor(name: string, header?: string) {
+        super(name, header)
+        this.css_style += ` field-ChoiceAnswer`
+        this.widget = 'ChoiceInput'
+    }
+}
+
+export class NumericAnswerField extends Field {
+    constructor(name: string, header?: string) {
+        super(name, header)
+        this.css_style += ` field-NumericAnswer`
+        this.widget = 'NumericInput'
+    }
+}
+
+export class ScoreAnswerField extends Field {
+    constructor(name: string, header?: string) {
+        super(name, header)
+        this.css_style += ` field-ScoreAnswer`
+        this.widget = 'ScoreInput'
+    }
+}
 
 export class Schema {
-    fields: Fields
-    name: string
+    fields: Field[]
+    name: string // da usare nel codice
+    header: string // da usare nella UI
+    params: string
     
-    constructor(fields: Fields) {
+    constructor(name: string, header: string, fields: Field[], params: string='{}') {
         this.fields = fields
-        this.name = "foglio"
+        this.header = header
+        this.name = name
+        this.params = params
     }
 
     clean(data: Data): Data {
-        const cleaned: Data = Object.fromEntries(Object.entries(this.fields).map(([field, type]) => [field, data[field] || ""]))
+        const cleaned: Data = Object.fromEntries(this.fields
+            .map(field => [field.name, field.clean(data[field.name] || "")]))
         return cleaned
     }
 
     // da integrare con un set di condizioni completo
     isValid(row: Data): boolean {
-        Object.entries(this.fields).map(([field, type]) => {
-            if (type !== Computed && row[field] == "") return false
-        })
+        for (var i=0; i < this.fields.length; i++) {
+            const field = this.fields[i]
+            const value = row[field.name]
+            if (!field.isValid(value)) return false
+        }
         return true
     } 
 
     csv_header(): string[] {
-        return Object.keys(this.fields)
+        return this.fields.map(field => field.name)
     }
 
     csv_row(row: Data): string[] {
-        return Object.entries(this.fields).map(([field, type]) => {
-            if (type === Computed) return "???" // da calcolare in base al codice e alle permutazioni
-            return row[field] || ""
-        })
+        return this.fields.map(field => row[field.name])
     }
 
     scan_to_data(scan: ScanResults): Data {
@@ -58,120 +102,94 @@ export class Schema {
 }
 
 export class Archimede extends Schema {
-    params: string
-
     constructor(params: string='{}') {
-        super({
-            codice: Codice,
-            cognome: Cognome,
-            nome: Nome,
-            dataNascita: DataNascita,
-            classe: Classe,
-            sezione: Sezione,
-            scuola: Scuola,
-            r01: ChoiceAnswer,
-            r02: ChoiceAnswer,
-            r03: ChoiceAnswer,
-            r04: ChoiceAnswer,
-            r05: ChoiceAnswer,
-            r06: ChoiceAnswer,
-            r07: ChoiceAnswer,
-            r08: ChoiceAnswer,
-            r09: ChoiceAnswer,
-            r10: ChoiceAnswer,
-            r11: ChoiceAnswer,
-            r12: ChoiceAnswer,
-            punti: Computed,
-        })
-        this.params = params
-        this.name = "archimede"
+        super('archimede', 'Archimede', [
+            new Field('codice'),
+            new Field('cognome'),
+            new Field('nome'),
+            new Field('dataNascita', 'data di nascita'),
+            new Field('classe'),
+            new Field('sezione'),
+            new Field('scuola'),
+            new ChoiceAnswerField('r01', '1'),
+            new ChoiceAnswerField('r02', '2'),
+            new ChoiceAnswerField('r03', '3'),
+            new ChoiceAnswerField('r04', '4'),
+            new ChoiceAnswerField('r05', '5'),
+            new ChoiceAnswerField('r06', '6'),
+            new ChoiceAnswerField('r07', '7'),
+            new ChoiceAnswerField('r08', '8'),
+            new ChoiceAnswerField('r09', '9'),
+            new ChoiceAnswerField('r10', '10'),
+            new ChoiceAnswerField('r11', '11'),
+            new ChoiceAnswerField('r12', '12'),
+            new ComputedField('punti'),
+        ], params)
     }
-
-    clean(data: Data): Data {
-        const cleaned: Data = Object.fromEntries(Object.entries(this.fields).map(([field, type]) => [field, data[field] || ""]))
-        return {
-            ...cleaned,
-            punti: "???" // da calcolare in base al codice e alle permutazioni
-        }
-    }
-
-    // da integrare con un set di condizioni completo
-    isValid(row: Data): boolean {
-        Object.entries(this.fields).map(([field, type]) => {
-            if (type !== Computed && row[field] == "") return false
-        })
-        return true
-    } 
 }
 
 export class Distrettuale extends Schema {
-    params: string
-
     constructor(params: string='{}') {
-        super({
-            cognome: Frozen,
-            nome: Frozen,
-            classe: Frozen,
-            sezione: Frozen,
-            scuola: Frozen,
-            r01: ChoiceAnswer,
-            r02: ChoiceAnswer,
-            r03: ChoiceAnswer,
-            r04: ChoiceAnswer,
-            r05: ChoiceAnswer,
-            r06: ChoiceAnswer,
-            r07: ChoiceAnswer,
-            r08: ChoiceAnswer,
-            r09: ChoiceAnswer,
-            r10: ChoiceAnswer,
-            r11: ChoiceAnswer,
-            r12: ChoiceAnswer,
-            r13: NumberAnswer,
-            r14: NumberAnswer,
-            r15: ScoreAnswer,
-            r16: ScoreAnswer,
-            r17: ScoreAnswer,
-            punti: Computed,
-        })
-        this.params = params
-        this.name = "distrettuale"
+        super('distrettuale', 'Distrettuale', [
+            new Field('cognome'),
+            new Field('nome'),
+            new Field('classe'),
+            new Field('sezione'),
+            new Field('scuola'),
+            new ChoiceAnswerField('r01', '1'),
+            new ChoiceAnswerField('r02', '2'),
+            new ChoiceAnswerField('r03', '3'),
+            new ChoiceAnswerField('r04', '4'),
+            new ChoiceAnswerField('r05', '5'),
+            new ChoiceAnswerField('r06', '6'),
+            new ChoiceAnswerField('r07', '7'),
+            new ChoiceAnswerField('r08', '8'),
+            new ChoiceAnswerField('r09', '9'),
+            new ChoiceAnswerField('r10', '10'),
+            new ChoiceAnswerField('r11', '11'),
+            new ChoiceAnswerField('r12', '12'),
+            new NumericAnswerField('r13', '13'),
+            new NumericAnswerField('r14', '14'),
+            new ScoreAnswerField('r15', '15'),
+            new ScoreAnswerField('r16', '16'),
+            new ScoreAnswerField('r17', '17'),
+            new ComputedField('punti'),
+        ], params)
     }
 }
 
 export class AmmissioneSenior extends Schema {
-    params: string
-
     constructor(params: string='{}') {
-        super({
-            id: Id,
-            cognome: Frozen,
-            nome: Frozen,
-            scuola_id: Frozen,
-            scuola: Frozen,
-            zona_id: Frozen,
-            zona: Frozen,
-            r01: ChoiceAnswer,
-            r02: ChoiceAnswer,
-            r03: ChoiceAnswer,
-            r04: ChoiceAnswer,
-            r05: ChoiceAnswer,
-            r06: ChoiceAnswer,
-            r07: ChoiceAnswer,
-            r08: ChoiceAnswer,
-            r09: ChoiceAnswer,
-            r10: ChoiceAnswer,
-            r11: ChoiceAnswer,
-            r12: ChoiceAnswer,
-            r13: ChoiceAnswer,
-            r14: ChoiceAnswer,
-            r15: ChoiceAnswer,
-            r16: ChoiceAnswer,
-            r17: ChoiceAnswer,
-            r18: ChoiceAnswer,
-            r19: ChoiceAnswer,
-            r20: ChoiceAnswer,
-            punti: Computed,
-        })
+        super('ammissione_senior', 'ammissione Senior', [
+            new Field('id'),
+            new Field('cognome'),
+            new Field('nome'),
+            new Field('scuola_id'),
+            new Field('scuola'),
+            new Field('zona_id'),
+            new Field('zona'),
+            new ChoiceAnswerField('r01','1'),
+            new ChoiceAnswerField('r02','2'),
+            new ChoiceAnswerField('r03','3'),
+            new ChoiceAnswerField('r04','4'),
+            new ChoiceAnswerField('r05','5'),
+            new ChoiceAnswerField('r06','6'),
+            new ChoiceAnswerField('r07','7'),
+            new ChoiceAnswerField('r08','8'),
+            new ChoiceAnswerField('r09','9'),
+            new ChoiceAnswerField('r10','10'),
+            new ChoiceAnswerField('r11','11'),
+            new ChoiceAnswerField('r12','12'),
+            new ChoiceAnswerField('r13','13'),
+            new ChoiceAnswerField('r14','14'),
+            new ChoiceAnswerField('r15','15'),
+            new ChoiceAnswerField('r16','16'),
+            new ChoiceAnswerField('r17','17'),
+            new ChoiceAnswerField('r18','18'),
+            new ChoiceAnswerField('r19','19'),
+            new ChoiceAnswerField('r20','20'),
+            new ComputedField('punti'),
+        ], params)
         this.params = params
         this.name = "ammissione_senior"
     }
@@ -185,9 +203,9 @@ export class AmmissioneSenior extends Schema {
 
     csv_row(row: Data): string[] {
         const baseRow = super.csv_row(row)
-        const answers = Object.entries(this.fields)
-            .filter(([field, type]) => type === ChoiceAnswer)
-            .map(([field, _]) => row[field] || "X")
+        const answers = this.fields
+            .filter(field => (field instanceof ChoiceAnswerField))
+            .map(field => row[field.name] || "X")
             .join("")
         return [...baseRow, answers]
     }

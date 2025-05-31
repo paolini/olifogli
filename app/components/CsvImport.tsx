@@ -25,9 +25,9 @@ export default function CsvImport({schemaName, sheetId, done}:{
     done: () => void,
 }) {
   const schema = schemas[schemaName]
-  const columns = Object.keys(schema.fields);
+  const columns = schema.fields.map(field => field.name)
   const [delimiter, setDelimiter] = useState<string>('')
-  const client = useApolloClient();
+  const client = useApolloClient()
   const [addRows] = useMutation(ADD_ROWS);
   const [data, setData] = useState<string[][]>([])
   const [error, setError] = useState<string | null>(null)
