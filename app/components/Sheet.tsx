@@ -38,13 +38,15 @@ function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
     const [tab, setTab] = useState<'table' | 'csv' | 'scans'>('table')
 
     return <>
-        { tab === 'table' && <>
-            <button className="p-1 my-1 bg-alert" onClick={() => setTab('csv')}>Importa da CSV</button>
-            <button className="p-1 m-1 bg-alert" onClick={() => tableRef.current?.csv_download()}>Scarica CSV</button>
-            <button className="p-1 my-1 bg-alert" onClick={() => setTab('scans')}>Importa da scansioni</button>
-            <br />
-            <Table ref={tableRef} sheetId={sheet._id} schemaName={sheet.schema} />
-            </>}
+        { tab === 'table' && 
+            <>
+                <button className="p-1 my-1 bg-alert" onClick={() => setTab('csv')}>Importa da CSV</button>
+                <button className="p-1 m-1 bg-alert" onClick={() => tableRef.current?.csv_download()}>Scarica CSV</button>
+                <button className="p-1 my-1 bg-alert" onClick={() => setTab('scans')}>Importa da scansioni</button>
+                <br />
+                <Table ref={tableRef} sheetId={sheet._id} schemaName={sheet.schema} />
+            </>
+        }
         { tab !== 'table' && 
             <button className="p-1 bg-alert" onClick={() => setTab('table')}>Torna alla tabella</button>
         }

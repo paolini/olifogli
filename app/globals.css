@@ -54,7 +54,12 @@ button {
 }
 
 h1 {
-  font-size: 2rem;
+  font-size: 3ex;
+  font-weight: bold;
+}
+
+h2 {
+  font-weight: bold;
 }
 
 tr.clickable {

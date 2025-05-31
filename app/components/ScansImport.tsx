@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef } from "react";
+import { useState, useRef } from "react"
 import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Scan, ScanResults, Sheet } from "@/app/lib/models"
@@ -7,32 +7,33 @@ import Button from "./Button"
 import Error from "./Error"
 import Loading from "./Loading"
 import { useApolloClient } from '@apollo/client'
-import { myTimestamp } from "../lib/util";
-import { schemas } from "../lib/schema";
+import { myTimestamp } from "../lib/util"
+import { schemas } from "../lib/schema"
+import { ObjectId } from "bson"
 
 export default function ScansImport({sheet}:{sheet: Sheet}) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [error, setError] = useState<string|null>(null)
     const [busy, setBusy] = useState(false)
-    const client = useApolloClient();
+    const client = useApolloClient()
 
     function handleClick() {
-      fileInputRef.current?.click();
-    };
+      fileInputRef.current?.click()
+    }
 
-    return <div className="p-4 border rounded-lg shadow-md">
+    return <>
         <h2>Caricamento scansioni OCR</h2>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <ScansLog sheet={sheet} />
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col gap-4">
                 { error && <Error error={error} dismiss={()=>setError('')}/> }
                 <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />
                 <label htmlFor="scansFileInput" onClick={handleClick} className="cursor-pointer">
-                    <Button disabled={busy}>Choose File</Button>
+                    <Button disabled={busy}>carica PDF</Button>
                 </label>
             </div>    
+            <ScansLog sheet={sheet} />
         </ErrorBoundary>
-    </div>
+    </>
 
     async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
         console.log('handleFileChange', event.target.files)
@@ -55,9 +56,7 @@ export default function ScansImport({sheet}:{sheet: Sheet}) {
             body: formData,
         })
 
-        if (response.ok) {
-            const data = await response.json()
-        } else {
+        if (!response.ok) {
             const data = await response.json()
             setError(data?.error || "upload failed")
         }
@@ -98,8 +97,14 @@ function ScansLog({sheet}:{sheet: Sheet}) {
 
     return <ul className="list-disc pl-5 space-y-2">
         {scans.map(scan => <li key={scan.jobId}>
-                <b>[{myTimestamp(scan.timestamp)}]</b> {scan.message}
-                {scan.status === "completed" && <ScanResultsTable sheet={sheet} jobId={scan.jobId} />}
+                <i>{myTimestamp(scan.timestamp)}</i> - {}
+                <b className={{'completed': 'text-green-700','error': 'text-red-500'}[scan.status] || ''}>
+                    {scan.message}
+                </b>
+                <br />
+                {scan.status === "completed" && 
+                    <ScanResultsTable sheet={sheet} jobId={scan.jobId} />
+                }
             </li>)}
     </ul>
 }
@@ -119,6 +124,7 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
 `;
 
 function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
+    const [selected, setSelected] = useState<ObjectId[]>([])
     const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId: sheet._id.toString(), jobId } })
     if (error) return <Error error={error} />
     if (!data) return <Loading />
@@ -128,9 +134,17 @@ function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
     if (rows.length === 0) return <p>Nessun dato acquisito</p>;
     
     return <>
+        <Button disabled={selected.length === 0}>
+            importa righe selezionate
+        </Button>
         <table>
             <thead>
                 <tr>
+                    <th><input type="checkbox" 
+                            checked={selected.length === rows.length}
+                            onChange={e => setSelected(lst => e.target.checked ? rows.map(row => row._id) : [])}
+                        />
+                    </th>
                     <th>scan</th>
                     { schema.scan_fields.map(field => 
                         <th key={field.name}>
@@ -141,25 +155,32 @@ function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
             </thead>
             <tbody>
                 {rows.map(row => 
-                    <ScanRow key={row._id} sheet={sheet} jobId={jobId} headers={Object.keys(row.data)} row={row} />)
+                    <ScanRow key={row._id} sheet={sheet} jobId={jobId} row={row} 
+                        selected={selected.includes(row._id)}
+                        setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ => _ !== row._id))}
+                    />)
                 }
             </tbody>
         </table>
     </>
+
 }
 
-function ScanRow({sheet, jobId, headers, row}:{
+function ScanRow({sheet, jobId, row, selected, setSelected}:{
     sheet: Sheet,
     jobId: string,
-    headers: string[],
-    row: ScanResultsWithId
+    row: ScanResultsWithId,
+    selected: boolean,
+    setSelected: (checked: boolean) => void,
 }) {
     const schema = schemas[sheet.schema]
     const data = schema.scan_to_data(row)
     return <tr key={row._id}>
+        <td><input type="checkbox" checked={selected} onChange={e=>setSelected(e.target.checked)}/></td>
         <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
-            {schema.scan_fields.map(field => <td>
+        {schema.scan_fields.map(field => 
+            <td>
                 {data[field.name]}
-            </td>)}            
+            </td>)}  
     </tr>
 }
