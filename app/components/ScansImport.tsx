@@ -132,6 +132,11 @@ function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
             <thead>
                 <tr>
                     <th>scan</th>
+                    { schema.scan_fields.map(field => 
+                        <th key={field.name}>
+                            {field.header}
+                        </th>
+                    )}
                 </tr>
             </thead>
             <tbody>
@@ -149,8 +154,12 @@ function ScanRow({sheet, jobId, headers, row}:{
     headers: string[],
     row: ScanResultsWithId
 }) {
+    const schema = schemas[sheet.schema]
+    const data = schema.scan_to_data(row)
     return <tr key={row._id}>
         <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
-        <td><pre>{JSON.stringify(row,null,2)}</pre></td>
+            {schema.scan_fields.map(field => <td>
+                {data[field.name]}
+            </td>)}            
     </tr>
 }
