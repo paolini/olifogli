@@ -34,7 +34,7 @@ export default function SheetElement({sheetId}: {
 }
 
 function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
-    const tableRef = useRef<{csv_download: ()=>{}}>(null)
+    const tableRef = useRef<{csv_download: ()=>void}>(null)
     const [tab, setTab] = useState<'table' | 'csv' | 'scans'>('table')
 
     return <>
