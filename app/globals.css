@@ -95,51 +95,51 @@ td {
   border: 1px solid gray;
 }
 
-.schema-id, .schema-id input, .schema-zona_id, .schema-scuola_id {
+.field-id, .field-id input, .field-zona_id, .field-scuola_id {
   max-width: 7ex;
 }
 
-.schema-zona, .schema-zona input {
+.field-zona, .field-zona input {
   max-width: 10ex;
 }
 
-.schema-cognome, .schema-cognome input {
+.field-cognome, .field-cognome input {
   max-width: 16ex;
 }
 
-.schema-nome, .schema-nome input {
+.field-nome, .field-nome input {
   max-width: 16ex;
 }
 
-.schema-dataNascita, .schema-dataNascita input {
+.field-dataNascita, .field-dataNascita input {
   max-width: 10ex;
 }
 
-.schema-classe, .schema-classe input {
+.field-classe, .field-classe input {
   max-width: 5ex;
 }
 
-.schema-sezione, .schema-sezione input { 
+.field-sezione, .field-sezione input { 
   max-width: 5ex;
 }
 
-.schema-scuola, .schema-scuola input {
+.field-scuola, .field-scuola input {
   max-width: 20ex;
 }
 
-.type-ChoiceAnswer, .type-ChoiceAnswer input {
+.field-ChoiceAnswer, .field-ChoiceAnswer input {
   max-width: 3ex;
 }
 
-.type-NumberAnswer, .type-NumberAnswer input {
+.field-NumberAnswer, .field-NumberAnswer input {
   max-width: 4ex;
 }
 
-.type-ScoreAnswer, .type-ScoreAnswer input {
+.field-ScoreAnswer, .field-ScoreAnswer input {
   max-width: 4ex;
 }
 
-.schema-punti, .schema-punti input {
+.field-punti, .field-punti input {
   max-width: 4ex;
 }
 
