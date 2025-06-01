@@ -2,15 +2,15 @@ import { useState, Dispatch, SetStateAction, Fragment } from 'react'
 import { WithId } from 'mongodb'
 import { Row } from '@/app/lib/models'
 import { Schema } from '@/app/lib/schema'
+import { Field } from '@/app/lib/fields'
 
 export type CriterioOrd = {
-  numcampo?: number,
-  nomecampo: string,
+  campo: Field
   direzione: number
 }
 
 export type CriterioCerca = {
-  nomecampo: string,
+  campo: Field
   value: string
 }
 
@@ -22,16 +22,14 @@ export type Criteria = {
     schema: Schema
 }
 
-const criterioStandard: CriterioOrd = {numcampo: 0, nomecampo: "cognome", direzione: 1}
-const criterioStandard2: CriterioOrd = {numcampo: 1, nomecampo: "nome", direzione: 1}
-
 export function useCriteria(schema: Schema): Criteria {
     const [criteriCerca, setCriteriCerca] = useState<CriterioCerca[]>([])
-    const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([criterioStandard, criterioStandard2])
+    const [criteriOrdina, setCriteriOrdina] = useState<CriterioOrd[]>([])
     return { criteriCerca, setCriteriCerca, criteriOrdina, setCriteriOrdina, schema }
 }
 
 export function Ordering({ criteria }: { criteria: Criteria }) {
+    const name_to_field_dict = Object.fromEntries(criteria.schema.fields.map(field => [field.name, field]))
     return <><span>
       Ordinamento per {[...criteria.criteriOrdina,null].map((criterio,i) => <span key={`c-${i}`}>
         {i>0 && <span key={`s-${i}`}> + </span>}
@@ -42,12 +40,12 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
           { criterio
             ? <option key="" value="">rimuovi criterio</option>
             : <option key="" value="">aggiungi criterio</option>}
-          { Object.entries(criteria.schema.fields).map(([field,type]) => {
-            const c1 = {nomecampo:field,direzione:1}
-            const c2 = {nomecampo:field,direzione:-1}
+          { criteria.schema.fields.map(field => {
+            const c1 = {campo:field,direzione:1}
+            const c2 = {campo:field,direzione:-1}
             const v1 = criterioToString(c1)
             const v2 = criterioToString(c2)
-            return <Fragment key={field}>
+            return <Fragment key={field.name}>
               <option value={v1}>{v1}</option>
               <option value={v2}>{v2}</option>
             </Fragment>
@@ -60,25 +58,26 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
       Filtra per {[...criteria.criteriCerca,null].map((criterio,i) => {
         return <Fragment key={`f-${i}`}>
         {i>0 && <span> + </span>}
-          <select key={`s-${i}`} value={criterio?criterio.nomecampo:""} onChange={e => cambiaCriterioCerca(i, e.target.value)}>
+          <select key={`s-${i}`} value={criterio?.campo.header || ''} onChange={e => cambiaCriterioCerca(i, e.target.value)}>
             <option key="" value="">{criterio?"rimuovi":(i>0?"aggiungi":"scegli campo")}</option>
             { Object.entries(criteria.schema.fields).map(([field,type]) => {
               return <option key={field} value={field}>{field}</option>
             })}
           </select>
-          {criterio && <InputCerca key={`i-${i}`} field={criterio?criterio.nomecampo:""} type={criteria.schema.fields[criterio?criterio.nomecampo:""]} criteria={criteria} />}
+          {criterio && <InputCerca key={`i-${i}`} field={criterio.campo} type={criterio.campo.name} criteria={criteria} />}
         </Fragment>
       })}
     </span>
     </>
 
     function criterioToString(criterio: CriterioOrd): string {
-        return criterio.direzione > 0 ? criterio.nomecampo + " ↑" : criterio.nomecampo + " ↓"
+        return criterio.direzione > 0 ? criterio.campo.name + " ↑" : criterio.campo.name + " ↓"
     }
 
     function stringToCriterio(value: string): CriterioOrd {
-        const [nomecampo, direzione] = value.split(" ")
-        return {nomecampo, direzione: direzione == "↑"? 1 : -1}
+      const [nomecampo, direzione] = value.split(" ")
+      const field = name_to_field_dict[nomecampo]
+      return {campo: field, direzione: direzione == "↑" ? 1 : -1}
     }
 
     function cambiaCriterioOrdinamento(i: number, value: string) {
@@ -93,13 +92,14 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
         if (value == "") {
           criteria.setCriteriCerca(criteria.criteriCerca.slice(0,i))
         } else {
-          criteria.setCriteriCerca([...criteria.criteriCerca.slice(0,i), {nomecampo:value, value:""}])
+          const field = name_to_field_dict[value]
+          criteria.setCriteriCerca([...criteria.criteriCerca.slice(0,i), {campo:field, value:""}])
         }
     }
 }
 
-export function CambiaOrdine({ field, type, criteria } : { 
-  field: string,
+function CambiaOrdine({ field, type, criteria } : { 
+  field: Field,
   type: string,
   criteria: Criteria
 } ) {
@@ -113,7 +113,7 @@ export function filtraEOrdina(criteria: Criteria, rows: WithId<Row>[]): WithId<R
 }
 
 export function InputCerca({field, type, criteria, size}:{
-  field: string,
+  field: Field,
   type: string,
   criteria: Criteria,
   size?: number
@@ -121,7 +121,7 @@ export function InputCerca({field, type, criteria, size}:{
     if (["ChoiceAnswer", "NumberAnswer", "ScoreAnswer", "Computed"].includes(type))
         return <></>
 
-    const value = criteria.criteriCerca.filter(crit => crit["nomecampo"] == field).length > 0 ? criteria.criteriCerca.filter(crit => crit["nomecampo"] == field)[0].value : "";
+    const value = criteria.criteriCerca.filter(crit => crit.campo == field).length > 0 ? criteria.criteriCerca.filter(crit => crit.campo == field)[0].value : "";
 
     function Battuta(e: React.ChangeEvent<HTMLInputElement>) {
         aggiornaCriteriCerca(criteria, field, e.target.value)
@@ -142,7 +142,7 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
     let res: number = 0
 
     while (i < criteriOrdina.length) {
-      res = confronta(criteriOrdina[i].nomecampo, row1?.data[criteriOrdina[i].nomecampo] || "", row2?.data[criteriOrdina[i].nomecampo] || "")
+      res = confronta(criteriOrdina[i].campo, row1?.data[criteriOrdina[i].campo.name] || "", row2?.data[criteriOrdina[i].campo.name] || "")
       if (! (res == 0)) {
         return res * criteriOrdina[i].direzione
       }
@@ -151,17 +151,17 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
     return res
   }
 
-function confronta(campo: string, camporow1: string, camporow2: string): number {
+function confronta(campo: Field, camporow1: string, camporow2: string): number {
   const campiNumero: string[] = ["classe", "codice", "punteggio"]
   const campiData: string[] = ["data_nascita"]
 
-  if (campiNumero.includes(campo)) {
+  if (campiNumero.includes(campo.name)) {
     return (
       (parseFloat(camporow1) - parseFloat(camporow2) > 0)? 1 :
         (parseFloat(camporow1) - parseFloat(camporow2) < 0)? -1 : 0
     )
   }
-  if (campiData.includes(campo)) {
+  if (campiData.includes(campo.name)) {
     return (
       (Date.parse(camporow1) > Date.parse(camporow2))? 1 :
         (Date.parse(camporow1) < Date.parse(camporow2))? -1 : 0
@@ -173,13 +173,13 @@ function confronta(campo: string, camporow1: string, camporow2: string): number 
     )
 }
 
-function aggiornaCriteriOrdina({criteriOrdina, setCriteriOrdina}: Criteria, nomecampo: string): void {
+function aggiornaCriteriOrdina({criteriOrdina, setCriteriOrdina}: Criteria, campo: Field): void {
     let i: number
     let cera: boolean = false
     const critOrdina: CriterioOrd[] = [...criteriOrdina]
 
     for (i = 0; i < critOrdina.length; i++) {
-      if (critOrdina[i]["nomecampo"] == nomecampo) {
+      if (critOrdina[i].campo == campo) {
         cera = true
         if (critOrdina[i]["direzione"] > 0) {
           critOrdina[i]["direzione"] = -1
@@ -191,16 +191,16 @@ function aggiornaCriteriOrdina({criteriOrdina, setCriteriOrdina}: Criteria, nome
       }
     }
     if (cera == false) {
-      setCriteriOrdina([...critOrdina, {nomecampo: nomecampo, direzione: 1}])
+      setCriteriOrdina([...critOrdina, {campo: campo, direzione: 1}])
     }
   }
 
-function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, nomecampo: string, value: string): void {
+function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, campo: Field, value: string): void {
     let i: number
     let cera: boolean = false
     const critCerca: CriterioCerca[] = [...criteriCerca]
     for (i = 0; i < critCerca.length; i++) {
-      if (critCerca[i]["nomecampo"] == nomecampo) {
+      if (critCerca[i].campo == campo) {
         cera = true
         if (value != "") {
           critCerca[i]["value"] = value
@@ -212,14 +212,14 @@ function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, nomecamp
       }
     }
     if (cera == false) {
-      setCriteriCerca([...critCerca, {nomecampo: nomecampo, value: value}])
+      setCriteriCerca([...critCerca, {campo: campo, value: value}])
     }
   }
 
 function tableCerca({criteriCerca}:Criteria, rows: WithId<Row>[]): WithId<Row>[] {
     let rowsOk: WithId<Row>[] = [...rows]
     if (criteriCerca.length >= 0) {
-      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter(riga => (riga.data[a.nomecampo]||'').includes(a.value) )})
+      criteriCerca.forEach((a) => {rowsOk = rowsOk.filter(riga => (riga.data[a.campo.name]||'').includes(a.value) )})
     }
     return rowsOk
 }
