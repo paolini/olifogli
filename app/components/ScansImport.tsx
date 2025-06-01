@@ -122,7 +122,7 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
             sheetId,
             jobId,
             image,
-            data_raw,
+            raw_data,
         }
     }`
 
@@ -145,9 +145,11 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
 
     if (rows.length === 0) return <p>Nessun dato acquisito</p>
     
+
     return <>
+        <span><b>{rows.length}</b> righe </span>
         <Button disabled={selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
-            importa righe selezionate
+            importa {selected.length} righe selezionate
         </Button>
         { (addLoading || patchLoading) && <Loading /> }
         <table>

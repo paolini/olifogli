@@ -191,7 +191,7 @@ export class AmmissioneSenior extends Schema {
         )
 
         return Object.fromEntries(scan.map(scan => {
-            const raw = scan.data_raw
+            const raw = scan.raw_data
             const id_short = raw.StudentCode || ''
             const row = data_dict[id_short]
             const data: Data = row?.data || {}

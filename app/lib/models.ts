@@ -61,6 +61,6 @@ export interface ScanResults {
     sheetId: ObjectId
     jobId: string
     image: string
-    data_raw: Data
+    raw_data: Data
 }
 
