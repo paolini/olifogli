@@ -7,6 +7,7 @@ import Error from '@/app/components/Error'
 import Table from '@/app/components/Table'
 import CsvImport from '@/app/components/CsvImport'
 import ScansImport from '@/app/components/ScansImport'
+import Button from './Button'
 
 const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -36,19 +37,20 @@ export default function SheetElement({sheetId}: {
 function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
     const tableRef = useRef<{csv_download: ()=>void}>(null)
     const [tab, setTab] = useState<'table' | 'csv' | 'scans'>('table')
+    const [busy, setBusy] = useState(false)
 
     return <>
         { tab === 'table' && 
             <>
-                <button className="p-1 my-1 bg-alert" onClick={() => setTab('csv')}>Importa da CSV</button>
-                <button className="p-1 m-1 bg-alert" onClick={() => tableRef.current?.csv_download()}>Scarica CSV</button>
-                <button className="p-1 my-1 bg-alert" onClick={() => setTab('scans')}>Importa da scansioni</button>
+                <Button onClick={() => setTab('csv')}>Importa da CSV</Button>
+                {} <Button onClick={() => tableRef.current?.csv_download()}>Scarica CSV</Button>
+                {} <Button onClick={() => setTab('scans')}>Importa da scansioni</Button>
                 <br />
                 <Table ref={tableRef} sheetId={sheet._id} schemaName={sheet.schema} />
             </>
         }
         { tab !== 'table' && 
-            <button className="p-1 bg-alert" onClick={() => setTab('table')}>Torna alla tabella</button>
+            <Button disabled={busy} onClick={() => setTab('table')}>Torna alla tabella</Button>
         }
         { tab === 'csv' &&   
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
