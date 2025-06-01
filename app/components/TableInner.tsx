@@ -1,17 +1,17 @@
 import { useState, memo } from 'react'
 import { WithId, ObjectId } from 'mongodb'
-import { useMutation, StoreObject, gql } from '@apollo/client';
+import { useMutation, StoreObject, gql } from '@apollo/client'
 import { Schema } from '@/app/lib/schema'
 import { Field } from '@/app/lib/fields'
 
 import { InputCell } from '@/app/components/Input'
-import { Row, Data } from '@/app/lib/models'
+import { Row, Data, Sheet } from '@/app/lib/models'
 
-export default function TableInner({rows, currentRowId, setCurrentRowId, sheetId, schema}: {
+export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema}: {
     rows: Row[],
     currentRowId: ObjectId|null,
     setCurrentRowId: (id: ObjectId|null) => void,
-    sheetId: string,
+    sheet: Sheet,
     schema: Schema,
   }) {
     return <table>
@@ -24,10 +24,10 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheetId
         </tr>
       </thead>
       <tbody>
-        { rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheetId} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
+        { rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
         { currentRowId 
           ? <tr><td><button onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
-          : <InputRow sheetId={sheetId} schema={schema}/>}
+          : <InputRow sheetId={sheet._id.toString()} schema={schema}/>}
       </tbody>
     </table>
 }

@@ -42,7 +42,12 @@ export class Schema {
         return this.fields.map(field => row[field.name])
     }
 
-    scan_to_data(scan: ScanResults): Data {
+    /*
+    * accetta un elenco di risultati scansionati
+    * e li converte in un dizionario scan_id: Data
+    * mappando i risultati sui dati già acquisiti <rows>
+    */
+    scans_to_data_dict(scan: ScanResults[], rows: Data[]): Record<string,Data> {
         throw new Error(`scan_to_data not implemented for schema "${this.name}"`)
     }
 }
@@ -107,7 +112,7 @@ export class AmmissioneSenior extends Schema {
     constructor(params: string='{}') {
         super('ammissione_senior', 'ammissione Senior', [
             new Field('id'),
-            new Field('scan_id','id scan'),
+            new Field('id_short', 'id breve'),
             new Field('cognome'),
             new Field('nome'),
             new Field('scuola_id'),
@@ -161,9 +166,9 @@ export class AmmissioneSenior extends Schema {
         return [...baseRow, answers]
     }
 
-    scan_to_data(scan: ScanResults): Data {
+    scans_to_data_dict(scan: ScanResults[], rows: Data[]): Record<string, Data> {
         /*
-        example scan.data:
+        expected scan.data:
           "data": {
             "score": "0",
             "StudentCode": "012345678901234567890123456789",
@@ -175,15 +180,28 @@ export class AmmissioneSenior extends Schema {
             "Answer20": "ABCDE"
         }
         */
-        const data: Data = {}
-        const raw = scan.data_raw
-        data.scan_id = raw.StudentCode || ''
-        data.variante = raw.TestCode || ''
-        this.fields.filter(field => field instanceof ChoiceAnswerField)
-            .forEach((field,i) => {
-                data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
-            })
-        return this.clean(data)
+
+        // costruisce un dizionario short_id: Data
+        // dove short_id (ovvero StudentCode)
+        // sono le ultime tre cifre di row.id
+        const data_dict = Object.fromEntries(rows
+            .map(row => [parseInt(row.id) % 1000, row] as [number,Data])
+            .filter(([short_id,_]) => !isNaN(short_id))
+            .map(([short_id, data]) => [`${short_id}`, data] as [string,Data])
+        )
+
+        return Object.fromEntries(scan.map(scan => {
+            const raw = scan.data_raw
+            const id_short = raw.StudentCode || ''
+            const data: Data = data_dict[id_short] || {}
+            data.id_short = id_short
+            data.variante = raw.TestCode || ''
+            this.fields.filter(field => field instanceof ChoiceAnswerField)
+                .forEach((field,i) => {
+                    data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
+                })
+            return [scan._id,this.clean(data)]
+        }))
 
         function convert_answer(s: string) {
             return {

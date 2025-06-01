@@ -83,6 +83,7 @@ th {
 td {
   overflow: hidden; 
   text-overflow: ellipsis;
+  border: 1px solid gray;
 }
 
 table {
@@ -90,8 +91,7 @@ table {
 }
 
 table, 
-th, 
-td {
+th {
   border: 1px solid gray;
 }
 

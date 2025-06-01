@@ -2,7 +2,7 @@
 import { useState, useRef } from "react"
 import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
 import { ErrorBoundary } from 'react-error-boundary'
-import { Scan, ScanResults, Sheet } from "@/app/lib/models"
+import { Data, Row, Scan, ScanResults, Sheet } from "@/app/lib/models"
 import Button from "./Button"
 import ErrorElement from "./Error"
 import Loading from "./Loading"
@@ -11,7 +11,10 @@ import { myTimestamp } from "../lib/util"
 import { schemas } from "../lib/schema"
 import { ObjectId } from "bson"
 
-export default function ScansImport({sheet}:{sheet: Sheet}) {
+export default function ScansImport({sheet, data_rows}:{
+    sheet: Sheet,
+    data_rows: Row[] 
+}) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [error, setError] = useState<string|null>(null)
     const [busy, setBusy] = useState(false)
@@ -31,7 +34,7 @@ export default function ScansImport({sheet}:{sheet: Sheet}) {
                     <Button disabled={busy}>carica PDF</Button>
                 </label>
             </div>    
-            <ScansLog sheet={sheet} />
+            <ScansLog sheet={sheet} data_rows={data_rows}/>
         </ErrorBoundary>
     </>
 
@@ -80,13 +83,17 @@ const SCANS_QUERY: TypedDocumentNode<{scans: Scan[]}, {sheetId: string}>  = gql`
         }
     }`
 
-function ScansLog({sheet}:{sheet: Sheet}) {
+function ScansLog({sheet,data_rows}:{
+    sheet: Sheet,
+    data_rows: Row[],
+}) {
     const { data, error } = useQuery(SCANS_QUERY, { variables: { sheetId: sheet._id.toString() }, pollInterval: 3000 });
 
     if (error) return <ErrorElement error={error} />
     if (!data) return <Loading />
 
-    const scans = data.scans;
+    const scans = data.scans
+    const mapped_data_rows = data_rows.map(row => row.data)
 
     return <ul className="list-disc pl-5 space-y-2">
         {scans.map(scan => <li key={scan.jobId}>
@@ -96,7 +103,11 @@ function ScansLog({sheet}:{sheet: Sheet}) {
                 </b>
                 <br />
                 {scan.status === "completed" && 
-                    <ScanResultsTable sheet={sheet} jobId={scan.jobId} />
+                    <ScanResultsTable 
+                        sheet={sheet} 
+                        jobId={scan.jobId} 
+                        data_rows={mapped_data_rows} 
+                    />
                 }
             </li>)}
     </ul>
@@ -115,15 +126,20 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
         }
     }`
 
-function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
+function ScanResultsTable({sheet, jobId, data_rows}:{
+    sheet: Sheet, 
+    jobId: string,
+    data_rows: Data[],
+}) {
     const [selected, setSelected] = useState<ObjectId[]>([])
     const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId: sheet._id.toString(), jobId } })
     if (error) return <ErrorElement error={error} />
     if (!data) return <Loading />
     const rows = data.scanResults
     const schema = schemas[sheet.schema]
+    const scans_to_data_dict = schema.scans_to_data_dict(rows, data_rows)
 
-    if (rows.length === 0) return <p>Nessun dato acquisito</p>;
+    if (rows.length === 0) return <p>Nessun dato acquisito</p>
     
     return <>
         <Button disabled={selected.length === 0}>
@@ -138,7 +154,7 @@ function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
                         />
                     </th>
                     <th>scan</th>
-                    { schema.scan_fields.map(field => 
+                    { schema.fields.map(field => 
                         <th key={field.name}>
                             {field.header}
                         </th>
@@ -147,9 +163,11 @@ function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
             </thead>
             <tbody>
                 {rows.map(row => 
-                    <ScanRow key={row._id} sheet={sheet} jobId={jobId} row={row} 
+                    <ScanRow 
+                        key={row._id} sheet={sheet} jobId={jobId} row={row} 
                         selected={selected.includes(row._id)}
                         setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ => _ !== row._id))}
+                        data={scans_to_data_dict[row._id.toString()] || {}}
                     />)
                 }
             </tbody>
@@ -158,19 +176,19 @@ function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
 
 }
 
-function ScanRow({sheet, jobId, row, selected, setSelected}:{
+function ScanRow({sheet, jobId, row, selected, setSelected, data} : {
     sheet: Sheet,
     jobId: string,
     row: ScanResultsWithId,
     selected: boolean,
     setSelected: (checked: boolean) => void,
+    data: Data,
 }) {
     const schema = schemas[sheet.schema]
-    const data = schema.scan_to_data(row)
     return <tr key={row._id}>
         <td><input type="checkbox" checked={selected} onChange={e=>setSelected(e.target.checked)}/></td>
         <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
-        {schema.scan_fields.map(field => 
+        {schema.fields.map(field => 
             <td key={field.name}>
                 {data[field.name]}
             </td>)}  
