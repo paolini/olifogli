@@ -46,7 +46,7 @@ export const typeDefs = gql`
     sheetId: ObjectId
     jobId: String
     image: String
-    data: JSON
+    data_raw: JSON
   }
 
   type Query {

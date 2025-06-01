@@ -26,7 +26,7 @@ export class Schema {
 
     // da integrare con un set di condizioni completo
     isValid(row: Data): boolean {
-        for (var i=0; i < this.fields.length; i++) {
+        for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = row[field.name]
             if (!field.isValid(value)) return false
@@ -176,11 +176,12 @@ export class AmmissioneSenior extends Schema {
         }
         */
         const data: Data = {}
-        data.scan_id = scan.data.StudentCode || ''
-        data.variante = scan.data.TestCode || ''
+        const raw = scan.data_raw
+        data.scan_id = raw.StudentCode || ''
+        data.variante = raw.TestCode || ''
         this.fields.filter(field => field instanceof ChoiceAnswerField)
             .forEach((field,i) => {
-                data[field.name] = convert_answer(scan.data[`Answer${i+1}`]) || ''
+                data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
             })
         return this.clean(data)
 

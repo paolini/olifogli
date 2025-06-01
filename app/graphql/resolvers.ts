@@ -6,6 +6,10 @@ import { GraphQLJSON } from "graphql-type-json"
 
 import { test } from '@/app/lib/olimanager'
 import { get_authenticated_user, check_admin, check_user_can_edit_sheet } from './resolvers/utils'
+
+import scans from './resolvers/scans'
+import scanResults from './resolvers/scanResults'
+
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
 import addRow from './resolvers/addRow'
@@ -58,36 +62,8 @@ export const resolvers = {
         return results
     },
 
-    scans: async (_: unknown, { sheetId }: { sheetId: ObjectId }, context: Context) => {
-      const user = await get_authenticated_user(context)
-      const sheets = await getSheetsCollection()
-      const sheet = await sheets.findOne({_id: sheetId })
-      check_user_can_edit_sheet(user, sheet)
-      const collection = await getScansCollection();
-      const results = await collection.aggregate([
-        { $match: { sheetId } },
-        { $sort: { jobId: 1, timestamp: -1 } },
-        { $group: {
-          _id: "$jobId",
-          lastScan: { $first: "$$ROOT" }
-        }},
-        { $replaceRoot: { newRoot: "$lastScan" } },
-        { $sort: { timestamp: -1 } },
-      ])
-      return results.toArray();
-    },
-
-    scanResults: async (_: unknown, { sheetId, jobId }: { sheetId: ObjectId, jobId: string }, context: Context) => {
-      const user = await get_authenticated_user(context)
-      const sheets = await getSheetsCollection()
-      const sheet = await sheets.findOne({_id: sheetId })
-      check_user_can_edit_sheet(user, sheet)
-      const collection = await getScanResultsCollection();
-      const results = await collection.aggregate([
-        { $match: { sheetId, jobId } },
-      ]);
-      return results.toArray();
-    },
+    scans,
+    scanResults,
 
     olimanager: async (_: unknown) => {
         return await test()

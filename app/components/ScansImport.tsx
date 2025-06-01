@@ -4,7 +4,7 @@ import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Scan, ScanResults, Sheet } from "@/app/lib/models"
 import Button from "./Button"
-import Error from "./Error"
+import ErrorElement from "./Error"
 import Loading from "./Loading"
 import { useApolloClient } from '@apollo/client'
 import { myTimestamp } from "../lib/util"
@@ -25,7 +25,7 @@ export default function ScansImport({sheet}:{sheet: Sheet}) {
         <h2>Caricamento scansioni OCR</h2>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <div className="flex flex-col gap-4">
-                { error && <Error error={error} dismiss={()=>setError('')}/> }
+                { error && <ErrorElement error={error} dismiss={()=>setError('')}/> }
                 <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />
                 <label htmlFor="scansFileInput" onClick={handleClick} className="cursor-pointer">
                     <Button disabled={busy}>carica PDF</Button>
@@ -65,13 +65,7 @@ export default function ScansImport({sheet}:{sheet: Sheet}) {
 
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
-    return (
-      <div>
-        <h2>Errore!</h2>
-        <p>{error.message}</p>
-        <button onClick={resetErrorBoundary}>Riprova</button>
-      </div>
-    );
+    return <ErrorElement error={error} dismiss={resetErrorBoundary}/>
   }
   
 
@@ -84,13 +78,12 @@ const SCANS_QUERY: TypedDocumentNode<{scans: Scan[]}, {sheetId: string}>  = gql`
             status
             message
         }
-    }
-`;
+    }`
 
 function ScansLog({sheet}:{sheet: Sheet}) {
     const { data, error } = useQuery(SCANS_QUERY, { variables: { sheetId: sheet._id.toString() }, pollInterval: 3000 });
 
-    if (error) return <Error error={error} />
+    if (error) return <ErrorElement error={error} />
     if (!data) return <Loading />
 
     const scans = data.scans;
@@ -118,15 +111,14 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
             sheetId,
             jobId,
             image,
-            data,
+            data_raw,
         }
-    }
-`;
+    }`
 
 function ScanResultsTable({sheet, jobId}:{sheet: Sheet, jobId: string}) {
     const [selected, setSelected] = useState<ObjectId[]>([])
     const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId: sheet._id.toString(), jobId } })
-    if (error) return <Error error={error} />
+    if (error) return <ErrorElement error={error} />
     if (!data) return <Loading />
     const rows = data.scanResults
     const schema = schemas[sheet.schema]
@@ -179,7 +171,7 @@ function ScanRow({sheet, jobId, row, selected, setSelected}:{
         <td><input type="checkbox" checked={selected} onChange={e=>setSelected(e.target.checked)}/></td>
         <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
         {schema.scan_fields.map(field => 
-            <td>
+            <td key={field.name}>
                 {data[field.name]}
             </td>)}  
     </tr>
