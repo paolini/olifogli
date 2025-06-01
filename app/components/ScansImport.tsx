@@ -10,6 +10,7 @@ import { useApolloClient } from '@apollo/client'
 import { myTimestamp } from "../lib/util"
 import { schemas } from "../lib/schema"
 import { ObjectId } from "bson"
+import { useAddRow, usePatchRow } from "./TableInner"
 
 export default function ScansImport({sheet, data_rows}:{
     sheet: Sheet,
@@ -93,7 +94,6 @@ function ScansLog({sheet,data_rows}:{
     if (!data) return <Loading />
 
     const scans = data.scans
-    const mapped_data_rows = data_rows.map(row => row.data)
 
     return <ul className="list-disc pl-5 space-y-2">
         {scans.map(scan => <li key={scan.jobId}>
@@ -106,7 +106,7 @@ function ScansLog({sheet,data_rows}:{
                     <ScanResultsTable 
                         sheet={sheet} 
                         jobId={scan.jobId} 
-                        data_rows={mapped_data_rows} 
+                        data_rows={data_rows} 
                     />
                 }
             </li>)}
@@ -129,11 +129,15 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
 function ScanResultsTable({sheet, jobId, data_rows}:{
     sheet: Sheet, 
     jobId: string,
-    data_rows: Data[],
+    data_rows: Row[],
 }) {
+    const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
+    const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
     const [selected, setSelected] = useState<ObjectId[]>([])
     const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId: sheet._id.toString(), jobId } })
     if (error) return <ErrorElement error={error} />
+    if (addError) return <ErrorElement error={addError} dismiss={addReset} />
+    if (patchError) return <ErrorElement error={patchError} dismiss={patchReset} />
     if (!data) return <Loading />
     const rows = data.scanResults
     const schema = schemas[sheet.schema]
@@ -142,9 +146,10 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
     if (rows.length === 0) return <p>Nessun dato acquisito</p>
     
     return <>
-        <Button disabled={selected.length === 0}>
+        <Button disabled={selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
             importa righe selezionate
         </Button>
+        { (addLoading || patchLoading) && <Loading /> }
         <table>
             <thead>
                 <tr>
@@ -166,13 +171,38 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
                     <ScanRow 
                         key={row._id} sheet={sheet} jobId={jobId} row={row} 
                         selected={selected.includes(row._id)}
-                        setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ => _ !== row._id))}
-                        data={scans_to_data_dict[row._id.toString()] || {}}
+                        setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  !_.equals(row._id)))}
+                        data={scans_to_data_dict[row._id.toString()]?.data || {}}
                     />)
                 }
             </tbody>
         </table>
     </>
+
+    async function importSelected() {
+        for (let i=0; i < rows.length; i++) {
+            const scan_row = rows[i]
+            if (!selected.includes(scan_row._id)) break
+            const {row, data} = scans_to_data_dict[scan_row._id.toString()] || {row: undefined, data: {}}
+            if (row) {
+                const res = await patchRow({
+                    variables: {
+                        _id: row._id,
+                        data,
+                        updatedOn: row.updatedOn || new Date(),
+                    }})
+                if (res.errors) continue
+            } else {
+                const res = await addRow({variables:{
+                        sheetId: sheet._id,
+                        data,
+                    }
+                })
+                if (res.errors) break
+            }
+            setSelected(lst => lst.filter(id => `${id}`!= `${scan_row._id}`))
+        }
+    }
 
 }
 

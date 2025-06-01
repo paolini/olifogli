@@ -146,79 +146,77 @@ async function deleteFunction() {
 }
 
 export const ADD_ROW = gql`
-mutation addRow($sheetId: ObjectId!, $data: JSON!) {
-addRow(sheetId: $sheetId, data: $data) {
-    _id
-    isValid
-    data
-}
+    mutation addRow($sheetId: ObjectId!, $data: JSON!) {
+    addRow(sheetId: $sheetId, data: $data) {
+        _id
+        isValid
+        data
+    }
 }`
 
 const PATCH_ROW = gql`
-mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: JSON!) {
-patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
-    _id
-    __typename
-    updatedOn
-    isValid
-    data
-}
+    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: JSON!) {
+    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
+        _id
+        __typename
+        updatedOn
+        isValid
+        data
+    }
 }`
 
 const DELETE_ROW = gql`
-mutation deleteRow($_id: ObjectId!) {
-deleteRow(_id: $_id)
+    mutation deleteRow($_id: ObjectId!) {
+    deleteRow(_id: $_id)
 }`
 
-
-
-function useAddRow() {
-return useMutation<{ addRow: Row }>(ADD_ROW, {
-    update(cache, { data }) {
-    if (!data) return;          
-    const newRow = data.addRow; // Assumendo che la mutazione restituisca la nuova riga          
-    cache.modify({
-        fields: {
-        rows(existingRows = [], { readField }) {
-            // Controlla se la riga è già presente per evitare duplicati
-            if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
-            return existingRows;
-            }
-            return [...existingRows, newRow];
-        },
-        },
-    });
-    }
-});
+export function useAddRow() {
+    return useMutation<{ addRow: Row }>(ADD_ROW, {
+        update(cache, { data }) {
+        if (!data) return      
+        const newRow = data.addRow // Assumendo che la mutazione restituisca la nuova riga          
+        cache.modify({
+            fields: {
+            rows(existingRows = [], { readField }) {
+                // Controlla se la riga è già presente per evitare duplicati
+                if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
+                return existingRows
+                }
+                return [...existingRows, newRow]
+            },
+            },
+        })
+        }
+    })
 }
 
-function usePatchRow() {
-return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
-    update(cache, { data }) {
-    const updatedRow = data?.patchRow;
-    if (!updatedRow) return;
+export function usePatchRow() {
+    return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
+        update(cache, { data }) {
+        const updatedRow = data?.patchRow
+        if (!updatedRow) return
 
-    cache.modify({
-        id: cache.identify(updatedRow),
-        fields: Object.fromEntries(
-        Object.entries(updatedRow).map(([key, value]) => [key, () => value])
-        ),
-    });
-    }});
+        cache.modify({
+            id: cache.identify(updatedRow),
+            fields: Object.fromEntries(
+            Object.entries(updatedRow).map(([key, value]) => [key, () => value])
+            ),
+        })
+        }})
 }
 
-function useDeleteRow() {
-return useMutation<{ deleteRow: string }>(DELETE_ROW, {
-    update(cache, { data }) {
-    const deletedId = data?.deleteRow;
-    if (!deletedId) return;
+export function useDeleteRow() {
+    return useMutation<{ deleteRow: string }>(DELETE_ROW, {
+        update(cache, { data }) {
+        const deletedId = data?.deleteRow
+        if (!deletedId) return
 
-    cache.modify({
-        fields: {
-        rows(existingRows = [], { readField }) {
-            return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
-        },
-        },
-    });
-    }});
+        cache.modify({
+            fields: {
+            rows(existingRows = [], { readField }) {
+                return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
+            },
+            },
+        })
+        }})
 }
