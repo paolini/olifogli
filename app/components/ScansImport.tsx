@@ -173,7 +173,7 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
                     <ScanRow 
                         key={row._id} sheet={sheet} jobId={jobId} row={row} 
                         selected={selected.includes(row._id)}
-                        setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  !_.equals(row._id)))}
+                        setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  `${_}` != `${row._id}`))}
                         data={scans_to_data_dict[row._id.toString()]?.data || {}}
                     />)
                 }
@@ -184,7 +184,7 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
     async function importSelected() {
         for (let i=0; i < rows.length; i++) {
             const scan_row = rows[i]
-            if (!selected.includes(scan_row._id)) break
+            if (!selected.includes(scan_row._id)) continue
             const {row, data} = scans_to_data_dict[scan_row._id.toString()] || {row: undefined, data: {}}
             if (row) {
                 const res = await patchRow({
