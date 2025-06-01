@@ -8,6 +8,7 @@ import { ObjectId } from 'mongodb'
 import { get_context } from '@/app/graphql/types'
 import { getScansCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { check_user_can_edit_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
+import { schemas } from '@/app/lib/schema'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET
 
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
     
         if (!sheet) return NextResponse.json({ error: 'Missing sheet' }, { status: 400 });
     
+        const schema = schemas[sheet.schema]
+
         try {
             check_user_can_edit_sheet(user,sheet)
         } catch (error) {
@@ -64,8 +67,8 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(bytes);
 
         // Define upload path
-        const job_id = Math.random().toString(36).substring(2,10);
-        const filePath = path.join(SCANS_SPOOL_DIR, sheetId + '-' + job_id + '.pdf');
+        const job_id = Math.random().toString(36).substring(2,10)
+        const filePath = path.join(SCANS_SPOOL_DIR, `${schema.name}-${sheetId}-${job_id}.pdf`)
 
         // Save file to disk
         await writeFile(filePath, buffer);
