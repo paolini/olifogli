@@ -6,7 +6,7 @@ import { existsSync } from 'fs'
 import { ObjectId } from 'mongodb'
 
 import { get_context } from '@/app/graphql/types'
-import { getRowsCollection, getScansCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getScansCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { check_user_can_edit_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid sheetId' }, { status: 400 });
         }
 
-        const sheetId = new ObjectId(sheetIdValue)
+        const sheetId = new ObjectId(sheetIdValue as string)
 
         const sheetsCollection = await getSheetsCollection()
         const sheet = await sheetsCollection.findOne({_id: sheetId})

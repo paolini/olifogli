@@ -1,5 +1,5 @@
 import { KeyboardEvent } from "react"
-import { Field } from "../lib/schema"
+import { Field } from "../lib/fields"
 
 export function InputCell({field, value, setValue, onEnter}: {
   field: Field,
@@ -12,7 +12,7 @@ export function InputCell({field, value, setValue, onEnter}: {
     case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter}/>
     case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter}/>
     case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter}/>
-    default: return <span>[invalid widget "{field.widget}"]</span>
+    default: return <span>[invalid widget {field.widget}]</span>
   }
 }
 

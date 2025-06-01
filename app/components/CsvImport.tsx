@@ -5,7 +5,6 @@ import { gql, useApolloClient, useMutation } from "@apollo/client"
 import { schemas, AvailableSchemas } from "../lib/schema";
 import Error from './Error'
 
-//import { Distrettuale } from '@/lib/schema'
 const ADD_ROWS = gql`
     mutation addRows(
         $sheetId: ObjectId!, 
