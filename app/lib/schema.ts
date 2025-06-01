@@ -191,12 +191,15 @@ export class AmmissioneSenior extends Schema {
         )
 
         return Object.fromEntries(scan.map(scan => {
-            const raw = scan.raw_data
-            const id_short = raw.StudentCode || ''
+            // non assumere nulla su san.raw_data
+            // perché potrebbe contenere dati codificati 
+            // con un formato vecchio.
+            const raw = scan.raw_data || {}
+            const id_short = raw?.StudentCode || ''
             const row = data_dict[id_short]
-            const data: Data = row?.data || {}
+            const data: Data = {...(row?.data || {})}
             data.id_short = id_short
-            data.variante = raw.TestCode || ''
+            data.variante = raw?.TestCode || ''
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
@@ -207,6 +210,7 @@ export class AmmissioneSenior extends Schema {
         function convert_answer(s: string) {
             return {
                 '': '-',
+                'X': '-',
                 'A': 'A',
                 'B': 'B',
                 'C': 'C',
