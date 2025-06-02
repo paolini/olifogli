@@ -10,7 +10,6 @@ export const typeDefs = gql`
     _id: ObjectId
     name: String
     schema: String
-    params: String
     permissions: [SheetPermission]
     owner_id: ObjectId
   }
@@ -72,7 +71,7 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    addSheet(name: String, schema: String, params: String): Sheet
+    addSheet(name: String, schema: String): Sheet
     deleteSheet(_id: ObjectId): String
 
     addRow(sheetId: ObjectId, data: JSON, answers: [String]): Row

@@ -33,7 +33,6 @@ export interface Sheet {
     _id: ObjectId
     name: string
     schema: AvailableSchemas
-    params: string
     owner_id: ObjectId
     permissions: SheetPermission[]
 }

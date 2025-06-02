@@ -14,18 +14,16 @@ const GET_SHEETS = gql`
             _id
             name
             schema
-            params
         }
     }
 `;
 
 const ADD_SHEET = gql`
-    mutation AddSheet($name: String!, $schema: String!, $params: String!) {
-        addSheet(name: $name, schema: $schema, params: $params) {
+    mutation AddSheet($name: String!, $schema: String!) {
+        addSheet(name: $name, schema: $schema) {
             _id
             name
             schema
-            params
         }
     }
 `;
@@ -60,7 +58,6 @@ function SheetsTable({}) {
             <tr>
                 <th>Name</th>
                 <th>Schema</th>
-                <th>Params</th>
             </tr>
         </thead>
         <tbody>
@@ -82,9 +79,6 @@ function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
         </td>
         <td>
             {sheet.schema}
-        </td>
-        <td>
-            {sheet.params}
         </td>
         <td>
             <button disabled={loading} onClick={doDelete}>Elimina</button>
@@ -120,7 +114,6 @@ function SheetForm({}) {
         await addSheet({variables: {
             name,
             schema: schema,
-            params: "{}"
         }});
         setName('');
         setSchema('');

@@ -8,13 +8,11 @@ export class Schema {
     name: string // da usare nel codice
     header: string // da usare nella UI
     scan_fields: Field[] // nome dei campi presi dalla scansione
-    params: string
     
-    constructor(name: string, header: string, fields: Field[], params: string='{}') {
+    constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields
         this.header = header
         this.name = name
-        this.params = params
         this.scan_fields = []
     }
 
@@ -53,7 +51,7 @@ export class Schema {
 }
 
 export class Archimede extends Schema {
-    constructor(params: string='{}') {
+    constructor() {
         super('archimede', 'Archimede', [
             new Field('codice'),
             new Field('cognome'),
@@ -75,12 +73,12 @@ export class Archimede extends Schema {
             new ChoiceAnswerField('r11', '11'),
             new ChoiceAnswerField('r12', '12'),
             new ComputedField('punti'),
-        ], params)
+        ])
     }
 }
 
 export class Distrettuale extends Schema {
-    constructor(params: string='{}') {
+    constructor() {
         super('distrettuale', 'Distrettuale', [
             new Field('cognome'),
             new Field('nome'),
@@ -104,12 +102,12 @@ export class Distrettuale extends Schema {
             new ScoreAnswerField('r15', '15'),
             new ScoreAnswerField('r16', '16'),
             new ScoreAnswerField('r17', '17'),
-        ], params)
+        ])
     }
 }
 
 export class AmmissioneSenior extends Schema {
-    constructor(params: string='{}') {
+    constructor() {
         super('ammissione_senior', 'ammissione Senior', [
             new Field('id'),
             new Field('id_short', 'id breve'),
@@ -142,8 +140,7 @@ export class AmmissioneSenior extends Schema {
             new ChoiceAnswerField('r19','19'),
             new ChoiceAnswerField('r20','20'),
             new ComputedField('punti'),
-        ], params)
-        this.params = params
+        ])
         this.name = "ammissione_senior"
         this.scan_fields = this.fields.filter(f => 
             ["scan_id","variante"].includes(f.name) || (f instanceof ChoiceAnswerField)
