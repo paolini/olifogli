@@ -47,9 +47,9 @@ export function make_row_permission_filter(user: WithId<User>, sheet: Sheet): (d
     ).filter(p => p.filter_field && p.filter_value !== undefined)
     // Crea una funzione che forza tutti i campi filter_field
     return (data: Data) => {
-        let newData = { ...data };
+        const newData = { ...data }
         for (const perm of perms) {
-          newData[perm.filter_field as string] = String(perm.filter_value);
+          newData[perm.filter_field as string] = String(perm.filter_value)
         }
         return newData;
     };

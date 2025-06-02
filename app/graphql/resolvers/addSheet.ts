@@ -12,6 +12,12 @@ export default async function addSheet (_: unknown, { name, schema, params }:
     const user = await get_authenticated_user(context)
     check_admin(user)
     const collection = await getSheetsCollection()
-    const result = await collection.insertOne({ name, schema, params, owner_id: user._id })
+    const result = await collection.insertOne({ 
+        name, 
+        schema, 
+        params, 
+        owner_id: user._id, 
+        permissions: [],
+    })
     return await collection.findOne({ _id: result.insertedId })
 }

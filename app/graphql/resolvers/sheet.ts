@@ -16,7 +16,7 @@ export default async function sheet (_: unknown, { sheetId }: { sheetId: ObjectI
       if (!sheet.permissions) return sheet
       if (!Array.isArray(sheet.permissions)) throw Error('permessi non validi')
       // Filtra i permessi per l'utente corrente se ha un permesso esplicito
-      let permissions = sheet.permissions.filter(p => 
+      const permissions = sheet.permissions.filter(p => 
         (p.user_id && p.user_id.equals(user._id)) ||
         (p.user_email && p.user_email === user.email)
       )
