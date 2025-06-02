@@ -24,7 +24,15 @@ export async function get_authenticated_user(context: Context) {
  export function check_user_can_edit_sheet(user: WithId<User>, sheet: Sheet|null): asserts sheet is NonNullable<Sheet> {
     if (!sheet) throw Error('foglio inesistente')
     if (user?.is_admin) return
-    if (!sheet.owner_id.equals(user._id)) throw Error('non autorizzato')
+    if (sheet.owner_id.equals(user._id)) return
+    // Controlla se l'utente ha permesso esplicito
+    if (sheet.permissions && Array.isArray(sheet.permissions)) {
+        const hasPermission = sheet.permissions.some(p =>
+            (p.user_id && p.user_id.equals(user._id)) ||
+            (p.user_email && p.user_email === user.email)
+        )
+        if (hasPermission) return
+    }
+    throw Error('non autorizzato')
   }
-  
-  
+

@@ -22,12 +22,20 @@ export interface User {
     lastLogin?: Date
 }
 
+export interface SheetPermission {
+    user_id?: ObjectId
+    user_email?: string
+    filter_field?: string
+    filter_value?: string
+}
+
 export interface Sheet {
     _id: ObjectId
     name: string
     schema: AvailableSchemas
     params: string
     owner_id: ObjectId
+    permissions: SheetPermission[]
 }
 
 export type Data = {

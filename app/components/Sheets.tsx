@@ -6,6 +6,7 @@ import Error from '@/app/components/Error';
 import { Input } from '@/app/components/Input';
 import { Sheet } from '@/app/lib/models';
 import { WithId } from 'mongodb';
+import useProfile from '../lib/useProfile';
 
 const GET_SHEETS = gql`
     query GetSheets {
@@ -36,12 +37,11 @@ const DELETE_SHEET = gql`
 `;
 
 export default function Sheets({}) {
-    const { data: session } = useSession()
-    const user = session?.user
+    const profile = useProfile()
     return <div>
         <h1>Fogli</h1>
-        <SheetsTable />
-        <SheetForm />
+        {profile && <SheetsTable />}
+        {profile?.is_admin && <SheetForm />}
     </div>;
 }
 
@@ -100,8 +100,8 @@ function SheetForm({}) {
     const [addSheet, {loading, error, reset }] = useMutation<{addSheet:Sheet}>(ADD_SHEET, {
         refetchQueries: [{query: GET_SHEETS}]
     });
-    const [name, setName] = useState('');
-    const [schema, setSchema] = useState('');
+    const [name, setName] = useState('')
+    const [schema, setSchema] = useState('')
 
     if (error) return <Error error={error} dismiss={reset}/>;
 

@@ -11,6 +11,15 @@ export const typeDefs = gql`
     name: String
     schema: String
     params: String
+    permissions: [SheetPermission]
+    owner_id: ObjectId
+  }
+  
+  type SheetPermission {
+    user_id: ObjectId
+    user_email: String
+    filter_field: String
+    filter_value: String
   }
 
   type Row {
