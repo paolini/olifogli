@@ -11,6 +11,7 @@ import ScansImport from '@/app/components/ScansImport'
 import Button from './Button'
 import { AvailableSchemas, schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
+import useProfile from '../lib/useProfile'
 
 const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -18,6 +19,12 @@ const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
             _id
             name
             schema
+            permissions {
+                user_id
+                user_email
+                filter_field
+                filter_value
+            }
         }
     }
 `
@@ -25,14 +32,26 @@ const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
 export default function SheetElement({sheetId}: {
     sheetId: string
 }) {
-    const { data, error } = useQuery(GET_SHEET, { variables: { sheetId } });
+    const { data, error } = useQuery(GET_SHEET, { variables: { sheetId } })
+    const profile = useProfile()
     if (error) return <Error error={error} />;
     if (!data) return <Loading />;
 
     const { sheet } = data
 
+    // Mostra i filtri attivi se presenti
+    const permissions = sheet.permissions || []
+
     return <>
             <h1>{sheet.name} [{sheet.schema}]</h1>
+            {permissions.length > 0 && (
+                <div className="mb-2 text-sm text-gray-700">
+                    {permissions.map((f,i) => <span key={i} className="ml-2">
+                        {f.user_email && f.user_email!=profile?.email ? <span>{f.user_email}:</span> : ""} 
+                        {f.user_id && f.user_id!=profile?._id ? <span>{f.user_id.toString()}:</span> : ""} 
+                        {f.filter_field} = <b>{f.filter_value}</b></span>)}
+                </div>
+            )}
             <SheetBody sheet={sheet} />
         </>
 }
