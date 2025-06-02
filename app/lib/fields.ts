@@ -13,6 +13,11 @@ export class Field {
         this.widget = 'Input'
     }
 
+    add_css_style(style: string) {
+        this.css_style += ` ${style}`
+        return this
+    }
+
     clean(value: string): string {
         return value.trim()
     }

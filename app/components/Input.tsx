@@ -1,4 +1,5 @@
-import { KeyboardEvent } from "react"
+"use client"
+import type { KeyboardEvent } from "react"
 import { Field } from "../lib/fields"
 
 export function InputCell({field, value, setValue, onEnter}: {
@@ -40,13 +41,22 @@ export function ChoiceInput({value, setValue, onEnter}:{
 
   function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") onEnter()
+    if (e.key === "Backspace" && value.length === 0) {
+      const td = (e.target as HTMLInputElement).closest("td"); // Trova la cella <td> in cui si trova l'input
+      const prev_td = td?.previousElementSibling; // Trova la cella precedente
+      const prev_input = prev_td?.querySelector("input"); // Trova l'input nella cella precedente
+      if (prev_input) (prev_input as HTMLElement).focus();
+      if (prev_input?.value?.length && prev_input.classList.contains('field-ChoiceField')) {
+        prev_input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' })); // Simula il backspace
+      }
+    }
   }
 
   function clean(value: string) {
     if (value.length === 0) return ''
     value = value.slice(-1) // last char
     value = value.toUpperCase()
-    if (!"ABCDE-X".includes(value.toUpperCase())) return ''
+    if (!"ABCDE-?VX".includes(value.toUpperCase())) return ''
     return value
   }
 

@@ -86,6 +86,10 @@ td {
   border: 1px solid gray;
 }
 
+td .thick-border-right {
+  border-right: 4px solid red;
+}
+
 table {
   border-collapse: collapse;
 }
