@@ -1,12 +1,14 @@
-import { getUsersCollection, getSheetsCollection, getRowsCollection, getScansCollection, getScanResultsCollection } from '@/app/lib/mongodb'
-import { ObjectId } from 'mongodb'
 import { Context } from './types'
 import { ObjectIdType, Timestamp } from './types'
 import { GraphQLJSON } from "graphql-type-json"
 
 import { test } from '@/app/lib/olimanager'
-import { get_authenticated_user, check_admin, check_user_can_edit_sheet } from './resolvers/utils'
+import { get_authenticated_user } from './resolvers/utils'
 
+import users from './resolvers/users'
+import sheets from './resolvers/sheets'
+import sheet from './resolvers/sheet'
+import rows from './resolvers/rows'
 import scans from './resolvers/scans'
 import scanResults from './resolvers/scanResults'
 
@@ -29,39 +31,10 @@ export const resolvers = {
       const user = await get_authenticated_user(context)
       return user
     },
-
-    users: async (_: unknown, __: unknown, context: Context) => {
-      const user = await get_authenticated_user(context)
-      check_admin(user)
-      const collection = await getUsersCollection()
-      return await collection.find({}).toArray()
-    },
-
-    sheets: async (_: unknown, {}, context: Context) => {
-      const user = await get_authenticated_user(context)
-      const collection = await getSheetsCollection()
-      const match = user.is_admin ? {} : { owner_id: user._id }
-      return await collection.find(match).toArray()
-    },
-
-    sheet: async (_: unknown, { sheetId }: { sheetId: ObjectId }, context: Context) => {
-      const user = await get_authenticated_user(context)
-      const collection = await getSheetsCollection()
-      const sheet = await collection.findOne({_id: sheetId})
-      check_user_can_edit_sheet(user, sheet)
-      return sheet
-    },
-
-    rows: async (_: unknown, { sheetId }: { sheetId: ObjectId }, context: Context) => {
-        const user = await get_authenticated_user(context)
-        const sheets = await getSheetsCollection()
-        const sheet = await sheets.findOne({_id: sheetId })
-        check_user_can_edit_sheet(user, sheet)
-        const rows = await getRowsCollection()
-        const results = await rows.find({sheetId}).toArray()
-        return results
-    },
-
+    users,
+    sheets,
+    sheet,
+    rows,
     scans,
     scanResults,
 
