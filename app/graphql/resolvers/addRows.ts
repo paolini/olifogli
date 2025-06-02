@@ -4,7 +4,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data, Row } from '@/app/lib/models'
 
-import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
+import { get_authenticated_user, check_user_can_edit_sheet, make_row_permission_filter } from './utils'
 
 export default async function addRows(_: unknown, {sheetId, columns, rows}: { 
     sheetId: ObjectId,
@@ -21,8 +21,12 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: {
     const createdBy = user._id
     const updatedOn = createdOn
     const updatedBy = createdBy
-    const objectRows = rows.map(row => ({
-        ...Object.fromEntries(columns.map((column,i)=>[column,row[i]]))}))
+    // Applica filtro permission: forza tutti i campi filter_field ai rispettivi filter_value
+    const forceFields = make_row_permission_filter(user, sheet)
+    const objectRows = rows.map(row => {
+        const obj = Object.fromEntries(columns.map((column,i)=>[column,row[i]]));
+        return forceFields(obj);
+    })
     const validatedRows: WithoutId<Row>[] = objectRows
         .map(row => schema.clean(row as Data))
         .map(data => ({
@@ -33,7 +37,7 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: {
             createdOn,
             updatedBy,
             updatedOn,
-            }))
+        }))
     const collection = await getRowsCollection()
     const res = await collection.insertMany(validatedRows)
     return res.insertedCount

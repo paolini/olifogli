@@ -2,7 +2,7 @@ import { getUsersCollection } from '@/app/lib/mongodb'
 import { ObjectId, WithId } from 'mongodb';
 import { Context } from '../types';
 
-import { User, Sheet } from '@/app/lib/models'
+import { User, Sheet, Data } from '@/app/lib/models'
 
 export function check_authenticated({user_id}: Context): ObjectId {
     if (!user_id) throw Error('autenticazione richiesta')
@@ -35,4 +35,28 @@ export async function get_authenticated_user(context: Context) {
     }
     throw Error('non autorizzato')
   }
+  
+// Funzione di utilità per generare un filtro sulle righe in base a tutti i filter_field attivi per l'utente
+export function make_row_permission_filter(user: WithId<User>, sheet: Sheet): (data: Data) => Data {
+    if (user.is_admin) return data => data;
+    if (!sheet.permissions || !Array.isArray(sheet.permissions)) return data => data;
+    // Trova tutti i permessi attivi per l'utente
+    const perms = sheet.permissions.filter(p =>
+        (p.user_id && p.user_id.equals(user._id)) ||
+        (p.user_email && p.user_email === user.email)
+    ).filter(p => p.filter_field && p.filter_value !== undefined)
+    // Crea una funzione che forza tutti i campi filter_field
+    return (data: Data) => {
+        let newData = { ...data };
+        for (const perm of perms) {
+          newData[perm.filter_field as string] = String(perm.filter_value);
+        }
+        return newData;
+    };
+}
+
+// Applica il filtro permission a una singola riga Data
+export function apply_row_permission_filter(user: WithId<User>, sheet: Sheet, data: Data): Data {
+    return make_row_permission_filter(user, sheet)(data);
+}
 

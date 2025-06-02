@@ -4,7 +4,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data } from '@/app/lib/models'
 
-import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
+import { get_authenticated_user, check_user_can_edit_sheet, apply_row_permission_filter } from './utils'
 
 export default async function addRow(_: unknown, {sheetId, data}: {sheetId: ObjectId, data: Data}, context: Context) {
     const user = await get_authenticated_user(context)
@@ -16,15 +16,23 @@ export default async function addRow(_: unknown, {sheetId, data}: {sheetId: Obje
     const updatedOn = createdOn
     const createdBy = user._id
     const updatedBy = user._id
-    // TODO: check if user can write to sheetId
     data = schema.clean(data)
     const isValid = schema.isValid(data) // TODO compute this!
     const rowsCollection = await getRowsCollection()
+
+    // forza eventuali campi su cui l'utente ha un permesso con filtro
+    // ad avere il valore del filtro
+    // in questo modo l'utente non può inserire dati che non rispondono al filtro
+    data = apply_row_permission_filter(user, sheet, data)
+
     const result = await rowsCollection.insertOne({ 
-    data, 
-    sheetId, 
-    isValid, 
-    updatedOn, updatedBy, createdOn, createdBy,
+        data, 
+        sheetId, 
+        isValid, 
+        updatedOn, 
+        updatedBy, 
+        createdOn, 
+        createdBy
     })
     return await rowsCollection.findOne({ _id: result.insertedId });
 }
