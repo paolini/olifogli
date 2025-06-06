@@ -184,7 +184,7 @@ export class AmmissioneSenior extends Schema {
         const data_dict = Object.fromEntries(rows
             .map(row => [parseInt(row.data.id) % 1000, row] as [number,Row])
             .filter(([short_id,_]) => !isNaN(short_id))
-            .map(([short_id, data]) => [`${short_id}`, data] as [string,Row])
+            .map(([short_id, data]) => [short_id.toString().padStart(3, '0'), data] as [string,Row])
         )
 
         return Object.fromEntries(scan.map(scan => {
