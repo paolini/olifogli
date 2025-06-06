@@ -156,9 +156,13 @@ export class AmmissioneSenior extends Schema {
 
     csv_row(row: Data): string[] {
         const baseRow = super.csv_row(row)
+
+        // costruisce la stringa delle risposte
+        // sostituendo i trattini con 'V' e gli spazi vuoti con 'X'
+
         const answers = this.fields
             .filter(field => (field instanceof ChoiceAnswerField))
-            .map(field => row[field.name] || "X")
+            .map(field => (row[field.name] || 'X').replace('-','V').replace(' ','X'))
             .join("")
         return [...baseRow, answers]
     }
