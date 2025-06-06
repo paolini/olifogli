@@ -1,7 +1,10 @@
 // In this file you can configure migrate-mongo
 
-const dotenv = require('dotenv');
-dotenv.config();
+try {
+  require('dotenv').config();
+} catch (e) {
+  console.warn("dotenv not found. Will ignore `.env` file.");
+}
 
 const config = {
   mongodb: {
