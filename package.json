@@ -1,12 +1,16 @@
 {
   "name": "olifogli",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mongo:migrate:status": "npx migrate-mongo status",
+    "mongo:migrate:up": "npx migrate-mongo up",
+    "mongo:migrate:down": "npx migrate-mongo down",
+    "mongo:migrate:create": "npx migrate-mongo create"
   },
   "dependencies": {
     "@apollo/client": "^3.12.6",
@@ -34,8 +38,10 @@
     "@types/papaparse": "^5.3.15",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.5",
+    "migrate-mongo": "^12.1.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"

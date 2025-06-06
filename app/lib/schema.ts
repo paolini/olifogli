@@ -231,7 +231,7 @@ export class AmmissioneSenior extends Schema {
 export const schemas = {
     "archimede": new Archimede(),
     "distrettuale": new Distrettuale(),
-    "ammissioneSenior": new AmmissioneSenior(),
+    "ammissione_senior": new AmmissioneSenior(),
 }
 
 export type AvailableSchemas = keyof typeof schemas
