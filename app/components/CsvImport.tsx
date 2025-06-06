@@ -2,7 +2,7 @@
 import Papa from "papaparse";
 import { useState } from "react";
 import { gql, useApolloClient, useMutation } from "@apollo/client"
-import { schemas, AvailableSchemas } from "../lib/schema";
+import { schemas } from "../lib/schema";
 import Error from './Error'
 
 const ADD_ROWS = gql`
@@ -19,7 +19,7 @@ interface CSVRow {
 }
 
 export default function CsvImport({schemaName, sheetId, done}:{
-    schemaName: AvailableSchemas,
+    schemaName: string,
     sheetId: string,
     done: () => void,
 }) {

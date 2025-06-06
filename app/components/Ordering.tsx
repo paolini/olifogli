@@ -1,8 +1,8 @@
 import { useState, Dispatch, SetStateAction, Fragment } from 'react'
 import { WithId } from 'mongodb'
 import { Row } from '@/app/lib/models'
-import { Schema } from '@/app/lib/schema'
-import { Field } from '@/app/lib/fields'
+import Schema from '@/app/lib/schema/Schema'
+import { Field } from '@/app/lib/schema/fields'
 
 export type CriterioOrd = {
   campo: Field

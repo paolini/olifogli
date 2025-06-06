@@ -1,5 +1,4 @@
 import { ObjectId } from 'bson';
-import { AvailableSchemas } from './schema';
 
 export interface Account {
     _id: ObjectId
@@ -32,7 +31,7 @@ export interface SheetPermission {
 export interface Sheet {
     _id: ObjectId
     name: string
-    schema: AvailableSchemas
+    schema: string
     owner_id: ObjectId
     permissions: SheetPermission[]
 }

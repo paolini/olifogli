@@ -9,7 +9,7 @@ import Table from '@/app/components/Table'
 import CsvImport from '@/app/components/CsvImport'
 import ScansImport from '@/app/components/ScansImport'
 import Button from './Button'
-import { AvailableSchemas, schemas } from '../lib/schema'
+import { schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
 
@@ -70,7 +70,7 @@ const GET_ROWS = gql`
 function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
     const [tab, setTab] = useState<'table' | 'csv' | 'scans'>('table')
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
-    const schema = schemas[sheet.schema as AvailableSchemas]
+    const schema = schemas[sheet.schema]
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />

@@ -1,12 +1,11 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
-import { AvailableSchemas } from '@/app/lib/schema'
 
 import { get_authenticated_user, check_admin } from './utils'
 
 export default async function addSheet (_: unknown, { name, schema }: 
     {   name: string, 
-        schema: AvailableSchemas }, 
+        schema: string }, 
     context: Context) {
     const user = await get_authenticated_user(context)
     check_admin(user)

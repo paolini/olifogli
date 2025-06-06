@@ -1,8 +1,8 @@
 import { useState, memo } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
-import { Schema } from '@/app/lib/schema'
-import { Field } from '@/app/lib/fields'
+import Schema from '@/app/lib/schema/Schema'
+import { Field } from '@/app/lib/schema/fields'
 
 import { InputCell } from '@/app/components/Input'
 import { Row, Data, Sheet } from '@/app/lib/models'

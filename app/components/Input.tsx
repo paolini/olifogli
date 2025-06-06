@@ -1,6 +1,6 @@
 "use client"
 import type { KeyboardEvent } from "react"
-import { Field } from "../lib/fields"
+import { Field } from "../lib/schema/fields"
 
 export function InputCell({field, value, setValue, onEnter}: {
   field: Field,
