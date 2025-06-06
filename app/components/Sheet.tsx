@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
+import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
 import Papa from "papaparse"
+import { useRouter } from 'next/navigation'
 
-import { Row, Sheet } from '@/app/lib/models'
+import { Row, Sheet, User } from '@/app/lib/models'
 import Loading from '@/app/components/Loading'
 import Error from '@/app/components/Error'
 import Table from '@/app/components/Table'
@@ -35,24 +36,13 @@ export default function SheetElement({sheetId}: {
     const { data, error } = useQuery(GET_SHEET, { variables: { sheetId } })
     const profile = useProfile()
     if (error) return <Error error={error} />;
-    if (!data) return <Loading />;
+    if (!data || profile===undefined) return <Loading />;
 
     const { sheet } = data
 
-    // Mostra i filtri attivi se presenti
-    const permissions = sheet.permissions || []
-
     return <>
             <h1>{sheet.name} [{sheet.schema}]</h1>
-            {permissions.length > 0 && (
-                <div className="mb-2 text-sm text-gray-700">
-                    {permissions.map((f,i) => <span key={i} className="ml-2">
-                        {f.user_email && f.user_email!=profile?.email ? <span>{f.user_email}:</span> : ""} 
-                        {f.user_id && f.user_id!=profile?._id ? <span>{f.user_id.toString()}:</span> : ""} 
-                        {f.filter_field} = <b>{f.filter_value}</b></span>)}
-                </div>
-            )}
-            <SheetBody sheet={sheet} />
+            <SheetBody sheet={sheet} profile={profile} />
         </>
 }
 
@@ -67,10 +57,14 @@ const GET_ROWS = gql`
   }
 `
 
-function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
-    const [tab, setTab] = useState<'table' | 'csv' | 'scans'>('table')
+function SheetBody({sheet,profile}: {
+    sheet:Sheet & {_id: string}
+    profile:User|null
+}) {
+    const [tab, setTab] = useState<'table' | 'csv' | 'scans' | 'configure'>('table')
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
+    const user_can_configure = profile && (profile.is_admin || sheet.owner_id === profile._id)
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
@@ -79,9 +73,19 @@ function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
     return <>
         { tab === 'table' && 
             <>
-                <Button onClick={() => setTab('csv')}>Importa da CSV</Button>
-                {} <Button onClick={() => csv_download()}>Scarica CSV</Button>
-                {} <Button onClick={() => setTab('scans')}>Importa da scansioni</Button>
+                <Button onClick={() => setTab('csv')}>
+                    Importa da CSV
+                </Button>
+                {} <Button onClick={() => csv_download()}>
+                    Scarica CSV
+                </Button>
+                {} <Button onClick={() => setTab('scans')}>
+                    Importa da scansioni
+                </Button>
+                {} { user_can_configure && 
+                <Button variant="alert" onClick={() =>setTab('configure') }>
+                    configura
+                </Button>}
                 <br />
                 <Table sheet={sheet} rows={data.rows} />
             </>
@@ -95,8 +99,11 @@ function SheetBody({sheet}: {sheet:Sheet & {_id: string}}) {
         { tab === 'scans' && 
             <ScansImport sheet={sheet} data_rows={data.rows} />
         }
+        { tab === 'configure' && 
+            <SheetConfigure sheet={sheet} profile={profile}/>
+        }
     </>
-
+    
     async function csv_download() {
         if (!data) return
         const filename = myTimestamp(new Date()).replace(':', '-').replace(' ', '_') + '.csv'
@@ -126,3 +133,58 @@ link.click();
 document.body.removeChild(link);
 }
 
+const DELETE_SHEET = gql`
+    mutation DeleteSheet($_id: ObjectId!) {
+        deleteSheet(_id: $_id)
+    }
+`;
+
+
+function SheetConfigure({sheet, profile}: {
+    sheet: Sheet & {_id: string}
+    profile: User | null
+}) {
+    const router = useRouter();
+    const [deleteSheet, {loading, error}] = useMutation<{deleteSheet:string}>(DELETE_SHEET)
+
+    if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
+
+    const permissions = sheet.permissions || [] 
+    const [danger_zone_active, setDangerZoneActive] = useState(false)
+
+    return <>
+        <table>
+            <thead>
+                <tr>
+                    <th>utente</th>
+                    <th>restrizione</th>
+                </tr>
+            </thead>
+            <tbody>
+                {permissions.map((f,i) => <tr key={i} className="ml-2">
+                    <td>{f?.user_email} {f?.user_id?.toString()}</td>
+                    <td>
+                        {f.filter_field}=<b>{f.filter_value}</b>
+                    </td>
+                </tr>)}
+            </tbody>
+        </table>
+        <div style={{marginTop: '1em'}}>
+            <label>
+                <input type="checkbox" checked={danger_zone_active} onChange={e => setDangerZoneActive(e.target.checked)} />
+                <span style={{marginLeft: '0.5em'}}>zona pericolosa</span>
+            </label>
+            <div>
+                <Button variant="danger" disabled={loading || !danger_zone_active} onClick={() => doDelete()}>
+                    Elimina questo foglio
+                </Button>
+            </div>
+        </div>
+    </>
+
+    async function doDelete() {
+        await deleteSheet({variables: {_id: sheet._id}})
+        router.push('/')
+    }
+    
+}

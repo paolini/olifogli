@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useSession } from "next-auth/react"
 import { gql, useQuery, useMutation } from '@apollo/client';
+
+import Button from './Button'
 import Loading from '@/app/components/Loading';
 import Error from '@/app/components/Error';
 import { Input } from '@/app/components/Input';
@@ -28,15 +29,9 @@ const ADD_SHEET = gql`
     }
 `;
 
-const DELETE_SHEET = gql`
-    mutation DeleteSheet($_id: ObjectId!) {
-        deleteSheet(_id: $_id)
-    }
-`;
-
 export default function Sheets({}) {
     const profile = useProfile()
-    return <div>
+    return <div className="p-4">
         <h1>Fogli</h1>
         {profile && <SheetsTable />}
         {profile?.is_admin && <SheetForm />}
@@ -67,12 +62,6 @@ function SheetsTable({}) {
 }
 
 function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
-    const [deleteSheet, {loading, error}] = useMutation<{deleteSheet:string}>(DELETE_SHEET, {
-        refetchQueries: [{query: GET_SHEETS}]
-    });
-
-    if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
-
     return <tr key={sheet._id.toString()}>
         <td>
             <a href={`/sheet/${sheet._id}`}>{sheet.name}</a>
@@ -80,14 +69,7 @@ function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
         <td>
             {sheet.schema}
         </td>
-        <td>
-            <button disabled={loading} onClick={doDelete}>Elimina</button>
-        </td>
     </tr>
-
-    async function doDelete() {
-        await deleteSheet({variables: {_id: sheet._id}});
-    }
 }
 
 function SheetForm({}) {
@@ -105,10 +87,12 @@ function SheetForm({}) {
             <option value="distrettuale">Distrettuale</option>
             <option value="archimede">Archimede</option>
             <option value="ammissioneSenior">Ammissione Senior</option>
-        </select>
-        <Input value={name} setValue={setName}/>
-        <button disabled={loading||schema==""||name==""} onClick={create}>Crea</button>
-    </div>;
+        </select> {}
+        <Input value={name} setValue={setName}/> {}
+        <Button disabled={loading||schema==""||name==""} onClick={create}>
+            Nuovo foglio
+        </Button>
+    </div>
 
     async function create() {
         await addSheet({variables: {
