@@ -30,7 +30,7 @@ export function useCriteria(schema: Schema): Criteria {
 
 export function Ordering({ criteria }: { criteria: Criteria }) {
     const name_to_field_dict = Object.fromEntries(criteria.schema.fields.map(field => [field.name, field]))
-    return <><span>
+    return <> <span>
       Ordinamento per {[...criteria.criteriOrdina,null].map((criterio,i) => <span key={`c-${i}`}>
         {i>0 && <span key={`s-${i}`}> + </span>}
         <select 
@@ -57,11 +57,11 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
     <span>
       Filtra per {[...criteria.criteriCerca,null].map((criterio,i) => {
         return <Fragment key={`f-${i}`}>
-        {i>0 && <span> + </span>}
+          {i>0 && <span> + </span>}
           <select key={`s-${i}`} value={criterio?.campo.header || ''} onChange={e => cambiaCriterioCerca(i, e.target.value)}>
             <option key="" value="">{criterio?"rimuovi":(i>0?"aggiungi":"scegli campo")}</option>
-            { Object.entries(criteria.schema.fields).map(([field,type]) => {
-              return <option key={field} value={field}>{field}</option>
+            { criteria.schema.fields.map(field => {
+              return <option key={field.name} value={field.name}>{field.header}</option>
             })}
           </select>
           {criterio && <InputCerca key={`i-${i}`} field={criterio.campo} type={criterio.campo.name} criteria={criteria} />}
