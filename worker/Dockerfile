@@ -1,8 +1,24 @@
+# setup:
+#   Devi ottenere i templates dal progetto archiomr
+#   https://github.com/fph/archiomr.git
+#   copia i seguenti files nella cartella worker:
+#      templates/archimede/template.json
+#      templates/archimede/omr_marker.jpg
+#      templates/ammissione_senior/template.json
+#      templates/ammissione_senior/omr_marker.jpg
+#
+#   export VERSION=0.2.0
 # build:
-#   docker build -t paolini/oliscan:0.2.0 .
+#   docker build -t paolini/oliscan:latest .
+#   docker tag paolini/oliscan:latest paolini/oliscan:${VERSION}
+#
 # push:
 #   docker login
-#   docker push paolini/oliscan:0.2.0
+#   docker push paolini/oliscan:latest
+#   docker push paolini/oliscan:${VERSION}
+#
+# run:
+#   docker compose up
 
 FROM python:3.12-slim
 
@@ -30,20 +46,11 @@ RUN git clone https://github.com/Udayraj123/OMRChecker.git /app/OMRChecker
 COPY ./disconnect-OMRChecker-from-display.patch /app/patch
 RUN patch -p1 -d /app/OMRChecker < /app/patch
 
-# Clona il repository archiomr
-RUN git clone https://github.com/fph/archiomr.git /app/archiomr
-
-# Copy only template.json and omr_marker.jpg files for each template
-COPY /app/archiomr/templates/archimede/template.json /app/templates/archimede/template.json
-COPY /app/archiomr/templates/archimede/omr_marker.jpg /app/templates/archimede/omr_marker.jpg
-COPY /app/archiomr/templates/ammissione_senior/template.json /app/templates/ammissione_senior/template.json
-COPY /app/archiomr/templates/ammissione_senior/omr_marker.jpg /app/templates/ammissione_senior/omr_marker.jpg
-
-# remove archiomr repository
-RUN rm -rf /app/archiomr
-
 # copy worker script
 COPY ./worker.py /app/worker.py
+
+# copy templates
+COPY ./templates /app/templates
 
 # Imposta la directory di lavoro
 WORKDIR /app

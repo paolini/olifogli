@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  oliscan:
+    image: paolini/oliscan
+    container_name: oliscan
+    volumes:
+      - ./data:/app/data
+      - ./spool:/app/spool
+
