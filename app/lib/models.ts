@@ -53,19 +53,25 @@ export interface Row {
     updatedBy?: ObjectId
 }
 
-export interface Scan {
-    _id: ObjectId
-    sheetId: ObjectId
-    jobId: string
+export interface ScanMessage {
     status: string
-    message?: string
+    message: string
     timestamp: Date
+}
+
+export interface ScanJob {
+    _id: ObjectId
+    // jobId: string // old migrated scans
+    sheetId: ObjectId
+    timestamp: Date
+    ownerId: ObjectId
+    messages: ScanMessage[]
 }
 
 export interface ScanResults {
     _id: ObjectId
     sheetId: ObjectId
-    jobId: string
+    jobId: ObjectId
     image: string
     raw_data: Data
 }

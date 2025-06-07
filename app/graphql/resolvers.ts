@@ -9,7 +9,7 @@ import users from './resolvers/users'
 import sheets from './resolvers/sheets'
 import sheet from './resolvers/sheet'
 import rows from './resolvers/rows'
-import scans from './resolvers/scans'
+import scanJobs from './resolvers/scanJobs'
 import scanResults from './resolvers/scanResults'
 
 import addSheet from './resolvers/addSheet'
@@ -18,6 +18,7 @@ import addRow from './resolvers/addRow'
 import patchRow from './resolvers/patchRow'
 import deleteRow from './resolvers/deleteRow'
 import addRows from './resolvers/addRows'
+import deleteScan from './resolvers/deleteScan'
 
 // Definizione dei resolver
 export const resolvers = {
@@ -35,7 +36,7 @@ export const resolvers = {
     sheets,
     sheet,
     rows,
-    scans,
+    scanJobs,
     scanResults,
 
     olimanager: async (_: unknown) => {
@@ -51,7 +52,8 @@ export const resolvers = {
     addRow,
     patchRow,
     deleteRow,
-    addRows
+    addRows,
+    deleteScan,
   },
 
   Timestamp,

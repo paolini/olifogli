@@ -6,7 +6,7 @@ import { existsSync } from 'fs'
 import { ObjectId } from 'mongodb'
 
 import { get_context } from '@/app/graphql/types'
-import { getScansCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getScanJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { check_user_can_edit_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { schemas } from '@/app/lib/schema'
 
@@ -66,24 +66,31 @@ export async function POST(req: NextRequest) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
+        const now = new Date()
+        const jobsCollection = await getScanJobsCollection()
+        const insertion = await jobsCollection.insertOne({
+            sheetId: new ObjectId(sheetId),
+            timestamp: now,
+            messages: [{  
+                status: 'uploading',
+                message: 'caricamento PDF',
+                timestamp: now}],
+            ownerId: user._id,
+        })
+
+        if (!insertion.acknowledged) {
+            return NextResponse.json({ error: 'Failed to create scan job' }, { status: 500 });
+        }
+        const job_id = insertion.insertedId.toString()
+
         // Define upload path
-        const job_id = Math.random().toString(36).substring(2,10)
         const filePath = path.join(SCANS_SPOOL_DIR, `${schema.name}-${sheetId}-${job_id}.pdf`)
 
         // Save file to disk
         await writeFile(filePath, buffer);
 
-        const scansCollection = await getScansCollection();
-        await scansCollection.insertOne({
-            sheetId: new ObjectId(sheetId),
-            jobId: job_id,
-            status: 'queued',
-            message: 'in attesa di elaborazione',
-            timestamp: new Date(),
-        })
-
         return NextResponse.json({ 
-            job_id
+            jobId: job_id
         });
 
     } catch (error) {

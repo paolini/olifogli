@@ -40,19 +40,25 @@ export const typeDefs = gql`
     OLIMANAGER_URL: String
   }
 
-  type Scan {
-    _id: ObjectId
-    timestamp: Timestamp
-    sheetId: ObjectId
-    jobId: String
+  type ScanMessage {
     status: String
     message: String
+    timestamp: Timestamp
+  }
+
+  type ScanJob {
+    _id: ObjectId
+    sheetId: ObjectId
+    owner_id: ObjectId
+    timestamp: Timestamp
+    messages: [ScanMessage]
+    message: ScanMessage
   }
 
   type ScanResults {
     _id: ObjectId
     sheetId: ObjectId
-    jobId: String
+    jobId: ObjectId
     image: String
     raw_data: JSON
   }
@@ -65,8 +71,8 @@ export const typeDefs = gql`
     sheets: [Sheet]
     sheet(sheetId: ObjectId): Sheet
     rows(sheetId: ObjectId): [Row]
-    scans(sheetId: ObjectId): [Scan]
-    scanResults(sheetId: ObjectId, jobId: String): [ScanResults]
+    scanJobs(sheetId: ObjectId, userId: ObjectId): [ScanJob]
+    scanResults(jobId: ObjectId): [ScanResults]
     olimanager: String # testing
   }
 
@@ -79,5 +85,6 @@ export const typeDefs = gql`
     deleteRow(_id: ObjectId): ObjectId
     
     addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
+    deleteScan(sheetId: ObjectId!, jobId: String): Boolean
   }
 `

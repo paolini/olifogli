@@ -1,8 +1,7 @@
 "use client"
 import { useState, useRef } from "react"
-import { gql, useQuery, TypedDocumentNode } from '@apollo/client'
-import { ErrorBoundary } from 'react-error-boundary'
-import { Data, Row, Scan, ScanResults, Sheet } from "@/app/lib/models"
+import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
+import { Data, Row, ScanJob, ScanMessage, ScanResults, Sheet } from "@/app/lib/models"
 import Button from "./Button"
 import ErrorElement from "./Error"
 import Loading from "./Loading"
@@ -27,6 +26,15 @@ export default function ScansImport({sheet, data_rows}:{
 
     return <>
         <h2>Caricamento scansioni OCR</h2>
+        <div className="flex flex-col gap-4">
+            { error && <ErrorElement error={error} dismiss={()=>setError('')}/> }
+            <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />
+            <label htmlFor="scansFileInput" onClick={handleClick} className="cursor-pointer">
+                <Button disabled={busy}>carica PDF</Button>
+            </label>
+        </div>    
+        <ScansLog sheet={sheet} data_rows={data_rows}/>
+        {/*
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <div className="flex flex-col gap-4">
                 { error && <ErrorElement error={error} dismiss={()=>setError('')}/> }
@@ -37,6 +45,7 @@ export default function ScansImport({sheet, data_rows}:{
             </div>    
             <ScansLog sheet={sheet} data_rows={data_rows}/>
         </ErrorBoundary>
+        */}
     </>
 
     async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -72,15 +81,21 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
     return <ErrorElement error={error} dismiss={resetErrorBoundary}/>
   }
   
+interface ScanJobWithMessage extends ScanJob {
+    message: ScanMessage
+}
 
-const SCANS_QUERY: TypedDocumentNode<{scans: Scan[]}, {sheetId: string}>  = gql`
+const SCANS_QUERY: TypedDocumentNode<{scanJobs: ScanJobWithMessage[]}, {sheetId: string}>  = gql`
     query Scans($sheetId: ObjectId!) {
-        scans(sheetId: $sheetId) {
+        scanJobs(sheetId: $sheetId) {
+            _id
             timestamp
             sheetId
-            jobId
-            status
-            message
+            message {
+                status
+                message
+                timestamp
+            }
         }
     }`
 
@@ -93,31 +108,71 @@ function ScansLog({sheet,data_rows}:{
     if (error) return <ErrorElement error={error} />
     if (!data) return <Loading />
 
-    const scans = data.scans
+    const jobs = data.scanJobs
 
     return <ul className="list-disc pl-5 space-y-2">
-        {scans.map(scan => <li key={scan.jobId}>
-                <i>{myTimestamp(scan.timestamp)}</i> - {}
-                <b className={{'completed': 'text-green-700','error': 'text-red-500'}[scan.status] || ''}>
-                    {scan.message}
-                </b>
-                <br />
-                {scan.status === "completed" && 
-                    <ScanResultsTable 
-                        sheet={sheet} 
-                        jobId={scan.jobId} 
-                        data_rows={data_rows} 
-                    />
-                }
+        {jobs.map(job => <li key={job._id.toString()} className="pt-8">
+                <ScansJob sheet={sheet} data_rows={data_rows} job={job}/>
             </li>)}
     </ul>
 }
 
+const SCANS_DELETE_MUTATION = gql`
+  mutation DeleteScan($jobId: ObjectId!) {
+    deleteScan(jobId: $jobId)
+  }
+`
+
+function ScansJob({sheet, data_rows, job}: {
+    sheet: Sheet
+    data_rows: Row[]
+    job: ScanJobWithMessage
+}) {
+    const [deleteChecked, setDeleteChecked] = useState(false)
+    const [deleteScan, { loading: deleteLoading, error: deleteError, reset: deleteReset }] 
+        = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCANS_QUERY}]})
+    const message = job.message
+
+    return <>
+        {message && <>
+            <i>{myTimestamp(message.timestamp)}</i> - {}
+            <b className={{'completed': 'text-green-700','error': 'text-red-500'}[message.status] || ''}>
+                {message.message}
+            </b> {}
+            </>
+        }
+        <span className="ml-4">
+            <label>
+                <input type="checkbox" checked={deleteChecked} onChange={e => setDeleteChecked(e.target.checked)} />
+                <span style={{marginLeft: '0.5em'}}>elimina</span>
+            </label>
+            {deleteChecked && <Button variant="danger" style={{marginLeft: '1em'}} disabled={!deleteChecked || deleteLoading} onClick={handleDelete}>
+                {deleteLoading ? 'Eliminazione...' : 'conferma eliminazione'}
+            </Button> }
+            {deleteError && <ErrorElement error={deleteError} dismiss={deleteReset}/>}
+        </span>
+
+        <br />
+        {data_rows.length>0 && 
+            <ScanResultsTable 
+                sheet={sheet}
+                job={job} 
+                data_rows={data_rows} 
+            />
+        }
+    </>
+
+    async function handleDelete() {
+        await deleteScan({ variables: { jobId: job._id } })
+        setDeleteChecked(false)
+    }
+}
+
 type ScanResultsWithId = ScanResults & {_id: string};
 
-const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, {sheetId: string, jobId: string}> = gql`
-    query ScanResults($sheetId: ObjectId, $jobId: String!) {
-        scanResults(sheetId: $sheetId, jobId: $jobId) {
+const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, {jobId: ObjectId}> = gql`
+    query ScanResults($jobId: ObjectId!) {
+        scanResults(jobId: $jobId) {
             _id,
             sheetId,
             jobId,
@@ -126,15 +181,15 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
         }
     }`
 
-function ScanResultsTable({sheet, jobId, data_rows}:{
-    sheet: Sheet, 
-    jobId: string,
+function ScanResultsTable({sheet, job, data_rows}:{
+    sheet: Sheet,
+    job: ScanJob,
     data_rows: Row[],
 }) {
     const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
     const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
     const [selected, setSelected] = useState<ObjectId[]>([])
-    const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { sheetId: sheet._id.toString(), jobId } })
+    const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { jobId: job._id } })
     if (error) return <ErrorElement error={error} />
     if (addError) return <ErrorElement error={addError} dismiss={addReset} />
     if (patchError) return <ErrorElement error={patchError} dismiss={patchReset} />
@@ -145,12 +200,11 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
 
     if (rows.length === 0) return <p>Nessun dato acquisito</p>
     
-
     return <>
         <span><b>{rows.length}</b> righe </span>
         <Button disabled={selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
             importa {selected.length} righe selezionate
-        </Button>
+        </Button> {}
         { (addLoading || patchLoading) && <Loading /> }
         <table>
             <thead>
@@ -171,7 +225,7 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
             <tbody>
                 {rows.map(row => 
                     <ScanRow 
-                        key={row._id} sheet={sheet} jobId={jobId} row={row} 
+                        key={row._id} sheet={sheet} job={job} row={row} 
                         selected={selected.includes(row._id)}
                         setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  `${_}` != `${row._id}`))}
                         data={scans_to_data_dict[row._id.toString()]?.data || {}}
@@ -206,11 +260,15 @@ function ScanResultsTable({sheet, jobId, data_rows}:{
         }
     }
 
+    function handleDelete() {
+        // TODO: implement delete logic for selected rows
+        alert(`Eliminazione di ${selected.length} righe selezionate (implementa la logica di eliminazione qui)`);
+    }
 }
 
-function ScanRow({sheet, jobId, row, selected, setSelected, data} : {
+function ScanRow({sheet, job, row, selected, setSelected, data} : {
     sheet: Sheet,
-    jobId: string,
+    job: ScanJob,
     row: ScanResultsWithId,
     selected: boolean,
     setSelected: (checked: boolean) => void,
@@ -219,7 +277,7 @@ function ScanRow({sheet, jobId, row, selected, setSelected, data} : {
     const schema = schemas[sheet.schema]
     return <tr key={row._id}>
         <td><input type="checkbox" checked={selected} onChange={e=>setSelected(e.target.checked)}/></td>
-        <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${jobId}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
+        <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${job._id.toString()}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
         {schema.fields.map(field => 
             <td key={field.name}>
                 {data[field.name]}

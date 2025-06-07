@@ -2,7 +2,7 @@ import { getUsersCollection } from '@/app/lib/mongodb'
 import { ObjectId} from 'mongodb'
 import { Context } from '../types'
 
-import { User, Sheet, Data, ScanMessage } from '@/app/lib/models'
+import { User, Sheet, Data, ScanJob } from '@/app/lib/models'
 
 export function check_authenticated({user_id}: Context): ObjectId {
     if (!user_id) throw Error('autenticazione richiesta')
@@ -34,6 +34,17 @@ export function check_user_can_edit_sheet(user: User, sheet: Sheet|null): assert
       if (hasPermission) return
   }
   throw Error('non autorizzato')
+}
+
+export function check_user_can_view_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
+    if (!job) throw Error('job inesistente')
+    if (user?.is_admin) return
+    if (job.ownerId?.equals(user._id)) return
+    throw Error('non autorizzato')
+}
+
+export function check_user_can_delete_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
+  return check_user_can_view_job(user, job)
 }
 
 // Funzione di utilità per generare un filtro sulle righe in base a tutti i filter_field attivi per l'utente

@@ -7,15 +7,18 @@ import { Ordering, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
 import LoadingWrapper from './LoadingWrapper'
 import { schemas } from '../lib/schema'
+import ErrorElement from './Error'
 
 export default function Table({rows, sheet}:{
   rows: Row[],
   sheet: Sheet, 
 }) {
-  const schema = schemas[sheet.schema]
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
-  const criteria = useCriteria(schema)
-  
+  const schema = schemas[sheet.schema]
+  if (!schema) {
+    return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
+  }
+  const criteria = useCriteria(schema)  
   const view_rows = filtraEOrdina(criteria, rows)
 
   return <>

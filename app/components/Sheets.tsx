@@ -8,6 +8,7 @@ import { Input } from '@/app/components/Input';
 import { Sheet } from '@/app/lib/models';
 import { WithId } from 'mongodb';
 import useProfile from '../lib/useProfile';
+import { schemas } from '../lib/schema';
 
 const GET_SHEETS = gql`
     query GetSheets {
@@ -84,9 +85,9 @@ function SheetForm({}) {
     return <div>
         <select name="schema" value={schema} onChange={e => setSchema(e.target.value)}>
             <option value="">Scegli uno schema</option>
-            <option value="distrettuale">Distrettuale</option>
-            <option value="archimede">Archimede</option>
-            <option value="ammissioneSenior">Ammissione Senior</option>
+            { Object.entries(schemas).map(([key, schema]) =>
+                <option key={key} value={key}>{schema.header}</option>
+            )}
         </select> {}
         <Input value={name} setValue={setName}/> {}
         <Button disabled={loading||schema==""||name==""} onClick={create}>

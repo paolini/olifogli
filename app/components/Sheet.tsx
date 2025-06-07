@@ -144,7 +144,7 @@ function SheetConfigure({sheet, profile}: {
     sheet: Sheet & {_id: string}
     profile: User | null
 }) {
-    const router = useRouter();
+    const router = useRouter()
     const [deleteSheet, {loading, error}] = useMutation<{deleteSheet:string}>(DELETE_SHEET)
 
     if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
@@ -183,7 +183,9 @@ function SheetConfigure({sheet, profile}: {
     </>
 
     async function doDelete() {
+        console.log("Deleting sheet", sheet._id)
         await deleteSheet({variables: {_id: sheet._id}})
+        console.log("Sheet deleted, redirecting to home")
         router.push('/')
     }
     
