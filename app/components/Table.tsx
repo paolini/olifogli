@@ -15,10 +15,11 @@ export default function Table({rows, sheet}:{
 }) {
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const schema = schemas[sheet.schema]
+  // Always call hooks unconditionally
+  const criteria = useCriteria(schema)
   if (!schema) {
     return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
   }
-  const criteria = useCriteria(schema)  
   const view_rows = filtraEOrdina(criteria, rows)
 
   return <>

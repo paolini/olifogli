@@ -145,12 +145,12 @@ function SheetConfigure({sheet, profile}: {
     profile: User | null
 }) {
     const router = useRouter()
+    const [danger_zone_active, setDangerZoneActive] = useState(false)
     const [deleteSheet, {loading, error}] = useMutation<{deleteSheet:string}>(DELETE_SHEET)
 
     if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
 
     const permissions = sheet.permissions || [] 
-    const [danger_zone_active, setDangerZoneActive] = useState(false)
 
     return <>
         <table>
