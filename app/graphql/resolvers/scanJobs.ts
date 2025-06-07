@@ -20,11 +20,16 @@ export default async function scans (_: unknown, { sheetId, userId }: { sheetId:
         // gli altri utenti vedono solo i job che hanno creato
         match.userId = user._id
     }
-    const jobs: ScanJob[] = (await collection.find(match).toArray())
+    const jobs: ScanJob[] = (await collection
+        .find(match)
+        .sort({ timestamp: -1 })
+        .toArray())
     return jobs
         .map(job => (
             {   ...job, 
-                message: job.messages.length > 0 ? job.messages[job.messages.length - 1] : null
+                message: (job.messages.length > 0) 
+                    ? job.messages[job.messages.length - 1] 
+                    : null
             }))
 }
 

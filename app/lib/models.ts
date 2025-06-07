@@ -70,7 +70,6 @@ export interface ScanJob {
 
 export interface ScanResults {
     _id: ObjectId
-    sheetId: ObjectId
     jobId: ObjectId
     image: string
     raw_data: Data

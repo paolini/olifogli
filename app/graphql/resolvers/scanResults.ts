@@ -10,7 +10,7 @@ export default async function scanResults(_: unknown, { jobId }: { jobId: Object
     const job = await jobs.findOne({_id: jobId })
     check_user_can_view_job(user, job)
     const collection = await getScanResultsCollection()
-    const results = await collection.find({ jobId }).sort({ timestamp: -1 })
+    const results = await collection.find({ jobId })
     return results.toArray()
 }
 
