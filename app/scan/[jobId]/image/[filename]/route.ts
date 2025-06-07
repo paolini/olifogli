@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shee
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
     
-    const filePath = join(SCANS_DATA_DIR, sheetId, jobId, filename);
+    const filePath = join(SCANS_DATA_DIR, jobId, filename);
 
     try {
         const file = await readFile(filePath);

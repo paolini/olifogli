@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef } from "react"
+import { useState, useRef, Dispatch, SetStateAction } from "react"
 import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
 import { Data, Row, ScanJob, ScanMessage, ScanResults, Sheet } from "@/app/lib/models"
 import Button from "./Button"
@@ -131,7 +131,9 @@ function ScansJob({sheet, data_rows, job}: {
     const [deleteChecked, setDeleteChecked] = useState(false)
     const [deleteScan, { loading: deleteLoading, error: deleteError, reset: deleteReset }] 
         = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCANS_QUERY}]})
+    const [raw,setRaw] = useState(false)
     const message = job.message
+    const done = message.status === 'completed' || message.status === 'error' || message.timestamp < new Date(Date.now() - 60 * 1000) // more than 1 minute old   
 
     return <>
         {message && <>
@@ -141,23 +143,31 @@ function ScansJob({sheet, data_rows, job}: {
             </b> {}
             </>
         }
-        <span className="ml-4">
-            <label>
-                <input type="checkbox" checked={deleteChecked} onChange={e => setDeleteChecked(e.target.checked)} />
-                <span style={{marginLeft: '0.5em'}}>elimina</span>
+        { done && 
+            <label style={{marginLeft: '1em', marginRight: '1em'}}>
+                <input type="checkbox" checked={raw} onChange={e => setRaw(e.target.checked)} /> dati grezzi
             </label>
-            {deleteChecked && <Button variant="danger" style={{marginLeft: '1em'}} disabled={!deleteChecked || deleteLoading} onClick={handleDelete}>
-                {deleteLoading ? 'Eliminazione...' : 'conferma eliminazione'}
-            </Button> }
-            {deleteError && <ErrorElement error={deleteError} dismiss={deleteReset}/>}
-        </span>
-
+        }   
+        {done &&
+            // delete checkbox and button
+            <span className="ml-4">
+                <label className="bg-error p-2 rounded">
+                    <input type="checkbox" checked={deleteChecked} onChange={e => setDeleteChecked(e.target.checked)} />
+                    <span style={{marginLeft: '0.5em'}}>elimina</span>
+                </label>
+                {deleteChecked && <Button variant="danger" style={{marginLeft: '1em'}} disabled={!deleteChecked || deleteLoading} onClick={handleDelete}>
+                    {deleteLoading ? 'Eliminazione...' : 'conferma eliminazione'}
+                </Button> }
+                {deleteError && <ErrorElement error={deleteError} dismiss={deleteReset}/>}
+            </span>
+        }   
         <br />
-        {data_rows.length>0 && 
+        { done && 
             <ScanResultsTable 
                 sheet={sheet}
                 job={job} 
                 data_rows={data_rows} 
+                showRaw={raw}
             />
         }
     </>
@@ -181,10 +191,11 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
         }
     }`
 
-function ScanResultsTable({sheet, job, data_rows}:{
+function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     sheet: Sheet,
     job: ScanJob,
     data_rows: Row[],
+    showRaw: boolean
 }) {
     const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
     const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
@@ -202,37 +213,14 @@ function ScanResultsTable({sheet, job, data_rows}:{
     
     return <>
         <span><b>{rows.length}</b> righe </span>
-        <Button disabled={selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
+        <Button disabled={showRaw || selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
             importa {selected.length} righe selezionate
         </Button> {}
         { (addLoading || patchLoading) && <Loading /> }
-        <table>
-            <thead>
-                <tr>
-                    <th><input type="checkbox" 
-                            checked={selected.length === rows.length}
-                            onChange={e => setSelected(lst => e.target.checked ? rows.map(row => row._id) : [])}
-                        />
-                    </th>
-                    <th>scan</th>
-                    { schema.fields.map(field => 
-                        <th key={field.name}>
-                            {field.header}
-                        </th>
-                    )}
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map(row => 
-                    <ScanRow 
-                        key={row._id} sheet={sheet} job={job} row={row} 
-                        selected={selected.includes(row._id)}
-                        setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  `${_}` != `${row._id}`))}
-                        data={scans_to_data_dict[row._id.toString()]?.data || {}}
-                    />)
-                }
-            </tbody>
-        </table>
+        {showRaw 
+            ? <RawResultsTable job={job} rows={rows}/>
+            : <MergedResultTable job={job} selected={selected} setSelected={setSelected} rows={rows} schema={schema} scans_to_data_dict={scans_to_data_dict}/>
+        }
     </>
 
     async function importSelected() {
@@ -259,25 +247,88 @@ function ScanResultsTable({sheet, job, data_rows}:{
             setSelected(lst => lst.filter(id => `${id}`!= `${scan_row._id}`))
         }
     }
-
-    function handleDelete() {
-        // TODO: implement delete logic for selected rows
-        alert(`Eliminazione di ${selected.length} righe selezionate (implementa la logica di eliminazione qui)`);
-    }
 }
 
-function ScanRow({sheet, job, row, selected, setSelected, data} : {
-    sheet: Sheet,
+function MergedResultTable({job, selected, setSelected, rows, schema, scans_to_data_dict}: {
+    job: ScanJob,
+    selected: ObjectId[],
+    setSelected: Dispatch<SetStateAction<ObjectId[]>>,
+    rows: ScanResultsWithId[],
+    scans_to_data_dict: Partial<Record<string, {row: Row | undefined;data: Data;}>>
+    schema: typeof schemas[string]
+}) {
+    return <table>
+        <thead>
+            <tr>
+                <th><input type="checkbox" 
+                        checked={selected.length === rows.length}
+                        onChange={e => setSelected(lst => e.target.checked ? rows.map(row => row._id) : [])}
+                    />
+                </th>
+                <th>scan</th>
+                { schema.fields.map(field => 
+                    <th key={field.name}>
+                        {field.header}
+                    </th>
+                )}
+            </tr>
+        </thead>
+        <tbody>
+            {rows.map(row => 
+                <ScanRow 
+                    key={row._id} job={job} row={row} 
+                    selected={selected.includes(row._id)}
+                    setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  `${_}` != `${row._id}`))}
+                    data={scans_to_data_dict[row._id.toString()]?.data || {}}
+                    schema={schema}
+                />)
+            }
+        </tbody>
+    </table>
+}
+
+function RawResultsTable({job, rows}: {
+    job: ScanJob,
+    rows: ScanResultsWithId[],
+}) {
+    const fields = rows.length > 0 ? Object.keys(rows[0].raw_data || {}) : []
+    return <table>
+        <thead>
+            <tr>
+                <th>scan</th>
+                { fields.map(field => 
+                    <th key={field}>
+                        {field}
+                    </th>
+                )}
+            </tr>
+        </thead>
+        <tbody>
+            {rows.map(row => 
+                <tr key={row._id}>
+                    <td className="text-center"><a href={`/scan/${job._id.toString()}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
+                    {fields.map(field => 
+                        <td key={field}>
+                            {row.raw_data[field] || ''}
+                        </td>)}
+                </tr>
+            )}
+        </tbody>
+    </table>
+}
+
+
+function ScanRow({job, row, selected, setSelected, data, schema} : {
     job: ScanJob,
     row: ScanResultsWithId,
     selected: boolean,
     setSelected: (checked: boolean) => void,
     data: Data,
+    schema: typeof schemas[string]
 }) {
-    const schema = schemas[sheet.schema]
     return <tr key={row._id}>
         <td><input type="checkbox" checked={selected} onChange={e=>setSelected(e.target.checked)}/></td>
-        <td className="text-center"><a href={`/sheet/${sheet._id.toString()}/scan/${job._id.toString()}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
+        <td className="text-center"><a href={`/scan/${job._id.toString()}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
         {schema.fields.map(field => 
             <td key={field.name}>
                 {data[field.name]}
