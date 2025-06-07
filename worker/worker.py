@@ -34,16 +34,8 @@ os.makedirs(COMPLETED_DIR, exist_ok=True)
 os.makedirs(TMP_DIR, exist_ok=True)
 
 class Job:
-    def __init__(self, job_id, pdf_path):
-        split = job_id.split('-')
-        job_id = None
-        template_name = DEFAULT_TEMPLATE_NAME
-        if len(split) == 2:
-            sheetId, job_id = split
-        elif len(split) == 3:
-            template_name, sheetId, job_id = split
+    def __init__(self, template_name, job_id, pdf_path):
         self.job_id = job_id
-        self.sheetId = sheetId
         self.template_name = template_name
         self.pdf_path = pdf_path
         try:
@@ -55,22 +47,25 @@ class Job:
 
     # Funzione per aggiornare lo stato nel database
     def update_status(self, status, message=""):
-        print(f"job_id: {self.job_id}, status: {status}, message: {message}", flush=True)
+        print(f"schema: {self.template_name}, job_id: {self.job_id}, status: {status}, message: {message}", flush=True)
         if not MONGO_URI:
             return
-        if not self.sheetId:
+        if not self.job_id:
             return 
         client = MongoClient(MONGO_URI)
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
         now = datetime.datetime.now(datetime.timezone.utc)
-        collection.insert_one({
-            "timestamp": now,
-            "sheetId": ObjectId(self.sheetId),
-            "jobId": self.job_id,
-            "status": status,
-            "message": message,
-        })
+        collection.update_one(
+            {"_id": ObjectId(self.job_id)},
+            {"$push": {
+                "messages": {
+                    "timestamp": now,
+                    "status": status,
+                    "message": message
+                }
+            }},
+        )
         client.close()
 
     def abort(self):
@@ -125,11 +120,7 @@ class Job:
         return results
     
     def preserve_image_files(self, results):
-        if self.sheetId:
-            path = os.path.join(DATA_DIR, self.sheetId, self.job_id)
-        else:
-            path = os.path.join(DATA_DIR, self.job_id)
-        data_directory = os.path.join(DATA_DIR, path)
+        data_directory = os.path.join(DATA_DIR, self.job_id)
         os.makedirs(data_directory, exist_ok=True)
         output_results = []
         for result in results:
@@ -141,8 +132,7 @@ class Job:
             del result["input_path"]
             del result["output_path"]
             output_results.append({
-                "sheetId": ObjectId(self.sheetId) if self.sheetId else None,
-                "jobId": self.job_id,
+                "jobId": ObjectId(self.job_id) if self.job_id else None,
                 "image": basename,
                 "raw_data": result,
             })
@@ -150,7 +140,7 @@ class Job:
     
     def save_results(self, out_results):
         # Salva i risultati nel database
-        if MONGO_URI and self.sheetId:
+        if MONGO_URI and self.job_id:
             client = MongoClient(MONGO_URI)
             db = client[DB_NAME]
             collection = db[RESULTS_COLLECTION_NAME]
@@ -219,11 +209,21 @@ class Job:
 # Worker principale
 def worker():
     print(f"OMR Worker started, monitoring spool directory {SPOOL_DIR}", flush=True)
-    
+
+    if MONGO_URI:
+        # Verifica la connessione al database MongoDB
+        print(f"Checking mongodb connection: {MONGO_URI}", flush=True)
+        client = MongoClient(MONGO_URI)
+        db = client[DB_NAME]
+        collection = db[COLLECTION_NAME]
+        # Test MongoDB connection with a simple query
+        collection.find_one()
+        client.close()
+        print(f"MongoDB connection successful", flush=True)
+
     while True:
         for filename in os.listdir(SPOOL_DIR):
             if filename.endswith(".pdf"):
-                jobId = filename[:-4]
                 spool_filepath = os.path.join(SPOOL_DIR, filename)
                 work_filepath = os.path.join(PROCESSING_DIR, filename) 
                 try:
@@ -231,8 +231,9 @@ def worker():
                 except Exception as e:
                     print(f"Failed to move {spool_filepath} to {work_filepath}: {e}", flush=True, file=sys.stderr)
                     continue
+                [schema, job_id] = filename[:-4].split('-')
                 try:
-                    Job(jobId, work_filepath)
+                    Job(schema, job_id, work_filepath)
                 except Exception as e:
                     print(f"Error processing {work_filepath}: {e}", flush=True, file=sys.stderr)
                     os.rename(work_filepath, os.path.join(ABORTED_DIR, filename))
