@@ -28,7 +28,7 @@ module.exports = {
             {  _id: job._id },
             { $set: { messages } }
       );
-      console.log(JSON.stringify({ key, res}, null, 2));
+      // console.log(JSON.stringify({ key, res}, null, 2));
     }
   },
 

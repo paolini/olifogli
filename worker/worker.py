@@ -203,7 +203,6 @@ class Job:
         # remove temporary directory
         shutil.rmtree(os.path.join(TMP_DIR, self.job_id))
 
-        self.update_status("completed", f"Completata acquisizione")  
         return self.completed()
 
 # Worker principale
