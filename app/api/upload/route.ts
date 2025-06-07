@@ -84,10 +84,15 @@ export async function POST(req: NextRequest) {
         const job_id = insertion.insertedId.toString()
 
         // Define upload path
-        const filePath = path.join(SCANS_SPOOL_DIR, `${schema.name}-${sheetId}-${job_id}.pdf`)
+        const filePath = path.join(SCANS_SPOOL_DIR, `${schema.name}-${job_id}.pdf`)
 
-        // Save file to disk
-        await writeFile(filePath, buffer);
+        try {
+            // Save file to disk
+            await writeFile(filePath, buffer);
+        } catch (error) {
+            console.error('Error writing file:', error);
+            return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
+        }
 
         return NextResponse.json({ 
             jobId: job_id

@@ -83,8 +83,8 @@ export const typeDefs = gql`
     addRow(sheetId: ObjectId, data: JSON, answers: [String]): Row
     patchRow(_id: ObjectId, updatedOn: Timestamp, data: JSON, answers: [String]): Row
     deleteRow(_id: ObjectId): ObjectId
-    
     addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
-    deleteScan(sheetId: ObjectId!, jobId: String): Boolean
+    
+    deleteScan(jobId: ObjectId!): Boolean
   }
 `
