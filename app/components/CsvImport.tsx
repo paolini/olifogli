@@ -52,6 +52,14 @@ export default function CsvImport({schemaName, sheetId, done}:{
             <option value=",">comma</option>
             <option value=";">semicolon</option>
         </select>  
+        <button
+          className="ml-2 px-2 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+          disabled={data.length>0}
+          onClick={handlePasteCsv}
+          type="button"
+        >
+          Incolla da clipboard
+        </button>
       { error && <Error error={error} />}
       <br />
       { data.length > 0 
@@ -100,6 +108,11 @@ export default function CsvImport({schemaName, sheetId, done}:{
         return 0
     }    
     
+  }
+
+  async function handlePasteCsv() {
+    const text = await navigator.clipboard.readText()
+    setData(text.split('\n').map(row => row.split('\t')))
   }
 }
 

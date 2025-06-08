@@ -68,7 +68,7 @@ function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
             <a href={`/sheet/${sheet._id}`}>{sheet.name}</a>
         </td>
         <td>
-            {sheet.schema}
+            {schemas[sheet.schema].header}
         </td>
     </tr>
 }
