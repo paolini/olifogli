@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
 import Papa from "papaparse"
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { Row, Sheet, User } from '@/app/lib/models'
 import Loading from '@/app/components/Loading'
@@ -61,7 +61,24 @@ function SheetBody({sheet,profile}: {
     sheet:Sheet & {_id: string}
     profile:User|null
 }) {
-    const [tab, setTab] = useState<'table' | 'csv' | 'scans' | 'configure'>('table')
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const tabParam = searchParams.get('tab');
+    const validTabs = ['table', 'csv', 'scans', 'configure'] as const;
+    const initialTab = validTabs.includes(tabParam as any) ? tabParam as typeof validTabs[number] : 'table';
+    const [tab, setTabState] = useState<typeof initialTab>(initialTab);
+
+    // Aggiorna la query string quando cambia il tab
+    function setTab(newTab: typeof validTabs[number]) {
+        setTabState(newTab);
+        const params = new URLSearchParams(Array.from(searchParams.entries()));
+        if (newTab === 'table') {
+            params.delete('tab');
+        } else {
+            params.set('tab', newTab);
+        }
+        router.replace('?' + params.toString(), { scroll: false });
+    }
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
     const user_can_configure = profile && (profile.is_admin || sheet.owner_id === profile._id)
