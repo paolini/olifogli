@@ -68,17 +68,6 @@ function SheetBody({sheet,profile}: {
     const initialTab = validTabs.includes(tabParam as any) ? tabParam as typeof validTabs[number] : 'table';
     const [tab, setTabState] = useState<typeof initialTab>(initialTab);
 
-    // Aggiorna la query string quando cambia il tab
-    function setTab(newTab: typeof validTabs[number]) {
-        setTabState(newTab);
-        const params = new URLSearchParams(Array.from(searchParams.entries()));
-        if (newTab === 'table') {
-            params.delete('tab');
-        } else {
-            params.set('tab', newTab);
-        }
-        router.replace('?' + params.toString(), { scroll: false });
-    }
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
     const user_can_configure = profile && (profile.is_admin || sheet.owner_id === profile._id)
@@ -121,6 +110,18 @@ function SheetBody({sheet,profile}: {
         }
     </>
     
+    // Aggiorna la query string quando cambia il tab
+    function setTab(newTab: typeof validTabs[number]) {
+        setTabState(newTab);
+        const params = new URLSearchParams(Array.from(searchParams.entries()));
+        if (newTab === 'table') {
+            params.delete('tab');
+        } else {
+            params.set('tab', newTab);
+        }
+        router.replace('?' + params.toString(), { scroll: false });
+    }
+
     async function csv_download() {
         if (!data) return
         const filename = myTimestamp(new Date()).replace(':', '-').replace(' ', '_') + '.csv'

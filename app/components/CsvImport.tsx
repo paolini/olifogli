@@ -3,9 +3,8 @@ import Papa from "papaparse";
 import { useState } from "react";
 import { gql, useApolloClient, useMutation } from "@apollo/client"
 
-import { schemas } from "../lib/schema";
+import { schemas } from "../lib/schema"
 import Error from './Error'
-import { Bayes, transpose } from "../lib/bayesian"
 
 const ADD_ROWS = gql`
     mutation addRows(
@@ -32,9 +31,6 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [addRows] = useMutation(ADD_ROWS);
   const [data, setData] = useState<string[][]>([])
   const [error, setError] = useState<string | null>(null)
-
-  const bayes = transpose(data).map((col, i) => 
-    new Bayes(col))
 
   return <div className="p-4 border rounded-lg shadow-md">
       Caricamento di dati tramite file CSV  &nbsp; &nbsp;
@@ -63,7 +59,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
       { error && <Error error={error} />}
       <br />
       { data.length > 0 
-        && <CsvTable bayes={bayes} data={data} columns={columns} setData={setData} importRows={importRows} done={done}/>
+        && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows} done={done}/>
         }
   </div>
 
@@ -116,8 +112,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
   }
 }
 
-function CsvTable({bayes, data, columns, setData, importRows, done}: {
-    bayes: Bayes[],
+function CsvTable({data, columns, setData, importRows, done}: {
     data: string[][],
     columns: string[],
     setData: (data: string[][]) => void,
