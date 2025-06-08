@@ -2,8 +2,10 @@
 import Papa from "papaparse";
 import { useState } from "react";
 import { gql, useApolloClient, useMutation } from "@apollo/client"
+
 import { schemas } from "../lib/schema";
 import Error from './Error'
+import { Bayes, transpose } from "../lib/bayesian"
 
 const ADD_ROWS = gql`
     mutation addRows(
@@ -31,6 +33,9 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [data, setData] = useState<string[][]>([])
   const [error, setError] = useState<string | null>(null)
 
+  const bayes = transpose(data).map((col, i) => 
+    new Bayes(col))
+
   return <div className="p-4 border rounded-lg shadow-md">
       Caricamento di dati tramite file CSV  &nbsp; &nbsp;
         <input type="file" 
@@ -50,7 +55,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
       { error && <Error error={error} />}
       <br />
       { data.length > 0 
-        && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows} done={done}/>
+        && <CsvTable bayes={bayes} data={data} columns={columns} setData={setData} importRows={importRows} done={done}/>
         }
   </div>
 
@@ -98,7 +103,8 @@ export default function CsvImport({schemaName, sheetId, done}:{
   }
 }
 
-function CsvTable({data, columns, setData, importRows, done}: {
+function CsvTable({bayes, data, columns, setData, importRows, done}: {
+    bayes: Bayes[],
     data: string[][],
     columns: string[],
     setData: (data: string[][]) => void,
@@ -167,7 +173,9 @@ function CsvTable({data, columns, setData, importRows, done}: {
                         : <td><i>{index+1}</i></td>
                     }
                     {row.map((value, index) => (
-                        <td key={index} style={{backgroundColor: ((selectedFirstCol <= index && index <= selectedLastCol) ? "#f3ff7a":"")}}>{value}</td>
+                        <td key={index} style={{backgroundColor: ((selectedFirstCol <= index && index <= selectedLastCol) ? "#f3ff7a":"")}}>
+                            {value}
+                        </td>
                     ))}
                 </tr>
             )}
