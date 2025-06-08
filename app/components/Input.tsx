@@ -18,16 +18,24 @@ export function InputCell({field, value, setValue, onEnter}: {
 }
 
 export function Input({type, size, value, setValue, width, onEnter}:{
-  type?: string, 
-  size?: number, 
-  value: string, 
+  type?: string,
+  size?: number,
+  value: string,
   width?: string,
   setValue?: (value: string) => void,
   onEnter?: () => void,
 }) {
-  return <input type={type} width={width} size={size} value={value} onChange={e => setValue && setValue(e.target.value)} onKeyDown={onKeyDown} />
+  return <input 
+    type={type} 
+    width={width} 
+    size={size} 
+    value={value} 
+    onChange={e => setValue && setValue(e.target.value)} 
+    onKeyDown={onKeyDown}
+    style={{ padding: '1px 1px' }} // Add padding for better UX
+  />
 
-  function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
+  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") onEnter()
   }
 }
