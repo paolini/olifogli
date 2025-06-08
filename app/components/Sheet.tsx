@@ -65,8 +65,12 @@ function SheetBody({sheet,profile}: {
     const router = useRouter();
     const tabParam = searchParams.get('tab');
     const validTabs = ['table', 'csv', 'scans', 'configure'] as const;
-    const initialTab = validTabs.includes(tabParam as any) ? tabParam as typeof validTabs[number] : 'table';
-    const [tab, setTabState] = useState<typeof initialTab>(initialTab);
+    type TabType = typeof validTabs[number];
+    function isTabType(tab: string | null): tab is TabType {
+        return validTabs.includes(tab as TabType);
+    }
+    const initialTab: TabType = isTabType(tabParam) ? tabParam : 'table';
+    const [tab, setTabState] = useState<TabType>(initialTab);
 
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
