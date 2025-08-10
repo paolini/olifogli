@@ -154,7 +154,7 @@ export const ADD_ROW = gql`
     }
 }`
 
-const PATCH_ROW = gql`
+export const PATCH_ROW = gql`
     mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: JSON!) {
     patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
         _id
@@ -165,7 +165,7 @@ const PATCH_ROW = gql`
     }
 }`
 
-const DELETE_ROW = gql`
+export const DELETE_ROW = gql`
     mutation deleteRow($_id: ObjectId!) {
     deleteRow(_id: $_id)
 }`
