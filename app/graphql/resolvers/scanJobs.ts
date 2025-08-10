@@ -1,4 +1,4 @@
-import { getSheetsCollection, getScanJobsCollection } from '@/app/lib/mongodb'
+import { getSheetsCollection, getScanJobsCollection, getSheetPermissions } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
@@ -10,7 +10,8 @@ export default async function scans (_: unknown, { sheetId, userId }: { sheetId:
     const sheets = await getSheetsCollection()
     const sheet = await sheets.findOne({_id: sheetId })
     if (!sheet) throw Error('foglio inesistente')
-    await check_user_can_edit_sheet(user, sheet)
+    const userPermissions = await getSheetPermissions(sheetId, user)
+    await check_user_can_edit_sheet(user, sheet, userPermissions)
     const collection = await getScanJobsCollection()
     const match: {sheetId: ObjectId,userId?: ObjectId} = { sheetId }
     if (user?.is_admin || sheet.owner_id.equals(user._id)) {

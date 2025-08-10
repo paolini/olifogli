@@ -10,11 +10,12 @@ export const typeDefs = gql`
     _id: ObjectId
     name: String
     schema: String
-    permissions: [SheetPermission]
     owner_id: ObjectId
   }
   
   type SheetPermission {
+    _id: ObjectId
+    sheet_id: ObjectId
     user_id: ObjectId
     user_email: String
     filter_field: String

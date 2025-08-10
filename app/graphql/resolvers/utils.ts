@@ -1,4 +1,4 @@
-import { getUsersCollection, getSheetPermissions } from '@/app/lib/mongodb'
+import { getUsersCollection } from '@/app/lib/mongodb'
 import { ObjectId} from 'mongodb'
 import { Context } from '../types'
 
@@ -13,27 +13,20 @@ export function check_admin(user: User) {
     if (!user?.is_admin) throw Error('non autorizzato')
   }
   
-export async function get_authenticated_user(context: Context) {
+export async function get_authenticated_user(context: Context): Promise<User> {
     const user_id = check_authenticated(context)
     const users = await getUsersCollection()
     const user = await users.findOne({ _id: user_id })
     if (!user) throw Error(`utente non trovato ${user_id}`)
     return user
   }
-  
-export async function check_user_can_edit_sheet(user: User, sheet: Sheet|null): Promise<void> {
+
+export function check_user_can_edit_sheet(user: User, sheet: Sheet|null, userPermissions: SheetPermission[]): void {
   if (!sheet) throw Error('foglio inesistente')
   if (user?.is_admin) return
   if (sheet.owner_id.equals(user._id)) return
-  // Controlla se l'utente ha permesso esplicito
-  const permissions = await getSheetPermissions(sheet._id)
-  if (permissions && Array.isArray(permissions)) {
-      const hasPermission = permissions.some(p =>
-          (p.user_id && p.user_id.equals(user._id)) ||
-          (p.user_email && p.user_email === user.email)
-      )
-      if (hasPermission) return
-  }
+  // Controlla se l'utente ha permesso esplicito (già filtrato dal chiamante)
+  if (userPermissions && Array.isArray(userPermissions) && userPermissions.length > 0) return
   throw Error('non autorizzato')
 }
 
@@ -49,28 +42,35 @@ export function check_user_can_delete_job(user: User, job: ScanJob|null): assert
 }
 
 // Funzione di utilità per generare un filtro sulle righe in base a tutti i filter_field attivi per l'utente
-export async function make_row_permission_filter(user: User, sheet: Sheet): Promise<(data: Data) => Data> {
-    if (user.is_admin) return data => data;
-    const permissions = await getSheetPermissions(sheet._id)
-    if (!permissions || !Array.isArray(permissions)) return data => data;
-    // Trova tutti i permessi attivi per l'utente
-    const perms = permissions.filter(p =>
-        (p.user_id && p.user_id.equals(user._id)) ||
-        (p.user_email && p.user_email === user.email)
-    ).filter(p => p.filter_field && p.filter_value !== undefined)
-    // Crea una funzione che forza tutti i campi filter_field
-    return (data: Data) => {
-        const newData = { ...data }
-        for (const perm of perms) {
-          newData[perm.filter_field as string] = String(perm.filter_value)
-        }
-        return newData;
-    };
+export function make_row_permission_checker(user: User, userPermissions: SheetPermission[]): (data: Data) => void {
+  const perm: [string, string][] = userPermissions.filter(p => p.filter_field).map(p => [p.filter_field || '', p.filter_value || ''])
+
+  // se non ci sono permessi restrittivi non devo forzare nessun campo
+  if (perm.length === 0) return data => {}
+  if (perm.length === 1) return data => {
+    const p = perm[0]
+    if (data[p[0]] !== p[1]) throw Error(`filtro per l'utente ${user._id} ${p[0]}=>${p[1]} non corrisponde a ${JSON.stringify(data)}`)
+  }
+  return data => {
+      for (const p of perm) {
+        // se c'è una coppia che corrisponde al filtro... ok!
+        if (data[p[0]] === p[1]) return
+      }
+      // se non c'è nessuna corrispondenza, l'utente non può inserire questa riga
+      // e non so come forzare i campi perché c'è più di un permesso valido
+      throw Error(`filtro multiplo per l'utente ${user._id} non corrisponde a nessun dato in ${JSON.stringify(data )}`)
+  }
 }
 
 // Applica il filtro permission a una singola riga Data
-export async function apply_row_permission_filter(user: User, sheet: Sheet, data: Data): Promise<Data> {
-    const filter = await make_row_permission_filter(user, sheet)
+export function check_row_permission(user: User, data: Data, userPermissions: SheetPermission[]) {
+    const filter = make_row_permission_checker(user, userPermissions)
     return filter(data);
 }
 
+export function check_rows_permission(user: User, rows: Data[], userPermissions: SheetPermission[]) {
+    const check = make_row_permission_checker(user, userPermissions)
+    for (const row of rows) {
+        check(row);
+    }
+}

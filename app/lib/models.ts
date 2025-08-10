@@ -22,7 +22,7 @@ export interface User {
 }
 
 export interface SheetPermission {
-    _id?: ObjectId
+    _id: ObjectId
     sheet_id: ObjectId
     user_id?: ObjectId
     user_email?: string

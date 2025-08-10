@@ -1,4 +1,4 @@
-import { MongoClient, WithoutId, ObjectId } from 'mongodb'
+import { MongoClient, WithoutId, ObjectId, Filter } from 'mongodb'
 
 import { Account, User, Sheet, Row, ScanJob, ScanResults, SheetPermission } from './models'
 
@@ -101,10 +101,14 @@ export async function getScanResultsCollection() {
 
 export async function getPermissionsCollection() {
     const db = await getDb()
-    return db.collection<WithoutId<SheetPermission>>('permissions')
+    return db.collection<SheetPermission>('permissions')
 }
 
-export async function getSheetPermissions(sheetId: ObjectId): Promise<SheetPermission[]> {
+export async function getSheetPermissions(sheet_id: ObjectId, user?: User | null): Promise<SheetPermission[]> {
+    const $or: Filter<SheetPermission>[] = []
+    if (user?._id) $or.push({ user_id: user._id })
+    if (user?.email) $or.push({ user_email: user.email })
+    if ($or.length === 0) return []
     const permissions = await getPermissionsCollection()
-    return await permissions.find({ sheet_id: sheetId }).toArray()
+    return await permissions.find({ sheet_id, $or }).toArray()
 }

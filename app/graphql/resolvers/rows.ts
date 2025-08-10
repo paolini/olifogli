@@ -10,24 +10,25 @@ export default async function rows (_: unknown, { sheetId }: { sheetId: ObjectId
         const sheets = await getSheetsCollection()
         const sheet = await sheets.findOne({_id: sheetId })
         if (!sheet) throw Error(`Foglio non trovato: ${sheetId}`)
-        await check_user_can_edit_sheet(user, sheet)
+        const userPermissions = await getSheetPermissions(sheetId, user)
+        check_user_can_edit_sheet(user, sheet, userPermissions)
         const rows = await getRowsCollection()
-        const permissions = await getSheetPermissions(sheetId)
-        const query = filter_query(sheet, permissions, user)
-        const results = await rows.find({sheetId, ...query}).toArray()
+        const $match = permission_filter(sheet, userPermissions, user)
+        const results = await rows.find({sheetId, ...$match}).toArray()
         return results
     }
 
-function filter_query(sheet: Sheet, permissions: SheetPermission[], user: User) {
+function permission_filter(sheet: Sheet, userPermissions: SheetPermission[], user: User) {
     if (user.is_admin) return {}
     if (user._id.equals(sheet.owner_id)) return {}
-    if (!permissions || !Array.isArray(permissions)) return {}
-    return Object.fromEntries(permissions
-            .filter(p =>
-                (   (p.user_id && p.user_id.equals(user._id)) 
-                    ||  (p.user_email && p.user_email === user.email)
-                ) && p.filter_field && p.filter_value)
-            .map(perm => ([`data.${perm.filter_field}`, perm.filter_value as string]))
-        )
+    if (!userPermissions) return {}
+    const perms: [string,string][] = userPermissions.filter(p => p.filter_field).map(p => [p.filter_field || '', p.filter_value || '' ])
+    if (perms.length === 0) return {}
+    if (perms.length === 1) {
+        const p = perms[0]
+        return {[`data.${p[0]}`]: p[1]}
+    }
+    const $or = perms.map(p => ({ [`data.${p[0]}`]: p[1] }))
+    return { $or }
 }
 

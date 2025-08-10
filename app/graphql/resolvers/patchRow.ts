@@ -1,4 +1,4 @@
-import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, getSheetPermissions } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 
 import { Context } from '../types'
@@ -17,7 +17,8 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
     if (!sheet) throw Error('foglio inesistente')
-    await check_user_can_edit_sheet(user,sheet)
+    const userPermissions = await getSheetPermissions(sheet._id, user)
+    check_user_can_edit_sheet(user,sheet, userPermissions)
     const schema = schemas[sheet.schema]
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
@@ -25,7 +26,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     // Applica filtro permission: forza tutti i campi filter_field ai rispettivi filter_value
     // in modo che l'utente non possa modificare il valore del campo
     // se ha un permesso con filtro su quel campo
-    data = await apply_row_permission_filter(user, sheet, data)
+    data = apply_row_permission_filter(user, data, userPermissions)
     const $set = {
         data,
         isValid,

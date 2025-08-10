@@ -6,7 +6,7 @@ import { existsSync } from 'fs'
 import { ObjectId } from 'mongodb'
 
 import { get_context } from '@/app/graphql/types'
-import { getScanJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getScanJobsCollection, getSheetPermissions, getSheetsCollection } from '@/app/lib/mongodb'
 import { check_user_can_edit_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { schemas } from '@/app/lib/schema'
 
@@ -50,14 +50,16 @@ export async function POST(req: NextRequest) {
     
         if (!sheet) return NextResponse.json({ error: 'Missing sheet' }, { status: 400 });
     
-        const schema = schemas[sheet.schema]
-
+        const permissions = await getSheetPermissions(sheetId, user)
+        
         try {
-            await check_user_can_edit_sheet(user,sheet)
+            check_user_can_edit_sheet(user,sheet,permissions)
         } catch (error) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }
 
+        const schema = schemas[sheet.schema]
+        
         if (!file) return NextResponse.json({ error: 'Missing file' }, { status: 400 })
 
         if (file.type !== 'application/pdf') return NextResponse.json({ error: 'Invalid file type, only PDF allowed' }, { status: 400 })
