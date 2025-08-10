@@ -48,20 +48,20 @@ export type Row = {
 
     data: Data
 
-    createdOn?: Date
-    createdBy?: ObjectId
-    updatedOn?: Date
-    updatedBy?: ObjectId
+    createdOn: Date
+    createdBy: ObjectId
+    updatedOn: Date
+    updatedBy: ObjectId
 }
 
 export type Workbook = {
     _id: ObjectId
     name: string
     owner_id: ObjectId
-    createdOn?: Date
-    updatedOn?: Date
-    createdBy?: ObjectId
-    updatedBy?: ObjectId
+    createdOn: Date
+    updatedOn: Date
+    createdBy: ObjectId
+    updatedBy: ObjectId
 }
 
 export type ScanMessage = {

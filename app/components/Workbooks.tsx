@@ -6,6 +6,7 @@ import Loading from './Loading'
 import { gql } from '@apollo/client'
 import { useGetWorkbooksQuery } from '../graphql/generated'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 gql`query GetWorkbooks {
     workbooks {
       _id

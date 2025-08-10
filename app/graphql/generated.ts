@@ -19,9 +19,10 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  JSON: { input: Record<string, unknown>; output: Record<string, unknown>; }
+  Data: { input: any; output: any; }
+  JSON: { input: JSON; output: JSON; }
   ObjectId: { input: ObjectId; output: ObjectId; }
-  Timestamp: { input: string; output: string; }
+  Timestamp: { input: Date; output: Date; }
 };
 
 export type Config = {
@@ -36,15 +37,14 @@ export type Mutation = {
   addSheet?: Maybe<Sheet>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteScan?: Maybe<Scalars['Boolean']['output']>;
-  deleteSheet?: Maybe<Scalars['String']['output']>;
+  deleteSheet?: Maybe<Scalars['ObjectId']['output']>;
   patchRow?: Maybe<Row>;
 };
 
 
 export type MutationAddRowArgs = {
-  answers?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  data?: InputMaybe<Scalars['JSON']['input']>;
-  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  data: Scalars['Data']['input'];
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -56,14 +56,14 @@ export type MutationAddRowsArgs = {
 
 
 export type MutationAddSheetArgs = {
-  name?: InputMaybe<Scalars['String']['input']>;
-  schema?: InputMaybe<Scalars['String']['input']>;
-  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
+  name: Scalars['String']['input'];
+  schema: Scalars['String']['input'];
+  workbookId: Scalars['ObjectId']['input'];
 };
 
 
 export type MutationDeleteRowArgs = {
-  _id?: InputMaybe<Scalars['ObjectId']['input']>;
+  _id: Scalars['ObjectId']['input'];
 };
 
 
@@ -73,15 +73,14 @@ export type MutationDeleteScanArgs = {
 
 
 export type MutationDeleteSheetArgs = {
-  _id?: InputMaybe<Scalars['ObjectId']['input']>;
+  _id: Scalars['ObjectId']['input'];
 };
 
 
 export type MutationPatchRowArgs = {
-  _id?: InputMaybe<Scalars['ObjectId']['input']>;
-  answers?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  data?: InputMaybe<Scalars['JSON']['input']>;
-  updatedOn?: InputMaybe<Scalars['Timestamp']['input']>;
+  _id: Scalars['ObjectId']['input'];
+  data: Scalars['Data']['input'];
+  updatedOn: Scalars['Timestamp']['input'];
 };
 
 export type Query = {
@@ -102,39 +101,39 @@ export type Query = {
 
 
 export type QueryRowsArgs = {
-  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
 export type QueryScanJobsArgs = {
-  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
   userId?: InputMaybe<Scalars['ObjectId']['input']>;
 };
 
 
 export type QueryScanResultsArgs = {
-  jobId?: InputMaybe<Scalars['ObjectId']['input']>;
+  jobId: Scalars['ObjectId']['input'];
 };
 
 
 export type QuerySheetArgs = {
-  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
 export type QuerySheetsArgs = {
-  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
+  workbookId: Scalars['ObjectId']['input'];
 };
 
 
 export type QueryWorkbookArgs = {
-  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
+  workbookId: Scalars['ObjectId']['input'];
 };
 
 export type Row = {
   __typename?: 'Row';
   _id?: Maybe<Scalars['ObjectId']['output']>;
-  data?: Maybe<Scalars['JSON']['output']>;
+  data?: Maybe<Scalars['Data']['output']>;
   isValid?: Maybe<Scalars['Boolean']['output']>;
   updatedOn?: Maybe<Scalars['Timestamp']['output']>;
 };
@@ -161,7 +160,7 @@ export type ScanResults = {
   _id?: Maybe<Scalars['ObjectId']['output']>;
   image?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['ObjectId']['output']>;
-  raw_data?: Maybe<Scalars['JSON']['output']>;
+  raw_data?: Maybe<Scalars['Data']['output']>;
   sheetId?: Maybe<Scalars['ObjectId']['output']>;
 };
 
@@ -213,7 +212,7 @@ export type ScansQueryVariables = Exact<{
 }>;
 
 
-export type ScansQuery = { __typename?: 'Query', scanJobs?: Array<{ __typename?: 'ScanJob', _id?: ObjectId | null, timestamp?: string | null, sheetId?: ObjectId | null, message?: { __typename?: 'ScanMessage', status?: string | null, message?: string | null, timestamp?: string | null } | null } | null> | null };
+export type ScansQuery = { __typename?: 'Query', scanJobs?: Array<{ __typename?: 'ScanJob', _id?: ObjectId | null, timestamp?: Date | null, sheetId?: ObjectId | null, message?: { __typename?: 'ScanMessage', status?: string | null, message?: string | null, timestamp?: Date | null } | null } | null> | null };
 
 export type DeleteScanMutationVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
@@ -227,7 +226,7 @@ export type ScanResultsQueryVariables = Exact<{
 }>;
 
 
-export type ScanResultsQuery = { __typename?: 'Query', scanResults?: Array<{ __typename?: 'ScanResults', _id?: ObjectId | null, sheetId?: ObjectId | null, jobId?: ObjectId | null, image?: string | null, raw_data?: Record<string, unknown> | null } | null> | null };
+export type ScanResultsQuery = { __typename?: 'Query', scanResults?: Array<{ __typename?: 'ScanResults', _id?: ObjectId | null, sheetId?: ObjectId | null, jobId?: ObjectId | null, image?: string | null, raw_data?: any | null } | null> | null };
 
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -241,14 +240,14 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows?: Array<{ __typename?: 'Row', _id?: ObjectId | null, isValid?: boolean | null, data?: Record<string, unknown> | null, updatedOn?: string | null } | null> | null };
+export type GetRowsQuery = { __typename?: 'Query', rows?: Array<{ __typename?: 'Row', _id?: ObjectId | null, isValid?: boolean | null, data?: any | null, updatedOn?: Date | null } | null> | null };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
 }>;
 
 
-export type DeleteSheetMutation = { __typename?: 'Mutation', deleteSheet?: string | null };
+export type DeleteSheetMutation = { __typename?: 'Mutation', deleteSheet?: ObjectId | null };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -268,20 +267,20 @@ export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: { __typenam
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
-  data: Scalars['JSON']['input'];
+  data: Scalars['Data']['input'];
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id?: ObjectId | null, isValid?: boolean | null, data?: Record<string, unknown> | null } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id?: ObjectId | null, isValid?: boolean | null, data?: any | null } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
   updatedOn: Scalars['Timestamp']['input'];
-  data: Scalars['JSON']['input'];
+  data: Scalars['Data']['input'];
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id?: ObjectId | null, updatedOn?: string | null, isValid?: boolean | null, data?: Record<string, unknown> | null } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id?: ObjectId | null, updatedOn?: Date | null, isValid?: boolean | null, data?: any | null } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -675,7 +674,7 @@ export type AddSheetMutationHookResult = ReturnType<typeof useAddSheetMutation>;
 export type AddSheetMutationResult = Apollo.MutationResult<AddSheetMutation>;
 export type AddSheetMutationOptions = Apollo.BaseMutationOptions<AddSheetMutation, AddSheetMutationVariables>;
 export const AddRowDocument = gql`
-    mutation addRow($sheetId: ObjectId!, $data: JSON!) {
+    mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
     _id
     isValid
@@ -711,7 +710,7 @@ export type AddRowMutationHookResult = ReturnType<typeof useAddRowMutation>;
 export type AddRowMutationResult = Apollo.MutationResult<AddRowMutation>;
 export type AddRowMutationOptions = Apollo.BaseMutationOptions<AddRowMutation, AddRowMutationVariables>;
 export const PatchRowDocument = gql`
-    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: JSON!) {
+    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
   patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
     _id
     __typename
@@ -1056,6 +1055,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Config: ResolverTypeWrapper<Config>;
+  Data: ResolverTypeWrapper<Scalars['Data']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
@@ -1077,6 +1077,7 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   Boolean: Scalars['Boolean']['output'];
   Config: Config;
+  Data: Scalars['Data']['output'];
   Int: Scalars['Int']['output'];
   JSON: Scalars['JSON']['output'];
   Mutation: {};
@@ -1099,18 +1100,22 @@ export type ConfigResolvers<ContextType = any, ParentType extends ResolversParen
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export interface DataScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Data'], any> {
+  name: 'Data';
+}
+
 export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['JSON'], any> {
   name: 'JSON';
 }
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
-  addRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, Partial<MutationAddRowArgs>>;
+  addRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationAddRowArgs, 'data' | 'sheetId'>>;
   addRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationAddRowsArgs, 'columns' | 'rows' | 'sheetId'>>;
-  addSheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<MutationAddSheetArgs>>;
-  deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, Partial<MutationDeleteRowArgs>>;
+  addSheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<MutationAddSheetArgs, 'name' | 'schema' | 'workbookId'>>;
+  deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteScan?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanArgs, 'jobId'>>;
-  deleteSheet?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, Partial<MutationDeleteSheetArgs>>;
-  patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, Partial<MutationPatchRowArgs>>;
+  deleteSheet?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
+  patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
 };
 
 export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['ObjectId'], any> {
@@ -1122,19 +1127,19 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  rows?: Resolver<Maybe<Array<Maybe<ResolversTypes['Row']>>>, ParentType, ContextType, Partial<QueryRowsArgs>>;
-  scanJobs?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanJob']>>>, ParentType, ContextType, Partial<QueryScanJobsArgs>>;
-  scanResults?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanResults']>>>, ParentType, ContextType, Partial<QueryScanResultsArgs>>;
-  sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetArgs>>;
-  sheets?: Resolver<Maybe<Array<Maybe<ResolversTypes['Sheet']>>>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
+  rows?: Resolver<Maybe<Array<Maybe<ResolversTypes['Row']>>>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
+  scanJobs?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanJob']>>>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
+  scanResults?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanResults']>>>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
+  sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
+  sheets?: Resolver<Maybe<Array<Maybe<ResolversTypes['Sheet']>>>, ParentType, ContextType, RequireFields<QuerySheetsArgs, 'workbookId'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
-  workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, Partial<QueryWorkbookArgs>>;
+  workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
 };
 
 export type RowResolvers<ContextType = any, ParentType extends ResolversParentTypes['Row'] = ResolversParentTypes['Row']> = {
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  data?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  data?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
   isValid?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   updatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1161,7 +1166,7 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   image?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   jobId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  raw_data?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  raw_data?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
   sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -1206,6 +1211,7 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
 
 export type Resolvers<ContextType = any> = {
   Config?: ConfigResolvers<ContextType>;
+  Data?: GraphQLScalarType;
   JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   ObjectId?: GraphQLScalarType;

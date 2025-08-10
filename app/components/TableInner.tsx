@@ -146,7 +146,7 @@ async function deleteFunction() {
 }
 
 export const ADD_ROW = gql`
-    mutation addRow($sheetId: ObjectId!, $data: JSON!) {
+    mutation addRow($sheetId: ObjectId!, $data: Data!) {
     addRow(sheetId: $sheetId, data: $data) {
         _id
         isValid
@@ -155,7 +155,7 @@ export const ADD_ROW = gql`
 }`
 
 const PATCH_ROW = gql`
-    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: JSON!) {
+    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
     patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
         _id
         __typename

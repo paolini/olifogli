@@ -4,8 +4,9 @@ import { Context } from '../types'
 
 import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
 import { ScanJob } from '@/app/lib/models'
+import { QueryScanJobsArgs } from '../generated'
 
-export default async function scans (_: unknown, { sheetId, userId }: { sheetId: ObjectId, userId: ObjectId }, context: Context) {
+export default async function scans (_: unknown, { sheetId, userId }: QueryScanJobsArgs, context: Context) {
     const user = await get_authenticated_user(context)
     const sheets = await getSheetsCollection()
     const sheet = await sheets.findOne({_id: sheetId })

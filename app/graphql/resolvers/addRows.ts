@@ -5,13 +5,9 @@ import { schemas } from '@/app/lib/schema'
 import { Data, Row } from '@/app/lib/models'
 
 import { get_authenticated_user, check_user_can_edit_sheet, make_row_permission_filter } from './utils'
+import { MutationAddRowsArgs } from '../generated'
 
-export default async function addRows(_: unknown, {sheetId, columns, rows}: { 
-    sheetId: ObjectId,
-    columns: string[],
-    nAnswers: number,
-    rows: string[][]
-}, context: Context) {
+export default async function addRows(_: unknown, {sheetId, columns, rows}: MutationAddRowsArgs, context: Context) {
     const user = await get_authenticated_user(context)
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: sheetId})

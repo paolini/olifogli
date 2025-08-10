@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./node_modules/@graphql-codegen/cli/config.schema.json
 overwrite: true
 schema: './app/graphql/schema.gql'
 documents: 
@@ -25,8 +26,14 @@ generates:
         ObjectId: 
           input: ObjectId
           output: ObjectId
-        Date: string
-        Timestamp: string
-        JSON: Record<string, unknown>
+        Date: 
+          input: Date
+          output: Date
+        Timestamp: 
+          input: Date
+          output: Date
+        JSON: 
+          input: JSON
+          output: JSON
       mappers:
         ObjectId: bson#ObjectId

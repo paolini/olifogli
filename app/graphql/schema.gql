@@ -1,6 +1,7 @@
 scalar Timestamp
 scalar ObjectId
 scalar JSON
+scalar Data
 
 type Workbook {
   _id: ObjectId
@@ -28,7 +29,7 @@ type Row {
   _id: ObjectId
   isValid: Boolean
   updatedOn: Timestamp
-  data: JSON
+  data: Data
 }
 
 type User {
@@ -63,7 +64,7 @@ type ScanResults {
   sheetId: ObjectId
   jobId: ObjectId
   image: String
-  raw_data: JSON
+  raw_data: Data
 }
 
 type Query {
@@ -72,22 +73,22 @@ type Query {
   users: [User]
   config: Config
   workbooks: [Workbook]
-  workbook(workbookId: ObjectId): Workbook
-  sheets(workbookId: ObjectId): [Sheet]
-  sheet(sheetId: ObjectId): Sheet
-  rows(sheetId: ObjectId): [Row]
-  scanJobs(sheetId: ObjectId, userId: ObjectId): [ScanJob]
-  scanResults(jobId: ObjectId): [ScanResults]
+  workbook(workbookId: ObjectId!): Workbook
+  sheets(workbookId: ObjectId!): [Sheet]
+  sheet(sheetId: ObjectId!): Sheet
+  rows(sheetId: ObjectId!): [Row]
+  scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob]
+  scanResults(jobId: ObjectId!): [ScanResults]
   olimanager: String # testing
 }
 
 type Mutation {
-  addSheet(name: String, schema: String, workbookId: ObjectId): Sheet
-  deleteSheet(_id: ObjectId): String
+  addSheet(name: String!, schema: String!, workbookId: ObjectId!): Sheet
+  deleteSheet(_id: ObjectId!): ObjectId
 
-  addRow(sheetId: ObjectId, data: JSON, answers: [String]): Row
-  patchRow(_id: ObjectId, updatedOn: Timestamp, data: JSON, answers: [String]): Row
-  deleteRow(_id: ObjectId): ObjectId
+  addRow(sheetId: ObjectId!, data: Data!): Row
+  patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row
+  deleteRow(_id: ObjectId!): ObjectId
   addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
   
   deleteScan(jobId: ObjectId!): Boolean

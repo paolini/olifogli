@@ -10,6 +10,7 @@ import { schemas } from '../lib/schema';
 import { gql } from '@apollo/client';
 import { useGetSheetsQuery, useAddSheetMutation, Sheet } from '../graphql/generated';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 gql`
     query GetSheets($workbookId: ObjectId!) {
         sheets(workbookId: $workbookId) {
@@ -20,6 +21,7 @@ gql`
     }
 `
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 gql`
     mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!) {
         addSheet(name: $name, schema: $schema, workbookId: $workbookId) {

@@ -1,9 +1,8 @@
 import { Context } from './types'
-import { ObjectIdType, Timestamp } from './types'
+import { ObjectIdType, Timestamp, DataType } from './types'
 import { GraphQLJSON } from "graphql-type-json"
 import { Resolvers } from './generated'
 
-import { test } from '@/app/lib/olimanager'
 import { get_authenticated_user } from './resolvers/utils'
 
 import users from './resolvers/users'
@@ -24,7 +23,7 @@ import addRows from './resolvers/addRows'
 import deleteScan from './resolvers/deleteScan'
 
 // Definizione dei resolver
-export const resolvers = {
+export const resolvers: Resolvers = {
   Query: {
     hello: () => 'Hello, world!',
 
@@ -43,11 +42,6 @@ export const resolvers = {
     rows,
     scanJobs,
     scanResults,
-
-    olimanager: async (_: unknown) => {
-        return await test()
-    },
-
   },
 
   Mutation: {
@@ -64,4 +58,5 @@ export const resolvers = {
   Timestamp,
   ObjectId: ObjectIdType,
   JSON: GraphQLJSON,
+  Data: DataType,
 }

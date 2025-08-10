@@ -70,3 +70,38 @@ export const ObjectIdType = new GraphQLScalarType({
   }
 });
 
+export const DataType = new GraphQLScalarType({
+  name: "Data",
+  description: "Record<string, string>",
+
+  parseValue(value: unknown): Record<string, string> {
+    if (typeof value === "object" && value !== null) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, val]) => [key, String(val)])
+      );
+    }
+    throw new Error("Data must be an object with string values")
+  },
+
+  serialize(value: unknown): Record<string, string> {
+    if (typeof value === "object" && value !== null) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, val]) => [key, String(val)])
+      );
+    }
+    throw new Error("Data must be an object with string values");
+  },
+
+  parseLiteral(ast: ValueNode): Record<string, string> {
+    if (ast.kind === Kind.OBJECT) {
+      const result: Record<string, string> = {};
+      ast.fields.forEach((field) => {
+        if (field.value.kind === Kind.STRING) {
+          result[field.name.value] = field.value.value;
+        }
+      });
+      return result;
+    }
+    throw new Error("Data must be an object with string values");
+  }
+});
