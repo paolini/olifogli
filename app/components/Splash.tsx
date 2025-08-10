@@ -1,6 +1,6 @@
 import { useSession, signIn } from "next-auth/react"
 
-import Sheets from './Sheets'
+import Workbooks from './Workbooks'
 import Button from './Button'
 
 export default function Splash() {
@@ -13,6 +13,6 @@ export default function Splash() {
   </div>
 
   return <div>
-    <Sheets />
+    <Workbooks />
   </div>
 }

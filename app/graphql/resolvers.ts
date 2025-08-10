@@ -1,11 +1,14 @@
 import { Context } from './types'
 import { ObjectIdType, Timestamp } from './types'
 import { GraphQLJSON } from "graphql-type-json"
+import { Resolvers } from './generated'
 
 import { test } from '@/app/lib/olimanager'
 import { get_authenticated_user } from './resolvers/utils'
 
 import users from './resolvers/users'
+import workbooks from './resolvers/workbooks'
+import workbook from './resolvers/workbook'
 import sheets from './resolvers/sheets'
 import sheet from './resolvers/sheet'
 import rows from './resolvers/rows'
@@ -33,6 +36,8 @@ export const resolvers = {
       return user
     },
     users,
+    workbooks,
+    workbook,
     sheets,
     sheet,
     rows,

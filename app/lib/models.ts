@@ -1,6 +1,6 @@
 import { ObjectId } from 'bson';
 
-export interface Account {
+export type Account = {
     _id: ObjectId
     provider: string
     providerAccountId: string
@@ -12,7 +12,7 @@ export interface Account {
     updatedAt?: Date | null
 }
 
-export interface User {
+export type User = {
     _id: ObjectId
     name: string
     email: string
@@ -21,26 +21,27 @@ export interface User {
     lastLogin?: Date
 }
 
-export interface SheetPermission {
+export type SheetPermission = {
     user_id?: ObjectId
     user_email?: string
     filter_field?: string
     filter_value?: string
 }
 
-export interface Sheet {
+export type Sheet = {
     _id: ObjectId
     name: string
     schema: string
     owner_id: ObjectId
     permissions: SheetPermission[]
+    workbook_id: ObjectId
 }
 
 export type Data = {
   [key: string]: string
 }
 
-export interface Row {
+export type Row = {
     _id: ObjectId
     sheetId: ObjectId
     isValid: boolean
@@ -53,13 +54,23 @@ export interface Row {
     updatedBy?: ObjectId
 }
 
-export interface ScanMessage {
+export type Workbook = {
+    _id: ObjectId
+    name: string
+    owner_id: ObjectId
+    createdOn?: Date
+    updatedOn?: Date
+    createdBy?: ObjectId
+    updatedBy?: ObjectId
+}
+
+export type ScanMessage = {
     status: string
     message: string
     timestamp: Date
 }
 
-export interface ScanJob {
+export type ScanJob = {
     _id: ObjectId
     // jobId: string // old migrated scans
     sheetId: ObjectId
@@ -68,7 +79,7 @@ export interface ScanJob {
     messages: ScanMessage[]
 }
 
-export interface ScanResults {
+export type ScanResults = {
     _id: ObjectId
     jobId: ObjectId
     image: string

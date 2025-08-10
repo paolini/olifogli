@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "codegen": "graphql-codegen",
     "migrate": "npx migrate-mongo status",
     "migrate:status": "npx migrate-mongo status",
     "migrate:up": "npx migrate-mongo up",
@@ -14,7 +15,7 @@
     "migrate:create": "npx migrate-mongo create"
   },
   "dependencies": {
-    "@apollo/client": "^3.12.6",
+    "@apollo/client": "^3.13.9",
     "@as-integrations/next": "^3.2.0",
     "classnames": "^2.5.1",
     "graphql": "^16.10.0",
@@ -34,6 +35,11 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/typescript": "^4.1.6",
+    "@graphql-codegen/typescript-operations": "^4.6.1",
+    "@graphql-codegen/typescript-react-apollo": "^4.3.3",
+    "@graphql-codegen/typescript-resolvers": "^4.5.1",
     "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^20",
     "@types/papaparse": "^5.3.15",

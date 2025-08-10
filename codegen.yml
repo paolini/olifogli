@@ -1,0 +1,32 @@
+overwrite: true
+schema: './app/graphql/schema.gql'
+documents: 
+  - 'app/**/*.tsx'
+  - 'app/**/*.ts'
+  - '!app/graphql/typedefs.ts'
+  - '!app/graphql/resolvers.ts'
+  - '!app/graphql/types.ts'
+  - '!app/graphql/generated.ts'
+  - '!app/lib/olimanager.ts'
+generates:
+  app/graphql/generated.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-react-apollo'
+      - 'typescript-resolvers'
+    config:
+      withHooks: true
+      withComponent: false
+      withHOC: false
+      withRefetchFn: false
+      useTypeImports: true
+      scalars:
+        ObjectId: 
+          input: ObjectId
+          output: ObjectId
+        Date: string
+        Timestamp: string
+        JSON: Record<string, unknown>
+      mappers:
+        ObjectId: bson#ObjectId

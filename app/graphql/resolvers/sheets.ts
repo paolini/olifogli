@@ -1,19 +1,29 @@
+import { WithId, ObjectId } from "mongodb"
+
 import { Context } from '../types'
 import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
 import { getSheetsCollection } from '@/app/lib/mongodb'
+import { Sheet } from "@/app/lib/models"
+import { QuerySheetsArgs } from '../generated'
 
-export default async function sheets (_: unknown, {}, context: Context) {
-      const user = await get_authenticated_user(context)
-      const collection = await getSheetsCollection()
-      let match = {}
-      if (!user.is_admin) {
-        // L'utente non admin può vedere i fogli di cui è owner o dove ha permesso
-        match = {
-          $or: [
-            { owner_id: user._id },
-            { permissions: { $elemMatch: { $or: [ { user_id: user._id }, { user_email: user.email } ] } } }
-          ]
-        }
-      }
-      return await collection.find(match).toArray()
+export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs, context: Context): Promise<Sheet[]> {
+    const user = await get_authenticated_user(context)
+    if (!user) {
+        throw new Error("Not authenticated")
+    }
+
+    if (!workbookId) {
+        throw new Error("workbookId is required")
+    }
+
+    const collection = await getSheetsCollection()
+
+    console.log(`workbookId: ${workbookId}`)
+
+    const sheets = await collection.find({
+        workbook_id: workbookId,
+//        owner_id: user._id
+    }).toArray()
+
+    return sheets
 }

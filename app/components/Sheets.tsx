@@ -1,51 +1,53 @@
 import { useState } from 'react';
-import { gql, useQuery, useMutation } from '@apollo/client';
+import { ObjectId } from 'bson';
 
 import Button from './Button'
 import Loading from '@/app/components/Loading';
 import Error from '@/app/components/Error';
 import { Input } from '@/app/components/Input';
-import { Sheet } from '@/app/lib/models';
-import { WithId } from 'mongodb';
 import useProfile from '../lib/useProfile';
 import { schemas } from '../lib/schema';
+import { gql } from '@apollo/client';
+import { useGetSheetsQuery, useAddSheetMutation, Sheet } from '../graphql/generated';
 
-const GET_SHEETS = gql`
-    query GetSheets {
-        sheets {
+gql`
+    query GetSheets($workbookId: ObjectId!) {
+        sheets(workbookId: $workbookId) {
             _id
             name
             schema
         }
     }
-`;
+`
 
-const ADD_SHEET = gql`
-    mutation AddSheet($name: String!, $schema: String!) {
-        addSheet(name: $name, schema: $schema) {
+gql`
+    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!) {
+        addSheet(name: $name, schema: $schema, workbookId: $workbookId) {
             _id
             name
             schema
         }
     }
-`;
+`
 
-export default function Sheets({}) {
+export default function Sheets({ workbookId }: { workbookId: ObjectId }) {
     const profile = useProfile()
     return <div className="p-4">
         <h1>Fogli</h1>
-        {profile && <SheetsTable />}
-        {profile?.is_admin && <SheetForm />}
+        {profile && <SheetsTable workbookId={workbookId} />}
+        {profile?.is_admin && <SheetForm workbookId={workbookId} />}
     </div>;
 }
 
-function SheetsTable({}) {
-    const { loading, error, data } = useQuery<{sheets: WithId<Sheet>[]}>(GET_SHEETS);
+function SheetsTable({ workbookId }: { workbookId: ObjectId }) {
+    const { loading, error, data } = useGetSheetsQuery({
+        variables: { workbookId }
+    });
 
     if (loading) return <Loading />;
-    if (error) return <Error error={error} />;
+    if (error) return <Error error={error.message} />;
     if (!data) return <div>No data</div>;
-    const sheets = data.sheets;
+    const sheets = data.sheets ?? [];
 
     if (sheets.length === 0) return <div className="bg-alert">Nessun foglio disponibile</div>
 
@@ -57,30 +59,34 @@ function SheetsTable({}) {
             </tr>
         </thead>
         <tbody>
-            {sheets.map(sheet => <SheetRow key={sheet._id.toString()} sheet={sheet} />)}
+            {sheets.map(sheet => (
+                sheet && (
+                    <SheetRow key={sheet._id?.toString()} sheet={sheet} />
+                )
+            ))}
         </tbody>
     </table>
 }
 
-function SheetRow({sheet}:{sheet:WithId<Sheet>}) {
-    return <tr key={sheet._id.toString()}>
+function SheetRow({sheet}: {sheet: Sheet}) {
+    return <tr key={sheet._id?.toString()}>
         <td>
             <a href={`/sheet/${sheet._id}`}>{sheet.name}</a>
         </td>
         <td>
-            {schemas[sheet.schema].header}
+            {sheet.schema && schemas[sheet.schema].header}
         </td>
     </tr>
 }
 
-function SheetForm({}) {
-    const [addSheet, {loading, error, reset }] = useMutation<{addSheet:Sheet}>(ADD_SHEET, {
-        refetchQueries: [{query: GET_SHEETS}]
+function SheetForm({ workbookId }: { workbookId: ObjectId }) {
+    const [addSheet, {loading, error, reset }] = useAddSheetMutation({
+        refetchQueries: ['GetSheets']
     });
     const [name, setName] = useState('')
     const [schema, setSchema] = useState('')
 
-    if (error) return <Error error={error} dismiss={reset}/>;
+    if (error) return <Error error={error.message} dismiss={reset}/>;
 
     return <div>
         <select name="schema" value={schema} onChange={e => setSchema(e.target.value)}>
@@ -99,6 +105,7 @@ function SheetForm({}) {
         await addSheet({variables: {
             name,
             schema: schema,
+            workbookId,
         }});
         setName('');
         setSchema('');

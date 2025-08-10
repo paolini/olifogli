@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client'
 import { useSession } from 'next-auth/react'
 
 const GET_PROFILE = gql`
-    query GetSheets {
+    query GetProfile {
         me {
             _id
             is_admin
