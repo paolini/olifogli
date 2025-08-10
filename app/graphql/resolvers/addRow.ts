@@ -10,7 +10,8 @@ export default async function addRow(_: unknown, {sheetId, data}: {sheetId: Obje
     const user = await get_authenticated_user(context)
     const sheetsCollection = await getSheetsCollection()
     const sheet = await sheetsCollection.findOne({_id: sheetId})
-    check_user_can_edit_sheet(user, sheet)
+    if (!sheet) throw Error('foglio inesistente')
+    await check_user_can_edit_sheet(user, sheet)
     const schema = schemas[sheet.schema]
     const createdOn = new Date()
     const updatedOn = createdOn
@@ -23,7 +24,7 @@ export default async function addRow(_: unknown, {sheetId, data}: {sheetId: Obje
     // forza eventuali campi su cui l'utente ha un permesso con filtro
     // ad avere il valore del filtro
     // in questo modo l'utente non può inserire dati che non rispondono al filtro
-    data = apply_row_permission_filter(user, sheet, data)
+    data = await apply_row_permission_filter(user, sheet, data)
 
     const result = await rowsCollection.insertOne({ 
         data, 

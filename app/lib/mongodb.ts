@@ -1,6 +1,6 @@
-import { MongoClient, WithoutId } from 'mongodb'
+import { MongoClient, WithoutId, ObjectId } from 'mongodb'
 
-import { Account, User, Sheet, Row, ScanJob, ScanResults } from './models'
+import { Account, User, Sheet, Row, ScanJob, ScanResults, SheetPermission } from './models'
 
 const uri: string = process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli'
 const options: object = {};
@@ -97,4 +97,14 @@ export async function getScanJobsCollection() {
 export async function getScanResultsCollection() {
     const db = await getDb()
     return db.collection<WithoutId<ScanResults>>('scan_results')
+}
+
+export async function getPermissionsCollection() {
+    const db = await getDb()
+    return db.collection<WithoutId<SheetPermission>>('permissions')
+}
+
+export async function getSheetPermissions(sheetId: ObjectId): Promise<SheetPermission[]> {
+    const permissions = await getPermissionsCollection()
+    return await permissions.find({ sheet_id: sheetId }).toArray()
 }

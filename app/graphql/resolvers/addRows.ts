@@ -15,14 +15,15 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: {
     const user = await get_authenticated_user(context)
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: sheetId})
-    check_user_can_edit_sheet(user, sheet)
+    if (!sheet) throw Error('foglio inesistente')
+    await check_user_can_edit_sheet(user, sheet)
     const schema = schemas[sheet.schema]
     const createdOn = new Date()
     const createdBy = user._id
     const updatedOn = createdOn
     const updatedBy = createdBy
     // Applica filtro permission: forza tutti i campi filter_field ai rispettivi filter_value
-    const forceFields = make_row_permission_filter(user, sheet)
+    const forceFields = await make_row_permission_filter(user, sheet)
     const objectRows = rows.map(row => {
         const obj = Object.fromEntries(columns.map((column,i)=>[column,row[i]]));
         return forceFields(obj);

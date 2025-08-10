@@ -1,8 +1,8 @@
-import { getUsersCollection } from '@/app/lib/mongodb'
+import { getUsersCollection, getSheetPermissions } from '@/app/lib/mongodb'
 import { ObjectId} from 'mongodb'
 import { Context } from '../types'
 
-import { User, Sheet, Data, ScanJob } from '@/app/lib/models'
+import { User, Sheet, Data, ScanJob, SheetPermission } from '@/app/lib/models'
 
 export function check_authenticated({user_id}: Context): ObjectId {
     if (!user_id) throw Error('autenticazione richiesta')
@@ -21,13 +21,14 @@ export async function get_authenticated_user(context: Context) {
     return user
   }
   
-export function check_user_can_edit_sheet(user: User, sheet: Sheet|null): asserts sheet is NonNullable<Sheet> {
+export async function check_user_can_edit_sheet(user: User, sheet: Sheet|null): Promise<void> {
   if (!sheet) throw Error('foglio inesistente')
   if (user?.is_admin) return
   if (sheet.owner_id.equals(user._id)) return
   // Controlla se l'utente ha permesso esplicito
-  if (sheet.permissions && Array.isArray(sheet.permissions)) {
-      const hasPermission = sheet.permissions.some(p =>
+  const permissions = await getSheetPermissions(sheet._id)
+  if (permissions && Array.isArray(permissions)) {
+      const hasPermission = permissions.some(p =>
           (p.user_id && p.user_id.equals(user._id)) ||
           (p.user_email && p.user_email === user.email)
       )
@@ -48,11 +49,12 @@ export function check_user_can_delete_job(user: User, job: ScanJob|null): assert
 }
 
 // Funzione di utilità per generare un filtro sulle righe in base a tutti i filter_field attivi per l'utente
-export function make_row_permission_filter(user: User, sheet: Sheet): (data: Data) => Data {
+export async function make_row_permission_filter(user: User, sheet: Sheet): Promise<(data: Data) => Data> {
     if (user.is_admin) return data => data;
-    if (!sheet.permissions || !Array.isArray(sheet.permissions)) return data => data;
+    const permissions = await getSheetPermissions(sheet._id)
+    if (!permissions || !Array.isArray(permissions)) return data => data;
     // Trova tutti i permessi attivi per l'utente
-    const perms = sheet.permissions.filter(p =>
+    const perms = permissions.filter(p =>
         (p.user_id && p.user_id.equals(user._id)) ||
         (p.user_email && p.user_email === user.email)
     ).filter(p => p.filter_field && p.filter_value !== undefined)
@@ -67,7 +69,8 @@ export function make_row_permission_filter(user: User, sheet: Sheet): (data: Dat
 }
 
 // Applica il filtro permission a una singola riga Data
-export function apply_row_permission_filter(user: User, sheet: Sheet, data: Data): Data {
-    return make_row_permission_filter(user, sheet)(data);
+export async function apply_row_permission_filter(user: User, sheet: Sheet, data: Data): Promise<Data> {
+    const filter = await make_row_permission_filter(user, sheet)
+    return filter(data);
 }
 

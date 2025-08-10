@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         const schema = schemas[sheet.schema]
 
         try {
-            check_user_can_edit_sheet(user,sheet)
+            await check_user_can_edit_sheet(user,sheet)
         } catch (error) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }

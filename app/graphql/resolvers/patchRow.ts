@@ -16,7 +16,8 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     if (!row) throw new Error('Row not found');
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
-    check_user_can_edit_sheet(user,sheet)
+    if (!sheet) throw Error('foglio inesistente')
+    await check_user_can_edit_sheet(user,sheet)
     const schema = schemas[sheet.schema]
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
@@ -24,7 +25,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     // Applica filtro permission: forza tutti i campi filter_field ai rispettivi filter_value
     // in modo che l'utente non possa modificare il valore del campo
     // se ha un permesso con filtro su quel campo
-    data = apply_row_permission_filter(user, sheet, data)
+    data = await apply_row_permission_filter(user, sheet, data)
     const $set = {
         data,
         isValid,

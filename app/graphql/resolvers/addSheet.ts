@@ -1,4 +1,4 @@
-import { getSheetsCollection } from '@/app/lib/mongodb'
+import { getSheetsCollection, getSheetPermissions } from '@/app/lib/mongodb'
 import { Context } from '../types'
 
 import { get_authenticated_user, check_admin } from './utils'
@@ -14,7 +14,11 @@ export default async function addSheet (_: unknown, { name, schema }:
         name, 
         schema,
         owner_id: user._id, 
-        permissions: [],
     })
-    return await collection.findOne({ _id: result.insertedId })
+    const sheet = await collection.findOne({ _id: result.insertedId })
+    if (!sheet) throw Error('Errore nella creazione del foglio')
+    
+    // Aggiungi permissions vuote per compatibilità con GraphQL schema
+    const permissions = await getSheetPermissions(sheet._id)
+    return { ...sheet, permissions }
 }

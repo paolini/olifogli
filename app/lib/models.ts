@@ -22,6 +22,8 @@ export interface User {
 }
 
 export interface SheetPermission {
+    _id?: ObjectId
+    sheet_id: ObjectId
     user_id?: ObjectId
     user_email?: string
     filter_field?: string
@@ -33,7 +35,6 @@ export interface Sheet {
     name: string
     schema: string
     owner_id: ObjectId
-    permissions: SheetPermission[]
 }
 
 export type Data = {

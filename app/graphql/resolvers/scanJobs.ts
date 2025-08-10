@@ -9,7 +9,8 @@ export default async function scans (_: unknown, { sheetId, userId }: { sheetId:
     const user = await get_authenticated_user(context)
     const sheets = await getSheetsCollection()
     const sheet = await sheets.findOne({_id: sheetId })
-    check_user_can_edit_sheet(user, sheet)
+    if (!sheet) throw Error('foglio inesistente')
+    await check_user_can_edit_sheet(user, sheet)
     const collection = await getScanJobsCollection()
     const match: {sheetId: ObjectId,userId?: ObjectId} = { sheetId }
     if (user?.is_admin || sheet.owner_id.equals(user._id)) {

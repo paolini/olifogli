@@ -3,18 +3,23 @@ import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
 
-import { Row, Sheet, User } from '@/app/lib/models'
+import { Row, Sheet, User, SheetPermission } from '@/app/lib/models'
 import Loading from '@/app/components/Loading'
 import Error from '@/app/components/Error'
 import Table from '@/app/components/Table'
 import CsvImport from '@/app/components/CsvImport'
+
+// Tipo esteso per GraphQL che include permissions per retrocompatibilità
+type SheetWithPermissions = Sheet & {
+    permissions?: SheetPermission[]
+}
 import ScansImport from '@/app/components/ScansImport'
 import Button from './Button'
 import { schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
 
-const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
+const GET_SHEET: TypedDocumentNode<{sheet: SheetWithPermissions & {_id: string}}> = gql`
     query getSheet($sheetId: ObjectId!) {
         sheet(sheetId: $sheetId) {
             _id
@@ -58,7 +63,7 @@ const GET_ROWS = gql`
 `
 
 function SheetBody({sheet,profile}: {
-    sheet:Sheet & {_id: string}
+    sheet:SheetWithPermissions & {_id: string}
     profile:User|null
 }) {
     const searchParams = useSearchParams();
@@ -163,7 +168,7 @@ const DELETE_SHEET = gql`
 
 
 function SheetConfigure({sheet, profile}: {
-    sheet: Sheet & {_id: string}
+    sheet: SheetWithPermissions & {_id: string}
     profile: User | null
 }) {
     const router = useRouter()
