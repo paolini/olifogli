@@ -10,7 +10,7 @@ export function check_authenticated({user_id}: Context): ObjectId {
   }
   
 export function check_admin(user: User) {
-    if (!user?.is_admin) throw Error('non autorizzato')
+    if (!user?.isAdmin) throw Error('non autorizzato')
   }
   
 export async function get_authenticated_user(context: Context) {
@@ -23,13 +23,13 @@ export async function get_authenticated_user(context: Context) {
   
 export function check_user_can_edit_sheet(user: User, sheet: Sheet|null): asserts sheet is NonNullable<Sheet> {
   if (!sheet) throw Error('foglio inesistente')
-  if (user?.is_admin) return
-  if (sheet.owner_id.equals(user._id)) return
+  if (user?.isAdmin) return
+  if (sheet.ownerId.equals(user._id)) return
   // Controlla se l'utente ha permesso esplicito
   if (sheet.permissions && Array.isArray(sheet.permissions)) {
       const hasPermission = sheet.permissions.some(p =>
-          (p.user_id && p.user_id.equals(user._id)) ||
-          (p.user_email && p.user_email === user.email)
+          (p.userId && p.userId.equals(user._id)) ||
+          (p.userEmail && p.userEmail === user.email)
       )
       if (hasPermission) return
   }
@@ -38,7 +38,7 @@ export function check_user_can_edit_sheet(user: User, sheet: Sheet|null): assert
 
 export function check_user_can_view_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
     if (!job) throw Error('job inesistente')
-    if (user?.is_admin) return
+    if (user?.isAdmin) return
     if (job.ownerId?.equals(user._id)) return
     throw Error('non autorizzato')
 }
@@ -49,18 +49,18 @@ export function check_user_can_delete_job(user: User, job: ScanJob|null): assert
 
 // Funzione di utilità per generare un filtro sulle righe in base a tutti i filter_field attivi per l'utente
 export function make_row_permission_filter(user: User, sheet: Sheet): (data: Data) => Data {
-    if (user.is_admin) return data => data;
+    if (user.isAdmin) return data => data;
     if (!sheet.permissions || !Array.isArray(sheet.permissions)) return data => data;
     // Trova tutti i permessi attivi per l'utente
     const perms = sheet.permissions.filter(p =>
-        (p.user_id && p.user_id.equals(user._id)) ||
-        (p.user_email && p.user_email === user.email)
-    ).filter(p => p.filter_field && p.filter_value !== undefined)
+        (p.userId && p.userId.equals(user._id)) ||
+        (p.userEmail && p.userEmail === user.email)
+    ).filter(p => p.filterField && p.filterValue !== undefined)
     // Crea una funzione che forza tutti i campi filter_field
     return (data: Data) => {
         const newData = { ...data }
         for (const perm of perms) {
-          newData[perm.filter_field as string] = String(perm.filter_value)
+          newData[perm.filterField as string] = String(perm.filterValue)
         }
         return newData;
     };

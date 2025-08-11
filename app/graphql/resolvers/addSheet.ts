@@ -12,12 +12,12 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     const collection = await getSheetsCollection()
     const name = args.name
     const schema = args.schema
-    const workbook_id = args.workbookId
+    const workbookId = args.workbookId
     const result = await collection.insertOne({ 
         name, 
         schema,
-        workbook_id,
-        owner_id: user._id, 
+        workbookId,
+        ownerId: user._id, 
         permissions: [],
     })
     if (!result.acknowledged) {

@@ -6,7 +6,7 @@ scalar Data
 type Workbook {
   _id: ObjectId
   name: String
-  owner_id: ObjectId
+  ownerId: ObjectId
 }
 
 type Sheet {
@@ -14,15 +14,15 @@ type Sheet {
   name: String
   schema: String
   permissions: [SheetPermission]
-  owner_id: ObjectId
-  workbook_id: ObjectId
+  ownerId: ObjectId
+  workbookId: ObjectId
 }
 
 type SheetPermission {
-  user_id: ObjectId
-  user_email: String
-  filter_field: String
-  filter_value: String
+  userId: ObjectId
+  userEmail: String
+  filterField: String
+  filterValue: String
 }
 
 type Row {
@@ -37,7 +37,7 @@ type User {
   uid: Int
   email: String
   name: String
-  is_admin: Boolean
+  isAdmin: Boolean
 }
 
 type Config {
@@ -53,7 +53,7 @@ type ScanMessage {
 type ScanJob {
   _id: ObjectId
   sheetId: ObjectId
-  owner_id: ObjectId
+  ownerId: ObjectId
   timestamp: Timestamp
   messages: [ScanMessage]
   message: ScanMessage
@@ -64,7 +64,7 @@ type ScanResults {
   sheetId: ObjectId
   jobId: ObjectId
   image: String
-  raw_data: Data
+  rawData: Data
 }
 
 type Query {

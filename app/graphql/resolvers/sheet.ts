@@ -12,14 +12,14 @@ export default async function sheet (_: unknown, { sheetId }: QuerySheetArgs, co
       const sheet = await collection.findOne({_id: sheetId})
       if (!sheet) throw Error('foglio inesistente')
       check_user_can_edit_sheet(user, sheet)
-      if (user.is_admin) return sheet
-      if (sheet.owner_id && sheet.owner_id.equals(user._id)) return sheet
+      if (user.isAdmin) return sheet
+      if (sheet.ownerId && sheet.ownerId.equals(user._id)) return sheet
       if (!sheet.permissions) return sheet
       if (!Array.isArray(sheet.permissions)) throw Error('permessi non validi')
       // Filtra i permessi per l'utente corrente se ha un permesso esplicito
       const permissions = sheet.permissions.filter(p => 
-        (p.user_id && p.user_id.equals(user._id)) ||
-        (p.user_email && p.user_email === user.email)
+        (p.userId && p.userId.equals(user._id)) ||
+        (p.userEmail && p.userEmail === user.email)
       )
       return { ...sheet, permissions }
     }

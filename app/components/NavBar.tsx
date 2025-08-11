@@ -12,7 +12,7 @@ export default function Navbar() {
       <div className="text-xl font-bold"><Link href="/">olifogli {version}</Link></div>
       <div className="hidden md:flex space-x-4">
         { profile && <i>{profile?.email}</i>}
-        { profile?.is_admin && <Link href="/users" className={linkClass}>utenti</Link>}
+        { profile?.isAdmin && <Link href="/users" className={linkClass}>utenti</Link>}
         { profile && <a className={linkClass} href="#" onClick={() => signOut()}>logout</a> }
         { !profile && <a className={linkClass} href="#" onClick={() => signIn()}>login</a> }
       </div>

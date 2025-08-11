@@ -156,7 +156,7 @@ const authOptions: AuthOptions = {
           name: user.name || '', 
           createdAt: new Date(),
           lastLogin: new Date(),
-          is_admin: false,
+          isAdmin: false,
         }
         const result = await users.insertOne(newUser)
         existingUser = { _id: result.insertedId, ...newUser }
@@ -165,7 +165,7 @@ const authOptions: AuthOptions = {
 
       // aggiorna l'user, verrà passato alla callback jwt per l'inserimento nel token
       user._id = existingUser._id.toString()
-      // user.is_admin = existingUser.is_admin || false
+      // user.isAdmin = existingUser.isAdmin || false
     
       // Trova o aggiorna l'account
       if (account) {

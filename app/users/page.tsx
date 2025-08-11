@@ -13,7 +13,7 @@ const USERS_QUERY = gql`
         users {
             _id
             email
-            is_admin
+            isAdmin
         }
     }
 `
@@ -45,7 +45,7 @@ function Users() {
             <tbody>
                 {users.map(user => <tr key={user._id.toString()}>
                     <td>{user.email}</td>
-                    <td>{user?.is_admin ? '✓' : ''}</td>
+                    <td>{user?.isAdmin ? '✓' : ''}</td>
                 </tr>)}
             </tbody>
         </table>

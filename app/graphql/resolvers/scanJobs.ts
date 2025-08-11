@@ -13,7 +13,7 @@ export default async function scans (_: unknown, { sheetId, userId }: QueryScanJ
     check_user_can_edit_sheet(user, sheet)
     const collection = await getScanJobsCollection()
     const match: {sheetId: ObjectId,userId?: ObjectId} = { sheetId }
-    if (user?.is_admin || sheet.owner_id.equals(user._id)) {
+    if (user?.isAdmin || sheet.ownerId.equals(user._id)) {
         // questi utenti possono vedere tutti i job
         // e filtrarli per userId se specificato
         if (userId) match.userId = userId

@@ -59,9 +59,9 @@ async function main(client: MongoClient) {
     const users = db.collection("users")
     await users.updateMany(
         { email: { $in: admin_emails } },
-        { $set: { is_admin: true } }
+        { $set: { isAdmin: true } }
       );    
-    const adminExists = await users.findOne({ is_admin: true })
+    const adminExists = await users.findOne({ isAdmin: true })
     if (!adminExists) {
         const userExists = await users.findOne()
         if (!userExists) console.log("No users found in the database. Login to create one.")

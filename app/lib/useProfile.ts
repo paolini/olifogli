@@ -5,7 +5,7 @@ const GET_PROFILE = gql`
     query GetProfile {
         me {
             _id
-            is_admin
+            isAdmin
             email
             name
         }

@@ -21,8 +21,8 @@ export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs
     console.log(`workbookId: ${workbookId}`)
 
     const sheets = await collection.find({
-        workbook_id: workbookId,
-//        owner_id: user._id
+        workbookId: workbookId,
+//        ownerId: user._id
     }).toArray()
 
     return sheets

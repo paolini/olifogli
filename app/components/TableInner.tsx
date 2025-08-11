@@ -51,7 +51,6 @@ function TableRow({schema, row, onClick}: {
     onClick?: () => void,
 }) {
 const className = `clickable${row.isValid ? "" : " alert"}`
-
 return <tr className={className} onClick={() => onClick && onClick()}>
     { schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
 </tr>

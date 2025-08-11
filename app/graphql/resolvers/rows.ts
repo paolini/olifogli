@@ -15,19 +15,20 @@ export default async function rows (_: unknown, { sheetId }: QueryRowsArgs, cont
         const rows = await getRowsCollection()
         const query = filter_query(sheet,user)
         const results = await rows.find({sheetId, ...query}).toArray()
+        console.log(JSON.stringify(results, null, 2))
         return results
     }
 
 function filter_query(sheet: Sheet, user: User) {
-    if (user.is_admin) return {}
-    if (user._id.equals(sheet.owner_id)) return {}
+    if (user.isAdmin) return {}
+    if (user._id.equals(sheet.ownerId)) return {}
     if (!sheet.permissions || !Array.isArray(sheet.permissions)) return {}
     return Object.fromEntries(sheet.permissions
             .filter(p =>
-                (   (p.user_id && p.user_id.equals(user._id)) 
-                    ||  (p.user_email && p.user_email === user.email)
-                ) && p.filter_field && p.filter_value)
-            .map(perm => ([`data.${perm.filter_field}`, perm.filter_value as string]))
+                (   (p.userId && p.userId.equals(user._id)) 
+                    ||  (p.userEmail && p.userEmail === user.email)
+                ) && p.filterField && p.filterValue)
+            .map(perm => ([`data.${perm.filterField}`, perm.filterValue as string]))
         )
 }
 

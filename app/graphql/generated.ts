@@ -143,7 +143,7 @@ export type ScanJob = {
   _id?: Maybe<Scalars['ObjectId']['output']>;
   message?: Maybe<ScanMessage>;
   messages?: Maybe<Array<Maybe<ScanMessage>>>;
-  owner_id?: Maybe<Scalars['ObjectId']['output']>;
+  ownerId?: Maybe<Scalars['ObjectId']['output']>;
   sheetId?: Maybe<Scalars['ObjectId']['output']>;
   timestamp?: Maybe<Scalars['Timestamp']['output']>;
 };
@@ -160,7 +160,7 @@ export type ScanResults = {
   _id?: Maybe<Scalars['ObjectId']['output']>;
   image?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['ObjectId']['output']>;
-  raw_data?: Maybe<Scalars['Data']['output']>;
+  rawData?: Maybe<Scalars['Data']['output']>;
   sheetId?: Maybe<Scalars['ObjectId']['output']>;
 };
 
@@ -168,25 +168,25 @@ export type Sheet = {
   __typename?: 'Sheet';
   _id?: Maybe<Scalars['ObjectId']['output']>;
   name?: Maybe<Scalars['String']['output']>;
-  owner_id?: Maybe<Scalars['ObjectId']['output']>;
+  ownerId?: Maybe<Scalars['ObjectId']['output']>;
   permissions?: Maybe<Array<Maybe<SheetPermission>>>;
   schema?: Maybe<Scalars['String']['output']>;
-  workbook_id?: Maybe<Scalars['ObjectId']['output']>;
+  workbookId?: Maybe<Scalars['ObjectId']['output']>;
 };
 
 export type SheetPermission = {
   __typename?: 'SheetPermission';
-  filter_field?: Maybe<Scalars['String']['output']>;
-  filter_value?: Maybe<Scalars['String']['output']>;
-  user_email?: Maybe<Scalars['String']['output']>;
-  user_id?: Maybe<Scalars['ObjectId']['output']>;
+  filterField?: Maybe<Scalars['String']['output']>;
+  filterValue?: Maybe<Scalars['String']['output']>;
+  userEmail?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['ObjectId']['output']>;
 };
 
 export type User = {
   __typename?: 'User';
   _id?: Maybe<Scalars['ObjectId']['output']>;
   email?: Maybe<Scalars['String']['output']>;
-  is_admin?: Maybe<Scalars['Boolean']['output']>;
+  isAdmin?: Maybe<Scalars['Boolean']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   uid?: Maybe<Scalars['Int']['output']>;
 };
@@ -195,7 +195,7 @@ export type Workbook = {
   __typename?: 'Workbook';
   _id?: Maybe<Scalars['ObjectId']['output']>;
   name?: Maybe<Scalars['String']['output']>;
-  owner_id?: Maybe<Scalars['ObjectId']['output']>;
+  ownerId?: Maybe<Scalars['ObjectId']['output']>;
 };
 
 export type AddRowsMutationVariables = Exact<{
@@ -226,14 +226,14 @@ export type ScanResultsQueryVariables = Exact<{
 }>;
 
 
-export type ScanResultsQuery = { __typename?: 'Query', scanResults?: Array<{ __typename?: 'ScanResults', _id?: ObjectId | null, sheetId?: ObjectId | null, jobId?: ObjectId | null, image?: string | null, raw_data?: any | null } | null> | null };
+export type ScanResultsQuery = { __typename?: 'Query', scanResults?: Array<{ __typename?: 'ScanResults', _id?: ObjectId | null, sheetId?: ObjectId | null, jobId?: ObjectId | null, image?: string | null, rawData?: any | null } | null> | null };
 
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id?: ObjectId | null, name?: string | null, schema?: string | null, permissions?: Array<{ __typename?: 'SheetPermission', user_id?: ObjectId | null, user_email?: string | null, filter_field?: string | null, filter_value?: string | null } | null> | null } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id?: ObjectId | null, name?: string | null, schema?: string | null, permissions?: Array<{ __typename?: 'SheetPermission', userId?: ObjectId | null, userEmail?: string | null, filterField?: string | null, filterValue?: string | null } | null> | null } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -297,7 +297,7 @@ export type GetWorkbooksQuery = { __typename?: 'Query', workbooks?: Array<{ __ty
 export type GetProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id?: ObjectId | null, is_admin?: boolean | null, email?: string | null, name?: string | null } | null };
+export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id?: ObjectId | null, isAdmin?: boolean | null, email?: string | null, name?: string | null } | null };
 
 export type GetConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -307,7 +307,7 @@ export type GetConfigQuery = { __typename?: 'Query', config?: { __typename?: 'Co
 export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id?: ObjectId | null, email?: string | null, is_admin?: boolean | null } | null> | null };
+export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id?: ObjectId | null, email?: string | null, isAdmin?: boolean | null } | null> | null };
 
 export type GetWorkbookQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -435,7 +435,7 @@ export const ScanResultsDocument = gql`
     sheetId
     jobId
     image
-    raw_data
+    rawData
   }
 }
     `;
@@ -479,10 +479,10 @@ export const GetSheetDocument = gql`
     name
     schema
     permissions {
-      user_id
-      user_email
-      filter_field
-      filter_value
+      userId
+      userEmail
+      filterField
+      filterValue
     }
   }
 }
@@ -823,7 +823,7 @@ export const GetProfileDocument = gql`
     query GetProfile {
   me {
     _id
-    is_admin
+    isAdmin
     email
     name
   }
@@ -905,7 +905,7 @@ export const GetUsersDocument = gql`
   users {
     _id
     email
-    is_admin
+    isAdmin
   }
 }
     `;
@@ -1062,15 +1062,15 @@ export type ResolversTypes = {
   ObjectId: ResolverTypeWrapper<ObjectId>;
   Query: ResolverTypeWrapper<{}>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id?: Maybe<ResolversTypes['ObjectId']> }>;
-  ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'owner_id' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, owner_id?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
+  ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
-  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'owner_id' | 'workbook_id'> & { _id?: Maybe<ResolversTypes['ObjectId']>, owner_id?: Maybe<ResolversTypes['ObjectId']>, workbook_id?: Maybe<ResolversTypes['ObjectId']> }>;
-  SheetPermission: ResolverTypeWrapper<Omit<SheetPermission, 'user_id'> & { user_id?: Maybe<ResolversTypes['ObjectId']> }>;
+  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId' | 'workbookId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']>, workbookId?: Maybe<ResolversTypes['ObjectId']> }>;
+  SheetPermission: ResolverTypeWrapper<Omit<SheetPermission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id?: Maybe<ResolversTypes['ObjectId']> }>;
-  Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'owner_id'> & { _id?: Maybe<ResolversTypes['ObjectId']>, owner_id?: Maybe<ResolversTypes['ObjectId']> }>;
+  Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -1084,15 +1084,15 @@ export type ResolversParentTypes = {
   ObjectId: ObjectId;
   Query: {};
   Row: Omit<Row, '_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']> };
-  ScanJob: Omit<ScanJob, '_id' | 'owner_id' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, owner_id?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
+  ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
-  Sheet: Omit<Sheet, '_id' | 'owner_id' | 'workbook_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, owner_id?: Maybe<ResolversParentTypes['ObjectId']>, workbook_id?: Maybe<ResolversParentTypes['ObjectId']> };
-  SheetPermission: Omit<SheetPermission, 'user_id'> & { user_id?: Maybe<ResolversParentTypes['ObjectId']> };
+  Sheet: Omit<Sheet, '_id' | 'ownerId' | 'workbookId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']>, workbookId?: Maybe<ResolversParentTypes['ObjectId']> };
+  SheetPermission: Omit<SheetPermission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
   String: Scalars['String']['output'];
   Timestamp: Scalars['Timestamp']['output'];
   User: Omit<User, '_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']> };
-  Workbook: Omit<Workbook, '_id' | 'owner_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, owner_id?: Maybe<ResolversParentTypes['ObjectId']> };
+  Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
 };
 
 export type ConfigResolvers<ContextType = any, ParentType extends ResolversParentTypes['Config'] = ResolversParentTypes['Config']> = {
@@ -1149,7 +1149,7 @@ export type ScanJobResolvers<ContextType = any, ParentType extends ResolversPare
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   message?: Resolver<Maybe<ResolversTypes['ScanMessage']>, ParentType, ContextType>;
   messages?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanMessage']>>>, ParentType, ContextType>;
-  owner_id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   timestamp?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1166,7 +1166,7 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   image?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   jobId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  raw_data?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
+  rawData?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
   sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -1174,18 +1174,18 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
 export type SheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Sheet'] = ResolversParentTypes['Sheet']> = {
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  owner_id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   permissions?: Resolver<Maybe<Array<Maybe<ResolversTypes['SheetPermission']>>>, ParentType, ContextType>;
   schema?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  workbook_id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  workbookId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type SheetPermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['SheetPermission'] = ResolversParentTypes['SheetPermission']> = {
-  filter_field?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  filter_value?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  user_email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  user_id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  filterField?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  filterValue?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  userEmail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  userId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1196,7 +1196,7 @@ export interface TimestampScalarConfig extends GraphQLScalarTypeConfig<Resolvers
 export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  is_admin?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  isAdmin?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   uid?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1205,7 +1205,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 export type WorkbookResolvers<ContextType = any, ParentType extends ResolversParentTypes['Workbook'] = ResolversParentTypes['Workbook']> = {
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  owner_id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

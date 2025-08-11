@@ -21,10 +21,10 @@ const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
             name
             schema
             permissions {
-                user_id
-                user_email
-                filter_field
-                filter_value
+                userId
+                userEmail
+                filterField
+                filterValue
             }
         }
     }
@@ -74,7 +74,7 @@ function SheetBody({sheet,profile}: {
 
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
-    const user_can_configure = profile && (profile.is_admin || sheet.owner_id === profile._id)
+    const user_can_configure = profile && (profile.isAdmin || sheet.ownerId === profile._id)
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
@@ -184,9 +184,9 @@ function SheetConfigure({sheet, profile}: {
             </thead>
             <tbody>
                 {permissions.map((f,i) => <tr key={i} className="ml-2">
-                    <td>{f?.user_email} {f?.user_id?.toString()}</td>
+                    <td>{f?.userEmail} {f?.userId?.toString()}</td>
                     <td>
-                        {f.filter_field}=<b>{f.filter_value}</b>
+                        {f.filterField}=<b>{f.filterValue}</b>
                     </td>
                 </tr>)}
             </tbody>

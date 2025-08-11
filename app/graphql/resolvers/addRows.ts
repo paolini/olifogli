@@ -17,7 +17,7 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     const createdBy = user._id
     const updatedOn = createdOn
     const updatedBy = createdBy
-    // Applica filtro permission: forza tutti i campi filter_field ai rispettivi filter_value
+    // Applica filtro permission: forza tutti i campi filterField ai rispettivi filterValue
     const forceFields = make_row_permission_filter(user, sheet)
     const objectRows = rows.map(row => {
         const obj = Object.fromEntries(columns.map((column,i)=>[column,row[i]]));

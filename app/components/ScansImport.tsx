@@ -187,7 +187,7 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
             sheetId,
             jobId,
             image,
-            raw_data,
+            rawData,
         }
     }`
 
@@ -291,7 +291,7 @@ function RawResultsTable({job, rows}: {
     job: ScanJob,
     rows: ScanResultsWithId[],
 }) {
-    const fields = rows.length > 0 ? Object.keys(rows[0].raw_data || {}) : []
+    const fields = rows.length > 0 ? Object.keys(rows[0].rawData || {}) : []
     return <table>
         <thead>
             <tr>
@@ -309,7 +309,7 @@ function RawResultsTable({job, rows}: {
                     <td className="text-center"><a href={`/scan/${job._id.toString()}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
                     {fields.map(field => 
                         <td key={field}>
-                            {row.raw_data[field] || ''}
+                            {row.rawData[field] || ''}
                         </td>)}
                 </tr>
             )}

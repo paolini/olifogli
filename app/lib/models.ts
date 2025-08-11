@@ -4,7 +4,7 @@ export type Account = {
     _id: ObjectId
     provider: string
     providerAccountId: string
-    user_id: ObjectId
+    userId: ObjectId
     accessToken?: string
     refreshToken?: string
     idToken: string
@@ -16,25 +16,25 @@ export type User = {
     _id: ObjectId
     name: string
     email: string
-    is_admin?: boolean
+    isAdmin?: boolean
     createdAt?: Date
     lastLogin?: Date
 }
 
 export type SheetPermission = {
-    user_id?: ObjectId
-    user_email?: string
-    filter_field?: string
-    filter_value?: string
+    userId?: ObjectId
+    userEmail?: string
+    filterField?: string
+    filterValue?: string
 }
 
 export type Sheet = {
     _id: ObjectId
     name: string
     schema: string
-    owner_id: ObjectId
+    ownerId: ObjectId
     permissions: SheetPermission[]
-    workbook_id: ObjectId
+    workbookId: ObjectId
 }
 
 export type Data = {
@@ -57,7 +57,7 @@ export type Row = {
 export type Workbook = {
     _id: ObjectId
     name: string
-    owner_id: ObjectId
+    ownerId: ObjectId
     createdOn: Date
     updatedOn: Date
     createdBy: ObjectId
@@ -83,6 +83,6 @@ export type ScanResults = {
     _id: ObjectId
     jobId: ObjectId
     image: string
-    raw_data: Data
+    rawData: Data
 }
 
