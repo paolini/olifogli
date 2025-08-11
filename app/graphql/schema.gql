@@ -16,7 +16,8 @@ type Sheet {
   permittedEmails: [String!]!
   permittedIds: [ObjectId!]!
   ownerId: ObjectId!
-  workbookId: ObjectId!
+  workbook: Workbook!
+  commonData: Data!
 }
 
 type Row {
@@ -39,26 +40,25 @@ type Config {
 }
 
 type ScanMessage {
-  status: String
-  message: String
-  timestamp: Timestamp
+  status: String!
+  message: String!
+  timestamp: Timestamp!
 }
 
 type ScanJob {
-  _id: ObjectId
-  sheetId: ObjectId
-  ownerId: ObjectId
-  timestamp: Timestamp
-  messages: [ScanMessage]
-  message: ScanMessage
+  _id: ObjectId!
+  sheetId: ObjectId!
+  ownerId: ObjectId!
+  timestamp: Timestamp!
+  messages: [ScanMessage!]!
 }
 
 type ScanResults {
-  _id: ObjectId
-  sheetId: ObjectId
-  jobId: ObjectId
-  image: String
-  rawData: Data
+  _id: ObjectId!
+  sheetId: ObjectId!
+  jobId: ObjectId!
+  image: String!
+  rawData: Data!
 }
 
 type Query {
@@ -68,11 +68,11 @@ type Query {
   config: Config
   workbooks: [Workbook]
   workbook(workbookId: ObjectId!): Workbook
-  sheets(workbookId: ObjectId!): [Sheet]
+  sheets(workbookId: ObjectId!): [Sheet!]!
   sheet(sheetId: ObjectId!): Sheet
-  rows(sheetId: ObjectId!): [Row]
-  scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob]
-  scanResults(jobId: ObjectId!): [ScanResults]
+  rows(sheetId: ObjectId!): [Row!]!
+  scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
+  scanResults(jobId: ObjectId!): [ScanResults!]!
   olimanager: String # testing
 }
 

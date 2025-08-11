@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
+import { gql, useQuery, useMutation } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ObjectId } from 'bson'
 
-import { Row, Sheet, User } from '@/app/lib/models'
 import Loading from '@/app/components/Loading'
 import Error from '@/app/components/Error'
 import Table from '@/app/components/Table'
@@ -13,8 +13,9 @@ import Button from './Button'
 import { schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
+import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 
-const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
+const GET_SHEET = gql`
     query getSheet($sheetId: ObjectId!) {
         sheet(sheetId: $sheetId) {
             _id
@@ -22,24 +23,36 @@ const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
             schema
             permittedEmails
             permittedIds
+            workbook {
+                _id
+                name
+            }
+            commonData
+            ownerId
         }
     }
 `
 
 export default function SheetElement({sheetId}: {
-    sheetId: string
+    sheetId: ObjectId
 }) {
-    const { data, error } = useQuery(GET_SHEET, { variables: { sheetId } })
+    const { data, error } = useGetSheetQuery({ variables: { sheetId } })
     const profile = useProfile()
     if (error) return <Error error={error} />;
     if (!data || profile===undefined) return <Loading />;
 
     const { sheet } = data
+    if (!sheet || error) return <Error error={error} /> 
 
     return <>
-            <h1>{sheet.name} [{sheet.schema}]</h1>
-            <SheetBody sheet={sheet} profile={profile} />
-        </>
+        <h1>{sheet.name} [{sheet.schema}]</h1>
+        <table>
+            <tbody>
+            <tr><td>blocco:</td><td>{sheet.workbook.name}</td></tr>
+            </tbody>
+        </table>
+        <SheetBody sheet={sheet} profile={profile} />
+    </>
 }
 
 const GET_ROWS = gql`
@@ -54,8 +67,8 @@ const GET_ROWS = gql`
 `
 
 function SheetBody({sheet,profile}: {
-    sheet:Sheet & {_id: string}
-    profile:User|null
+    sheet: Sheet
+    profile: User|null
 }) {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -159,7 +172,7 @@ const DELETE_SHEET = gql`
 
 
 function SheetConfigure({sheet, profile}: {
-    sheet: Sheet & {_id: string}
+    sheet: Sheet
     profile: User | null
 }) {
     const router = useRouter()

@@ -2,6 +2,7 @@
 import Papa from "papaparse";
 import { useState } from "react";
 import { gql, useApolloClient, useMutation } from "@apollo/client"
+import { ObjectId } from 'bson'
 
 import { schemas } from "../lib/schema"
 import Error from './Error'
@@ -21,7 +22,7 @@ interface CSVRow {
 
 export default function CsvImport({schemaName, sheetId, done}:{
     schemaName: string,
-    sheetId: string,
+    sheetId: ObjectId,
     done: () => void,
 }) {
   const schema = schemas[schemaName]

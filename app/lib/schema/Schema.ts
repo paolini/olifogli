@@ -1,4 +1,5 @@
-import { Data, Row, ScanResults } from "@/app/lib/models";
+import { Row, ScanResults } from "@/app/graphql/generated"
+import { Data } from '@/app/lib/models'
 import { Field } from './fields'
 
 export default class Schema {

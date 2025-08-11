@@ -1,14 +1,15 @@
 "use client"
+import { useApolloClient, gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
 import { useState, useRef, Dispatch, SetStateAction } from "react"
-import { gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
-import { Data, Row, ScanJob, ScanMessage, ScanResults, Sheet } from "@/app/lib/models"
+import { ObjectId } from "bson"
+
+import { Row, ScanJob, ScanResults, Sheet, useScanJobsQuery } from "@/app/graphql/generated"
+import { Data } from '@/app/lib/models'
 import Button from "./Button"
 import ErrorElement from "./Error"
 import Loading from "./Loading"
-import { useApolloClient } from '@apollo/client'
 import { myTimestamp } from "../lib/util"
 import { schemas } from "../lib/schema"
-import { ObjectId } from "bson"
 import { useAddRow, usePatchRow } from "./TableInner"
 
 export default function ScansImport({sheet, data_rows}:{
@@ -56,7 +57,7 @@ export default function ScansImport({sheet, data_rows}:{
         event.target.value = ''
         await handleUpload(file)
         setBusy(false)
-        client.refetchQueries({ include: [SCANS_QUERY] })
+        client.refetchQueries({ include: [SCAN_JOBS_QUERY] })
     }
 
     async function handleUpload(file: File) {
@@ -76,22 +77,14 @@ export default function ScansImport({sheet, data_rows}:{
     }
 }
 
-
-function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
-    return <ErrorElement error={error} dismiss={resetErrorBoundary}/>
-  }
-  
-interface ScanJobWithMessage extends ScanJob {
-    message: ScanMessage
-}
-
-const SCANS_QUERY: TypedDocumentNode<{scanJobs: ScanJobWithMessage[]}, {sheetId: string}>  = gql`
-    query Scans($sheetId: ObjectId!) {
+const SCAN_JOBS_QUERY = gql`
+    query ScanJobs($sheetId: ObjectId!) {
         scanJobs(sheetId: $sheetId) {
             _id
             timestamp
             sheetId
-            message {
+            ownerId
+            messages {
                 status
                 message
                 timestamp
@@ -103,12 +96,11 @@ function ScansLog({sheet,data_rows}:{
     sheet: Sheet,
     data_rows: Row[],
 }) {
-    const { data, error } = useQuery(SCANS_QUERY, { variables: { sheetId: sheet._id.toString() }, pollInterval: 3000 });
+    const { data, error } = useScanJobsQuery({ variables: { sheetId: sheet._id }, pollInterval: 3000 });
+    const jobs = data?.scanJobs
 
-    if (error) return <ErrorElement error={error} />
+    if (!jobs || error) return <ErrorElement error={error} />
     if (!data) return <Loading />
-
-    const jobs = data.scanJobs
 
     return <ul className="list-disc pl-5 space-y-2">
         {jobs.map(job => <li key={job._id.toString()} className="pt-8">
@@ -126,14 +118,14 @@ const SCANS_DELETE_MUTATION = gql`
 function ScansJob({sheet, data_rows, job}: {
     sheet: Sheet
     data_rows: Row[]
-    job: ScanJobWithMessage
+    job: ScanJob
 }) {
     const [deleteChecked, setDeleteChecked] = useState(false)
     const [deleteScan, { loading: deleteLoading, error: deleteError, reset: deleteReset }] 
-        = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCANS_QUERY}]})
+        = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCAN_JOBS_QUERY}]})
     const [raw,setRaw] = useState(false)
-    const message = job.message
-    const done = message.status === 'completed' || message.status === 'error' || message.timestamp < new Date(Date.now() - 60 * 1000) // more than 1 minute old   
+    const message = job.messages.length>0 ? job.messages[job.messages.length-1] : null
+    const done = message && (message.status === 'completed' || message.status === 'error' || message.timestamp < new Date(Date.now() - 60 * 1000)) // more than 1 minute old   
 
     return <>
         {message && <>

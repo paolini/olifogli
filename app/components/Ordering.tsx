@@ -1,6 +1,6 @@
 import { useState, Dispatch, SetStateAction, Fragment } from 'react'
 import { WithId } from 'mongodb'
-import { Row } from '@/app/lib/models'
+import { Row } from '@/app/graphql/generated'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
 
@@ -108,7 +108,7 @@ function CambiaOrdine({ field, type, criteria } : {
     return <span style={{cursor: "pointer"}} onClick={() => aggiornaCriteriOrdina(criteria, field)}>&plusmn;</span>
 }
 
-export function filtraEOrdina(criteria: Criteria, rows: WithId<Row>[]): WithId<Row>[] {
+export function filtraEOrdina(criteria: Criteria, rows: Row[]): Row[] {
     return tableOrdina(criteria.criteriOrdina, tableCerca(criteria, rows))
 }
 

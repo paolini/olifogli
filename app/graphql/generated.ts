@@ -103,11 +103,11 @@ export type Query = {
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
   olimanager?: Maybe<Scalars['String']['output']>;
-  rows?: Maybe<Array<Maybe<Row>>>;
-  scanJobs?: Maybe<Array<Maybe<ScanJob>>>;
-  scanResults?: Maybe<Array<Maybe<ScanResults>>>;
+  rows: Array<Row>;
+  scanJobs: Array<ScanJob>;
+  scanResults: Array<ScanResults>;
   sheet?: Maybe<Sheet>;
-  sheets?: Maybe<Array<Maybe<Sheet>>>;
+  sheets: Array<Sheet>;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
   workbooks?: Maybe<Array<Maybe<Workbook>>>;
@@ -154,39 +154,39 @@ export type Row = {
 
 export type ScanJob = {
   __typename?: 'ScanJob';
-  _id?: Maybe<Scalars['ObjectId']['output']>;
-  message?: Maybe<ScanMessage>;
-  messages?: Maybe<Array<Maybe<ScanMessage>>>;
-  ownerId?: Maybe<Scalars['ObjectId']['output']>;
-  sheetId?: Maybe<Scalars['ObjectId']['output']>;
-  timestamp?: Maybe<Scalars['Timestamp']['output']>;
+  _id: Scalars['ObjectId']['output'];
+  messages: Array<ScanMessage>;
+  ownerId: Scalars['ObjectId']['output'];
+  sheetId: Scalars['ObjectId']['output'];
+  timestamp: Scalars['Timestamp']['output'];
 };
 
 export type ScanMessage = {
   __typename?: 'ScanMessage';
-  message?: Maybe<Scalars['String']['output']>;
-  status?: Maybe<Scalars['String']['output']>;
-  timestamp?: Maybe<Scalars['Timestamp']['output']>;
+  message: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  timestamp: Scalars['Timestamp']['output'];
 };
 
 export type ScanResults = {
   __typename?: 'ScanResults';
-  _id?: Maybe<Scalars['ObjectId']['output']>;
-  image?: Maybe<Scalars['String']['output']>;
-  jobId?: Maybe<Scalars['ObjectId']['output']>;
-  rawData?: Maybe<Scalars['Data']['output']>;
-  sheetId?: Maybe<Scalars['ObjectId']['output']>;
+  _id: Scalars['ObjectId']['output'];
+  image: Scalars['String']['output'];
+  jobId: Scalars['ObjectId']['output'];
+  rawData: Scalars['Data']['output'];
+  sheetId: Scalars['ObjectId']['output'];
 };
 
 export type Sheet = {
   __typename?: 'Sheet';
   _id: Scalars['ObjectId']['output'];
+  commonData: Scalars['Data']['output'];
   name: Scalars['String']['output'];
   ownerId: Scalars['ObjectId']['output'];
   permittedEmails: Array<Scalars['String']['output']>;
   permittedIds: Array<Scalars['ObjectId']['output']>;
   schema: Scalars['String']['output'];
-  workbookId: Scalars['ObjectId']['output'];
+  workbook: Workbook;
 };
 
 export type User = {
@@ -214,12 +214,12 @@ export type AddRowsMutationVariables = Exact<{
 
 export type AddRowsMutation = { __typename?: 'Mutation', addRows?: number | null };
 
-export type ScansQueryVariables = Exact<{
+export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type ScansQuery = { __typename?: 'Query', scanJobs?: Array<{ __typename?: 'ScanJob', _id?: ObjectId | null, timestamp?: Date | null, sheetId?: ObjectId | null, message?: { __typename?: 'ScanMessage', status?: string | null, message?: string | null, timestamp?: Date | null } | null } | null> | null };
+export type ScanJobsQuery = { __typename?: 'Query', scanJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, timestamp: Date, sheetId: ObjectId, ownerId: ObjectId, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
 
 export type DeleteScanMutationVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
@@ -233,21 +233,21 @@ export type ScanResultsQueryVariables = Exact<{
 }>;
 
 
-export type ScanResultsQuery = { __typename?: 'Query', scanResults?: Array<{ __typename?: 'ScanResults', _id?: ObjectId | null, sheetId?: ObjectId | null, jobId?: ObjectId | null, image?: string | null, rawData?: any | null } | null> | null };
+export type ScanResultsQuery = { __typename?: 'Query', scanResults: Array<{ __typename?: 'ScanResults', _id: ObjectId, sheetId: ObjectId, jobId: ObjectId, image: string, rawData: any }> };
 
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, permittedEmails: Array<string>, permittedIds: Array<ObjectId> } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, permittedEmails: Array<string>, permittedIds: Array<ObjectId>, commonData: any, ownerId: ObjectId, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows?: Array<{ __typename?: 'Row', _id: ObjectId, isValid: boolean, data: any, updatedOn: Date } | null> | null };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, isValid: boolean, data: any, updatedOn: Date }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -261,7 +261,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets?: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string } | null> | null };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -301,7 +301,7 @@ export type GetWorkbookQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null, sheets?: Array<{ __typename?: 'Sheet', _id: ObjectId } | null> | null };
+export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }> };
 
 export type DeleteWorkbookMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -371,13 +371,14 @@ export function useAddRowsMutation(baseOptions?: Apollo.MutationHookOptions<AddR
 export type AddRowsMutationHookResult = ReturnType<typeof useAddRowsMutation>;
 export type AddRowsMutationResult = Apollo.MutationResult<AddRowsMutation>;
 export type AddRowsMutationOptions = Apollo.BaseMutationOptions<AddRowsMutation, AddRowsMutationVariables>;
-export const ScansDocument = gql`
-    query Scans($sheetId: ObjectId!) {
+export const ScanJobsDocument = gql`
+    query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
     _id
     timestamp
     sheetId
-    message {
+    ownerId
+    messages {
       status
       message
       timestamp
@@ -387,37 +388,37 @@ export const ScansDocument = gql`
     `;
 
 /**
- * __useScansQuery__
+ * __useScanJobsQuery__
  *
- * To run a query within a React component, call `useScansQuery` and pass it any options that fit your needs.
- * When your component renders, `useScansQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useScanJobsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScanJobsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useScansQuery({
+ * const { data, loading, error } = useScanJobsQuery({
  *   variables: {
  *      sheetId: // value for 'sheetId'
  *   },
  * });
  */
-export function useScansQuery(baseOptions: Apollo.QueryHookOptions<ScansQuery, ScansQueryVariables> & ({ variables: ScansQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+export function useScanJobsQuery(baseOptions: Apollo.QueryHookOptions<ScanJobsQuery, ScanJobsQueryVariables> & ({ variables: ScanJobsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ScansQuery, ScansQueryVariables>(ScansDocument, options);
+        return Apollo.useQuery<ScanJobsQuery, ScanJobsQueryVariables>(ScanJobsDocument, options);
       }
-export function useScansLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScansQuery, ScansQueryVariables>) {
+export function useScanJobsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScanJobsQuery, ScanJobsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ScansQuery, ScansQueryVariables>(ScansDocument, options);
+          return Apollo.useLazyQuery<ScanJobsQuery, ScanJobsQueryVariables>(ScanJobsDocument, options);
         }
-export function useScansSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ScansQuery, ScansQueryVariables>) {
+export function useScanJobsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ScanJobsQuery, ScanJobsQueryVariables>) {
           const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<ScansQuery, ScansQueryVariables>(ScansDocument, options);
+          return Apollo.useSuspenseQuery<ScanJobsQuery, ScanJobsQueryVariables>(ScanJobsDocument, options);
         }
-export type ScansQueryHookResult = ReturnType<typeof useScansQuery>;
-export type ScansLazyQueryHookResult = ReturnType<typeof useScansLazyQuery>;
-export type ScansSuspenseQueryHookResult = ReturnType<typeof useScansSuspenseQuery>;
-export type ScansQueryResult = Apollo.QueryResult<ScansQuery, ScansQueryVariables>;
+export type ScanJobsQueryHookResult = ReturnType<typeof useScanJobsQuery>;
+export type ScanJobsLazyQueryHookResult = ReturnType<typeof useScanJobsLazyQuery>;
+export type ScanJobsSuspenseQueryHookResult = ReturnType<typeof useScanJobsSuspenseQuery>;
+export type ScanJobsQueryResult = Apollo.QueryResult<ScanJobsQuery, ScanJobsQueryVariables>;
 export const DeleteScanDocument = gql`
     mutation DeleteScan($jobId: ObjectId!) {
   deleteScan(jobId: $jobId)
@@ -501,6 +502,12 @@ export const GetSheetDocument = gql`
     schema
     permittedEmails
     permittedIds
+    workbook {
+      _id
+      name
+    }
+    commonData
+    ownerId
   }
 }
     `;
@@ -1147,10 +1154,10 @@ export type ResolversTypes = {
   ObjectId: ResolverTypeWrapper<ObjectId>;
   Query: ResolverTypeWrapper<{}>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
-  ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
+  ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
-  ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
-  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId' | 'permittedIds' | 'workbookId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], permittedIds: Array<ResolversTypes['ObjectId']>, workbookId: ResolversTypes['ObjectId'] }>;
+  ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
+  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId' | 'permittedIds'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], permittedIds: Array<ResolversTypes['ObjectId']> }>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
@@ -1168,10 +1175,10 @@ export type ResolversParentTypes = {
   ObjectId: ObjectId;
   Query: {};
   Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
-  ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
+  ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
-  ScanResults: Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
-  Sheet: Omit<Sheet, '_id' | 'ownerId' | 'permittedIds' | 'workbookId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], permittedIds: Array<ResolversParentTypes['ObjectId']>, workbookId: ResolversParentTypes['ObjectId'] };
+  ScanResults: Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
+  Sheet: Omit<Sheet, '_id' | 'ownerId' | 'permittedIds'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], permittedIds: Array<ResolversParentTypes['ObjectId']> };
   String: Scalars['String']['output'];
   Timestamp: Scalars['Timestamp']['output'];
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
@@ -1212,11 +1219,11 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  rows?: Resolver<Maybe<Array<Maybe<ResolversTypes['Row']>>>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
-  scanJobs?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanJob']>>>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
-  scanResults?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanResults']>>>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
+  rows?: Resolver<Array<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
+  scanJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
+  scanResults?: Resolver<Array<ResolversTypes['ScanResults']>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
-  sheets?: Resolver<Maybe<Array<Maybe<ResolversTypes['Sheet']>>>, ParentType, ContextType, RequireFields<QuerySheetsArgs, 'workbookId'>>;
+  sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetsArgs, 'workbookId'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
@@ -1231,39 +1238,39 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
 };
 
 export type ScanJobResolvers<ContextType = any, ParentType extends ResolversParentTypes['ScanJob'] = ResolversParentTypes['ScanJob']> = {
-  _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  message?: Resolver<Maybe<ResolversTypes['ScanMessage']>, ParentType, ContextType>;
-  messages?: Resolver<Maybe<Array<Maybe<ResolversTypes['ScanMessage']>>>, ParentType, ContextType>;
-  ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  timestamp?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  messages?: Resolver<Array<ResolversTypes['ScanMessage']>, ParentType, ContextType>;
+  ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ScanMessageResolvers<ContextType = any, ParentType extends ResolversParentTypes['ScanMessage'] = ResolversParentTypes['ScanMessage']> = {
-  message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  status?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  timestamp?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ScanResultsResolvers<ContextType = any, ParentType extends ResolversParentTypes['ScanResults'] = ResolversParentTypes['ScanResults']> = {
-  _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  image?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  jobId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  rawData?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
-  sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  image?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  jobId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  rawData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type SheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Sheet'] = ResolversParentTypes['Sheet']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  commonData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   permittedEmails?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   permittedIds?: Resolver<Array<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  workbookId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  workbook?: Resolver<ResolversTypes['Workbook'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

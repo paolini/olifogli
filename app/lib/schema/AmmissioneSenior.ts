@@ -1,6 +1,7 @@
 import { Field, ChoiceAnswerField, ComputedField } from './fields'
 import Schema from './Schema'
-import { Data, Row, ScanResults } from '../models'
+import { Row, ScanResults } from '@/app/graphql/generated'
+import { Data } from '@/app/lib/models'
 
 export default class AmmissioneSenior extends Schema {
     constructor() {

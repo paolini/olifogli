@@ -5,7 +5,8 @@ import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
 
 import { InputCell } from '@/app/components/Input'
-import { Row, Data, Sheet } from '@/app/lib/models'
+import { Data } from '@/app/lib/models'
+import { Row, Sheet } from '@/app/graphql/generated'
 
 export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema}: {
     rows: Row[],
