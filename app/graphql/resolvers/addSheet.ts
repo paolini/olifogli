@@ -1,6 +1,5 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
-import { ObjectId } from "mongodb"
 
 import { get_authenticated_user, check_admin } from './utils'
 import { Sheet } from '@/app/lib/models'
@@ -18,7 +17,9 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
         schema,
         workbookId,
         ownerId: user._id, 
-        permissions: [],
+        permittedEmails: args.permittedEmails || [],
+        permittedIds: args.permittedIds || [],
+        commonData: {},
     })
     if (!result.acknowledged) {
         throw new Error("Failed to create sheet")

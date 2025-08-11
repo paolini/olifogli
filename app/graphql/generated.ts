@@ -35,9 +35,11 @@ export type Mutation = {
   addRow?: Maybe<Row>;
   addRows?: Maybe<Scalars['Int']['output']>;
   addSheet?: Maybe<Sheet>;
+  addWorkbook?: Maybe<Workbook>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteScan?: Maybe<Scalars['Boolean']['output']>;
   deleteSheet?: Maybe<Scalars['ObjectId']['output']>;
+  deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   patchRow?: Maybe<Row>;
 };
 
@@ -57,8 +59,15 @@ export type MutationAddRowsArgs = {
 
 export type MutationAddSheetArgs = {
   name: Scalars['String']['input'];
+  permittedEmails?: InputMaybe<Array<Scalars['String']['input']>>;
+  permittedIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   schema: Scalars['String']['input'];
   workbookId: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationAddWorkbookArgs = {
+  name: Scalars['String']['input'];
 };
 
 
@@ -73,6 +82,11 @@ export type MutationDeleteScanArgs = {
 
 
 export type MutationDeleteSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationDeleteWorkbookArgs = {
   _id: Scalars['ObjectId']['input'];
 };
 
@@ -132,10 +146,10 @@ export type QueryWorkbookArgs = {
 
 export type Row = {
   __typename?: 'Row';
-  _id?: Maybe<Scalars['ObjectId']['output']>;
-  data?: Maybe<Scalars['Data']['output']>;
-  isValid?: Maybe<Scalars['Boolean']['output']>;
-  updatedOn?: Maybe<Scalars['Timestamp']['output']>;
+  _id: Scalars['ObjectId']['output'];
+  data: Scalars['Data']['output'];
+  isValid: Scalars['Boolean']['output'];
+  updatedOn: Scalars['Timestamp']['output'];
 };
 
 export type ScanJob = {
@@ -166,26 +180,19 @@ export type ScanResults = {
 
 export type Sheet = {
   __typename?: 'Sheet';
-  _id?: Maybe<Scalars['ObjectId']['output']>;
-  name?: Maybe<Scalars['String']['output']>;
-  ownerId?: Maybe<Scalars['ObjectId']['output']>;
-  permissions?: Maybe<Array<Maybe<SheetPermission>>>;
-  schema?: Maybe<Scalars['String']['output']>;
-  workbookId?: Maybe<Scalars['ObjectId']['output']>;
-};
-
-export type SheetPermission = {
-  __typename?: 'SheetPermission';
-  filterField?: Maybe<Scalars['String']['output']>;
-  filterValue?: Maybe<Scalars['String']['output']>;
-  userEmail?: Maybe<Scalars['String']['output']>;
-  userId?: Maybe<Scalars['ObjectId']['output']>;
+  _id: Scalars['ObjectId']['output'];
+  name: Scalars['String']['output'];
+  ownerId: Scalars['ObjectId']['output'];
+  permittedEmails: Array<Scalars['String']['output']>;
+  permittedIds: Array<Scalars['ObjectId']['output']>;
+  schema: Scalars['String']['output'];
+  workbookId: Scalars['ObjectId']['output'];
 };
 
 export type User = {
   __typename?: 'User';
-  _id?: Maybe<Scalars['ObjectId']['output']>;
-  email?: Maybe<Scalars['String']['output']>;
+  _id: Scalars['ObjectId']['output'];
+  email: Scalars['String']['output'];
   isAdmin?: Maybe<Scalars['Boolean']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   uid?: Maybe<Scalars['Int']['output']>;
@@ -233,14 +240,14 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id?: ObjectId | null, name?: string | null, schema?: string | null, permissions?: Array<{ __typename?: 'SheetPermission', userId?: ObjectId | null, userEmail?: string | null, filterField?: string | null, filterValue?: string | null } | null> | null } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, permittedEmails: Array<string>, permittedIds: Array<ObjectId> } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows?: Array<{ __typename?: 'Row', _id?: ObjectId | null, isValid?: boolean | null, data?: any | null, updatedOn?: Date | null } | null> | null };
+export type GetRowsQuery = { __typename?: 'Query', rows?: Array<{ __typename?: 'Row', _id: ObjectId, isValid: boolean, data: any, updatedOn: Date } | null> | null };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -254,7 +261,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets?: Array<{ __typename?: 'Sheet', _id?: ObjectId | null, name?: string | null, schema?: string | null } | null> | null };
+export type GetSheetsQuery = { __typename?: 'Query', sheets?: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string } | null> | null };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -263,7 +270,7 @@ export type AddSheetMutationVariables = Exact<{
 }>;
 
 
-export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: { __typename?: 'Sheet', _id?: ObjectId | null, name?: string | null, schema?: string | null } | null };
+export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string } | null };
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -271,7 +278,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id?: ObjectId | null, isValid?: boolean | null, data?: any | null } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, isValid: boolean, data: any } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -280,7 +287,7 @@ export type PatchRowMutationVariables = Exact<{
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id?: ObjectId | null, updatedOn?: Date | null, isValid?: boolean | null, data?: any | null } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, updatedOn: Date, isValid: boolean, data: any } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -289,15 +296,36 @@ export type DeleteRowMutationVariables = Exact<{
 
 export type DeleteRowMutation = { __typename?: 'Mutation', deleteRow?: ObjectId | null };
 
+export type GetWorkbookQueryVariables = Exact<{
+  workbookId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null, sheets?: Array<{ __typename?: 'Sheet', _id: ObjectId } | null> | null };
+
+export type DeleteWorkbookMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type DeleteWorkbookMutation = { __typename?: 'Mutation', deleteWorkbook?: ObjectId | null };
+
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetWorkbooksQuery = { __typename?: 'Query', workbooks?: Array<{ __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null> | null };
 
+export type AddWorkbookMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+}>;
+
+
+export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
+
 export type GetProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id?: ObjectId | null, isAdmin?: boolean | null, email?: string | null, name?: string | null } | null };
+export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, isAdmin?: boolean | null, email: string, name?: string | null } | null };
 
 export type GetConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -307,14 +335,7 @@ export type GetConfigQuery = { __typename?: 'Query', config?: { __typename?: 'Co
 export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id?: ObjectId | null, email?: string | null, isAdmin?: boolean | null } | null> | null };
-
-export type GetWorkbookQueryVariables = Exact<{
-  workbookId: Scalars['ObjectId']['input'];
-}>;
-
-
-export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
+export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null } | null> | null };
 
 
 export const AddRowsDocument = gql`
@@ -478,12 +499,8 @@ export const GetSheetDocument = gql`
     _id
     name
     schema
-    permissions {
-      userId
-      userEmail
-      filterField
-      filterValue
-    }
+    permittedEmails
+    permittedIds
   }
 }
     `;
@@ -779,6 +796,81 @@ export function useDeleteRowMutation(baseOptions?: Apollo.MutationHookOptions<De
 export type DeleteRowMutationHookResult = ReturnType<typeof useDeleteRowMutation>;
 export type DeleteRowMutationResult = Apollo.MutationResult<DeleteRowMutation>;
 export type DeleteRowMutationOptions = Apollo.BaseMutationOptions<DeleteRowMutation, DeleteRowMutationVariables>;
+export const GetWorkbookDocument = gql`
+    query GetWorkbook($workbookId: ObjectId!) {
+  workbook(workbookId: $workbookId) {
+    _id
+    name
+  }
+  sheets(workbookId: $workbookId) {
+    _id
+  }
+}
+    `;
+
+/**
+ * __useGetWorkbookQuery__
+ *
+ * To run a query within a React component, call `useGetWorkbookQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetWorkbookQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetWorkbookQuery({
+ *   variables: {
+ *      workbookId: // value for 'workbookId'
+ *   },
+ * });
+ */
+export function useGetWorkbookQuery(baseOptions: Apollo.QueryHookOptions<GetWorkbookQuery, GetWorkbookQueryVariables> & ({ variables: GetWorkbookQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetWorkbookQuery, GetWorkbookQueryVariables>(GetWorkbookDocument, options);
+      }
+export function useGetWorkbookLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetWorkbookQuery, GetWorkbookQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetWorkbookQuery, GetWorkbookQueryVariables>(GetWorkbookDocument, options);
+        }
+export function useGetWorkbookSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetWorkbookQuery, GetWorkbookQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetWorkbookQuery, GetWorkbookQueryVariables>(GetWorkbookDocument, options);
+        }
+export type GetWorkbookQueryHookResult = ReturnType<typeof useGetWorkbookQuery>;
+export type GetWorkbookLazyQueryHookResult = ReturnType<typeof useGetWorkbookLazyQuery>;
+export type GetWorkbookSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookSuspenseQuery>;
+export type GetWorkbookQueryResult = Apollo.QueryResult<GetWorkbookQuery, GetWorkbookQueryVariables>;
+export const DeleteWorkbookDocument = gql`
+    mutation DeleteWorkbook($_id: ObjectId!) {
+  deleteWorkbook(_id: $_id)
+}
+    `;
+export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
+
+/**
+ * __useDeleteWorkbookMutation__
+ *
+ * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWorkbookMutation, { data, loading, error }] = useDeleteWorkbookMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useDeleteWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>(DeleteWorkbookDocument, options);
+      }
+export type DeleteWorkbookMutationHookResult = ReturnType<typeof useDeleteWorkbookMutation>;
+export type DeleteWorkbookMutationResult = Apollo.MutationResult<DeleteWorkbookMutation>;
+export type DeleteWorkbookMutationOptions = Apollo.BaseMutationOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
 export const GetWorkbooksDocument = gql`
     query GetWorkbooks {
   workbooks {
@@ -819,6 +911,40 @@ export type GetWorkbooksQueryHookResult = ReturnType<typeof useGetWorkbooksQuery
 export type GetWorkbooksLazyQueryHookResult = ReturnType<typeof useGetWorkbooksLazyQuery>;
 export type GetWorkbooksSuspenseQueryHookResult = ReturnType<typeof useGetWorkbooksSuspenseQuery>;
 export type GetWorkbooksQueryResult = Apollo.QueryResult<GetWorkbooksQuery, GetWorkbooksQueryVariables>;
+export const AddWorkbookDocument = gql`
+    mutation AddWorkbook($name: String!) {
+  addWorkbook(name: $name) {
+    _id
+    name
+  }
+}
+    `;
+export type AddWorkbookMutationFn = Apollo.MutationFunction<AddWorkbookMutation, AddWorkbookMutationVariables>;
+
+/**
+ * __useAddWorkbookMutation__
+ *
+ * To run a mutation, you first call `useAddWorkbookMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddWorkbookMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addWorkbookMutation, { data, loading, error }] = useAddWorkbookMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *   },
+ * });
+ */
+export function useAddWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<AddWorkbookMutation, AddWorkbookMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddWorkbookMutation, AddWorkbookMutationVariables>(AddWorkbookDocument, options);
+      }
+export type AddWorkbookMutationHookResult = ReturnType<typeof useAddWorkbookMutation>;
+export type AddWorkbookMutationResult = Apollo.MutationResult<AddWorkbookMutation>;
+export type AddWorkbookMutationOptions = Apollo.BaseMutationOptions<AddWorkbookMutation, AddWorkbookMutationVariables>;
 export const GetProfileDocument = gql`
     query GetProfile {
   me {
@@ -941,47 +1067,6 @@ export type GetUsersQueryHookResult = ReturnType<typeof useGetUsersQuery>;
 export type GetUsersLazyQueryHookResult = ReturnType<typeof useGetUsersLazyQuery>;
 export type GetUsersSuspenseQueryHookResult = ReturnType<typeof useGetUsersSuspenseQuery>;
 export type GetUsersQueryResult = Apollo.QueryResult<GetUsersQuery, GetUsersQueryVariables>;
-export const GetWorkbookDocument = gql`
-    query GetWorkbook($workbookId: ObjectId!) {
-  workbook(workbookId: $workbookId) {
-    _id
-    name
-  }
-}
-    `;
-
-/**
- * __useGetWorkbookQuery__
- *
- * To run a query within a React component, call `useGetWorkbookQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetWorkbookQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetWorkbookQuery({
- *   variables: {
- *      workbookId: // value for 'workbookId'
- *   },
- * });
- */
-export function useGetWorkbookQuery(baseOptions: Apollo.QueryHookOptions<GetWorkbookQuery, GetWorkbookQueryVariables> & ({ variables: GetWorkbookQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetWorkbookQuery, GetWorkbookQueryVariables>(GetWorkbookDocument, options);
-      }
-export function useGetWorkbookLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetWorkbookQuery, GetWorkbookQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetWorkbookQuery, GetWorkbookQueryVariables>(GetWorkbookDocument, options);
-        }
-export function useGetWorkbookSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetWorkbookQuery, GetWorkbookQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetWorkbookQuery, GetWorkbookQueryVariables>(GetWorkbookDocument, options);
-        }
-export type GetWorkbookQueryHookResult = ReturnType<typeof useGetWorkbookQuery>;
-export type GetWorkbookLazyQueryHookResult = ReturnType<typeof useGetWorkbookLazyQuery>;
-export type GetWorkbookSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookSuspenseQuery>;
-export type GetWorkbookQueryResult = Apollo.QueryResult<GetWorkbookQuery, GetWorkbookQueryVariables>;
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -1061,15 +1146,14 @@ export type ResolversTypes = {
   Mutation: ResolverTypeWrapper<{}>;
   ObjectId: ResolverTypeWrapper<ObjectId>;
   Query: ResolverTypeWrapper<{}>;
-  Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id?: Maybe<ResolversTypes['ObjectId']> }>;
+  Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
-  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId' | 'workbookId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']>, workbookId?: Maybe<ResolversTypes['ObjectId']> }>;
-  SheetPermission: ResolverTypeWrapper<Omit<SheetPermission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
+  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId' | 'permittedIds' | 'workbookId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], permittedIds: Array<ResolversTypes['ObjectId']>, workbookId: ResolversTypes['ObjectId'] }>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
-  User: ResolverTypeWrapper<Omit<User, '_id'> & { _id?: Maybe<ResolversTypes['ObjectId']> }>;
+  User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
 };
 
@@ -1083,15 +1167,14 @@ export type ResolversParentTypes = {
   Mutation: {};
   ObjectId: ObjectId;
   Query: {};
-  Row: Omit<Row, '_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']> };
+  Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId' | 'sheetId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
-  Sheet: Omit<Sheet, '_id' | 'ownerId' | 'workbookId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']>, workbookId?: Maybe<ResolversParentTypes['ObjectId']> };
-  SheetPermission: Omit<SheetPermission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
+  Sheet: Omit<Sheet, '_id' | 'ownerId' | 'permittedIds' | 'workbookId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], permittedIds: Array<ResolversParentTypes['ObjectId']>, workbookId: ResolversParentTypes['ObjectId'] };
   String: Scalars['String']['output'];
   Timestamp: Scalars['Timestamp']['output'];
-  User: Omit<User, '_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']> };
+  User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
 };
 
@@ -1112,9 +1195,11 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationAddRowArgs, 'data' | 'sheetId'>>;
   addRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationAddRowsArgs, 'columns' | 'rows' | 'sheetId'>>;
   addSheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<MutationAddSheetArgs, 'name' | 'schema' | 'workbookId'>>;
+  addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteScan?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanArgs, 'jobId'>>;
   deleteSheet?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
+  deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
 };
 
@@ -1138,10 +1223,10 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 };
 
 export type RowResolvers<ContextType = any, ParentType extends ResolversParentTypes['Row'] = ResolversParentTypes['Row']> = {
-  _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  data?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
-  isValid?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  updatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  isValid?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1172,20 +1257,13 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
 };
 
 export type SheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Sheet'] = ResolversParentTypes['Sheet']> = {
-  _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  permissions?: Resolver<Maybe<Array<Maybe<ResolversTypes['SheetPermission']>>>, ParentType, ContextType>;
-  schema?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  workbookId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type SheetPermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['SheetPermission'] = ResolversParentTypes['SheetPermission']> = {
-  filterField?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  filterValue?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  userEmail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  userId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  permittedEmails?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  permittedIds?: Resolver<Array<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  workbookId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1194,8 +1272,8 @@ export interface TimestampScalarConfig extends GraphQLScalarTypeConfig<Resolvers
 }
 
 export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
-  _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   isAdmin?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   uid?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
@@ -1221,7 +1299,6 @@ export type Resolvers<ContextType = any> = {
   ScanMessage?: ScanMessageResolvers<ContextType>;
   ScanResults?: ScanResultsResolvers<ContextType>;
   Sheet?: SheetResolvers<ContextType>;
-  SheetPermission?: SheetPermissionResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
   User?: UserResolvers<ContextType>;
   Workbook?: WorkbookResolvers<ContextType>;

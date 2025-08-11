@@ -37,7 +37,7 @@ export default function Sheets({ workbookId }: { workbookId: ObjectId }) {
     return <div className="p-4">
         <h1>Fogli</h1>
         {profile && <SheetsTable workbookId={workbookId} />}
-        {profile?.is_admin && <SheetForm workbookId={workbookId} />}
+        {profile?.isAdmin && <SheetForm workbookId={workbookId} />}
     </div>;
 }
 
@@ -70,7 +70,7 @@ function SheetsTable({ workbookId }: { workbookId: ObjectId }) {
     </table>
 }
 
-function SheetRow({sheet}: {sheet: Sheet}) {
+function SheetRow({sheet}: {sheet: {_id: ObjectId, name: string, schema: string}}) {
     return <tr key={sheet._id?.toString()}>
         <td>
             <a href={`/sheet/${sheet._id}`}>{sheet.name}</a>

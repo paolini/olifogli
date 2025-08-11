@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data } from '@/app/lib/models'
-import { get_authenticated_user, check_user_can_edit_sheet, apply_row_permission_filter } from './utils'
+import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
 
 export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     _id: ObjectId,
@@ -21,10 +21,6 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
     const isValid = schema.isValid(data)
-    // Applica filtro permission: forza tutti i campi filter_field ai rispettivi filter_value
-    // in modo che l'utente non possa modificare il valore del campo
-    // se ha un permesso con filtro su quel campo
-    data = apply_row_permission_filter(user, sheet, data)
     const $set = {
         data,
         isValid,

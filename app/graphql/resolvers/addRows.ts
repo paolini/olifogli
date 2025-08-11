@@ -4,7 +4,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data, Row } from '@/app/lib/models'
 
-import { get_authenticated_user, check_user_can_edit_sheet, make_row_permission_filter } from './utils'
+import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
 import { MutationAddRowsArgs } from '../generated'
 
 export default async function addRows(_: unknown, {sheetId, columns, rows}: MutationAddRowsArgs, context: Context) {
@@ -18,10 +18,9 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     const updatedOn = createdOn
     const updatedBy = createdBy
     // Applica filtro permission: forza tutti i campi filterField ai rispettivi filterValue
-    const forceFields = make_row_permission_filter(user, sheet)
     const objectRows = rows.map(row => {
         const obj = Object.fromEntries(columns.map((column,i)=>[column,row[i]]));
-        return forceFields(obj);
+        return obj
     })
     const validatedRows: WithoutId<Row>[] = objectRows
         .map(row => schema.clean(row as Data))

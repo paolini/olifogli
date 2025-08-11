@@ -1,9 +1,10 @@
 import { ApolloError } from '@apollo/client';
 
 export default function ErrorElement({ error, dismiss }: { 
-    error: ApolloError|Error|string,
+    error: ApolloError|Error|string|undefined,
     dismiss?: () => void,
 }) {
+    if (!error) return null
     const message = typeof error === 'string' ? error : error.message
     return <div className="bg-error p-2">
         Errore: {message} 

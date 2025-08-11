@@ -91,7 +91,7 @@ export async function getRowsCollection() {
 
 export async function getWorkbooksCollection() {
     const db = await getDb()
-    return db.collection<Workbook>('workbooks')
+    return db.collection<WithoutId<Workbook>>('workbooks')
 }
 
 export async function getScanJobsCollection() {

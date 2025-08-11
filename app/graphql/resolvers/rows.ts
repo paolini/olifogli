@@ -13,22 +13,6 @@ export default async function rows (_: unknown, { sheetId }: QueryRowsArgs, cont
         if (!sheet) throw Error(`Foglio non trovato: ${sheetId}`)
         check_user_can_edit_sheet(user, sheet)
         const rows = await getRowsCollection()
-        const query = filter_query(sheet,user)
-        const results = await rows.find({sheetId, ...query}).toArray()
-        console.log(JSON.stringify(results, null, 2))
+        const results = await rows.find({sheetId}).toArray()
         return results
     }
-
-function filter_query(sheet: Sheet, user: User) {
-    if (user.isAdmin) return {}
-    if (user._id.equals(sheet.ownerId)) return {}
-    if (!sheet.permissions || !Array.isArray(sheet.permissions)) return {}
-    return Object.fromEntries(sheet.permissions
-            .filter(p =>
-                (   (p.userId && p.userId.equals(user._id)) 
-                    ||  (p.userEmail && p.userEmail === user.email)
-                ) && p.filterField && p.filterValue)
-            .map(perm => ([`data.${perm.filterField}`, perm.filterValue as string]))
-        )
-}
-

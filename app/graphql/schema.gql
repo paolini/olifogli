@@ -10,32 +10,26 @@ type Workbook {
 }
 
 type Sheet {
-  _id: ObjectId
-  name: String
-  schema: String
-  permissions: [SheetPermission]
-  ownerId: ObjectId
-  workbookId: ObjectId
-}
-
-type SheetPermission {
-  userId: ObjectId
-  userEmail: String
-  filterField: String
-  filterValue: String
+  _id: ObjectId!
+  name: String!
+  schema: String!
+  permittedEmails: [String!]!
+  permittedIds: [ObjectId!]!
+  ownerId: ObjectId!
+  workbookId: ObjectId!
 }
 
 type Row {
-  _id: ObjectId
-  isValid: Boolean
-  updatedOn: Timestamp
-  data: Data
+  _id: ObjectId!
+  isValid: Boolean!
+  updatedOn: Timestamp!
+  data: Data!
 }
 
 type User {
-  _id: ObjectId
+  _id: ObjectId!
   uid: Int
-  email: String
+  email: String!
   name: String
   isAdmin: Boolean
 }
@@ -83,7 +77,7 @@ type Query {
 }
 
 type Mutation {
-  addSheet(name: String!, schema: String!, workbookId: ObjectId!): Sheet
+  addSheet(name: String!, schema: String!, workbookId: ObjectId!, permittedEmails: [String!], permittedIds: [ObjectId!]): Sheet
   deleteSheet(_id: ObjectId!): ObjectId
 
   addRow(sheetId: ObjectId!, data: Data!): Row
@@ -92,4 +86,9 @@ type Mutation {
   addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
   
   deleteScan(jobId: ObjectId!): Boolean
+
+  # New mutation to create a workbook
+  addWorkbook(name: String!): Workbook
+  # New mutation to delete a workbook when empty
+  deleteWorkbook(_id: ObjectId!): ObjectId
 }

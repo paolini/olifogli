@@ -20,12 +20,8 @@ const GET_SHEET: TypedDocumentNode<{sheet: Sheet & {_id: string}}> = gql`
             _id
             name
             schema
-            permissions {
-                userId
-                userEmail
-                filterField
-                filterValue
-            }
+            permittedEmails
+            permittedIds
         }
     }
 `
@@ -172,8 +168,6 @@ function SheetConfigure({sheet, profile}: {
 
     if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
 
-    const permissions = sheet.permissions || [] 
-
     return <>
         <table>
             <thead>
@@ -183,11 +177,8 @@ function SheetConfigure({sheet, profile}: {
                 </tr>
             </thead>
             <tbody>
-                {permissions.map((f,i) => <tr key={i} className="ml-2">
-                    <td>{f?.userEmail} {f?.userId?.toString()}</td>
-                    <td>
-                        {f.filterField}=<b>{f.filterValue}</b>
-                    </td>
+                {sheet.permittedEmails.map(email => <tr key={email} className="ml-2">
+                    <td>email: {email}</td>
                 </tr>)}
             </tbody>
         </table>

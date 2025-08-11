@@ -121,7 +121,7 @@ function CsvTable({data, columns, setData, importRows, done}: {
 }) {
     const actions = {
         done: 'Procedi con l\'importazione',
-        move: 'Sposta colonna',
+        move: 'Scambia colonne',
         delete: 'Svuota colonna',
         deleteFirstRow: 'Elimina prima riga', 
         deleteRow: 'Elimina riga',
@@ -155,7 +155,7 @@ function CsvTable({data, columns, setData, importRows, done}: {
         <select className="my-1 p-1" disabled={action==="busy"} value={action} onChange={(e) => selectAction(e.target.value as Action)}>
             {Object.entries(actions).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
         </select> {}
-        { action==="move" && selectedFirstCol < 0 && <b>Seleziona la colonna da spostare</b>}
+        { action==="move" && selectedFirstCol < 0 && <b>Seleziona la colonna da scambiare</b>}
         { action==="move" && selectedFirstCol >= 0 && <b>Seleziona la colonna di destinazione</b> }
         { action==="move" && selectedFirstCol >=0 && <button className="mx-1 p-1" onClick={() => {setSelectedFirstCol(-1);setSelectedLastCol(-1)}}>Annulla spostamento</button>}
         { action==="delete" && <b>Seleziona la colonna da eliminare</b>}

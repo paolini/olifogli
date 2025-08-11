@@ -21,20 +21,15 @@ export type User = {
     lastLogin?: Date
 }
 
-export type SheetPermission = {
-    userId?: ObjectId
-    userEmail?: string
-    filterField?: string
-    filterValue?: string
-}
-
 export type Sheet = {
     _id: ObjectId
     name: string
     schema: string
     ownerId: ObjectId
-    permissions: SheetPermission[]
+    permittedEmails: string[]
+    permittedIds: ObjectId[]
     workbookId: ObjectId
+    commonData: Record<string, any>
 }
 
 export type Data = {
