@@ -10,10 +10,36 @@ export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs
 
     const collection = await getSheetsCollection()
 
-    const sheets = await collection.find({
-        workbookId: workbookId,
-//        ownerId: user._id
-    }).toArray()
+    const sheets = await collection.aggregate<Sheet>([
+        { $match: { workbookId: workbookId } },
+        {
+            $lookup: {
+                from: "workbooks",
+                localField: "workbookId",
+                foreignField: "_id",
+                as: "workbook"
+            }
+        },
+        { $unwind: "$workbook" },
+        {
+            $lookup: {
+                from: "rows",
+                localField: "_id",
+                foreignField: "sheetId",
+                as: "rows"
+            }
+        },
+        {
+            $addFields: {
+                nRows: { $size: "$rows" }
+            }
+        },
+        {
+            $project: {
+                rows: 0
+            }
+        }
+    ]).toArray()
 
     return sheets
 }

@@ -1,8 +1,6 @@
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
-import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
-import { Data } from '@/app/lib/models'
 
 import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
 import { MutationAddRowArgs } from '../generated'
@@ -17,7 +15,7 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     const updatedOn = createdOn
     const createdBy = user._id
     const updatedBy = user._id
-    let data = schema.clean(args.data)
+    const data = schema.clean(args.data)
     const isValid = schema.isValid(data) // TODO compute this!
     const rowsCollection = await getRowsCollection()
 

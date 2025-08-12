@@ -18,6 +18,16 @@ type Sheet {
   ownerId: ObjectId!
   workbook: Workbook!
   commonData: Data!
+  nRows: Int!
+}
+
+input SheetInput {
+  name: String!
+  schema: String!
+  permittedEmails: [String!]
+  permittedIds: [ObjectId!]
+  workbookId: ObjectId!
+  commonData: Data
 }
 
 type Row {
@@ -55,7 +65,6 @@ type ScanJob {
 
 type ScanResults {
   _id: ObjectId!
-  sheetId: ObjectId!
   jobId: ObjectId!
   image: String!
   rawData: Data!
@@ -77,8 +86,10 @@ type Query {
 }
 
 type Mutation {
-  addSheet(name: String!, schema: String!, workbookId: ObjectId!, permittedEmails: [String!], permittedIds: [ObjectId!]): Sheet
-  deleteSheet(_id: ObjectId!): ObjectId
+  addSheet(name: String!, schema: String!, workbookId: ObjectId!, permittedEmails: [String!], permittedIds: [ObjectId!]): ObjectId
+  deleteSheet(_id: ObjectId!): Boolean
+  addSheets(sheets: [SheetInput!]!): Boolean
+  deleteSheets(ids: [ObjectId!]!): Boolean
 
   addRow(sheetId: ObjectId!, data: Data!): Row
   patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row

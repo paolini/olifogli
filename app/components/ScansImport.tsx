@@ -121,7 +121,7 @@ function ScansJob({sheet, data_rows, job}: {
     job: ScanJob
 }) {
     const [deleteChecked, setDeleteChecked] = useState(false)
-    const [deleteScan, { loading: deleteLoading, error: deleteError, reset: deleteReset }] 
+    const [deleteScan, { loading: deleteLoading, error: deleteError }] 
         = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCAN_JOBS_QUERY}]})
     const [raw,setRaw] = useState(false)
     const message = job.messages.length>0 ? job.messages[job.messages.length-1] : null
@@ -150,7 +150,7 @@ function ScansJob({sheet, data_rows, job}: {
                 {deleteChecked && <Button variant="danger" style={{marginLeft: '1em'}} disabled={!deleteChecked || deleteLoading} onClick={handleDelete}>
                     {deleteLoading ? 'Eliminazione...' : 'conferma eliminazione'}
                 </Button> }
-                {deleteError && <ErrorElement error={deleteError} dismiss={deleteReset}/>}
+                {deleteError && <ErrorElement error={deleteError}/>}
             </span>
         }   
         <br />
@@ -176,7 +176,6 @@ const SCAN_RESULTS_QUERY: TypedDocumentNode<{scanResults: ScanResultsWithId[]}, 
     query ScanResults($jobId: ObjectId!) {
         scanResults(jobId: $jobId) {
             _id,
-            sheetId,
             jobId,
             image,
             rawData,
@@ -189,13 +188,13 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     data_rows: Row[],
     showRaw: boolean
 }) {
-    const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
-    const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
+    const [addRow, {loading: addLoading, error: addError}] = useAddRow()
+    const [patchRow, {loading: patchLoading, error: patchError}] = usePatchRow()
     const [selected, setSelected] = useState<ObjectId[]>([])
     const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { jobId: job._id } })
     if (error) return <ErrorElement error={error} />
-    if (addError) return <ErrorElement error={addError} dismiss={addReset} />
-    if (patchError) return <ErrorElement error={patchError} dismiss={patchReset} />
+    if (addError) return <ErrorElement error={addError} />
+    if (patchError) return <ErrorElement error={patchError} />
     if (!data) return <Loading />
     const rows = data.scanResults
     const schema = schemas[sheet.schema]

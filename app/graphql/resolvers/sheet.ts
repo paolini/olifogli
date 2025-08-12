@@ -2,7 +2,7 @@ import { Context } from '../types'
 import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { QuerySheetArgs } from '../generated'
-import { Sheet } from '@/app/lib/models'
+import { Sheet } from '@/app/graphql/generated'
 
 export default async function sheet (_: unknown, { sheetId }: QuerySheetArgs, context: Context): Promise<Sheet> {
       const user = await get_authenticated_user(context)

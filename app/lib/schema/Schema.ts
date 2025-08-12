@@ -1,5 +1,5 @@
 import { Row, ScanResults } from "@/app/graphql/generated"
-import { Data } from '@/app/lib/models'
+import { Data, Sheet } from '@/app/lib/models'
 import { Field } from './fields'
 
 export default class Schema {
@@ -46,6 +46,10 @@ export default class Schema {
     */
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string,{row: Row|undefined, data: Data}>> {
         throw new Error(`scan_to_data not implemented for schema "${this.name}"`)
+    }
+
+    row_to_sheet_data(row: Row): Partial<Sheet> {
+        throw new Error(`row_to_sheet_data not implemented for schema "${this.name}"`)
     }
 }
 

@@ -29,7 +29,8 @@ export type Sheet = {
     permittedEmails: string[]
     permittedIds: ObjectId[]
     workbookId: ObjectId
-    commonData: Record<string, any>
+    commonData: Record<string, string>
+    createdAt: Date
 }
 
 export type Data = {

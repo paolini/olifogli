@@ -10,5 +10,5 @@ export default async function deleteSheet (_: unknown, { _id }: MutationDeleteSh
     check_admin(user)
     const sheets = await getSheetsCollection();
     await sheets.deleteOne({_id})
-    return _id;
+    return true
 }

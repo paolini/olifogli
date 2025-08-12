@@ -1,11 +1,11 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
+import { ObjectId } from 'bson'
+
 import { Context } from '../types'
-
 import { get_authenticated_user, check_admin } from './utils'
-import { Sheet } from '@/app/lib/models'
-import { MutationAddSheetArgs } from '../generated'
+import { Sheet, MutationAddSheetArgs } from '../generated'
 
-export default async function addSheet (_: unknown, args:MutationAddSheetArgs, context: Context): Promise<Sheet> {
+export default async function addSheet (_: unknown, args:MutationAddSheetArgs, context: Context): Promise<ObjectId> {
     const user = await get_authenticated_user(context)
     check_admin(user)
     const collection = await getSheetsCollection()
@@ -24,9 +24,7 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     if (!result.acknowledged) {
         throw new Error("Failed to create sheet")
     }
-    const sheet = await collection.findOne({ _id: result.insertedId })
-    if (!sheet) {
-        throw new Error("Sheet not found after creation")
-    }
-    return sheet
+    const sheet  = await collection.findOne({ _id: result.insertedId })
+    if (!sheet) throw new Error("Sheet not found after creation")
+    return sheet._id
 }

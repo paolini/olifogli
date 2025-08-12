@@ -1,5 +1,7 @@
+import {ObjectId} from 'bson'
 import { Field } from './fields'
 import Schema from './Schema'
+import { Row } from '../models'
 
 export default class Scuole extends Schema {
     constructor() {
@@ -23,5 +25,17 @@ export default class Scuole extends Schema {
             new Field('Cellulare_referente', 'Cellulare referente'),
             new Field('Data_invalidazione', 'Data invalidazione'),
         ])
+    }
+
+    row_to_sheet_data(row: Row) {
+        const email = row.data?.Email_referente || ''
+        return {
+            schema: "archimede",
+            name: row.data?.Codice_meccanografico || '',
+            permittedEmails: email ? [email] : [],
+            commonData: {
+                Nome_scuola: row.data?.Nome_scuola || '',                
+            }
+        }
     }
 }

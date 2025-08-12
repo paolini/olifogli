@@ -16,6 +16,8 @@ import scanResults from './resolvers/scanResults'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
+import deleteSheets from './resolvers/deleteSheets'
+import addSheets from './resolvers/addSheets'
 import addRow from './resolvers/addRow'
 import patchRow from './resolvers/patchRow'
 import deleteRow from './resolvers/deleteRow'
@@ -49,6 +51,8 @@ export const resolvers: Resolvers = {
   Mutation: {
     addSheet,
     deleteSheet,
+    deleteSheets,
+    addSheets,
 
     addRow,
     patchRow,

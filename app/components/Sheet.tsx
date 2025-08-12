@@ -3,6 +3,7 @@ import { gql, useQuery, useMutation } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ObjectId } from 'bson'
+import Link from 'next/link'
 
 import Loading from '@/app/components/Loading'
 import Error from '@/app/components/Error'
@@ -29,6 +30,7 @@ const GET_SHEET = gql`
             }
             commonData
             ownerId
+            nRows
         }
     }
 `
@@ -45,10 +47,14 @@ export default function SheetElement({sheetId}: {
     if (!sheet || error) return <Error error={error} /> 
 
     return <>
-        <h1>{sheet.name} [{sheet.schema}]</h1>
+        <h1>{sheet.name} [
+            {sheet.schema} 
+            {} {profile.isAdmin 
+                ? <Link href={`/workbook/${sheet.workbook._id}`}>{sheet.workbook.name}</Link> 
+                : sheet.workbook.name}
+            ]</h1>
         <table>
             <tbody>
-            <tr><td>blocco:</td><td>{sheet.workbook.name}</td></tr>
             </tbody>
         </table>
         <SheetBody sheet={sheet} profile={profile} />

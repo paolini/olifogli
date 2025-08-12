@@ -1,4 +1,5 @@
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
+import { ApolloError, UserInputError, AuthenticationError, ForbiddenError } from 'apollo-server'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
