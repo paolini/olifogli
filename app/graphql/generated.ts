@@ -289,7 +289,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, permittedEmails: Array<string>, permittedIds: Array<ObjectId>, nRows: number, ownerId: ObjectId, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, permittedEmails: Array<string>, permittedIds: Array<ObjectId>, nRows: number, ownerId: ObjectId }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -695,10 +695,6 @@ export const GetSheetsDocument = gql`
     permittedEmails
     permittedIds
     nRows
-    workbook {
-      _id
-      name
-    }
     ownerId
   }
 }

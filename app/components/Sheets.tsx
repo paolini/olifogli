@@ -14,8 +14,7 @@ import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-gql`
-    query GetSheets($workbookId: ObjectId!) {
+const _ = gql`query GetSheets($workbookId: ObjectId!) {
         sheets(workbookId: $workbookId) {
             _id
             name
@@ -24,23 +23,19 @@ gql`
             permittedEmails
             permittedIds
             nRows
-            workbook {
-                _id
-                name
-            }
             ownerId
         }
     }
 `
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-gql`
+const __ = gql`
     mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permittedEmails: [String!]!) {
         addSheet(name: $name, schema: $schema, workbookId: $workbookId, permittedEmails: $permittedEmails) 
     }
 `
 
-const _ = gql`
+const ___ = gql`
     mutation DeleteSheets($ids: [ObjectId!]!) {
         deleteSheets(ids: $ids)
     }
