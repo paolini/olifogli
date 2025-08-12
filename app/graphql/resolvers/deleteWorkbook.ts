@@ -8,7 +8,7 @@ export default async function deleteWorkbook(_: unknown, { _id }: { _id: ObjectI
   check_admin(user)
 
   const sheets = await (await getSheetsCollection()).countDocuments({ workbookId: _id })
-  if (sheets > 0) throw new Error('Non puoi cancellare un blocco che contiene fogli')
+  if (sheets > 0) throw new Error('Non puoi cancellare una raccolta che contiene fogli')
 
   const collection = await getWorkbooksCollection()
   const res = await collection.deleteOne({ _id })

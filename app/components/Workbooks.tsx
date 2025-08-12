@@ -38,7 +38,7 @@ export default function Workbooks() {
   const workbooks = data?.workbooks ?? []
 
   return <div className="p-4 space-y-4">
-    <h1>Blocchi</h1>
+    <h1>Raccolte</h1>
     <table>
       <tbody>
       {workbooks.map((workbook) => (
@@ -66,7 +66,7 @@ function NewWorkbookForm() {
 
   return <div className="flex items-center gap-2">
     <Input value={name} setValue={setName} onEnter={createWorkbook} />
-    <Button disabled={!name || loading} onClick={createWorkbook}>Nuovo blocco</Button>
+    <Button disabled={!name || loading} onClick={createWorkbook}>Nuova raccolta</Button>
     <Error error={error} dismiss={reset} />
   </div>
 
