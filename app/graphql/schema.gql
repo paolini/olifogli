@@ -102,4 +102,14 @@ type Mutation {
   addWorkbook(name: String!): Workbook
   # New mutation to delete a workbook when empty
   deleteWorkbook(_id: ObjectId!): ObjectId
+
+  # Generic sheet update
+  updateSheet(
+    _id: ObjectId!
+    name: String
+    schema: String
+    permittedEmails: [String!]
+    permittedIds: [ObjectId!]
+    commonData: Data
+  ): Boolean
 }

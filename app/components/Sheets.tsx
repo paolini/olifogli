@@ -70,7 +70,15 @@ function SheetsTable({ workbookId, profile }: {
     if (!data) return <div>No data</div>;
     const sheets = data.sheets ?? [];
 
-    const emptySheetIds = sheets.filter((s:Sheet) => s.nRows === 0).map(s => s._id)
+    const emptySheetIds = sheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
+    const commonDataHeaders = sheets.reduce((acc, sheet) => {
+        if (sheet.commonData) {
+            Object.keys(sheet.commonData).forEach(key => {
+                if (!acc.includes(key)) acc.push(key)
+            })
+        }
+        return acc;
+    }, [] as string[])
 
     if (sheets.length === 0) return <div className="bg-alert">Nessun foglio disponibile</div>
 
@@ -78,17 +86,24 @@ function SheetsTable({ workbookId, profile }: {
         <table>
             <thead>
                 <tr>
-                    <th>Name</th>
+                    <th>Nome</th>
                     <th>Schema</th>
-                    <th>dati comuni</th>
+                    {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
                     <th>righe</th>
                     <th>email autorizzati</th>
-                    <td>id autorizzati</td>
+                    <th>id autorizzati</th>
                 </tr>
             </thead>
             <tbody>
                 {sheets.map(sheet => (
-                    sheet && <SheetRow key={sheet._id?.toString()} sheet={sheet} creationDisabled={creationId !== null} startCreation={sheetId => setCreationId(sheetId)} />
+                    sheet && 
+                    <SheetRow 
+                        key={sheet._id?.toString()} 
+                        sheet={sheet} 
+                        commonDataHeaders={commonDataHeaders}
+                        creationDisabled={creationId !== null} 
+                        startCreation={sheetId => setCreationId(sheetId)} 
+                    />
                 ))}
             </tbody>
         </table>
@@ -100,7 +115,7 @@ function SheetsTable({ workbookId, profile }: {
                     Elimina {emptySheetIds.length} {emptySheetIds.length === 1 ? 'foglio vuoto' : 'fogli vuoti'}
                 </Button> 
                 <Button variant="danger" disabled={sheets.length > 0 || deletingWorkbook} onClick={onDelete}>
-                    Elimina blocco
+                    Elimina raccolta
                 </Button>
           </div>
         }
@@ -121,10 +136,11 @@ function SheetsTable({ workbookId, profile }: {
 
 }
 
-function SheetRow({sheet, creationDisabled, startCreation}: {
-    sheet: Sheet, 
+function SheetRow({sheet, creationDisabled, startCreation, commonDataHeaders}: {
+    sheet: Partial<Sheet> & {_id: ObjectId}, 
     creationDisabled: boolean, 
-    startCreation: (id: ObjectId) => void
+    startCreation: (id: ObjectId) => void,
+    commonDataHeaders: string[]
 }) {
     return <tr key={sheet._id?.toString()}>
         <td>
@@ -133,10 +149,21 @@ function SheetRow({sheet, creationDisabled, startCreation}: {
         <td>
             {sheet.schema && schemas[sheet.schema].header}
         </td>
-        <td>{JSON.stringify(sheet.commonData)}</td>
+        {commonDataHeaders.map(header => 
+            <td key={header}>
+                {sheet.commonData ? sheet.commonData[header] : ''}
+            </td>
+        )}
         <td>{sheet.nRows}</td>
-        <td>{sheet.permittedEmails.join(' - ')}</td>
-        { sheet.schema === 'scuole' && <td><Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>crea fogli scuole</Button></td>} 
+        <td>{sheet.permittedEmails?.join(' - ') || ''}</td>
+        <td>{sheet.permittedIds?.join(' - ') || ''}</td>
+        { sheet.schema === 'scuole' && 
+            <td>
+                <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
+                    crea fogli scuole
+                </Button>
+            </td>
+        } 
     </tr>
 }
 

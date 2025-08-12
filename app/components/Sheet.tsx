@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { gql, useQuery, useMutation } from '@apollo/client'
+import { gql, useQuery } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ObjectId } from 'bson'
@@ -15,6 +15,7 @@ import { schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
+import SheetConfigure from './SheetConfigure'
 
 const GET_SHEET = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -116,7 +117,9 @@ function SheetBody({sheet,profile}: {
             </>
         }
         { tab !== 'table' && 
-            <Button onClick={() => setTab('table')}>Torna alla tabella</Button>
+            <Button className="mr-2 my-2" onClick={() => setTab('table')}>
+                Torna alla tabella
+            </Button>
         }
         { tab === 'csv' &&   
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
@@ -170,55 +173,3 @@ link.click();
 document.body.removeChild(link);
 }
 
-const DELETE_SHEET = gql`
-    mutation DeleteSheet($_id: ObjectId!) {
-        deleteSheet(_id: $_id)
-    }
-`;
-
-
-function SheetConfigure({sheet, profile}: {
-    sheet: Sheet
-    profile: User | null
-}) {
-    const router = useRouter()
-    const [danger_zone_active, setDangerZoneActive] = useState(false)
-    const [deleteSheet, {loading, error}] = useMutation<{deleteSheet:string}>(DELETE_SHEET)
-
-    if (error) return <tr className="error"><td colSpan={99}>Errore: {error.message}</td></tr>;
-
-    return <>
-        <table>
-            <thead>
-                <tr>
-                    <th>utente</th>
-                    <th>restrizione</th>
-                </tr>
-            </thead>
-            <tbody>
-                {sheet.permittedEmails.map(email => <tr key={email} className="ml-2">
-                    <td>email: {email}</td>
-                </tr>)}
-            </tbody>
-        </table>
-        <div style={{marginTop: '1em'}}>
-            <label>
-                <input type="checkbox" checked={danger_zone_active} onChange={e => setDangerZoneActive(e.target.checked)} />
-                <span style={{marginLeft: '0.5em'}}>zona pericolosa</span>
-            </label>
-            <div>
-                <Button variant="danger" disabled={loading || !danger_zone_active} onClick={() => doDelete()}>
-                    Elimina questo foglio
-                </Button>
-            </div>
-        </div>
-    </>
-
-    async function doDelete() {
-        console.log("Deleting sheet", sheet._id)
-        await deleteSheet({variables: {_id: sheet._id}})
-        console.log("Sheet deleted, redirecting to home")
-        router.push('/')
-    }
-    
-}

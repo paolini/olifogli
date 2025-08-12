@@ -25,6 +25,7 @@ import addRows from './resolvers/addRows'
 import deleteScan from './resolvers/deleteScan'
 import addWorkbook from './resolvers/addWorkbook'
 import deleteWorkbook from './resolvers/deleteWorkbook'
+import updateSheet from './resolvers/updateSheet'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -61,6 +62,7 @@ export const resolvers: Resolvers = {
     deleteScan,
     addWorkbook,
     deleteWorkbook,
+    updateSheet,
   },
 
   Timestamp,

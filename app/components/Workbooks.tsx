@@ -60,14 +60,14 @@ export default function Workbooks() {
 
 function NewWorkbookForm() {
   const [name, setName] = useState('')
-  const [addWorkbook, { loading, error, reset }] = useMutation(ADD_WORKBOOK, {
+  const [addWorkbook, { loading, error }] = useMutation(ADD_WORKBOOK, {
     refetchQueries: ['GetWorkbooks']
   })
 
   return <div className="flex items-center gap-2">
     <Input value={name} setValue={setName} onEnter={createWorkbook} />
     <Button disabled={!name || loading} onClick={createWorkbook}>Nuova raccolta</Button>
-    <Error error={error} dismiss={reset} />
+    <Error error={error} />
   </div>
 
   async function createWorkbook() {

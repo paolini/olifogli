@@ -43,6 +43,7 @@ export type Mutation = {
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   patchRow?: Maybe<Row>;
+  updateSheet?: Maybe<Scalars['Boolean']['output']>;
 };
 
 
@@ -107,6 +108,16 @@ export type MutationPatchRowArgs = {
   _id: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
   updatedOn: Scalars['Timestamp']['input'];
+};
+
+
+export type MutationUpdateSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
+  commonData?: InputMaybe<Scalars['Data']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  permittedEmails?: InputMaybe<Array<Scalars['String']['input']>>;
+  permittedIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+  schema?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Query = {
@@ -1317,6 +1328,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
+  updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
 };
 
 export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['ObjectId'], any> {

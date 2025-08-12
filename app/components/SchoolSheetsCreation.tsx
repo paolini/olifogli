@@ -9,7 +9,7 @@ import { gql } from '@apollo/client'
 
 type Job = {
     rowId: ObjectId|null,
-    sheet: Sheet|null,
+    sheet: Partial<Sheet>|null,
     name: string,
     permittedEmails: string[],
     commonData: Data,
@@ -24,7 +24,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
 }) {
     const { data: sheetsData, loading: sheetsLoading, error: sheetsError } = useGetSheetsQuery({ variables: { workbookId } })
     const { data: rowsData, loading: rowsLoading, error: rowsError } = useGetRowsQuery({ variables: { sheetId } })
-    const sheets: Sheet[]|undefined = sheetsData?.sheets
+    const sheets: Partial<Sheet>[]|undefined = sheetsData?.sheets
     const rows: Row[]|undefined = rowsData?.rows
 
     return <div className="space-y-2">
