@@ -13,7 +13,6 @@ import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
             _id
@@ -28,7 +27,6 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
     }
 `
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 const __ = gql`
     mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permittedEmails: [String!]!) {
         addSheet(name: $name, schema: $schema, workbookId: $workbookId, permittedEmails: $permittedEmails) 

@@ -41,12 +41,18 @@ export default function SheetConfigure({sheet, profile}: {
                 modifica
             </Button>}
         {edit && <>
-                <Button onClick={cancel}>
+                <Button className="mx-2" onClick={cancel}>
                     Annulla
                 </Button>
-                {} {canModifyData && <Button variant="danger" disabled={deleting} onClick={() => {confirm("Sei sicuro di voler eliminare questo foglio?") && doDelete()}}>
-                    Elimina questo foglio
-                </Button>}
+                {canModifyData && 
+                    <Button className="mx-2" variant="danger" disabled={deleting} onClick={() => {
+                        if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
+                            doDelete()
+                        }
+                        }}>
+                        Elimina questo foglio
+                    </Button>
+                }
         </>}
         <table>
         <thead>

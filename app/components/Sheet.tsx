@@ -53,9 +53,15 @@ export default function SheetElement({sheetId}: {
             {} {profile.isAdmin 
                 ? <Link href={`/workbook/${sheet.workbook._id}`}>{sheet.workbook.name}</Link> 
                 : sheet.workbook.name}
-            ]</h1>
-        <table>
+            ]
+        </h1>
+        <table className="my-2">
             <tbody>
+                {sheet.commonData && Object.entries(sheet.commonData).map(([key, value]) => (
+                    <tr key={key}>
+                        <td className="bg-gray-200">{key.replace('_', ' ')}</td>
+                        <td>{value as string || ''}</td>
+                    </tr>))}
             </tbody>
         </table>
         <SheetBody sheet={sheet} profile={profile} />

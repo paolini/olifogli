@@ -12,11 +12,13 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     const name = args.name
     const schema = args.schema
     const workbookId = args.workbookId
+    const now = new Date()
     const result = await collection.insertOne({ 
         name, 
         schema,
         workbookId,
         ownerId: user._id, 
+        createdAt: now,
         permittedEmails: args.permittedEmails || [],
         permittedIds: args.permittedIds || [],
         commonData: {},

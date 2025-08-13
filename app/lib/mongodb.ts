@@ -10,7 +10,6 @@ let clientPromise: Promise<MongoClient>;
 declare global {
     // Aggiungiamo un tipo globale per evitare errori multipli
     // durante lo sviluppo
-    // eslint-disable-next-line no-var
     var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 

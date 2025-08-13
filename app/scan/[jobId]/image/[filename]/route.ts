@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shee
 
     try {
         const file = await readFile(filePath);
-        return new NextResponse(file, {
+        return new NextResponse(new Uint8Array(file), {
             status: 200,
             headers: { 'Content-Type': 'image/png' },
         });
