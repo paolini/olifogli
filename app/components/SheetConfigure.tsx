@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from './Button'
 import Error from './Error'
-import { Sheet, User } from '@/app/graphql/generated'
+import { Sheet, useDeleteSheetMutation, User } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
 
 const DELETE_SHEET = gql`
@@ -22,17 +22,18 @@ export default function SheetConfigure({sheet, profile}: {
     profile: User | null
 }) {
     const router = useRouter()
-    const [deleteSheet, {loading: deleting, error: deleteError}] = useMutation<{deleteSheet:string}>(DELETE_SHEET)
+    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
     const [edit,setEdit] = useState(false)
     const [emails, setEmails] = useState<string[]>(sheet.permittedEmails || [])
     const [newEmail, setNewEmail] = useState('')
     const [newFieldKey, setNewFieldKey] = useState('')
     const [newFieldValue, setNewFieldValue] = useState('')
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
-    const [updateSheet, {loading: updating, error: updateError}] = useMutation(UPDATE_SHEET)
+    const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
+    const canModifyData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
 
-    const error = deleteError || updateError
-    if (error) return <Error error={error}/>
+    if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
+    if (updateError) return <Error error={updateError} dismiss={updateReset }/>
 
     return <>
         {!edit && 
@@ -43,9 +44,9 @@ export default function SheetConfigure({sheet, profile}: {
                 <Button onClick={cancel}>
                     Annulla
                 </Button>
-                {} <Button variant="danger" disabled={deleting} onClick={() => {confirm("Sei sicuro di voler eliminare questo foglio?") && doDelete()}}>
+                {} {canModifyData && <Button variant="danger" disabled={deleting} onClick={() => {confirm("Sei sicuro di voler eliminare questo foglio?") && doDelete()}}>
                     Elimina questo foglio
-                </Button>
+                </Button>}
         </>}
         <table>
         <thead>
@@ -87,13 +88,13 @@ export default function SheetConfigure({sheet, profile}: {
                 <tr>
                     <th className="bg-gray-200">campo</th>
                     <th className="bg-gray-200">valore</th>
-                    {edit && <th className="bg-gray-200"></th>}
+                    {edit && canModifyData && <th className="bg-gray-200"></th>}
                 </tr>
             </thead>
             <tbody>
                 {Object.entries(commonData as Data).map(([key,value])=> <tr key={key}>
                     <th className="bg-gray-200">{key.replace('_',' ')}</th>
-                    {edit ? (
+                    {edit && canModifyData ? (
                         <td>
                             <input
                                 type="text"
@@ -105,15 +106,15 @@ export default function SheetConfigure({sheet, profile}: {
                     ) : (
                         <td>{value}</td>
                     )}
-                    {edit && (
+                    {edit && canModifyData && 
                         <td>
                             <Button variant="danger" disabled={updating} onClick={() => removeCommonDataField(key)}>
                                 rimuovi
                             </Button>
                         </td>
-                    )}
+                    }
                 </tr>)}
-                {edit && (
+                {edit && canModifyData &&
                     <tr>
                         <td>
                             <input
@@ -137,7 +138,7 @@ export default function SheetConfigure({sheet, profile}: {
                             </Button>
                         </td>
                     </tr>
-                )}
+                }
             </tbody>
         </table>
     </>

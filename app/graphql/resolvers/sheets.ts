@@ -3,6 +3,7 @@ import { get_authenticated_user } from './utils'
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { QuerySheetsArgs, Sheet } from '../generated'
 import type { GraphQLResolveInfo, SelectionSetNode } from 'graphql'
+import workbook from './workbook'
 
 function selectionHasField(selectionSet: SelectionSetNode | undefined, name: string, info: GraphQLResolveInfo): boolean {
   if (!selectionSet) return false
@@ -29,9 +30,19 @@ export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs
     const needWorkbook = selectionHasField(info.fieldNodes[0]?.selectionSet, 'workbook', info)
     const needNRows = selectionHasField(info.fieldNodes[0]?.selectionSet, 'nRows', info)
 
-    const pipeline: object[] = [
-        { $match: { workbookId } },
-    ]
+    const pipeline: object[] = []
+    
+    if (workbookId) {
+        pipeline.push({ $match: { workbookId } })
+    }
+
+    if (!user.isAdmin) {
+        pipeline.push({ $match: { $or: [
+            { ownerId: user._id },
+            { permittedEmails: user.email },
+            { permittedIds: user._id },
+        ] } })
+    }
 
     if (needNRows) {
         // Batch compute counts for all matched sheets with a single lookup

@@ -14,17 +14,23 @@ interface GraphQLError {
 
 export type ErrorType = Error
 
-export default function Error({ error }: { error: ErrorType|string|null|undefined }) {
+export default function Error({ error, dismiss }: { 
+    error: ErrorType|string|null|undefined 
+    dismiss?: () => void
+}) {
     const [showDetails, setShowDetails] = useState(false)
     if (!error) return null // No error to display
 
     const { message, details } = parse(error)
 
     return <div className="p-2 text-red-600 bg-red-100 border border-red-400">
-        {details &&<span className="mr-2 cursor-pointer" onClick={() => setShowDetails(!showDetails)}>
+        {details && <span className="mr-2 cursor-pointer" onClick={() => setShowDetails(!showDetails)}>
             {showDetails ? '▼' : '▶' }
         </span>}
         <b>{message}</b>
+        {dismiss && <span className="ml-2 cursor-pointer font-bold hover:text-red-800" onClick={dismiss}>
+            ✕
+        </span>}
         {showDetails && <>
             <hr />
             {details}

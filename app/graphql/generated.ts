@@ -159,7 +159,7 @@ export type QuerySheetArgs = {
 
 
 export type QuerySheetsArgs = {
-  workbookId: Scalars['ObjectId']['input'];
+  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
 };
 
 
@@ -295,8 +295,17 @@ export type DeleteSheetMutationVariables = Exact<{
 
 export type DeleteSheetMutation = { __typename?: 'Mutation', deleteSheet?: boolean | null };
 
+export type UpdateSheetMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+  permittedEmails?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  commonData?: InputMaybe<Scalars['Data']['input']>;
+}>;
+
+
+export type UpdateSheetMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
+
 export type GetSheetsQueryVariables = Exact<{
-  workbookId: Scalars['ObjectId']['input'];
+  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
 }>;
 
 
@@ -696,8 +705,45 @@ export function useDeleteSheetMutation(baseOptions?: Apollo.MutationHookOptions<
 export type DeleteSheetMutationHookResult = ReturnType<typeof useDeleteSheetMutation>;
 export type DeleteSheetMutationResult = Apollo.MutationResult<DeleteSheetMutation>;
 export type DeleteSheetMutationOptions = Apollo.BaseMutationOptions<DeleteSheetMutation, DeleteSheetMutationVariables>;
+export const UpdateSheetDocument = gql`
+    mutation UpdateSheet($_id: ObjectId!, $permittedEmails: [String!], $commonData: Data) {
+  updateSheet(
+    _id: $_id
+    permittedEmails: $permittedEmails
+    commonData: $commonData
+  )
+}
+    `;
+export type UpdateSheetMutationFn = Apollo.MutationFunction<UpdateSheetMutation, UpdateSheetMutationVariables>;
+
+/**
+ * __useUpdateSheetMutation__
+ *
+ * To run a mutation, you first call `useUpdateSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSheetMutation, { data, loading, error }] = useUpdateSheetMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *      permittedEmails: // value for 'permittedEmails'
+ *      commonData: // value for 'commonData'
+ *   },
+ * });
+ */
+export function useUpdateSheetMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSheetMutation, UpdateSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateSheetMutation, UpdateSheetMutationVariables>(UpdateSheetDocument, options);
+      }
+export type UpdateSheetMutationHookResult = ReturnType<typeof useUpdateSheetMutation>;
+export type UpdateSheetMutationResult = Apollo.MutationResult<UpdateSheetMutation>;
+export type UpdateSheetMutationOptions = Apollo.BaseMutationOptions<UpdateSheetMutation, UpdateSheetMutationVariables>;
 export const GetSheetsDocument = gql`
-    query GetSheets($workbookId: ObjectId!) {
+    query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
     _id
     name
@@ -727,7 +773,7 @@ export const GetSheetsDocument = gql`
  *   },
  * });
  */
-export function useGetSheetsQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables> & ({ variables: GetSheetsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+export function useGetSheetsQuery(baseOptions?: Apollo.QueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
       }
@@ -1344,7 +1390,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   scanJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
   scanResults?: Resolver<Array<ResolversTypes['ScanResults']>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
-  sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetsArgs, 'workbookId'>>;
+  sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;

@@ -14,7 +14,7 @@ import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-const _ = gql`query GetSheets($workbookId: ObjectId!) {
+const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
             _id
             name
@@ -41,17 +41,17 @@ const ___ = gql`
     }
 `
 
-export default function Sheets({ workbookId }: { workbookId: ObjectId }) {
+export default function Sheets({ workbookId }: { workbookId?: ObjectId }) {
     const profile = useProfile()
     return <div className="p-4">
         <h1>Fogli</h1>
         {profile && <SheetsTable workbookId={workbookId} profile={profile}/>}
-        {profile?.isAdmin && <SheetForm workbookId={workbookId} />}
+        {workbookId && profile?.isAdmin && <SheetForm workbookId={workbookId} />}
     </div>;
 }
 
 function SheetsTable({ workbookId, profile }: { 
-    workbookId: ObjectId
+    workbookId?: ObjectId
     profile?: { isAdmin: boolean }
 }) {
     const router = useRouter()
@@ -96,10 +96,11 @@ function SheetsTable({ workbookId, profile }: {
             </thead>
             <tbody>
                 {sheets.map(sheet => (
-                    sheet && 
+                    sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
                     <SheetRow 
                         key={sheet._id?.toString()} 
                         sheet={sheet} 
+                        profile={profile}
                         commonDataHeaders={commonDataHeaders}
                         creationDisabled={creationId !== null} 
                         startCreation={sheetId => setCreationId(sheetId)} 
@@ -120,7 +121,7 @@ function SheetsTable({ workbookId, profile }: {
           </div>
         }
 
-        {creationId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
+        {creationId && workbookId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
     </>
 
     async function deleteEmptySheets() {
@@ -130,14 +131,16 @@ function SheetsTable({ workbookId, profile }: {
     }
 
     async function onDelete() {
+      if (!workbookId) return
       await deleteWorkbook({ variables: { _id: workbookId } })
       router.back()
     }
 
 }
 
-function SheetRow({sheet, creationDisabled, startCreation, commonDataHeaders}: {
+function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders}: {
     sheet: Partial<Sheet> & {_id: ObjectId}, 
+    profile?: {isAdmin: boolean},
     creationDisabled: boolean, 
     startCreation: (id: ObjectId) => void,
     commonDataHeaders: string[]
@@ -157,7 +160,7 @@ function SheetRow({sheet, creationDisabled, startCreation, commonDataHeaders}: {
         <td>{sheet.nRows}</td>
         <td>{sheet.permittedEmails?.join(' - ') || ''}</td>
         <td>{sheet.permittedIds?.join(' - ') || ''}</td>
-        { sheet.schema === 'scuole' && 
+        { sheet.schema === 'scuole' && profile?.isAdmin && 
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
                     crea fogli scuole

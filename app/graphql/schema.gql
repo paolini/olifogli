@@ -77,7 +77,7 @@ type Query {
   config: Config
   workbooks: [Workbook]
   workbook(workbookId: ObjectId!): Workbook
-  sheets(workbookId: ObjectId!): [Sheet!]!
+  sheets(workbookId: ObjectId): [Sheet!]!
   sheet(sheetId: ObjectId!): Sheet
   rows(sheetId: ObjectId!): [Row!]!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!

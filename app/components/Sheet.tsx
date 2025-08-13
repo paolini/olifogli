@@ -90,7 +90,7 @@ function SheetBody({sheet,profile}: {
 
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
-    const user_can_configure = profile && (profile.isAdmin || sheet.ownerId === profile._id)
+    const user_can_configure = true // profile && (profile.isAdmin || sheet.ownerId === profile._id)
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />

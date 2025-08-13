@@ -1,14 +1,14 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
-import { get_authenticated_user, check_user_can_edit_sheet, check_admin } from './utils'
+import { get_authenticated_user, check_user_can_edit_sheet, check_admin, check_user_can_update_sheet } from './utils'
 import { MutationUpdateSheetArgs } from '../generated'
 
 export default async function updateSheet(_: unknown, args: MutationUpdateSheetArgs, context: Context): Promise<boolean> {
   const user = await get_authenticated_user(context)
-  // Admins can update any; owners can update their own; others blocked by check_user_can_edit_sheet
   const sheets = await getSheetsCollection()
   const sheet = await sheets.findOne({ _id: args._id })
-  check_user_can_edit_sheet(user, sheet as any)
+  
+  check_user_can_update_sheet(user, sheet, args)
 
   const update: Record<string, unknown> = {}
   if (typeof args.name === 'string') update.name = args.name
