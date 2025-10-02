@@ -81,31 +81,23 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
     }
 
     function cambiaCriterioOrdinamento(i: number, value: string) {
-        if (value == "") {
-          criteria.setCriteriOrdina(criteria.criteriOrdina.slice(0,i))
-        } else {
-          criteria.setCriteriOrdina([...criteria.criteriOrdina.slice(0,i), stringToCriterio(value)])
-        }
+      const slice = criteria.criteriOrdina.slice(0,i)
+      if (value == "") {
+          criteria.setCriteriOrdina([...slice])
+      } else {
+          criteria.setCriteriOrdina([...slice, stringToCriterio(value)])
+      }
     }
 
     function cambiaCriterioCerca(i: number, value: string) {
-        if (value == "") {
-          criteria.setCriteriCerca(criteria.criteriCerca.slice(0,i))
-        } else {
+      const slice = criteria.criteriCerca.slice(0,i)
+      if (value == "") {
+          criteria.setCriteriCerca([...slice])
+      } else {
           const field = name_to_field_dict[value]
-          criteria.setCriteriCerca([...criteria.criteriCerca.slice(0,i), {campo:field, value:""}])
-        }
+          criteria.setCriteriCerca([...slice, {campo:field, value:""}])
+      }
     }
-}
-
-function CambiaOrdine({ field, type, criteria } : { 
-  field: Field,
-  type: string,
-  criteria: Criteria
-} ) {
-    if ([ "ChoiceAnswer", "NumberAnswer", "ScoreAnswer", "Computed" ].includes(type))
-        return <></>
-    return <span style={{cursor: "pointer"}} onClick={() => aggiornaCriteriOrdina(criteria, field)}>&plusmn;</span>
 }
 
 export function filtraEOrdina(criteria: Criteria, rows: Row[]): Row[] {
@@ -172,28 +164,6 @@ function confronta(campo: Field, camporow1: string, camporow2: string): number {
         (camporow1.toUpperCase() < camporow2.toUpperCase())?  -1 : 0
     )
 }
-
-function aggiornaCriteriOrdina({criteriOrdina, setCriteriOrdina}: Criteria, campo: Field): void {
-    let i: number
-    let cera: boolean = false
-    const critOrdina: CriterioOrd[] = [...criteriOrdina]
-
-    for (i = 0; i < critOrdina.length; i++) {
-      if (critOrdina[i].campo == campo) {
-        cera = true
-        if (critOrdina[i]["direzione"] > 0) {
-          critOrdina[i]["direzione"] = -1
-          setCriteriOrdina([...critOrdina])
-        } else {
-          setCriteriOrdina([...critOrdina.slice(0,i), ...critOrdina.slice(i + 1)])
-        break
-        }
-      }
-    }
-    if (cera == false) {
-      setCriteriOrdina([...critOrdina, {campo: campo, direzione: 1}])
-    }
-  }
 
 function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, campo: Field, value: string): void {
     let i: number
