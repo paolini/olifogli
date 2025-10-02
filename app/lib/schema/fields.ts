@@ -4,18 +4,25 @@ export class Field {
     css_style: string // used in CSS
     editable: boolean
     widget: string // identify the HTML input widget
+    alternativeNames: string[] // alternative names for CSV column matching
 
-    constructor(name: string, header?: string) {
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
         this.name = name
         this.header = header || name
         this.css_style = `field-${this.name}`
         this.editable = true
         this.widget = 'Input'
+        this.alternativeNames = alternativeNames || []
     }
 
     add_css_style(style: string) {
         this.css_style += ` ${style}`
         return this
+    }
+
+    // Get all possible names for this field (main name + alternatives)
+    getAllNames(): string[] {
+        return [this.name, this.header, ...this.alternativeNames]
     }
 
     clean(value: string): string {
@@ -28,8 +35,8 @@ export class Field {
 }
     
 export class ComputedField extends Field {
-    constructor(name: string) {
-        super(name)
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
+        super(name, header, alternativeNames)
         this.editable = false
     }
 
@@ -39,24 +46,24 @@ export class ComputedField extends Field {
 }
 
 export class ChoiceAnswerField extends Field {
-    constructor(name: string, header?: string) {
-        super(name, header)
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
+        super(name, header, alternativeNames)
         this.css_style += ` field-ChoiceAnswer`
         this.widget = 'ChoiceInput'
     }
 }
 
 export class NumericAnswerField extends Field {
-    constructor(name: string, header?: string) {
-        super(name, header)
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
+        super(name, header, alternativeNames)
         this.css_style += ` field-NumericAnswer`
         this.widget = 'NumericInput'
     }
 }
 
 export class ScoreAnswerField extends Field {
-    constructor(name: string, header?: string) {
-        super(name, header)
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
+        super(name, header, alternativeNames)
         this.css_style += ` field-ScoreAnswer`
         this.widget = 'ScoreInput'
     }

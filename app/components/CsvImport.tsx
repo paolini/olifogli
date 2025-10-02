@@ -33,6 +33,97 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [data, setData] = useState<string[][]>([])
   const [error, setError] = useState<string | null>(null)
 
+  // Function to reorder CSV columns based on header matching with schema fields
+  function reorderColumnsToMatchSchema(csvData: string[][]): string[][] {
+    if (csvData.length === 0) return csvData;
+    
+    const headerRow = csvData[0];
+    const dataRows = csvData.slice(1);
+    
+    // Create a mapping from all possible field names (including alternatives) to their preferred positions
+    const fieldNameToIndex = new Map<string, number>();
+    schema.fields.forEach((field, index) => {
+      // Add main name and all alternative names
+      field.getAllNames().forEach(name => {
+        fieldNameToIndex.set(name.toLowerCase(), index);
+      });
+    });
+    
+    // Find the best matching order for CSV columns
+    const columnMapping: number[] = [];
+    const usedIndices = new Set<number>();
+    
+    // First pass: exact matches
+    for (let csvCol = 0; csvCol < headerRow.length; csvCol++) {
+      const csvHeader = headerRow[csvCol].toLowerCase().trim();
+      const schemaIndex = fieldNameToIndex.get(csvHeader);
+      
+      if (schemaIndex !== undefined && !usedIndices.has(schemaIndex)) {
+        columnMapping[schemaIndex] = csvCol;
+        usedIndices.add(schemaIndex);
+      }
+    }
+    
+    // Second pass: partial matches (contains)
+    for (let csvCol = 0; csvCol < headerRow.length; csvCol++) {
+      const csvHeader = headerRow[csvCol].toLowerCase().trim();
+      
+      // Skip if this CSV column is already mapped
+      if (columnMapping.includes(csvCol)) continue;
+      
+      for (let schemaIndex = 0; schemaIndex < schema.fields.length; schemaIndex++) {
+        if (usedIndices.has(schemaIndex)) continue;
+        
+        const field = schema.fields[schemaIndex];
+        const allFieldNames = field.getAllNames().map(name => name.toLowerCase());
+        
+        // Check if any field name is contained in CSV header or vice versa
+        const hasMatch = allFieldNames.some(fieldName => 
+          csvHeader.includes(fieldName) || fieldName.includes(csvHeader)
+        );
+        
+        if (hasMatch) {
+          columnMapping[schemaIndex] = csvCol;
+          usedIndices.add(schemaIndex);
+          break;
+        }
+      }
+    }
+    
+    // Fill remaining positions with unmapped CSV columns
+    let nextAvailableCsvCol = 0;
+    for (let schemaIndex = 0; schemaIndex < Math.max(schema.fields.length, headerRow.length); schemaIndex++) {
+      if (columnMapping[schemaIndex] === undefined) {
+        // Find next unmapped CSV column
+        while (nextAvailableCsvCol < headerRow.length && columnMapping.includes(nextAvailableCsvCol)) {
+          nextAvailableCsvCol++;
+        }
+        if (nextAvailableCsvCol < headerRow.length) {
+          columnMapping[schemaIndex] = nextAvailableCsvCol;
+          nextAvailableCsvCol++;
+        }
+      }
+    }
+    
+    // Reorder all rows according to the mapping
+    const reorderedData: string[][] = [];
+    
+    for (const row of csvData) {
+      const reorderedRow: string[] = [];
+      for (let schemaIndex = 0; schemaIndex < Math.max(schema.fields.length, row.length); schemaIndex++) {
+        const csvIndex = columnMapping[schemaIndex];
+        if (csvIndex !== undefined && csvIndex < row.length) {
+          reorderedRow[schemaIndex] = row[csvIndex];
+        } else {
+          reorderedRow[schemaIndex] = '';
+        }
+      }
+      reorderedData.push(reorderedRow);
+    }
+    
+    return reorderedData;
+  }
+
   return <div className="p-4 border rounded-lg shadow-md">
       Caricamento di dati tramite file CSV  &nbsp; &nbsp;
         <input type="file" 
@@ -59,6 +150,11 @@ export default function CsvImport({schemaName, sheetId, done}:{
         </button>
       { error && <Error error={error} />}
       <br />
+      <small className="text-gray-600">
+        Le colonne vengono automaticamente riordinate in base alle intestazioni della prima riga del CSV. 
+        Puoi comunque modificare l'ordine manualmente dopo il caricamento.
+      </small>
+      <br />
       { data.length > 0 
         && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows} done={done}/>
         }
@@ -73,7 +169,9 @@ export default function CsvImport({schemaName, sheetId, done}:{
       header: false, // Se il CSV ha intestazioni
       skipEmptyLines: true,
       complete: (result) => {
-        setData(result.data.map(row => Object.values(row)));
+        const rawData = result.data.map(row => Object.values(row));
+        const reorderedData = reorderColumnsToMatchSchema(rawData);
+        setData(reorderedData);
       },
       error: (error) => {
         setError(`Errore nel parsing del CSV: ${error}`);
@@ -109,7 +207,9 @@ export default function CsvImport({schemaName, sheetId, done}:{
 
   async function handlePasteCsv() {
     const text = await navigator.clipboard.readText()
-    setData(text.split('\n').map(row => row.split('\t')))
+    const rawData = text.split('\n').map(row => row.split('\t'))
+    const reorderedData = reorderColumnsToMatchSchema(rawData);
+    setData(reorderedData)
   }
 }
 
