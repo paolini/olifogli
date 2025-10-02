@@ -21,13 +21,18 @@ export type User = {
     lastLogin?: Date
 }
 
+export type Permission = {
+    email?: string
+    userId?: ObjectId
+    role: 'admin' | 'editor'
+}
+
 export type Sheet = {
     _id: ObjectId
     name: string
     schema: string
     ownerId: ObjectId
-    permittedEmails: string[]
-    permittedIds: ObjectId[]
+    permissions: Permission[]
     workbookId: ObjectId
     commonData: Record<string, string>
     createdAt: Date

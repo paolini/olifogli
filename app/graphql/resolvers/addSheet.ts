@@ -13,14 +13,21 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     const schema = args.schema
     const workbookId = args.workbookId
     const now = new Date()
+    
+    // Converti PermissionInput a Permission
+    const permissions = (args.permissions || []).map(p => ({
+        email: p.email || undefined,
+        userId: p.userId || undefined,
+        role: p.role as 'admin' | 'editor'
+    }))
+    
     const result = await collection.insertOne({ 
         name, 
         schema,
         workbookId,
         ownerId: user._id, 
         createdAt: now,
-        permittedEmails: args.permittedEmails || [],
-        permittedIds: args.permittedIds || [],
+        permissions,
         commonData: {},
     })
     if (!result.acknowledged) {
