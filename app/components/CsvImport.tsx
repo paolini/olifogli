@@ -152,7 +152,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
       <br />
       <small className="text-gray-600">
         Le colonne vengono automaticamente riordinate in base alle intestazioni della prima riga del CSV. 
-        Puoi comunque modificare l'ordine manualmente dopo il caricamento.
+        Puoi comunque modificare l&apos;ordine manualmente dopo il caricamento.
       </small>
       <br />
       { data.length > 0 

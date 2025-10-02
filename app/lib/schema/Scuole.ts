@@ -1,4 +1,3 @@
-import {ObjectId} from 'bson'
 import { Field } from './fields'
 import Schema from './Schema'
 import { Row } from '../models'
