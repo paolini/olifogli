@@ -23,8 +23,11 @@ const GET_SHEET = gql`
             _id
             name
             schema
-            permittedEmails
-            permittedIds
+            permissions {
+                email
+                userId
+                role
+            }
             workbook {
                 _id
                 name

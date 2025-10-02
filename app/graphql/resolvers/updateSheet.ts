@@ -13,8 +13,13 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
   const update: Record<string, unknown> = {}
   if (typeof args.name === 'string') update.name = args.name
   if (typeof args.schema === 'string') update.schema = args.schema
-  if (Array.isArray(args.permittedEmails)) update.permittedEmails = Array.from(new Set(args.permittedEmails.map(e => e.trim()).filter(Boolean)))
-  if (Array.isArray(args.permittedIds)) update.permittedIds = args.permittedIds
+  if (args.permissions && Array.isArray(args.permissions)) {
+    update.permissions = args.permissions.map(p => ({
+      email: p.email || undefined,
+      userId: p.userId || undefined,
+      role: p.role as 'admin' | 'editor'
+    }))
+  }
   if (args.commonData && typeof args.commonData === 'object') update.commonData = args.commonData
 
   if (Object.keys(update).length === 0) return true

@@ -19,8 +19,11 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
             name
             schema
             commonData
-            permittedEmails
-            permittedIds
+            permissions {
+                email
+                userId
+                role
+            }
             nRows
             ownerId
         }
@@ -28,8 +31,8 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
 `
 
 const __ = gql`
-    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permittedEmails: [String!]!) {
-        addSheet(name: $name, schema: $schema, workbookId: $workbookId, permittedEmails: $permittedEmails) 
+    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
+        addSheet(name: $name, schema: $schema, workbookId: $workbookId, permissions: $permissions) 
     }
 `
 
@@ -88,8 +91,7 @@ function SheetsTable({ workbookId, profile }: {
                     <th>Schema</th>
                     {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
                     <th>righe</th>
-                    <th>email autorizzati</th>
-                    <th>id autorizzati</th>
+                    <th>permessi</th>
                 </tr>
             </thead>
             <tbody>
@@ -156,8 +158,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
             </td>
         )}
         <td>{sheet.nRows}</td>
-        <td>{sheet.permittedEmails?.join(' - ') || ''}</td>
-        <td>{sheet.permittedIds?.join(' - ') || ''}</td>
+        <td>{sheet.permissions?.map(p => `${p.email || 'ID:' + p.userId} (${p.role})`).join(', ') || ''}</td>
         { sheet.schema === 'scuole' && profile?.isAdmin && 
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
@@ -195,7 +196,7 @@ function SheetForm({ workbookId }: { workbookId: ObjectId }) {
             name,
             schema: schema,
             workbookId,
-            permittedEmails: []
+            permissions: []
         }})
         setName('')
         setSchema('')

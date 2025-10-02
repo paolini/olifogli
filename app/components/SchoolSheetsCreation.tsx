@@ -1,6 +1,6 @@
 import { ObjectId } from 'bson'
 import { useEffect, useState } from 'react'
-import { useGetSheetsQuery, useGetRowsQuery, Row, Sheet, useAddSheetsMutation } from '../graphql/generated'
+import { useGetSheetsQuery, useGetRowsQuery, Row, Sheet, useAddSheetsMutation, Permission } from '../graphql/generated'
 import Error from './Error'
 import Button from './Button'
 import { Data } from '../lib/models'
@@ -11,7 +11,7 @@ type Job = {
     rowId: ObjectId|null,
     sheet: Partial<Sheet>|null,
     name: string,
-    permittedEmails: string[],
+    permissions: Permission[],
     commonData: Data,
     message?: string,
     selected?: boolean
@@ -49,15 +49,23 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                 jobs[job.name] = {
                     ...job,
                     message: 'crea',
-                    selected: job.permittedEmails.length > 0
+                    selected: job.permissions.length > 0
                 }
             } else {
                 if (existing.message === 'crea') {
                     existing.rowId = job.rowId
-                    existing.permittedEmails = [...new Set(
-                        [   ...existing.permittedEmails, 
-                            ...job.permittedEmails
-                        ]).values()]
+                    // Merge permissions avoiding duplicates
+                    const mergedPermissions = [...existing.permissions]
+                    for (const newPerm of job.permissions) {
+                        const exists = mergedPermissions.some(p => 
+                            (p.email && newPerm.email && p.email === newPerm.email) ||
+                            (p.userId && newPerm.userId && p.userId.equals(newPerm.userId))
+                        )
+                        if (!exists) {
+                            mergedPermissions.push(newPerm)
+                        }
+                    }
+                    existing.permissions = mergedPermissions
                     existing.commonData = {
                         ...existing.commonData, 
                         ...job.commonData}
@@ -75,7 +83,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                 sheet,
                 rowId: null,
                 name: sheet.name || '',
-                permittedEmails: sheet.permittedEmails || [],
+                permissions: sheet.permissions || [],
                 commonData: {...sheet.commonData}
             })
         }
@@ -86,7 +94,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
             addJob({
                 rowId: row._id,
                 name,
-                permittedEmails: email ? [email] : [],
+                permissions: email ? [{ email, role: 'editor' }] : [],
                 sheet: null,
                 commonData: {
                     Nome_scuola: row.data?.Nome_scuola || '',
@@ -155,7 +163,7 @@ function Process({jobsCallback, workbookId, sheetId}: {
                     {job.name}
                 </td>
                 <td>
-                    {job.permittedEmails.join(', ')}
+                    {job.permissions.map(p => `${p.email || 'ID:' + p.userId} (${p.role})`).join(', ')}
                 </td>
                 <td>
                     {job.commonData?.Nome_scuola}
@@ -175,8 +183,7 @@ function Process({jobsCallback, workbookId, sheetId}: {
                     schema: "archimede",
                     workbookId,
                     name: job.name,
-                    permittedEmails: job.permittedEmails,
-                    permittedIds: [],
+                    permissions: job.permissions,
                     commonData: job.commonData,
                 }))
         }})

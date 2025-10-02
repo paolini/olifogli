@@ -9,14 +9,22 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
     check_admin(user)
     const collection = await getSheetsCollection()
     const now = new Date()
-    const result = await collection.insertMany(sheets.map(sheet => ({
-        commonData: {},
-        ...sheet,
-        ownerId: user._id,
-        permittedEmails: sheet.permittedEmails || [],
-        permittedIds: sheet.permittedIds || [],
-        createdAt: now,
-    })))
+    const result = await collection.insertMany(sheets.map(sheet => {
+        // Converti PermissionInput a Permission
+        const permissions = (sheet.permissions || []).map(p => ({
+            email: p.email || undefined,
+            userId: p.userId || undefined,
+            role: p.role as 'admin' | 'editor'
+        }))
+        
+        return {
+            commonData: {},
+            ...sheet,
+            ownerId: user._id,
+            permissions,
+            createdAt: now,
+        }
+    }))
     if (!result.acknowledged) throw new Error("Failed to add sheets")
     return true
 }

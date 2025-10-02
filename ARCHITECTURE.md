@@ -1,65 +1,3 @@
-# Architettura del Progetto Olifogli
-
-## Overview
-
-**Olifogli** è un sistema web per la gestione di fogli elettronici e acquisizione OMR (Optical Mark Recognition) utilizzato per le Olimpiadi Scientifiche. Il sistema permette la creazione, gestione e condivisione di fogli dati organizzati in workbook, con funzionalità avanzate di importazione CSV e acquisizione automatica di questionari cartacei tramite scansione.
-
-### V### Troubleshooting
-
-### Problemi Comuni
-1. **MongoDB Connection**: Verificare `MONGODB_URI` e network Docker
-2. **OAuth Errors**: Controllare credenziali Olimanager e `NEXTAUTH_URL`
-3. **OMR Processing**: Verificare worker container `paolini/oliscan` e volumi condivisi
-4. **File Upload**: Controllare permessi directory spool e mapping volumi Docker
-
-### Debug Mode
-```bash
-# Development locale
-npm run dev
-
-# Controllo container produzione
-docker-compose logs app
-docker-compose logs worker
-docker-compose logs db
-
-# Monitoring directory condivise
-docker exec -it olifogli-app-1 ls -la /app/spool
-docker exec -it olifogli-worker-1 ls -la /app/data
-```
-- **Versione**: 0.8.6
-- **Framework**: Next.js 15 con App Router
-- **Linguaggio**: TypeScript
-
-## Stack Tecnologico
-
-### Frontend
-- **Framework**: Next.js 15.2.1 con React 19
-- **Linguaggio**: TypeScript 5
-- **Styling**: Tailwind CSS 3.4.1
-- **State Management**: Apollo Client per GraphQL
-- **UI Components**: Custom components + Lucide React per icone
-- **Autenticazione**: NextAuth.js 4.24.11
-
-### Backend
-- **Runtime**: Node.js 20
-- **API**: GraphQL con Apollo Server
-- **Database**: MongoDB 6.12.0
-- **Autenticazione**: OAuth2 con integrazione Olimanager
-- **File Processing**: Supporto CSV e upload file
-
-### Worker e Processing
-- **Linguaggio**: Python con OMRChecker
-- **Container**: Immagine Docker separata (`paolini/oliscan:latest`)
-- **Elaborazione**: Conversione PDF→PNG e riconoscimento OMR
-- **Queue**: File system based (spool directory condivisa)
-- **Storage**: Directory condivise tramite Docker volumes
-
-### Deployment
-- **Containerizzazione**: Multi-container Docker setup
-- **Orchestrazione**: Docker Compose con 3 servizi
-- **Containers**: app (`paolini/olifogli`), worker (`paolini/oliscan`), database (MongoDB)
-- **Environment**: Standalone Next.js build
-
 ## Architettura del Sistema
 
 ### Struttura del Progetto
@@ -112,14 +50,8 @@ olifogli/
 ```typescript
 {
   _id: ObjectId
-  name: string
-  schema: string               // Tipo di schema (Archimede, Distrettuale, etc.)
-  ownerId: ObjectId
-  workbookId: ObjectId
-  permittedEmails: string[]    // Email autorizzate
-  permittedIds: ObjectId[]     // User ID autorizzati
-  commonData: Record<string, string>
   createdAt: Date
+  permissions: Permission[]  // Sistema di autorizzazioni strutturato
 }
 ```
 
@@ -193,7 +125,7 @@ olifogli/
 - **Admin Rights**: Basato su `ADMIN_EMAILS` environment variable
 
 ### Security Features
-- Email-based access control per sheet
+- Structured permissions system per sheet with roles (admin/editor)
 - Owner-based permissions
 - Admin override capabilities
 

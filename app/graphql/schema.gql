@@ -9,12 +9,23 @@ type Workbook {
   ownerId: ObjectId
 }
 
+type Permission {
+  email: String
+  userId: ObjectId
+  role: String!
+}
+
+input PermissionInput {
+  email: String
+  userId: ObjectId
+  role: String!
+}
+
 type Sheet {
   _id: ObjectId!
   name: String!
   schema: String!
-  permittedEmails: [String!]!
-  permittedIds: [ObjectId!]!
+  permissions: [Permission!]!
   ownerId: ObjectId!
   workbook: Workbook!
   commonData: Data!
@@ -24,8 +35,7 @@ type Sheet {
 input SheetInput {
   name: String!
   schema: String!
-  permittedEmails: [String!]
-  permittedIds: [ObjectId!]
+  permissions: [PermissionInput!]
   workbookId: ObjectId!
   commonData: Data
 }
@@ -86,7 +96,7 @@ type Query {
 }
 
 type Mutation {
-  addSheet(name: String!, schema: String!, workbookId: ObjectId!, permittedEmails: [String!], permittedIds: [ObjectId!]): ObjectId
+  addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId
   deleteSheet(_id: ObjectId!): Boolean
   addSheets(sheets: [SheetInput!]!): Boolean
   deleteSheets(ids: [ObjectId!]!): Boolean
@@ -103,13 +113,11 @@ type Mutation {
   # New mutation to delete a workbook when empty
   deleteWorkbook(_id: ObjectId!): ObjectId
 
-  # Generic sheet update
   updateSheet(
     _id: ObjectId!
     name: String
     schema: String
-    permittedEmails: [String!]
-    permittedIds: [ObjectId!]
+    permissions: [PermissionInput!]
     commonData: Data
   ): Boolean
 }

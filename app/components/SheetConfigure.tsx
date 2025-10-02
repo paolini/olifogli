@@ -12,8 +12,8 @@ const DELETE_SHEET = gql`
     }`
 
 const UPDATE_SHEET = gql`
-  mutation UpdateSheet($_id: ObjectId!, $permittedEmails: [String!], $commonData: Data) {
-    updateSheet(_id: $_id, permittedEmails: $permittedEmails, commonData: $commonData)
+  mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data) {
+    updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData)
   }
 `
 
@@ -24,8 +24,9 @@ export default function SheetConfigure({sheet, profile}: {
     const router = useRouter()
     const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
     const [edit,setEdit] = useState(false)
-    const [emails, setEmails] = useState<string[]>(sheet.permittedEmails || [])
+    const [permissions, setPermissions] = useState(sheet.permissions || [])
     const [newEmail, setNewEmail] = useState('')
+    const [newRole, setNewRole] = useState<'admin' | 'editor'>('editor')
     const [newFieldKey, setNewFieldKey] = useState('')
     const [newFieldValue, setNewFieldValue] = useState('')
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
@@ -61,11 +62,11 @@ export default function SheetConfigure({sheet, profile}: {
             </tr>
         </thead>
         <tbody>
-          {emails.map((email) => (
-              <tr key={email}>
-              <td>{email}</td>
+          {permissions.map((permission, index) => (
+              <tr key={index}>
+              <td>{permission.email || `ID: ${permission.userId}`} ({permission.role})</td>
               {edit && 
-                <td><Button variant="danger" disabled={updating} onClick={() => removeEmail(email)}>
+                <td><Button variant="danger" disabled={updating} onClick={() => removePermission(index)}>
                     rimuovi
                 </Button></td>}
             </tr>
@@ -79,9 +80,13 @@ export default function SheetConfigure({sheet, profile}: {
               placeholder="nuova email"
               onChange={e => setNewEmail(e.target.value)}
               />
+              {} <select value={newRole} onChange={e => setNewRole(e.target.value as 'admin' | 'editor')}>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+              </select>
             </td>
             <td>
-                <Button disabled={updating || !newEmail || !newEmail.includes('@')} onClick={addEmail}>
+                <Button disabled={updating || !newEmail || !newEmail.includes('@')} onClick={addPermission}>
                     Aggiungi
                 </Button>
             </td>
@@ -150,9 +155,10 @@ export default function SheetConfigure({sheet, profile}: {
     </>
 
     function cancel() {
-        setEmails(sheet.permittedEmails || [])
+        setPermissions(sheet.permissions || [])
         setCommonData(sheet.commonData || {})
         setNewEmail('')
+        setNewRole('editor')
         setNewFieldKey('')
         setNewFieldValue('')
         setEdit(false)
@@ -182,9 +188,9 @@ export default function SheetConfigure({sheet, profile}: {
         await persistCommonData(newData)
     }
 
-    async function persistEmails(next: string[]) {
-      setEmails(next)
-      await updateSheet({ variables: { _id: sheet._id, permittedEmails: next },
+    async function persistPermissions(next: typeof permissions) {
+      setPermissions(next)
+      await updateSheet({ variables: { _id: sheet._id, permissions: next },
         refetchQueries: ['getSheet']
       })
     }
@@ -195,16 +201,17 @@ export default function SheetConfigure({sheet, profile}: {
       })
     }
 
-    async function addEmail() {
+    async function addPermission() {
       const email = newEmail.trim()
       if (!email) return
-      if (emails.includes(email)) { setNewEmail(''); return }
-      await persistEmails([...emails, email])
+      if (permissions.some(p => p.email === email)) { setNewEmail(''); return }
+      await persistPermissions([...permissions, { email, role: newRole }])
       setNewEmail('')
+      setNewRole('editor')
     }
 
-    async function removeEmail(email: string) {
-      await persistEmails(emails.filter(e => e !== email))
+    async function removePermission(index: number) {
+      await persistPermissions(permissions.filter((_, i) => i !== index))
     }
 
     async function doDelete() {
