@@ -2,6 +2,7 @@ import { Context } from './types'
 import { ObjectIdType, Timestamp, DataType } from './types'
 import { GraphQLJSON } from "graphql-type-json"
 import { Resolvers } from './generated'
+import { getSheetsCollection } from '../lib/mongodb'
 
 import { get_authenticated_user } from './resolvers/utils'
 
@@ -47,6 +48,31 @@ export const resolvers: Resolvers = {
     rows,
     scanJobs,
     scanResults,
+  },
+
+  Workbook: {
+    sheetsCount: async (parent, _, context: Context) => {
+      const user = await get_authenticated_user(context)
+      if (!user) throw new Error("Not authenticated")
+      if (!parent._id) return 0
+
+      const collection = await getSheetsCollection()
+      
+      if (user.isAdmin) {
+        // Admin can see all sheets
+        return await collection.countDocuments({ workbookId: parent._id })
+      } else {
+        // Regular user can only see sheets they own or have permissions for
+        return await collection.countDocuments({
+          workbookId: parent._id,
+          $or: [
+            { ownerId: user._id },
+            { 'permissions.email': user.email },
+            { 'permissions.userId': user._id },
+          ]
+        })
+      }
+    }
   },
 
   Mutation: {

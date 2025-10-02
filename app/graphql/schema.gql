@@ -7,6 +7,7 @@ type Workbook {
   _id: ObjectId
   name: String
   ownerId: ObjectId
+  sheetsCount: Int
 }
 
 type Permission {

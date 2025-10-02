@@ -244,6 +244,7 @@ export type Workbook = {
   _id?: Maybe<Scalars['ObjectId']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   ownerId?: Maybe<Scalars['ObjectId']['output']>;
+  sheetsCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type AddRowsMutationVariables = Exact<{
@@ -378,7 +379,7 @@ export type DeleteWorkbookMutation = { __typename?: 'Mutation', deleteWorkbook?:
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetWorkbooksQuery = { __typename?: 'Query', workbooks?: Array<{ __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null> | null };
+export type GetWorkbooksQuery = { __typename?: 'Query', workbooks?: Array<{ __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, sheetsCount?: number | null } | null> | null };
 
 export type AddWorkbookMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -1056,6 +1057,7 @@ export const GetWorkbooksDocument = gql`
   workbooks {
     _id
     name
+    sheetsCount
   }
 }
     `;
@@ -1479,6 +1481,7 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  sheetsCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

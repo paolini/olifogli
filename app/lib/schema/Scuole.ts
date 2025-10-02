@@ -28,7 +28,7 @@ export default class Scuole extends Schema {
         return {
             schema: "archimede",
             name: row.data?.Codice_meccanografico || '',
-            permissions: email ? [{ email, role: 'editor' as const }] : [],
+            permissions: email ? [{ email, role: 'admin' as const }] : [],
             commonData: {
                 Nome_scuola: row.data?.Nome_scuola || '',                
             }
