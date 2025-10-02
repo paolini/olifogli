@@ -190,7 +190,13 @@ export default function SheetConfigure({sheet, profile}: {
 
     async function persistPermissions(next: typeof permissions) {
       setPermissions(next)
-      await updateSheet({ variables: { _id: sheet._id, permissions: next },
+      // Keep only the fields defined in PermissionInput
+      const cleanPermissions = next.map(permission => ({
+        email: permission.email,
+        userId: permission.userId,
+        role: permission.role
+      }))
+      await updateSheet({ variables: { _id: sheet._id, permissions: cleanPermissions },
         refetchQueries: ['getSheet']
       })
     }
