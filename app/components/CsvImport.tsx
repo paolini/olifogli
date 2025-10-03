@@ -224,7 +224,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
       )}
       <small className="text-gray-600">
         Controlla che la corrispondenza delle colonne sia quella giusta.
-        Puoi modificare l'ordine delle colonne manualmente prima di procedere all'importazione.
+        Puoi modificare l&apos;ordine delle colonne manualmente prima di procedere all&apos;importazione.
       </small>
       <br />
       { data.length > 0 
