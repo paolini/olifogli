@@ -133,6 +133,7 @@ export type PermissionInput = {
 
 export type Query = {
   __typename?: 'Query';
+  appInstance?: Maybe<Scalars['String']['output']>;
   config?: Maybe<Config>;
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
@@ -1406,6 +1407,7 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  appInstance?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   config?: Resolver<Maybe<ResolversTypes['Config']>, ParentType, ContextType>;
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
