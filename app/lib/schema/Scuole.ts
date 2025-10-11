@@ -20,6 +20,10 @@ export default class Scuole extends Schema {
             new Field('Cognome_referente', 'Cognome referente', ['contact_surname']),
             new Field('Email_referente', 'Email referente', ['contact_email']),
             new Field('Cellulare_referente', 'Cellulare referente', ['contact_phone']),
+            new Field('ID_distretto', 'ID distretto', ['zone_id']),
+            new Field('Nome_distretto', 'Nome distretto', ['zone_name']),
+            new Field('Email_responsabile_distretto', 'Email responsabile distretto', ['zone_admin_email']),
+            new Field('Data_ultima_modifica', 'Data ultima modifica', ['last_modified']),
         ])
     }
 
