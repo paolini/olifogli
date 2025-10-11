@@ -2,8 +2,9 @@ services:
   db:
     image: mongo
     environment:
-      - PUID=1000
-      - PGID=1000
+    - PUID=1000
+    - PGID=1000
+    - NEXT_PUBLIC_APP_INSTANCE=app0
     volumes:
       - ./database:/data/db
     ports:
