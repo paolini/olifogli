@@ -48,6 +48,7 @@ export const resolvers: Resolvers = {
     rows,
     scanJobs,
     scanResults,
+    appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
   },
 
   Workbook: {
