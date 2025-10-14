@@ -17,7 +17,7 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
     update.permissions = args.permissions.map(p => ({
       email: p.email || undefined,
       userId: p.userId || undefined,
-      role: p.role as 'admin' | 'editor'
+      role: p.role as 'admin' | 'editor' | 'view'
     }))
   }
   if (args.commonData && typeof args.commonData === 'object') update.commonData = args.commonData

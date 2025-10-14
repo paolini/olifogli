@@ -21,10 +21,12 @@ export type User = {
     lastLogin?: Date
 }
 
+export type SheetPermissionRole = 'owner' | 'admin' | 'editor' | 'view';
+
 export type Permission = {
     email?: string
     userId?: ObjectId
-    role: 'admin' | 'editor'
+    role: SheetPermissionRole
 }
 
 export type Sheet = {

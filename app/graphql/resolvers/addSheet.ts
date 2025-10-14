@@ -18,7 +18,7 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     const permissions = (args.permissions || []).map(p => ({
         email: p.email || undefined,
         userId: p.userId || undefined,
-        role: p.role as 'admin' | 'editor'
+        role: p.role as 'admin' | 'editor' | 'view'
     }))
     
     const result = await collection.insertOne({ 

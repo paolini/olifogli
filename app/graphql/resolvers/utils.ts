@@ -1,10 +1,11 @@
+import type { SheetPermissionRole } from '@/app/lib/models'
+
 import { getUsersCollection } from '@/app/lib/mongodb'
 import { ApolloError, UserInputError, AuthenticationError, ForbiddenError } from 'apollo-server-errors'
 import { ObjectId} from 'mongodb'
 import { Context } from '../types'
 
 import { User, Sheet, ScanJob, MutationUpdateSheetArgs } from '@/app/graphql/generated'
-import { Permission } from '@/app/lib/models'
 
 export function check_authenticated({user_id}: Context): ObjectId {
     if (!user_id) throw new AuthenticationError('autenticazione richiesta')
@@ -26,7 +27,7 @@ export async function get_authenticated_user(context: Context) {
 /**
  * Controlla se l'utente ha un determinato permesso su un foglio
  */
-export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): 'owner' | 'admin' | 'editor' | null {
+export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): SheetPermissionRole | null {
   if (!sheet) return null
   
   // L'amministratore globale ha sempre accesso completo
@@ -47,7 +48,7 @@ export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): 'ow
       }
       
       if (hasPermission) {
-        return permission.role as 'admin' | 'editor'
+        return permission.role as SheetPermissionRole
       }
     }
   }
@@ -82,11 +83,15 @@ export function check_user_can_update_sheet(user: User, sheet: Partial<Sheet>|nu
     return
   }
 
+  // View: nessuna modifica permessa
+  if (permission === 'view') {
+    throw new ForbiddenError('permesso di sola lettura')
+  }
+
   // Editor può modificare solo i dati, non i metadati del foglio
   if (permission === 'editor') {
     const restrictedFields = ['name', 'schema', 'permissions', 'permittedEmails', 'permittedIds']
     const hasRestrictedField = keys.some(key => restrictedFields.includes(key))
-    
     if (hasRestrictedField) {
       throw new UserInputError('puoi modificare solo i dati del foglio, non i metadati')
     }

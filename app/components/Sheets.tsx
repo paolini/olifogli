@@ -8,7 +8,7 @@ import { Input } from '@/app/components/Input'
 import useProfile from '../lib/useProfile'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteSheetMutation, useDeleteWorkbookMutation, useDeleteSheetsMutation } from '../graphql/generated';
+import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteWorkbookMutation, useDeleteSheetsMutation } from '../graphql/generated';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
@@ -150,7 +150,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
             <Link href={`/sheet/${sheet._id}`}>{sheet.name}</Link>
         </td>
         <td>
-            {sheet.schema && schemas[sheet.schema].header}
+            {sheet.schema && schemas[sheet.schema]?.header || 'unknown schema'}
         </td>
         {commonDataHeaders.map(header => 
             <td key={header}>
@@ -165,7 +165,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
                     crea fogli scuole
                 </Button>
             </td>
-        } 
+        }
     </tr>
 }
 
