@@ -1,11 +1,13 @@
 import Schema from './schema/Schema'
-import Archimede from './schema/Archimede'
+import ArchimedeBiennio from './schema/ArchimedeBiennio'
+import ArchimedeTriennio from './schema/ArchimedeTriennio'
 import Distrettuale from './schema/Distrettuale'
 import AmmissioneSenior from './schema/AmmissioneSenior'
 import Scuole from './schema/Scuole'
 
 const schemaClasses: Array<new () => Schema> = [
-    Archimede,
+    ArchimedeBiennio,
+    ArchimedeTriennio,
     Distrettuale,
     AmmissioneSenior,
     Scuole,
