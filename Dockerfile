@@ -43,6 +43,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/migrate-mongo-config.js ./migrate-mongo-config.js
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 # Install migrate-mongo globally
 RUN npm install -g migrate-mongo
 RUN chmod +x ./start.sh
