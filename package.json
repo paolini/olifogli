@@ -1,6 +1,6 @@
 {
   "name": "olifogli",
-  "version": "0.8.12",
+  "version": "0.8.13",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -48,7 +48,7 @@
     "@types/papaparse": "^5.3.15",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "dotenv": "^16.5.0",
+    "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "15.1.5",
     "postcss": "^8",
