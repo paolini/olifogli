@@ -1,9 +1,9 @@
 import { Field, ChoiceAnswerField, ComputedField } from './fields'
 import Schema from './Schema'
 
-export default class Archimede extends Schema {
+export default class ArchimedeTriennio extends Schema {
     constructor() {
-        super('archimede', 'Archimede', [
+        super('archimede-triennio', 'Archimede Triennio', [
             new Field('codice'),
             new Field('cognome'),
             new Field('nome'),

@@ -11,6 +11,7 @@ type Job = {
     rowId: ObjectId|null,
     sheet: Partial<Sheet>|null,
     name: string,
+    schema: "archimede-biennio"|"archimede-triennio",
     permissions: Permission[],
     commonData: Data,
     message?: string,
@@ -50,9 +51,10 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         const jobs: Record<string,Job> = {}
 
         function addJob(job: Job) {
-            const existing = jobs[job.name]
+            const id = job.name + '-' + job.schema
+            const existing = jobs[id]
             if (!existing) {
-                jobs[job.name] = {
+                jobs[id] = {
                     ...job,
                     message: 'crea',
                     selected: job.permissions.length > 0
@@ -84,18 +86,19 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         }
 
         for (const sheet of sheets) {
-            if (sheet.schema !=='archimede') continue
+            if (sheet.schema !=='archimede-biennio' && sheet.schema !== 'archimede-triennio') continue
             addJob({
                 sheet,
                 rowId: null,
-                name: sheet.name || '',
+                schema: sheet.schema,
+                name: (sheet.name || ''),
                 permissions: sheet.permissions || [],
                 commonData: {...sheet.commonData}
             })
         }
 
         for (const row of rows || []) {
-            const name = row.data?.Codice_meccanografico || ''
+            const codice_meccanografico = row.data?.Codice_meccanografico || ''
             const email = row.data?.Email_referente || ''
             // Coordinatori: stringa singola con email separati da virgola
             let coordinatori: string[] = [];
@@ -108,16 +111,19 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                     permissions.push({ email: coord, role: 'view' });
                 }
             }
-            addJob({
-                rowId: row._id,
-                name,
-                permissions,
-                sheet: null,
-                commonData: {
-                    Nome_scuola: row.data?.Nome_scuola || '',
-                    "Città_scuola": row.data["Città_scuola"] || ''
-                }
-            })
+            for (const schema of ['archimede-biennio', 'archimede-triennio'] as const) {
+                addJob({
+                    rowId: row._id,
+                    name: codice_meccanografico,
+                    schema,
+                    permissions,
+                    sheet: null,
+                    commonData: {
+                        Nome_scuola: row.data?.Nome_scuola || '',
+                        "Città_scuola": row.data["Città_scuola"] || ''
+                    }
+                })
+            }
         }
         return jobs
     }
@@ -197,7 +203,7 @@ function Process({jobsCallback, workbookId, sheetId}: {
         createSheets({variables: {
             sheets: Object.values(jobs || {}).filter(job => job.selected && job.message === 'crea')
                 .map(job => ({
-                    schema: "archimede",
+                    schema: job.schema,
                     workbookId,
                     name: job.name,
                     permissions: job.permissions,
