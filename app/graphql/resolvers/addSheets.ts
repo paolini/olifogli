@@ -14,7 +14,7 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
         const permissions = (sheet.permissions || []).map(p => ({
             email: p.email || undefined,
             userId: p.userId || undefined,
-            role: p.role as 'admin' | 'editor'
+            role: p.role as 'admin' | 'editor' | 'view'
         }))
         
         return {

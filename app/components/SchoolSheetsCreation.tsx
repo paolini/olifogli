@@ -17,6 +17,12 @@ type Job = {
     selected?: boolean
 }
 
+/**
+ * Questa componente visualizza le righe del foglio selezionato 
+ * e permette di creare nuovi fogli "archimede" a partire dalle righe
+ * stesse. Usa le colonne per dare i permessi agli utenti.
+ */
+
 export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
     sheetId: ObjectId,
     workbookId: ObjectId,
@@ -91,10 +97,21 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         for (const row of rows || []) {
             const name = row.data?.Codice_meccanografico || ''
             const email = row.data?.Email_referente || ''
+            // Coordinatori: stringa singola con email separati da virgola
+            let coordinatori: string[] = [];
+            const rawCoordinatori = row.data?.Email_coordinatori;
+            coordinatori = rawCoordinatori.split(',').map((c: string) => c.trim()).filter(Boolean);
+            const permissions: Permission[] = [];
+            if (email) permissions.push({ email, role: 'editor' });
+            for (const coord of coordinatori) {
+                if (coord && coord !== email) {
+                    permissions.push({ email: coord, role: 'view' });
+                }
+            }
             addJob({
                 rowId: row._id,
                 name,
-                permissions: email ? [{ email, role: 'editor' }] : [],
+                permissions,
                 sheet: null,
                 commonData: {
                     Nome_scuola: row.data?.Nome_scuola || '',
