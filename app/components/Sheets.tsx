@@ -64,7 +64,8 @@ function SheetsTable({ workbookId, profile }: {
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useDeleteWorkbookMutation({
           refetchQueries: ['GetWorkbooks']
         })
-    
+    // Stato per la selezione delle righe
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
 
     if (loading) return <Loading />;
     if (error) return <Error error={error.message} />;
@@ -83,10 +84,24 @@ function SheetsTable({ workbookId, profile }: {
 
     if (sheets.length === 0) return <div className="bg-alert">Nessun foglio disponibile</div>
 
+    // Gestione selezione
+    const allSelected = selectedIds.length === sheets.length && sheets.length > 0;
+    const toggleAll = () => {
+        if (allSelected) setSelectedIds([])
+        else setSelectedIds(sheets.map(s => s._id.toString()))
+    }
+    const toggleOne = (id: ObjectId) => {
+        const idStr = id.toString();
+        setSelectedIds(ids => ids.includes(idStr) ? ids.filter(i => i !== idStr) : [...ids, idStr])
+    }
+
     return <>
         <table>
             <thead>
                 <tr>
+                    <th>
+                        <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                    </th>
                     <th>Nome</th>
                     <th>Schema</th>
                     {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
@@ -104,6 +119,8 @@ function SheetsTable({ workbookId, profile }: {
                         commonDataHeaders={commonDataHeaders}
                         creationDisabled={creationId !== null} 
                         startCreation={sheetId => setCreationId(sheetId)} 
+                        selected={selectedIds.includes(sheet._id.toString())}
+                        onSelect={() => toggleOne(sheet._id)}
                     />
                 ))}
             </tbody>
@@ -115,6 +132,9 @@ function SheetsTable({ workbookId, profile }: {
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={deleteEmptySheets}>
                     Elimina {emptySheetIds.length} {emptySheetIds.length === 1 ? 'foglio vuoto' : 'fogli vuoti'}
                 </Button> 
+                <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={deleteSelectedSheets}>
+                    Elimina {selectedIds.length} {selectedIds.length === 1 ? 'foglio selezionato' : 'fogli selezionati'}
+                </Button>
                 <Button variant="danger" disabled={sheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     Elimina raccolta
                 </Button>
@@ -130,6 +150,13 @@ function SheetsTable({ workbookId, profile }: {
       refetch() 
     }
 
+    async function deleteSelectedSheets() {
+      if (!confirm(`Sei sicuro di voler eliminare ${selectedIds.length} fogli selezionati?`)) return
+      await deleteSheets({ variables: { ids: selectedIds.map(id => new ObjectId(id)) } })
+      setSelectedIds([])
+      refetch()
+    }
+
     async function onDelete() {
       if (!workbookId) return
       await deleteWorkbook({ variables: { _id: workbookId } })
@@ -138,14 +165,19 @@ function SheetsTable({ workbookId, profile }: {
 
 }
 
-function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders}: {
+function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders, selected, onSelect}: {
     sheet: Partial<Sheet> & {_id: ObjectId}, 
     profile?: {isAdmin: boolean},
     creationDisabled: boolean, 
     startCreation: (id: ObjectId) => void,
-    commonDataHeaders: string[]
+    commonDataHeaders: string[],
+    selected: boolean,
+    onSelect: () => void
 }) {
     return <tr key={sheet._id?.toString()}>
+        <td>
+            <input type="checkbox" checked={selected} onChange={onSelect} />
+        </td>
         <td>
             <Link href={`/sheet/${sheet._id}`}>{sheet.name}</Link>
         </td>
