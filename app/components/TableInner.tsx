@@ -27,7 +27,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
       <tbody>
         { rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
         { currentRowId 
-          ? <tr><td><button onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
+          ? <tr><td><button className="bg-alert" onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
           : <InputRow sheetId={sheet._id.toString()} schema={schema}/>}
       </tbody>
     </table>

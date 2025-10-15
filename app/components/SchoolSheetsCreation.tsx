@@ -42,7 +42,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         { sheetsLoading && <div>caricamento fogli...</div> }
         <Error error={sheetsError} />
         { sheets && rows && 
-            <Process jobsCallback={jobs} workbookId={workbookId} sheetId={sheetId} />
+            <Process jobsCallback={jobs} workbookId={workbookId} sheetId={sheetId} done={done}/>
         }
     </div>
 
@@ -102,8 +102,8 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
             const email = row.data?.Email_referente || ''
             // Coordinatori: stringa singola con email separati da virgola
             let coordinatori: string[] = [];
-            const rawCoordinatori = row.data?.Email_coordinatori;
-            coordinatori = rawCoordinatori.split(',').map((c: string) => c.trim()).filter(Boolean);
+            const rawCoordinatori = row.data?.Email_coordinatori || '';
+            coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim());
             const permissions: Permission[] = [];
             if (email) permissions.push({ email, role: 'editor' });
             for (const coord of coordinatori) {
@@ -135,10 +135,11 @@ export const ADD_SHEETS = gql`
   }
 `
 
-function Process({jobsCallback, workbookId, sheetId}: {
+function Process({jobsCallback, workbookId, sheetId, done}: {
     jobsCallback: () => Promise<Record<string,Job>>,
     workbookId: ObjectId
     sheetId: ObjectId
+    done: () => void
 }) {
     const [createSheets, {loading, error}] = useAddSheetsMutation()
     const [jobs, setJobs] = useState<null|Record<string,Job>>(null)
@@ -159,13 +160,14 @@ function Process({jobsCallback, workbookId, sheetId}: {
             <thead>
                 <tr>
                     <th></th>
+                    <th>schema</th>
                     <th>codice</th>
                     <th>referenti</th>
                     <th>scuola</th>
                     <th>città</th></tr>
             </thead>
             <tbody>
-                {Object.values(jobs).map(job => <tr key={job.name}>
+                {Object.values(jobs).map(job => <tr key={job.name+'-'+job.schema}>
                 <td>
                     <input 
                         type="checkbox" 
@@ -181,6 +183,9 @@ function Process({jobsCallback, workbookId, sheetId}: {
                         }}
                         />
                     {} {job.message}
+                </td>
+                <td>
+                    {job.schema}
                 </td>
                 <td>
                     {job.name}
@@ -200,16 +205,23 @@ function Process({jobsCallback, workbookId, sheetId}: {
     </>
 
     function go() {
-        createSheets({variables: {
-            sheets: Object.values(jobs || {}).filter(job => job.selected && job.message === 'crea')
-                .map(job => ({
-                    schema: job.schema,
-                    workbookId,
-                    name: job.name,
-                    permissions: job.permissions,
-                    commonData: job.commonData,
-                }))
-        }})
+        createSheets({
+            variables: {
+                sheets: Object.values(jobs || {}).filter(job => job.selected && job.message === 'crea')
+                    .map(job => ({
+                        schema: job.schema,
+                        workbookId,
+                        name: job.name,
+                        permissions: job.permissions,
+                        commonData: job.commonData,
+                    }))
+            },
+            refetchQueries: ['GetSheets'],
+            onCompleted: () => {
+                done()
+            }
+        })
+
     }
 }
 
