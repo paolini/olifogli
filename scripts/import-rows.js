@@ -1,5 +1,9 @@
 // scripts/import-rows.js
-require('dotenv').config();
+try {
+  require('dotenv').config();
+} catch (e) {
+  // dotenv non installato: ignora in produzione
+}
 const { MongoClient, ObjectId } = require('mongodb');
 const Papa = require('papaparse');
 
