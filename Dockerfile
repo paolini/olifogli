@@ -44,6 +44,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/migrate-mongo-config.js ./migrate-mongo-config.js
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+# Copy node_modules needed for scripts (papaparse and dotenv for import-rows.js)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/papaparse ./node_modules/papaparse
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
 # Install migrate-mongo globally
 RUN npm install -g migrate-mongo
 RUN chmod +x ./start.sh
