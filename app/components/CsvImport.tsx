@@ -268,20 +268,10 @@ export default function CsvImport({schemaName, sheetId, done}:{
   };
 
   async function importRows(rows: string[][]): Promise<number> {
-    // Determina se saltare la prima riga
-    let skipHeader = false;
-    if (headerMode === 'auto') {
-      skipHeader = estimateHeaderRow(rows);
-    } else if (headerMode === 'yes') {
-      skipHeader = true;
-    } else {
-      skipHeader = false;
-    }
-    const rowsToImport = skipHeader ? rows.slice(1) : rows;
     const variables = {
         sheetId,
         columns,
-        rows: rowsToImport,
+        rows
     }
 
     try {
@@ -336,7 +326,7 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
         cancel: 'Annulla importazione',
     }
     type Action = keyof typeof actions
-    const [action, setAction] = useState<Action|'busy'>('move')
+    const [action, setAction] = useState<Action|'busy'>('done')
     const [selectedFirstCol, setSelectedFirstCol] = useState<number>(-1)
     const [selectedLastCol, setSelectedLastCol] = useState<number>(-1)
     const [maxShownRows, setMaxShownRows] = useState<number>(20)
@@ -385,6 +375,10 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
             </tr>
         </thead>
         <tbody>
+            {/* Riga vuota per separazione visiva */}
+            <tr className="h-1">
+            </tr>
+
             {crop_data.map((row, index) => <tr key={index} style={hasHeaderRow && index === 0 ? {background: '#ffeeba'} : {}}>
                     { action==="deleteRow" 
                         ? <td><button onClick={() => deleteRow(index)}>elimina</button></td>
@@ -478,17 +472,3 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
     }
 
 }
-
-function myZip(arr1: string[], arr2: string[]) {
-    const maxLength = Math.max(arr1.length, arr2.length);
-    const result = [];
-  
-    for (let i = 0; i < maxLength; i++) {
-      result.push([
-        i < arr1.length ? arr1[i] : '',
-        i < arr2.length ? arr2[i] : ''
-      ]);
-    }
-  
-    return result;
-  }
