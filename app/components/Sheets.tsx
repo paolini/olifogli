@@ -8,7 +8,8 @@ import { Input } from '@/app/components/Input'
 import useProfile from '../lib/useProfile'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteWorkbookMutation, useDeleteSheetsMutation } from '../graphql/generated';
+import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteSheetsMutation } from '../graphql/generated';
+import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
@@ -42,6 +43,12 @@ const ___ = gql`
     }
 `
 
+const DELETE_WORKBOOK = gql`
+    mutation DeleteWorkbook($_id: ObjectId!) {
+        deleteWorkbook(_id: $_id)
+    }
+`
+
 export default function Sheets({ workbookId }: { workbookId?: ObjectId }) {
     const profile = useProfile()
     return <div className="p-4">
@@ -61,19 +68,26 @@ function SheetsTable({ workbookId, profile }: {
         variables: { workbookId }
     })
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
-    const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useDeleteWorkbookMutation({
-          refetchQueries: ['GetWorkbooks']
-        })
+    const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
     // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
+    // Stato per la paginazione
+    const [displayLimit, setDisplayLimit] = useState(20)
+    // Stato per il filtro schema
+    const [schemaFilter, setSchemaFilter] = useState<string>('')
 
     if (loading) return <Loading />;
     if (error) return <Error error={error.message} />;
     if (!data) return <div>No data</div>;
-    const sheets = data.sheets ?? [];
+    const allSheets = data.sheets ?? [];
+    const sheets = schemaFilter 
+        ? allSheets.filter(s => s.schema === schemaFilter)
+        : allSheets;
+    const displayedSheets = sheets.slice(0, displayLimit);
+    const hasMore = sheets.length > displayLimit;
 
     const emptySheetIds = sheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
-    const commonDataHeaders = sheets.reduce((acc, sheet) => {
+    const commonDataHeaders = displayedSheets.reduce((acc, sheet) => {
         if (sheet.commonData) {
             Object.keys(sheet.commonData).forEach(key => {
                 if (!acc.includes(key)) acc.push(key)
@@ -81,8 +95,6 @@ function SheetsTable({ workbookId, profile }: {
         }
         return acc;
     }, [] as string[])
-
-    if (sheets.length === 0) return <div className="bg-alert">Nessun foglio disponibile</div>
 
     // Gestione selezione
     const allSelected = selectedIds.length === sheets.length && sheets.length > 0;
@@ -96,35 +108,61 @@ function SheetsTable({ workbookId, profile }: {
     }
 
     return <>
-        <table>
-            <thead>
-                <tr>
-                    <th>
-                        <input type="checkbox" checked={allSelected} onChange={toggleAll} />
-                    </th>
-                    <th>Nome</th>
-                    <th>Schema</th>
-                    {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
-                    <th>righe</th>
-                    <th>permessi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {sheets.map(sheet => (
-                    sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
-                    <SheetRow 
-                        key={sheet._id?.toString()} 
-                        sheet={sheet} 
-                        profile={profile}
-                        commonDataHeaders={commonDataHeaders}
-                        creationDisabled={creationId !== null} 
-                        startCreation={sheetId => setCreationId(sheetId)} 
-                        selected={selectedIds.includes(sheet._id.toString())}
-                        onSelect={() => toggleOne(sheet._id)}
-                    />
-                ))}
-            </tbody>
-        </table>
+        {allSheets.length === 0 ? (
+            <div className="bg-alert">Nessun foglio disponibile</div>
+        ) : (
+            <>
+            <div className="mb-2 flex items-center gap-3">
+                <select value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)} className="border rounded px-2 py-1">
+                    <option value="">Tutti i fogli</option>
+                    {Object.entries(schemas).map(([key, schema]) => (
+                        <option key={key} value={key}>{schema.header}</option>
+                    ))}
+                </select>
+                <span>{sheets.length} {sheets.length === 1 ? "foglio" : "fogli"} {schemaFilter && ` (su ${allSheets.length})`}</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                        </th>
+                        <th>Nome</th>
+                        <th>Schema</th>
+                        {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
+                        <th>righe</th>
+                        <th>permessi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {displayedSheets.map(sheet => (
+                        sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
+                        <SheetRow 
+                            key={sheet._id?.toString()} 
+                            sheet={sheet} 
+                            profile={profile}
+                            commonDataHeaders={commonDataHeaders}
+                            creationDisabled={creationId !== null} 
+                            startCreation={sheetId => setCreationId(sheetId)} 
+                            selected={selectedIds.includes(sheet._id.toString())}
+                            onSelect={() => toggleOne(sheet._id)}
+                        />
+                    ))}
+                </tbody>
+            </table>
+            </>
+        )}
+        {hasMore && (
+            <div className="my-2">
+                {displayLimit} / {sheets.length} fogli mostrati
+                <Button className="ml-2" onClick={() => setDisplayLimit(limit => limit*2)}>
+                    Mostra più
+                </Button>
+                <Button className="ml-2" onClick={() => setDisplayLimit(20)}>
+                    Mostra meno
+                </Button>
+            </div>
+        )}
         <Error error={deleteWorkbookError} />
         <Error error={deleteSheetsError} />
         { profile?.isAdmin && 
@@ -159,8 +197,13 @@ function SheetsTable({ workbookId, profile }: {
 
     async function onDelete() {
       if (!workbookId) return
-      await deleteWorkbook({ variables: { _id: workbookId } })
-      router.back()
+      if (!confirm(`Sei sicuro di voler eliminare la raccolta?`)) return
+      await deleteWorkbook({ 
+        variables: { _id: workbookId },
+        refetchQueries: ['GetWorkbooks'],
+        awaitRefetchQueries: true
+      })
+      router.push('/')
     }
 
 }
@@ -191,7 +234,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         )}
         <td>{sheet.nRows}</td>
         <td>{sheet.permissions?.map(p => `${p.email || 'ID:' + p.userId} (${p.role})`).join(', ') || ''}</td>
-        { sheet.schema === 'scuole' && profile?.isAdmin && 
+        { sheet.schema === 'scuole' && profile?.isAdmin && selected &&
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
                     crea fogli scuole
