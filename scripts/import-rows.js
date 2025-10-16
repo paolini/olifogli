@@ -65,7 +65,6 @@ async function main() {
       console.log(`Creato sheet: ${sheetName}`);
     }
     // Inserisci row
-    const now = new Date();
     const rowDoc = {
       sheetId: sheet._id,
       isValid: true,
