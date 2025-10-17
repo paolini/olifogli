@@ -22,6 +22,7 @@ import addSheets from './resolvers/addSheets'
 import addRow from './resolvers/addRow'
 import patchRow from './resolvers/patchRow'
 import deleteRow from './resolvers/deleteRow'
+import deleteAllRows from './resolvers/deleteAllRows'
 import addRows from './resolvers/addRows'
 import deleteScan from './resolvers/deleteScan'
 import addWorkbook from './resolvers/addWorkbook'
@@ -85,6 +86,7 @@ export const resolvers: Resolvers = {
     addRow,
     patchRow,
     deleteRow,
+    deleteAllRows,
     addRows,
     deleteScan,
     addWorkbook,

@@ -37,6 +37,7 @@ export type Mutation = {
   addSheet?: Maybe<Scalars['ObjectId']['output']>;
   addSheets?: Maybe<Scalars['Boolean']['output']>;
   addWorkbook?: Maybe<Workbook>;
+  deleteAllRows?: Maybe<Scalars['Int']['output']>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteScan?: Maybe<Scalars['Boolean']['output']>;
   deleteSheet?: Maybe<Scalars['Boolean']['output']>;
@@ -75,6 +76,11 @@ export type MutationAddSheetsArgs = {
 
 export type MutationAddWorkbookArgs = {
   name: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteAllRowsArgs = {
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -257,6 +263,11 @@ export type AddRowsMutationVariables = Exact<{
 
 export type AddRowsMutation = { __typename?: 'Mutation', addRows?: number | null };
 
+export type AppInstanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AppInstanceQuery = { __typename?: 'Query', appInstance?: string | null };
+
 export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
@@ -339,6 +350,13 @@ export type DeleteSheetsMutationVariables = Exact<{
 
 export type DeleteSheetsMutation = { __typename?: 'Mutation', deleteSheets?: boolean | null };
 
+export type DeleteWorkbookMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type DeleteWorkbookMutation = { __typename?: 'Mutation', deleteWorkbook?: ObjectId | null };
+
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
@@ -369,13 +387,6 @@ export type GetWorkbookQueryVariables = Exact<{
 
 
 export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }> };
-
-export type DeleteWorkbookMutationVariables = Exact<{
-  _id: Scalars['ObjectId']['input'];
-}>;
-
-
-export type DeleteWorkbookMutation = { __typename?: 'Mutation', deleteWorkbook?: ObjectId | null };
 
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -438,6 +449,43 @@ export function useAddRowsMutation(baseOptions?: Apollo.MutationHookOptions<AddR
 export type AddRowsMutationHookResult = ReturnType<typeof useAddRowsMutation>;
 export type AddRowsMutationResult = Apollo.MutationResult<AddRowsMutation>;
 export type AddRowsMutationOptions = Apollo.BaseMutationOptions<AddRowsMutation, AddRowsMutationVariables>;
+export const AppInstanceDocument = gql`
+    query AppInstance {
+  appInstance
+}
+    `;
+
+/**
+ * __useAppInstanceQuery__
+ *
+ * To run a query within a React component, call `useAppInstanceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAppInstanceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAppInstanceQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAppInstanceQuery(baseOptions?: Apollo.QueryHookOptions<AppInstanceQuery, AppInstanceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AppInstanceQuery, AppInstanceQueryVariables>(AppInstanceDocument, options);
+      }
+export function useAppInstanceLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AppInstanceQuery, AppInstanceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AppInstanceQuery, AppInstanceQueryVariables>(AppInstanceDocument, options);
+        }
+export function useAppInstanceSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AppInstanceQuery, AppInstanceQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<AppInstanceQuery, AppInstanceQueryVariables>(AppInstanceDocument, options);
+        }
+export type AppInstanceQueryHookResult = ReturnType<typeof useAppInstanceQuery>;
+export type AppInstanceLazyQueryHookResult = ReturnType<typeof useAppInstanceLazyQuery>;
+export type AppInstanceSuspenseQueryHookResult = ReturnType<typeof useAppInstanceSuspenseQuery>;
+export type AppInstanceQueryResult = Apollo.QueryResult<AppInstanceQuery, AppInstanceQueryVariables>;
 export const ScanJobsDocument = gql`
     query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
@@ -872,6 +920,37 @@ export function useDeleteSheetsMutation(baseOptions?: Apollo.MutationHookOptions
 export type DeleteSheetsMutationHookResult = ReturnType<typeof useDeleteSheetsMutation>;
 export type DeleteSheetsMutationResult = Apollo.MutationResult<DeleteSheetsMutation>;
 export type DeleteSheetsMutationOptions = Apollo.BaseMutationOptions<DeleteSheetsMutation, DeleteSheetsMutationVariables>;
+export const DeleteWorkbookDocument = gql`
+    mutation DeleteWorkbook($_id: ObjectId!) {
+  deleteWorkbook(_id: $_id)
+}
+    `;
+export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
+
+/**
+ * __useDeleteWorkbookMutation__
+ *
+ * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWorkbookMutation, { data, loading, error }] = useDeleteWorkbookMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useDeleteWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>(DeleteWorkbookDocument, options);
+      }
+export type DeleteWorkbookMutationHookResult = ReturnType<typeof useDeleteWorkbookMutation>;
+export type DeleteWorkbookMutationResult = Apollo.MutationResult<DeleteWorkbookMutation>;
+export type DeleteWorkbookMutationOptions = Apollo.BaseMutationOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
 export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
@@ -1022,37 +1101,6 @@ export type GetWorkbookQueryHookResult = ReturnType<typeof useGetWorkbookQuery>;
 export type GetWorkbookLazyQueryHookResult = ReturnType<typeof useGetWorkbookLazyQuery>;
 export type GetWorkbookSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookSuspenseQuery>;
 export type GetWorkbookQueryResult = Apollo.QueryResult<GetWorkbookQuery, GetWorkbookQueryVariables>;
-export const DeleteWorkbookDocument = gql`
-    mutation DeleteWorkbook($_id: ObjectId!) {
-  deleteWorkbook(_id: $_id)
-}
-    `;
-export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
-
-/**
- * __useDeleteWorkbookMutation__
- *
- * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteWorkbookMutation, { data, loading, error }] = useDeleteWorkbookMutation({
- *   variables: {
- *      _id: // value for '_id'
- *   },
- * });
- */
-export function useDeleteWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>(DeleteWorkbookDocument, options);
-      }
-export type DeleteWorkbookMutationHookResult = ReturnType<typeof useDeleteWorkbookMutation>;
-export type DeleteWorkbookMutationResult = Apollo.MutationResult<DeleteWorkbookMutation>;
-export type DeleteWorkbookMutationOptions = Apollo.BaseMutationOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
 export const GetWorkbooksDocument = gql`
     query GetWorkbooks {
   workbooks {
@@ -1386,6 +1434,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addSheet?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationAddSheetArgs, 'name' | 'schema' | 'workbookId'>>;
   addSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationAddSheetsArgs, 'sheets'>>;
   addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
+  deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteScan?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanArgs, 'jobId'>>;
   deleteSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
