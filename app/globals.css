@@ -86,8 +86,12 @@ td {
   border: 1px solid gray;
 }
 
-td .thick-border-right {
-  border-right: 4px solid red;
+td.thick-border-right, th.thick-border-right {
+  border-right: 4px solid gray;
+}
+
+td.thick-border-left, th.thick-border-left {
+  border-left: 4px solid gray;
 }
 
 table {
@@ -97,6 +101,10 @@ table {
 table, 
 th {
   border: 1px solid gray;
+}
+
+th {
+  border-bottom: 4px solid gray;
 }
 
 .my-table td {
