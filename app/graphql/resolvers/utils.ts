@@ -60,7 +60,7 @@ export function check_user_can_edit_sheet(user: User, sheet: Partial<Sheet>|null
   if (!sheet) throw new UserInputError('foglio inesistente')
   
   const permission = getUserPermissionOnSheet(user, sheet)
-  if (!permission) {
+  if (permission!== 'owner' && permission !== 'admin') {
     throw new ForbiddenError('non autorizzato')
   }
   

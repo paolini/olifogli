@@ -17,6 +17,12 @@ const UPDATE_SHEET = gql`
   }
 `
 
+const DELETE_ALL_ROWS = gql`
+  mutation DeleteAllRows($sheetId: ObjectId!) {
+    deleteAllRows(sheetId: $sheetId)
+  }
+`
+
 export default function SheetConfigure({sheet, profile}: {
     sheet: Sheet
     profile: User | null
@@ -31,10 +37,12 @@ export default function SheetConfigure({sheet, profile}: {
     const [newFieldValue, setNewFieldValue] = useState('')
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
     const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
+    const [deleteAllRows, {loading: clearingSheet, error: clearError, reset: clearReset}] = useMutation(DELETE_ALL_ROWS)
     const canModifyData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
     if (updateError) return <Error error={updateError} dismiss={updateReset }/>
+    if (clearError) return <Error error={clearError} dismiss={clearReset }/>
 
     return <>
         {!edit && 
@@ -45,8 +53,17 @@ export default function SheetConfigure({sheet, profile}: {
                 <Button className="mx-2" onClick={cancel}>
                     Annulla
                 </Button>
+                {canModifyData &&
+                    <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0} onClick={() => {
+                        if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
+                            doClearSheet()
+                        }
+                        }}>
+                        Svuota questo foglio ({sheet.nRows} righe)
+                    </Button>
+                }
                 {canModifyData && 
-                    <Button className="mx-2" variant="danger" disabled={deleting} onClick={() => {
+                    <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
                         if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
                             doDelete()
                         }
@@ -223,5 +240,13 @@ export default function SheetConfigure({sheet, profile}: {
     async function doDelete() {
         await deleteSheet({variables: {_id: sheet._id}})
         router.push('/')
+    }
+
+    async function doClearSheet() {
+        await deleteAllRows({
+            variables: {sheetId: sheet._id},
+            refetchQueries: ['getSheet', 'GetRows']
+        })
+        setEdit(false)
     }
 }

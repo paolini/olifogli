@@ -21,6 +21,14 @@ export type User = {
     lastLogin?: Date
 }
 
+/**
+ * owner: può fare tutto (i superutenti sono considerati owner di tutti i fogli)
+ * admin: può fare tutto sui fogli dove ha questo permesso
+ *        in particolare può dare permessi admin/editor/view a chi vuole
+ * editor: può modificare i dati, ma non i metadati (nome, schema, permessi)
+ * view: può solo vedere i dati, non può modificarli
+ */
+
 export type SheetPermissionRole = 'owner' | 'admin' | 'editor' | 'view';
 
 export type Permission = {
