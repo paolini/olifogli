@@ -99,6 +99,12 @@ th {
   border: 1px solid gray;
 }
 
+.my-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .field-id, .field-id input, .field-zona_id, .field-scuola_id {
   max-width: 7ex;
 }
@@ -116,7 +122,7 @@ th {
 }
 
 .field-dataNascita, .field-dataNascita input {
-  max-width: 10ex;
+  max-width: 13ex;
 }
 
 .field-classe, .field-classe input {
@@ -124,7 +130,7 @@ th {
 }
 
 .field-sezione, .field-sezione input { 
-  max-width: 5ex;
+  max-width: 8ex;
 }
 
 .field-scuola, .field-scuola input {
@@ -133,6 +139,7 @@ th {
 
 .field-ChoiceAnswer, .field-ChoiceAnswer input {
   max-width: 3ex;
+  text-align: center;
 }
 
 .field-NumberAnswer, .field-NumberAnswer input {
@@ -147,3 +154,22 @@ th {
   max-width: 4ex;
 }
 
+.field-codiceCompito, .field-codiceCompito input {
+  max-width: 8ex;
+}
+
+.actions-cell {
+  min-width: 15ex;
+}
+
+th.field-classe {
+  font-size: 80%;
+}
+
+th.field-punti {
+  font-size: 40%;
+}
+
+.my-table th {
+  background-color: pink;
+}

@@ -4,7 +4,7 @@ import Schema from './Schema'
 export default class ArchimedeTriennio extends Schema {
     constructor() {
         super('archimede-triennio', 'Archimede Triennio', [
-            new Field('codice'),
+            new Field('codiceCompito',"codice compito"),
             new Field('cognome'),
             new Field('nome'),
             new Field('dataNascita', 'data di nascita'),
