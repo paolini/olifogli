@@ -15,7 +15,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
     sheet: Sheet,
     schema: Schema,
   }) {
-    return <table>
+    return <table className="my-table">
       <thead>
         <tr>
           {schema.fields.map(field => 
@@ -95,9 +95,9 @@ return <tr className={modified ? "alert": ""}>
         </td>
     : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
     )}
-    <td>
-    <button disabled={loading} onClick={save}>salva</button>
-    { row?._id && <button disabled={loading} onClick={deleteFunction}>elimina</button>}
+    <td className="actions-cell">
+    <button className="bg-green-60" disabled={loading} onClick={save}>salva</button>
+    { row?._id && <button className="ml-1 bg-error" disabled={loading} onClick={deleteFunction}>elimina</button>}
     </td>
 </tr>
 

@@ -127,7 +127,7 @@ function SheetBody({sheet,profile}: {
         }
         { tab !== 'table' && 
             <Button className="mr-2 my-2" onClick={() => setTab('table')}>
-                Torna alla tabella
+                Torna al foglio
             </Button>
         }
         { tab === 'csv' &&   
