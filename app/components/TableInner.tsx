@@ -129,13 +129,12 @@ function InputRow({sheetId, schema, row, done}: {
         sheetId,
         data: fields,
       }})
-      setFields(fields => ({
-        ...fields,
-        cognome: '',
-        surname: '',
-        nome: '',
-        dataNascita: '',
-      }))
+      setFields(fields => Object.fromEntries(
+        Object.entries(fields)
+        .map(([key, value]) => schema.fields_to_be_copied_on_new_row.includes(key)
+            ? [key, value]
+            : [key, '']
+      )))
     }
     if (done) done()
   }

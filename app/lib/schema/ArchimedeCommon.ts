@@ -28,6 +28,7 @@ export default class ArchimedeCommon extends Schema {
             new ChoiceAnswerField('r16', '16').add_css_style('thick-border-right'),
             new ComputedField('score', 'punti').add_css_style('thick-border-right'),
         ])
+        this.fields_to_be_copied_on_new_row = ['classYear','classSection']
     }
 }
 
