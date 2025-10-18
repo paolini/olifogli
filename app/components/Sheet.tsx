@@ -35,6 +35,12 @@ const GET_SHEET = gql`
             commonData
             ownerId
             nRows
+            closed
+            closedBy
+            closedOn
+            locked
+            lockedBy
+            lockedOn
         }
     }
 `

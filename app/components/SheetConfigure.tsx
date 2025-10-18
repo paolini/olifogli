@@ -23,6 +23,30 @@ const DELETE_ALL_ROWS = gql`
   }
 `
 
+const CLOSE_SHEET = gql`
+  mutation CloseSheet($_id: ObjectId!) {
+    closeSheet(_id: $_id)
+  }
+`
+
+const OPEN_SHEET = gql`
+  mutation OpenSheet($_id: ObjectId!) {
+    openSheet(_id: $_id)
+  }
+`
+
+const LOCK_SHEET = gql`
+  mutation LockSheet($_id: ObjectId!) {
+    lockSheet(_id: $_id)
+  }
+`
+
+const UNLOCK_SHEET = gql`
+  mutation UnlockSheet($_id: ObjectId!) {
+    unlockSheet(_id: $_id)
+  }
+`
+
 export default function SheetConfigure({sheet, profile}: {
     sheet: Sheet
     profile: User | null
@@ -38,11 +62,19 @@ export default function SheetConfigure({sheet, profile}: {
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
     const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
     const [deleteAllRows, {loading: clearingSheet, error: clearError, reset: clearReset}] = useMutation(DELETE_ALL_ROWS)
+    const [closeSheet, {loading: closing, error: closeError, reset: closeReset}] = useMutation(CLOSE_SHEET)
+    const [openSheet, {loading: opening, error: openError, reset: openReset}] = useMutation(OPEN_SHEET)
+    const [lockSheet, {loading: locking, error: lockError, reset: lockReset}] = useMutation(LOCK_SHEET)
+    const [unlockSheet, {loading: unlocking, error: unlockError, reset: unlockReset}] = useMutation(UNLOCK_SHEET)
     const canModifyData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
     if (updateError) return <Error error={updateError} dismiss={updateReset }/>
     if (clearError) return <Error error={clearError} dismiss={clearReset }/>
+    if (closeError) return <Error error={closeError} dismiss={closeReset }/>
+    if (openError) return <Error error={openError} dismiss={openReset }/>
+    if (lockError) return <Error error={lockError} dismiss={lockReset }/>
+    if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
 
     return <>
         {!edit && 
@@ -53,8 +85,52 @@ export default function SheetConfigure({sheet, profile}: {
                 <Button className="mx-2" onClick={cancel}>
                     Annulla
                 </Button>
+                {sheet.locked ? (
+                    profile?.isAdmin && (
+                        <Button 
+                            className="mx-2"
+                            disabled={unlocking}
+                            onClick={doUnlockSheet}
+                        >
+                            {unlocking ? 'Sblocco...' : 'Sblocca foglio'}
+                        </Button>
+                    )
+                ) : sheet.closed ? (
+                    canModifyData && (
+                        <Button 
+                            className="mx-2"
+                            disabled={opening}
+                            onClick={doOpenSheet}
+                        >
+                            {opening ? 'Apertura...' : 'Apri foglio'}
+                        </Button>
+                    )
+                ) : (
+                    <>
+                        {canModifyData && (
+                            <Button 
+                                className="mx-2"
+                                variant="alert" 
+                                disabled={closing}
+                                onClick={doCloseSheet}
+                            >
+                                {closing ? 'Chiusura...' : 'Chiudi foglio'}
+                            </Button>
+                        )}
+                        {profile?.isAdmin && (
+                            <Button 
+                                className="mx-2"
+                                variant="danger" 
+                                disabled={locking}
+                                onClick={doLockSheet}
+                            >
+                                {locking ? 'Blocco...' : 'Blocca foglio'}
+                            </Button>
+                        )}
+                    </>
+                )}
                 {canModifyData &&
-                    <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0} onClick={() => {
+                    <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
                         if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
                             doClearSheet()
                         }
@@ -79,6 +155,32 @@ export default function SheetConfigure({sheet, profile}: {
             </tr>
         </thead>
         <tbody>
+          <tr>
+            <th className="bg-gray-200">stato</th>
+            <td>
+              {sheet.locked ? (
+                <>
+                  <span className="text-red-600 font-semibold">Bloccato</span>
+                  {sheet.lockedOn && (
+                    <span className="text-sm text-gray-600 ml-2">
+                      (da {sheet.lockedBy || 'sconosciuto'} il {new Date(sheet.lockedOn).toLocaleString()})
+                    </span>
+                  )}
+                </>
+              ) : sheet.closed ? (
+                <>
+                  <span className="text-orange-600 font-semibold">Chiuso</span>
+                  {sheet.closedOn && (
+                    <span className="text-sm text-gray-600 ml-2">
+                      (da {sheet.closedBy || 'sconosciuto'} il {new Date(sheet.closedOn).toLocaleString()})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-green-600">Aperto</span>
+              )}
+            </td>
+          </tr>
           {permissions.map((permission, index) => (
               <tr key={index}>
               <td>{permission.email || `ID: ${permission.userId}`} ({permission.role})</td>
@@ -248,5 +350,35 @@ export default function SheetConfigure({sheet, profile}: {
             refetchQueries: ['getSheet', 'GetRows']
         })
         setEdit(false)
+    }
+
+    async function doCloseSheet() {
+        if (!confirm("Se chiudi il foglio nessuno potrà modificarne le righe. Ma potrai riaprirlo se necessario.")) return
+        await closeSheet({
+            variables: {_id: sheet._id},
+            refetchQueries: ['getSheet']
+        })
+    }
+
+    async function doOpenSheet() {
+        await openSheet({
+            variables: {_id: sheet._id},
+            refetchQueries: ['getSheet']
+        })
+    }
+
+    async function doLockSheet() {
+        if (!confirm("Sei sicuro di voler bloccare questo foglio? Solo gli amministratori di sistema potranno sbloccarlo.")) return
+        await lockSheet({
+            variables: {_id: sheet._id},
+            refetchQueries: ['getSheet']
+        })
+    }
+
+    async function doUnlockSheet() {
+        await unlockSheet({
+            variables: {_id: sheet._id},
+            refetchQueries: ['getSheet']
+        })
     }
 }

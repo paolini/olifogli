@@ -2,14 +2,14 @@ import { getSheetsCollection, getRowsCollection, getDb } from '@/app/lib/mongodb
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
-import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
+import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 
 export default async function deleteAllRows (_: unknown, { sheetId }: { sheetId: ObjectId }, context: Context) {
     const user = await get_authenticated_user(context)
     const sheetsCollection = await getSheetsCollection()
     const sheet = await sheetsCollection.findOne({_id: sheetId})
     if (!sheet) throw new Error('Sheet not found')
-    check_user_can_edit_sheet(user, sheet)
+    check_user_can_edit_rows(user, sheet)
     
     const rowsCollection = await getRowsCollection()
     const rows = await rowsCollection.find({ sheetId }).toArray()
