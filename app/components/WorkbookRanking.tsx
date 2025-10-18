@@ -5,7 +5,6 @@ import { gql, useQuery } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import Button from './Button'
 import { WorkbookReport as WorkbookReportType } from '../graphql/generated'
 
 const GET_WORKBOOK_REPORTS = gql`
@@ -23,18 +22,17 @@ const GET_WORKBOOK_REPORTS = gql`
                 score
                 rank
             }
-            scoreDistribution {
-                score
-                count
-            }
         }
     }
 `
 
-export default function WorkbookReport({ workbookId }: { workbookId: ObjectId }) {
+export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }) {
     const { loading, error, data } = useQuery<{ workbookReports: WorkbookReportType[] }>(GET_WORKBOOK_REPORTS, {
         variables: { workbookId }
     })
+    
+    // Stato per il filtro dello schema - default al primo schema disponibile
+    const [schemaFilter, setSchemaFilter] = useState<string>('')
 
     if (loading) return <Loading />
     if (error) return <Error error={error} />
@@ -44,19 +42,42 @@ export default function WorkbookReport({ workbookId }: { workbookId: ObjectId })
         </div>
     }
 
+    // Imposta il filtro al primo schema se non è ancora impostato
+    if (!schemaFilter && data.workbookReports.length > 0) {
+        setSchemaFilter(data.workbookReports[0].schema)
+    }
+
+    // Filtra i report in base alla selezione
+    const filteredReports = data.workbookReports.filter(r => r.schema === schemaFilter)
+
     return (
         <div className="p-4 space-y-6">
-            <h2 className="text-2xl font-bold">Report Raccolta</h2>
-            {data.workbookReports.map(report => (
-                <ReportSection key={report.schema} report={report} />
+            {data.workbookReports.length > 1 && (
+                <div className="flex items-center gap-3">
+                    <select 
+                        value={schemaFilter} 
+                        onChange={e => setSchemaFilter(e.target.value)} 
+                        className="border rounded px-3 py-2"
+                    >
+                        {data.workbookReports.map(report => (
+                            <option key={report.schema} value={report.schema}>
+                                {report.schema === 'archimede-biennio' ? 'Archimede Biennio' : 'Archimede Triennio'}
+                            </option>
+                        ))}
+                    </select>
+                    <span className="text-gray-600">
+                        {filteredReports.length > 0 && `${filteredReports[0].totalStudents} studenti`}
+                    </span>
+                </div>
+            )}
+            {filteredReports.map(report => (
+                <RankingSection key={report.schema} report={report} />
             ))}
         </div>
     )
 }
 
-function ReportSection({ report }: { report: WorkbookReportType }) {
-    const [activeTab, setActiveTab] = useState<'classifica' | 'grafico'>('classifica')
-
+function RankingSection({ report }: { report: WorkbookReportType }) {
     const schemaName = report.schema === 'archimede-biennio' ? 'Archimede Biennio' : 'Archimede Triennio'
 
     return (
@@ -66,23 +87,7 @@ function ReportSection({ report }: { report: WorkbookReportType }) {
                 <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
             </div>
 
-            <div className="flex gap-2 border-b">
-                <Button 
-                    onClick={() => setActiveTab('classifica')}
-                    className={activeTab === 'classifica' ? 'border-b-2 border-blue-500' : ''}
-                >
-                    Top 100
-                </Button>
-                <Button 
-                    onClick={() => setActiveTab('grafico')}
-                    className={activeTab === 'grafico' ? 'border-b-2 border-blue-500' : ''}
-                >
-                    Distribuzione Punteggi
-                </Button>
-            </div>
-
-            {activeTab === 'classifica' && <TopRanking top100={report.top100} />}
-            {activeTab === 'grafico' && <ScoreDistributionChart distribution={report.scoreDistribution} />}
+            <TopRanking top100={report.top100} />
         </div>
     )
 }
@@ -120,40 +125,6 @@ function TopRanking({ top100 }: { top100: WorkbookReportType['top100'] }) {
                     ))}
                 </tbody>
             </table>
-        </div>
-    )
-}
-
-function ScoreDistributionChart({ distribution }: { distribution: WorkbookReportType['scoreDistribution'] }) {
-    if (distribution.length === 0) {
-        return <p className="text-gray-600">Nessun dato disponibile</p>
-    }
-
-    // Trova il valore massimo per scalare il grafico
-    const maxCount = Math.max(...distribution.map(d => d.count))
-    const maxHeight = 300 // Altezza massima del grafico in pixel
-
-    return (
-        <div className="space-y-4">
-            <div className="flex items-end justify-start gap-1 h-[320px] p-4 bg-gray-50 rounded overflow-x-auto">
-                {distribution.map((item) => {
-                    const height = (item.count / maxCount) * maxHeight
-                    return (
-                        <div key={item.score} className="flex flex-col items-center" style={{ minWidth: '40px' }}>
-                            <div className="text-xs text-gray-600 mb-1">{item.count}</div>
-                            <div 
-                                className="w-8 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-t"
-                                style={{ height: `${height}px` }}
-                                title={`Punteggio ${item.score}: ${item.count} studenti`}
-                            />
-                            <div className="text-xs text-gray-700 mt-1 font-semibold">{item.score}</div>
-                        </div>
-                    )
-                })}
-            </div>
-            <div className="text-sm text-gray-600 text-center">
-                Distribuzione dei punteggi ({distribution.reduce((sum, d) => sum + d.count, 0)} studenti totali)
-            </div>
         </div>
     )
 }

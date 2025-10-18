@@ -57,13 +57,17 @@ export default function SheetElement({sheetId}: {
     if (!sheet || error) return <Error error={error} /> 
 
     return <>
-        <h1>{sheet.name} [
-            {sheet.schema} 
-            {} {profile.isAdmin 
-                ? <Link href={`/workbook/${sheet.workbook._id}`}>{sheet.workbook.name}</Link> 
-                : sheet.workbook.name}
-            ]
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+            <h1 className="flex-1">{sheet.name} [
+                {sheet.schema} 
+                {} {sheet.workbook.name}]
+            </h1>
+            {profile.isAdmin && (
+                <Link href={`/workbook/${sheet.workbook._id}`}>
+                    <Button>← Torna alla raccolta <i>{sheet.workbook.name}</i></Button>
+                </Link>
+            )}
+        </div>
         <table className="my-2">
             <tbody>
                 {sheet.commonData && Object.entries(sheet.commonData).map(([key, value]) => (
