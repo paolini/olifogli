@@ -175,6 +175,7 @@ export type Query = {
   sheets: Array<Sheet>;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
+  workbookReports: Array<WorkbookReport>;
   workbooks?: Maybe<Array<Maybe<Workbook>>>;
 };
 
@@ -209,6 +210,23 @@ export type QueryWorkbookArgs = {
   workbookId: Scalars['ObjectId']['input'];
 };
 
+
+export type QueryWorkbookReportsArgs = {
+  workbookId: Scalars['ObjectId']['input'];
+};
+
+export type ReportEntry = {
+  __typename?: 'ReportEntry';
+  classSection?: Maybe<Scalars['String']['output']>;
+  classYear?: Maybe<Scalars['String']['output']>;
+  rank: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  sheetId: Scalars['ObjectId']['output'];
+  sheetName: Scalars['String']['output'];
+  studentName: Scalars['String']['output'];
+  studentSurname: Scalars['String']['output'];
+};
+
 export type Row = {
   __typename?: 'Row';
   _id: Scalars['ObjectId']['output'];
@@ -239,6 +257,12 @@ export type ScanResults = {
   image: Scalars['String']['output'];
   jobId: Scalars['ObjectId']['output'];
   rawData: Scalars['Data']['output'];
+};
+
+export type ScoreDistribution = {
+  __typename?: 'ScoreDistribution';
+  count: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
 };
 
 export type Sheet = {
@@ -282,6 +306,14 @@ export type Workbook = {
   name?: Maybe<Scalars['String']['output']>;
   ownerId?: Maybe<Scalars['ObjectId']['output']>;
   sheetsCount?: Maybe<Scalars['Int']['output']>;
+};
+
+export type WorkbookReport = {
+  __typename?: 'WorkbookReport';
+  schema: Scalars['String']['output'];
+  scoreDistribution: Array<ScoreDistribution>;
+  top100: Array<ReportEntry>;
+  totalStudents: Scalars['Int']['output'];
 };
 
 export type AddRowsMutationVariables = Exact<{
@@ -452,6 +484,13 @@ export type GetWorkbookQueryVariables = Exact<{
 
 
 export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }> };
+
+export type GetWorkbookReportsQueryVariables = Exact<{
+  workbookId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type GetWorkbookReportsQuery = { __typename?: 'Query', workbookReports: Array<{ __typename?: 'WorkbookReport', schema: string, totalStudents: number, top100: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number }>, scoreDistribution: Array<{ __typename?: 'ScoreDistribution', score: number, count: number }> }> };
 
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1327,6 +1366,61 @@ export type GetWorkbookQueryHookResult = ReturnType<typeof useGetWorkbookQuery>;
 export type GetWorkbookLazyQueryHookResult = ReturnType<typeof useGetWorkbookLazyQuery>;
 export type GetWorkbookSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookSuspenseQuery>;
 export type GetWorkbookQueryResult = Apollo.QueryResult<GetWorkbookQuery, GetWorkbookQueryVariables>;
+export const GetWorkbookReportsDocument = gql`
+    query GetWorkbookReports($workbookId: ObjectId!) {
+  workbookReports(workbookId: $workbookId) {
+    schema
+    totalStudents
+    top100 {
+      sheetId
+      sheetName
+      studentName
+      studentSurname
+      classYear
+      classSection
+      score
+      rank
+    }
+    scoreDistribution {
+      score
+      count
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetWorkbookReportsQuery__
+ *
+ * To run a query within a React component, call `useGetWorkbookReportsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetWorkbookReportsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetWorkbookReportsQuery({
+ *   variables: {
+ *      workbookId: // value for 'workbookId'
+ *   },
+ * });
+ */
+export function useGetWorkbookReportsQuery(baseOptions: Apollo.QueryHookOptions<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables> & ({ variables: GetWorkbookReportsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables>(GetWorkbookReportsDocument, options);
+      }
+export function useGetWorkbookReportsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables>(GetWorkbookReportsDocument, options);
+        }
+export function useGetWorkbookReportsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables>(GetWorkbookReportsDocument, options);
+        }
+export type GetWorkbookReportsQueryHookResult = ReturnType<typeof useGetWorkbookReportsQuery>;
+export type GetWorkbookReportsLazyQueryHookResult = ReturnType<typeof useGetWorkbookReportsLazyQuery>;
+export type GetWorkbookReportsSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookReportsSuspenseQuery>;
+export type GetWorkbookReportsQueryResult = Apollo.QueryResult<GetWorkbookReportsQuery, GetWorkbookReportsQueryVariables>;
 export const GetWorkbooksDocument = gql`
     query GetWorkbooks {
   workbooks {
@@ -1598,6 +1692,7 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Config: ResolverTypeWrapper<Config>;
   Data: ResolverTypeWrapper<Scalars['Data']['output']>;
+  Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
@@ -1605,16 +1700,19 @@ export type ResolversTypes = {
   Permission: ResolverTypeWrapper<Omit<Permission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
+  ReportEntry: ResolverTypeWrapper<Omit<ReportEntry, 'sheetId'> & { sheetId: ResolversTypes['ObjectId'] }>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
+  ScoreDistribution: ResolverTypeWrapper<ScoreDistribution>;
   Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
+  WorkbookReport: ResolverTypeWrapper<WorkbookReport>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -1622,6 +1720,7 @@ export type ResolversParentTypes = {
   Boolean: Scalars['Boolean']['output'];
   Config: Config;
   Data: Scalars['Data']['output'];
+  Float: Scalars['Float']['output'];
   Int: Scalars['Int']['output'];
   JSON: Scalars['JSON']['output'];
   Mutation: {};
@@ -1629,16 +1728,19 @@ export type ResolversParentTypes = {
   Permission: Omit<Permission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
   PermissionInput: PermissionInput;
   Query: {};
+  ReportEntry: Omit<ReportEntry, 'sheetId'> & { sheetId: ResolversParentTypes['ObjectId'] };
   Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
+  ScoreDistribution: ScoreDistribution;
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
   String: Scalars['String']['output'];
   Timestamp: Scalars['Timestamp']['output'];
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
+  WorkbookReport: WorkbookReport;
 };
 
 export type ConfigResolvers<ContextType = any, ParentType extends ResolversParentTypes['Config'] = ResolversParentTypes['Config']> = {
@@ -1698,7 +1800,20 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
+  workbookReports?: Resolver<Array<ResolversTypes['WorkbookReport']>, ParentType, ContextType, RequireFields<QueryWorkbookReportsArgs, 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
+};
+
+export type ReportEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ReportEntry'] = ResolversParentTypes['ReportEntry']> = {
+  classSection?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  classYear?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  rank?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  sheetName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  studentName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  studentSurname?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type RowResolvers<ContextType = any, ParentType extends ResolversParentTypes['Row'] = ResolversParentTypes['Row']> = {
@@ -1730,6 +1845,12 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
   image?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   jobId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   rawData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ScoreDistributionResolvers<ContextType = any, ParentType extends ResolversParentTypes['ScoreDistribution'] = ResolversParentTypes['ScoreDistribution']> = {
+  count?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1772,6 +1893,14 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type WorkbookReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkbookReport'] = ResolversParentTypes['WorkbookReport']> = {
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  scoreDistribution?: Resolver<Array<ResolversTypes['ScoreDistribution']>, ParentType, ContextType>;
+  top100?: Resolver<Array<ResolversTypes['ReportEntry']>, ParentType, ContextType>;
+  totalStudents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
@@ -1780,13 +1909,16 @@ export type Resolvers<ContextType = any> = {
   ObjectId?: GraphQLScalarType;
   Permission?: PermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  ReportEntry?: ReportEntryResolvers<ContextType>;
   Row?: RowResolvers<ContextType>;
   ScanJob?: ScanJobResolvers<ContextType>;
   ScanMessage?: ScanMessageResolvers<ContextType>;
   ScanResults?: ScanResultsResolvers<ContextType>;
+  ScoreDistribution?: ScoreDistributionResolvers<ContextType>;
   Sheet?: SheetResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
   User?: UserResolvers<ContextType>;
   Workbook?: WorkbookResolvers<ContextType>;
+  WorkbookReport?: WorkbookReportResolvers<ContextType>;
 };
 

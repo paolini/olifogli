@@ -87,6 +87,29 @@ type ScanResults {
   rawData: Data!
 }
 
+type ReportEntry {
+  sheetId: ObjectId!
+  sheetName: String!
+  studentName: String!
+  studentSurname: String!
+  classYear: String
+  classSection: String
+  score: Float!
+  rank: Int!
+}
+
+type ScoreDistribution {
+  score: Float!
+  count: Int!
+}
+
+type WorkbookReport {
+  schema: String!
+  totalStudents: Int!
+  top100: [ReportEntry!]!
+  scoreDistribution: [ScoreDistribution!]!
+}
+
 type Query {
   hello: String
   me: User
@@ -101,6 +124,7 @@ type Query {
   scanResults(jobId: ObjectId!): [ScanResults!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
+  workbookReports(workbookId: ObjectId!): [WorkbookReport!]!
 }
 
 type Mutation {
