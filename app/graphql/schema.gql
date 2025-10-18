@@ -7,6 +7,7 @@ type Workbook {
   _id: ObjectId
   name: String
   ownerId: ObjectId
+  commonData: Data!
   sheetsCount: Int
 }
 
@@ -145,6 +146,12 @@ type Mutation {
   addWorkbook(name: String!): Workbook
   # New mutation to delete a workbook when empty
   deleteWorkbook(_id: ObjectId!): ObjectId
+
+  updateWorkbook(
+    _id: ObjectId!
+    name: String
+    commonData: Data
+  ): Boolean
 
   updateSheet(
     _id: ObjectId!

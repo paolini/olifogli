@@ -75,6 +75,7 @@ export type Workbook = {
     _id: ObjectId
     name: string
     ownerId: ObjectId
+    commonData: Record<string, string>
     createdOn: Date
     updatedOn: Date
     createdBy: ObjectId

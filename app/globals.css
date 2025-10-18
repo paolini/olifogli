@@ -113,6 +113,10 @@ th {
   text-overflow: ellipsis;
 }
 
+td.workbook-data-value {
+  min-width: 50ex;
+}
+
 .field-id, .field-id input, .field-zona_id, .field-scuola_id {
   max-width: 7ex;
 }
