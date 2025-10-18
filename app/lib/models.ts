@@ -46,6 +46,12 @@ export type Sheet = {
     workbookId: ObjectId
     commonData: Record<string, string>
     createdAt: Date
+    closed?: boolean
+    closedBy?: string
+    closedOn?: Date
+    locked?: boolean
+    lockedBy?: string
+    lockedOn?: Date
 }
 
 export type Data = {

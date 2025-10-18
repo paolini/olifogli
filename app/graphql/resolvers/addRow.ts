@@ -2,14 +2,14 @@ import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 
-import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
+import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { MutationAddRowArgs } from '../generated'
 
 export default async function addRow(_: unknown, args: MutationAddRowArgs, context: Context) {
     const user = await get_authenticated_user(context)
     const sheetsCollection = await getSheetsCollection()
     const sheet = await sheetsCollection.findOne({_id: args.sheetId})
-    check_user_can_edit_sheet(user, sheet)
+    check_user_can_edit_rows(user, sheet)
     const schema = schemas[sheet.schema]
     const createdOn = new Date()
     const updatedOn = createdOn

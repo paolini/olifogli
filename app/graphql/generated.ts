@@ -37,13 +37,17 @@ export type Mutation = {
   addSheet?: Maybe<Scalars['ObjectId']['output']>;
   addSheets?: Maybe<Scalars['Boolean']['output']>;
   addWorkbook?: Maybe<Workbook>;
+  closeSheet?: Maybe<Scalars['Boolean']['output']>;
   deleteAllRows?: Maybe<Scalars['Int']['output']>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteScan?: Maybe<Scalars['Boolean']['output']>;
   deleteSheet?: Maybe<Scalars['Boolean']['output']>;
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
+  lockSheet?: Maybe<Scalars['Boolean']['output']>;
+  openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
+  unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
 };
 
@@ -79,6 +83,11 @@ export type MutationAddWorkbookArgs = {
 };
 
 
+export type MutationCloseSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
+};
+
+
 export type MutationDeleteAllRowsArgs = {
   sheetId: Scalars['ObjectId']['input'];
 };
@@ -109,10 +118,25 @@ export type MutationDeleteWorkbookArgs = {
 };
 
 
+export type MutationLockSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationOpenSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
+};
+
+
 export type MutationPatchRowArgs = {
   _id: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
   updatedOn: Scalars['Timestamp']['input'];
+};
+
+
+export type MutationUnlockSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
 };
 
 
@@ -220,7 +244,13 @@ export type ScanResults = {
 export type Sheet = {
   __typename?: 'Sheet';
   _id: Scalars['ObjectId']['output'];
+  closed?: Maybe<Scalars['Boolean']['output']>;
+  closedBy?: Maybe<Scalars['String']['output']>;
+  closedOn?: Maybe<Scalars['Timestamp']['output']>;
   commonData: Scalars['Data']['output'];
+  locked?: Maybe<Scalars['Boolean']['output']>;
+  lockedBy?: Maybe<Scalars['String']['output']>;
+  lockedOn?: Maybe<Scalars['Timestamp']['output']>;
   nRows: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   ownerId: Scalars['ObjectId']['output'];
@@ -301,7 +331,7 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -325,6 +355,41 @@ export type UpdateSheetMutationVariables = Exact<{
 
 
 export type UpdateSheetMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
+
+export type DeleteAllRowsMutationVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type DeleteAllRowsMutation = { __typename?: 'Mutation', deleteAllRows?: number | null };
+
+export type CloseSheetMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type CloseSheetMutation = { __typename?: 'Mutation', closeSheet?: boolean | null };
+
+export type OpenSheetMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OpenSheetMutation = { __typename?: 'Mutation', openSheet?: boolean | null };
+
+export type LockSheetMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type LockSheetMutation = { __typename?: 'Mutation', lockSheet?: boolean | null };
+
+export type UnlockSheetMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type UnlockSheetMutation = { __typename?: 'Mutation', unlockSheet?: boolean | null };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
@@ -657,6 +722,12 @@ export const GetSheetDocument = gql`
     commonData
     ownerId
     nRows
+    closed
+    closedBy
+    closedOn
+    locked
+    lockedBy
+    lockedOn
   }
 }
     `;
@@ -800,6 +871,161 @@ export function useUpdateSheetMutation(baseOptions?: Apollo.MutationHookOptions<
 export type UpdateSheetMutationHookResult = ReturnType<typeof useUpdateSheetMutation>;
 export type UpdateSheetMutationResult = Apollo.MutationResult<UpdateSheetMutation>;
 export type UpdateSheetMutationOptions = Apollo.BaseMutationOptions<UpdateSheetMutation, UpdateSheetMutationVariables>;
+export const DeleteAllRowsDocument = gql`
+    mutation DeleteAllRows($sheetId: ObjectId!) {
+  deleteAllRows(sheetId: $sheetId)
+}
+    `;
+export type DeleteAllRowsMutationFn = Apollo.MutationFunction<DeleteAllRowsMutation, DeleteAllRowsMutationVariables>;
+
+/**
+ * __useDeleteAllRowsMutation__
+ *
+ * To run a mutation, you first call `useDeleteAllRowsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteAllRowsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteAllRowsMutation, { data, loading, error }] = useDeleteAllRowsMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useDeleteAllRowsMutation(baseOptions?: Apollo.MutationHookOptions<DeleteAllRowsMutation, DeleteAllRowsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteAllRowsMutation, DeleteAllRowsMutationVariables>(DeleteAllRowsDocument, options);
+      }
+export type DeleteAllRowsMutationHookResult = ReturnType<typeof useDeleteAllRowsMutation>;
+export type DeleteAllRowsMutationResult = Apollo.MutationResult<DeleteAllRowsMutation>;
+export type DeleteAllRowsMutationOptions = Apollo.BaseMutationOptions<DeleteAllRowsMutation, DeleteAllRowsMutationVariables>;
+export const CloseSheetDocument = gql`
+    mutation CloseSheet($_id: ObjectId!) {
+  closeSheet(_id: $_id)
+}
+    `;
+export type CloseSheetMutationFn = Apollo.MutationFunction<CloseSheetMutation, CloseSheetMutationVariables>;
+
+/**
+ * __useCloseSheetMutation__
+ *
+ * To run a mutation, you first call `useCloseSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCloseSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [closeSheetMutation, { data, loading, error }] = useCloseSheetMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useCloseSheetMutation(baseOptions?: Apollo.MutationHookOptions<CloseSheetMutation, CloseSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CloseSheetMutation, CloseSheetMutationVariables>(CloseSheetDocument, options);
+      }
+export type CloseSheetMutationHookResult = ReturnType<typeof useCloseSheetMutation>;
+export type CloseSheetMutationResult = Apollo.MutationResult<CloseSheetMutation>;
+export type CloseSheetMutationOptions = Apollo.BaseMutationOptions<CloseSheetMutation, CloseSheetMutationVariables>;
+export const OpenSheetDocument = gql`
+    mutation OpenSheet($_id: ObjectId!) {
+  openSheet(_id: $_id)
+}
+    `;
+export type OpenSheetMutationFn = Apollo.MutationFunction<OpenSheetMutation, OpenSheetMutationVariables>;
+
+/**
+ * __useOpenSheetMutation__
+ *
+ * To run a mutation, you first call `useOpenSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useOpenSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [openSheetMutation, { data, loading, error }] = useOpenSheetMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useOpenSheetMutation(baseOptions?: Apollo.MutationHookOptions<OpenSheetMutation, OpenSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<OpenSheetMutation, OpenSheetMutationVariables>(OpenSheetDocument, options);
+      }
+export type OpenSheetMutationHookResult = ReturnType<typeof useOpenSheetMutation>;
+export type OpenSheetMutationResult = Apollo.MutationResult<OpenSheetMutation>;
+export type OpenSheetMutationOptions = Apollo.BaseMutationOptions<OpenSheetMutation, OpenSheetMutationVariables>;
+export const LockSheetDocument = gql`
+    mutation LockSheet($_id: ObjectId!) {
+  lockSheet(_id: $_id)
+}
+    `;
+export type LockSheetMutationFn = Apollo.MutationFunction<LockSheetMutation, LockSheetMutationVariables>;
+
+/**
+ * __useLockSheetMutation__
+ *
+ * To run a mutation, you first call `useLockSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useLockSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [lockSheetMutation, { data, loading, error }] = useLockSheetMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useLockSheetMutation(baseOptions?: Apollo.MutationHookOptions<LockSheetMutation, LockSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<LockSheetMutation, LockSheetMutationVariables>(LockSheetDocument, options);
+      }
+export type LockSheetMutationHookResult = ReturnType<typeof useLockSheetMutation>;
+export type LockSheetMutationResult = Apollo.MutationResult<LockSheetMutation>;
+export type LockSheetMutationOptions = Apollo.BaseMutationOptions<LockSheetMutation, LockSheetMutationVariables>;
+export const UnlockSheetDocument = gql`
+    mutation UnlockSheet($_id: ObjectId!) {
+  unlockSheet(_id: $_id)
+}
+    `;
+export type UnlockSheetMutationFn = Apollo.MutationFunction<UnlockSheetMutation, UnlockSheetMutationVariables>;
+
+/**
+ * __useUnlockSheetMutation__
+ *
+ * To run a mutation, you first call `useUnlockSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnlockSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unlockSheetMutation, { data, loading, error }] = useUnlockSheetMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useUnlockSheetMutation(baseOptions?: Apollo.MutationHookOptions<UnlockSheetMutation, UnlockSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UnlockSheetMutation, UnlockSheetMutationVariables>(UnlockSheetDocument, options);
+      }
+export type UnlockSheetMutationHookResult = ReturnType<typeof useUnlockSheetMutation>;
+export type UnlockSheetMutationResult = Apollo.MutationResult<UnlockSheetMutation>;
+export type UnlockSheetMutationOptions = Apollo.BaseMutationOptions<UnlockSheetMutation, UnlockSheetMutationVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
@@ -1434,13 +1660,17 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addSheet?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationAddSheetArgs, 'name' | 'schema' | 'workbookId'>>;
   addSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationAddSheetsArgs, 'sheets'>>;
   addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
+  closeSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCloseSheetArgs, '_id'>>;
   deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteScan?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanArgs, 'jobId'>>;
   deleteSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
+  lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
+  openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
+  unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
 };
 
@@ -1505,7 +1735,13 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
 
 export type SheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Sheet'] = ResolversParentTypes['Sheet']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  closed?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  closedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  closedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   commonData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  locked?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  lockedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lockedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   nRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;

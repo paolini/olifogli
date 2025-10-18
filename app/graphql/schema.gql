@@ -31,6 +31,12 @@ type Sheet {
   workbook: Workbook!
   commonData: Data!
   nRows: Int!
+  closed: Boolean
+  closedBy: String
+  closedOn: Timestamp
+  locked: Boolean
+  lockedBy: String
+  lockedOn: Timestamp
 }
 
 input SheetInput {
@@ -123,4 +129,9 @@ type Mutation {
     permissions: [PermissionInput!]
     commonData: Data
   ): Boolean
+
+  closeSheet(_id: ObjectId!): Boolean
+  openSheet(_id: ObjectId!): Boolean
+  lockSheet(_id: ObjectId!): Boolean
+  unlockSheet(_id: ObjectId!): Boolean
 }

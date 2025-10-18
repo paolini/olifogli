@@ -2,7 +2,7 @@ import { getSheetsCollection, getScanJobsCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
-import { get_authenticated_user, check_user_can_edit_sheet } from './utils'
+import { get_authenticated_user, check_user_can_view_sheet } from './utils'
 import { ScanJob } from '@/app/lib/models'
 import { QueryScanJobsArgs } from '../generated'
 
@@ -10,7 +10,7 @@ export default async function scans (_: unknown, { sheetId, userId }: QueryScanJ
     const user = await get_authenticated_user(context)
     const sheets = await getSheetsCollection()
     const sheet = await sheets.findOne({_id: sheetId })
-    check_user_can_edit_sheet(user, sheet)
+    check_user_can_view_sheet(user, sheet)
     const collection = await getScanJobsCollection()
     const match: {sheetId: ObjectId,userId?: ObjectId} = { sheetId }
     if (user?.isAdmin || sheet.ownerId.equals(user._id)) {

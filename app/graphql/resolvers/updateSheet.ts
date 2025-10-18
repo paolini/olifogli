@@ -1,6 +1,6 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
-import { get_authenticated_user, check_user_can_edit_sheet, check_admin, check_user_can_update_sheet } from './utils'
+import { get_authenticated_user, check_admin, check_user_can_update_sheet } from './utils'
 import { MutationUpdateSheetArgs } from '../generated'
 
 export default async function updateSheet(_: unknown, args: MutationUpdateSheetArgs, context: Context): Promise<boolean> {

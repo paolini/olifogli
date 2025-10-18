@@ -55,16 +55,41 @@ export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): She
 
   return null
 }
-  
-export function check_user_can_edit_sheet(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
+
+/**
+ * Controlla se l'utente può visualizzare un foglio
+ * Anche gli utenti con permesso 'view' possono visualizzare
+ */
+export function check_user_can_view_sheet(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
   if (!sheet) throw new UserInputError('foglio inesistente')
   
   const permission = getUserPermissionOnSheet(user, sheet)
-  if (permission!== 'owner' && permission !== 'admin') {
+  if (!permission) {
+    throw new ForbiddenError('non autorizzato')
+  }
+}
+
+/**
+ * Controlla se l'utente può modificare le righe di un foglio
+ * Blocca se il foglio è chiuso o locked (a meno che non sia admin di sistema)
+ */
+export function check_user_can_edit_rows(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
+  if (!sheet) throw new UserInputError('foglio inesistente')
+  
+  const permission = getUserPermissionOnSheet(user, sheet)
+  if (!permission || permission === 'view') {
     throw new ForbiddenError('non autorizzato')
   }
   
-  // Tutti i ruoli ('owner', 'admin', 'editor') possono modificare i dati del foglio
+  // Check if sheet is locked (only system admins can edit locked sheets)
+  if (sheet.locked) {
+    throw new ForbiddenError('il foglio è bloccato non può essere modificato')
+  }
+  
+  // Check if sheet is closed (nobody can edit rows when closed)
+  if (sheet.closed) {
+    throw new ForbiddenError('il foglio è chiuso e non è possibile modificare le righe')
+  }
 }
 
 export function check_user_can_update_sheet(user: User, sheet: Partial<Sheet>|null, args: MutationUpdateSheetArgs): asserts sheet is NonNullable<Sheet> {
@@ -110,5 +135,14 @@ export function check_user_can_view_job(user: User, job: ScanJob|null): asserts 
 
 export function check_user_can_delete_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
   return check_user_can_view_job(user, job)
+}
+
+export function check_user_is_sheet_admin(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
+  if (!sheet) throw new UserInputError('foglio inesistente')
+  
+  const permission = getUserPermissionOnSheet(user, sheet)
+  if (permission !== 'owner' && permission !== 'admin') {
+    throw new ForbiddenError('è richiesto il permesso di amministratore sul foglio')
+  }
 }
 

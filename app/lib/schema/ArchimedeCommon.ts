@@ -10,7 +10,6 @@ export default class ArchimedeCommon extends Schema {
             new Field('dataNascita', 'data di nascita'),
             new Field('classe'),
             new Field('sezione'),
-            new Field('scuola'),
             new ChoiceAnswerField('r01', '1').add_css_style('thick-border-left'),
             new ChoiceAnswerField('r02', '2'),
             new ChoiceAnswerField('r03', '3'),
@@ -27,3 +26,5 @@ export default class ArchimedeCommon extends Schema {
         ])
     }
 }
+
+

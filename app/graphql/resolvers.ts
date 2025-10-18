@@ -28,6 +28,10 @@ import deleteScan from './resolvers/deleteScan'
 import addWorkbook from './resolvers/addWorkbook'
 import deleteWorkbook from './resolvers/deleteWorkbook'
 import updateSheet from './resolvers/updateSheet'
+import closeSheet from './resolvers/closeSheet'
+import openSheet from './resolvers/openSheet'
+import lockSheet from './resolvers/lockSheet'
+import unlockSheet from './resolvers/unlockSheet'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -92,6 +96,10 @@ export const resolvers: Resolvers = {
     addWorkbook,
     deleteWorkbook,
     updateSheet,
+    closeSheet,
+    openSheet,
+    lockSheet,
+    unlockSheet,
   },
 
   Timestamp,
