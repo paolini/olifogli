@@ -52,7 +52,6 @@ const DELETE_WORKBOOK = gql`
 export default function Sheets({ workbookId }: { workbookId?: ObjectId }) {
     const profile = useProfile()
     return <div className="p-4">
-        <h1>Fogli</h1>
         {profile && <SheetsTable workbookId={workbookId} profile={profile}/>}
         {workbookId && profile?.isAdmin && <SheetForm workbookId={workbookId} />}
     </div>;
@@ -107,6 +106,10 @@ function SheetsTable({ workbookId, profile }: {
         setSelectedIds(ids => ids.includes(idStr) ? ids.filter(i => i !== idStr) : [...ids, idStr])
     }
 
+    // Calcola gli schemi unici presenti nei fogli
+    const availableSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
+        .sort()
+
     return <>
         {allSheets.length === 0 ? (
             <div className="bg-alert">Nessun foglio disponibile</div>
@@ -115,8 +118,10 @@ function SheetsTable({ workbookId, profile }: {
             <div className="mb-2 flex items-center gap-3">
                 <select value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)} className="border rounded px-2 py-1">
                     <option value="">Tutti i fogli</option>
-                    {Object.entries(schemas).map(([key, schema]) => (
-                        <option key={key} value={key}>{schema.header}</option>
+                    {availableSchemas.map(schemaKey => (
+                        <option key={schemaKey} value={schemaKey}>
+                            {schemas[schemaKey]?.header || schemaKey}
+                        </option>
                     ))}
                 </select>
                 <span>{sheets.length} {sheets.length === 1 ? "foglio" : "fogli"} {schemaFilter && ` (su ${allSheets.length})`}</span>

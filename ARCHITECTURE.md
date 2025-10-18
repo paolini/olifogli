@@ -236,7 +236,7 @@ I file PDF devono seguire il pattern: `{schema}-{jobId}.pdf`
 ### Reporting e Analisi
 - **WorkbookReport**: Component per visualizzazione report workbook
   - Supporta report separati per archimede-biennio e archimede-triennio
-  - Tab "Top 100": Classifica dei primi 100 studenti per punteggio
+  - Tab "list": Classifica degli studenti per punteggio
   - Tab "Distribuzione": Grafico a barre della distribuzione dei punteggi
   - Rispetta i permessi utente: mostra solo dati da fogli accessibili
   - Visualizza nome foglio, cognome, nome, classe, sezione e punteggio
