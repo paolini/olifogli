@@ -121,27 +121,27 @@ th {
   max-width: 10ex;
 }
 
-.field-cognome, .field-cognome input {
+.field-surname, .field-surname input {
   max-width: 16ex;
 }
 
-.field-nome, .field-nome input {
+.field-name, .field-name input {
   max-width: 16ex;
 }
 
-.field-dataNascita, .field-dataNascita input {
+.field-birthDate, .field-birthDate input {
   max-width: 13ex;
 }
 
-.field-classe, .field-classe input {
+.field-classYear, .field-classYear input {
   max-width: 5ex;
 }
 
-.field-sezione, .field-sezione input { 
+.field-classSection, .field-classSection input {
   max-width: 8ex;
 }
 
-.field-scuola, .field-scuola input {
+.field-school, .field-school input {
   max-width: 20ex;
 }
 
@@ -162,7 +162,7 @@ th {
   max-width: 4ex;
 }
 
-.field-codiceCompito, .field-codiceCompito input {
+.field-variant, .field-variant input {
   max-width: 8ex;
 }
 
