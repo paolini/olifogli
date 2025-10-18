@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { gql, useQuery } from '@apollo/client'
 import { ObjectId } from 'bson'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import Error from './Error'
 import Loading from './Loading'
 import { WorkbookReport as WorkbookReportType } from '../graphql/generated'
@@ -91,30 +92,41 @@ function ScoreDistributionChart({ distribution }: { distribution: WorkbookReport
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
 
-    // Trova il valore massimo per scalare il grafico
-    const maxCount = Math.max(...distribution.map(d => d.count))
-    const maxHeight = 300 // Altezza massima del grafico in pixel
+    // Trasforma i dati nel formato richiesto da Recharts
+    const chartData = distribution.map(item => ({
+        punteggio: item.score,
+        studenti: item.count
+    }))
+
+    const totalStudents = distribution.reduce((sum, d) => sum + d.count, 0)
 
     return (
         <div className="space-y-4">
-            <div className="flex items-end justify-start gap-1 h-[320px] p-4 bg-gray-50 rounded overflow-x-auto">
-                {distribution.map((item) => {
-                    const height = (item.count / maxCount) * maxHeight
-                    return (
-                        <div key={item.score} className="flex flex-col items-center" style={{ minWidth: '40px' }}>
-                            <div className="text-xs text-gray-600 mb-1">{item.count}</div>
-                            <div 
-                                className="w-8 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-t"
-                                style={{ height: `${height}px` }}
-                                title={`Punteggio ${item.score}: ${item.count} studenti`}
-                            />
-                            <div className="text-xs text-gray-700 mt-1 font-semibold">{item.score}</div>
-                        </div>
-                    )
-                })}
-            </div>
+            <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                        dataKey="punteggio" 
+                        label={{ value: 'Punteggio', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis 
+                        label={{ value: 'Numero di studenti', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                        formatter={(value: number) => [`${value} studenti`, 'Frequenza']}
+                        labelFormatter={(label) => `Punteggio: ${label}`}
+                    />
+                    <Legend />
+                    <Bar 
+                        dataKey="studenti" 
+                        fill="#3b82f6" 
+                        name="Studenti"
+                        radius={[8, 8, 0, 0]}
+                    />
+                </BarChart>
+            </ResponsiveContainer>
             <div className="text-sm text-gray-600 text-center">
-                Distribuzione dei punteggi ({distribution.reduce((sum, d) => sum + d.count, 0)} studenti totali)
+                Distribuzione dei punteggi ({totalStudents} studenti totali)
             </div>
         </div>
     )
