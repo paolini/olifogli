@@ -7,7 +7,8 @@ export default class Schema {
     name: string // da usare nel codice
     header: string // da usare nella UI
     scan_fields: Field[] // nome dei campi presi dalla scansione
-    
+    fields_to_be_copied_on_new_row: string[] = [] // nomi dei campi da copiare quando si crea una nuova riga
+
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields
         this.header = header
