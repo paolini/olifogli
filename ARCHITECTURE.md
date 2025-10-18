@@ -105,12 +105,16 @@ olifogli/
 - `User`: Utente del sistema
 - `ScanJob`: Job di acquisizione OMR
 - `ScanResults`: Risultati dell'acquisizione
+- `WorkbookReport`: Report aggregato con classifica e distribuzione punteggi
+- `ReportEntry`: Singola entry nella classifica con dati studente e punteggio
+- `ScoreDistribution`: Distribuzione dei punteggi per grafico
 
 #### Queries Principali
 - `workbooks`: Lista workbook utente
 - `sheets(workbookId)`: Fogli in un workbook
 - `rows(sheetId)`: Righe in un foglio
 - `scanJobs(sheetId)`: Job di scansione per un foglio
+- `workbookReports(workbookId)`: Report aggregati per workbook (archimede-biennio e archimede-triennio)
 
 #### Mutations Principali
 - `addWorkbook(name)`: Crea nuovo workbook
@@ -227,6 +231,15 @@ I file PDF devono seguire il pattern: `{schema}-{jobId}.pdf`
 - **Button/Input**: Componenti UI base
 - **UserProfile**: Gestione profilo utente
 - **Workbooks/Sheets**: Gestione contenuti
+- **WorkbookReport**: Visualizzazione report aggregati workbook
+
+### Reporting e Analisi
+- **WorkbookReport**: Component per visualizzazione report workbook
+  - Supporta report separati per archimede-biennio e archimede-triennio
+  - Tab "Top 100": Classifica dei primi 100 studenti per punteggio
+  - Tab "Distribuzione": Grafico a barre della distribuzione dei punteggi
+  - Rispetta i permessi utente: mostra solo dati da fogli accessibili
+  - Visualizza nome foglio, cognome, nome, classe, sezione e punteggio
 
 ## Schema e Validazione
 
