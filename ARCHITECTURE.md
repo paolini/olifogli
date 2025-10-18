@@ -39,6 +39,7 @@ olifogli/
   _id: ObjectId
   name: string
   ownerId: ObjectId
+  commonData: Record<string, string>  // Dati flessibili key-value
   createdOn: Date
   updatedOn: Date
   createdBy: ObjectId
@@ -118,7 +119,10 @@ olifogli/
 
 #### Mutations Principali
 - `addWorkbook(name)`: Crea nuovo workbook
+- `updateWorkbook(_id, name, commonData)`: Aggiorna workbook (solo owner o admin)
+- `deleteWorkbook(_id)`: Elimina workbook (solo se vuoto)
 - `addSheet(...)`: Crea nuovo foglio
+- `updateSheet(_id, ...)`: Aggiorna foglio
 - `addRow(sheetId, data)`: Aggiunge riga
 - `addRows(sheetId, columns, rows)`: Import bulk CSV
 - `closeSheet(_id)`: Chiude un foglio (solo admin del foglio)
@@ -231,13 +235,15 @@ I file PDF devono seguire il pattern: `{schema}-{jobId}.pdf`
 - **Button/Input**: Componenti UI base
 - **UserProfile**: Gestione profilo utente
 - **Workbooks/Sheets**: Gestione contenuti
+- **WorkbookConfigure**: Configurazione workbook (campi chiave-valore, eliminazione)
 - **WorkbookReport**: Visualizzazione report aggregati workbook
 
 ### Reporting e Analisi
 - **WorkbookReport**: Component per visualizzazione report workbook
   - Supporta report separati per archimede-biennio e archimede-triennio
-  - Tab "list": Classifica degli studenti per punteggio
+  - Tab "Risultati": Classifica degli studenti per punteggio
   - Tab "Distribuzione": Grafico a barre della distribuzione dei punteggi
+  - Tab "Configurazione": Gestione campi chiave-valore del workbook e configurazioni
   - Rispetta i permessi utente: mostra solo dati da fogli accessibili
   - Visualizza nome foglio, cognome, nome, classe, sezione e punteggio
 

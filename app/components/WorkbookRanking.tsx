@@ -8,7 +8,7 @@ import Loading from './Loading'
 import { WorkbookReport as WorkbookReportType } from '../graphql/generated'
 
 const GET_WORKBOOK_REPORTS = gql`
-    query GetWorkbookReports($workbookId: ObjectId!) {
+    query GetWorkbookReportsRanking($workbookId: ObjectId!) {
         workbookReports(workbookId: $workbookId) {
             schema
             totalStudents

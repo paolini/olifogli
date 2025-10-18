@@ -8,6 +8,7 @@ import Loading from '@/app/components/Loading'
 import WorkbookSheets from '@/app/components/WorkbookSheets'
 import WorkbookRanking from '@/app/components/WorkbookRanking'
 import WorkbookDistribution from '@/app/components/WorkbookDistribution'
+import WorkbookConfigure from '@/app/components/WorkbookConfigure'
 import { useGetWorkbookQuery } from '../graphql/generated'
 
 const GET_WORKBOOK = gql`
@@ -15,8 +16,17 @@ const GET_WORKBOOK = gql`
         workbook(workbookId: $workbookId) {
             _id
             name
+            ownerId
+            commonData
+            sheetsCount
         }
         sheets(workbookId: $workbookId) { _id }
+        me {
+            _id
+            email
+            name
+            isAdmin
+        }
     }
 `
 
@@ -32,7 +42,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const { loading, error, data, refetch } = useGetWorkbookQuery({variables: { workbookId }})
     
     const tabParam = searchParams.get('tab')
-    const validTabs = ['fogli', 'list', 'distribuzione'] as const
+    const validTabs = ['fogli', 'list', 'distribuzione', 'configura'] as const
     type TabType = typeof validTabs[number]
     
     function isTabType(tab: string | null): tab is TabType {
@@ -46,6 +56,8 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     if (error) return <Error error={error} />
 
     const workbook = data?.workbook
+    const profile = data?.me
+    const sheetsCount = data?.sheets?.length || 0
     
     // Funzione per cambiare tab e aggiornare l'URL
     function setActiveTab(newTab: TabType) {
@@ -95,10 +107,21 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
             >
                 Distribuzione Punteggi
             </button>
+            <button
+                onClick={() => setActiveTab('configura')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                    activeTab === 'configura' 
+                        ? 'bg-white border-l border-t border-r border-gray-300 border-b-white -mb-px rounded-t text-blue-600' 
+                        : 'bg-gray-100 text-gray-600 hover:text-gray-800 border-b border-gray-300'
+                }`}
+            >
+                Configurazione
+            </button>
         </div>
 
         {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} />}
         {activeTab === 'list' && <WorkbookRanking workbookId={workbookId} />}
         {activeTab === 'distribuzione' && <WorkbookDistribution workbookId={workbookId} />}
+        {activeTab === 'configura' && workbook && <WorkbookConfigure workbook={workbook} profile={profile || null} sheetsCount={sheetsCount} />}
     </div>
 }
