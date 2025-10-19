@@ -61,7 +61,7 @@ export type Data = {
 export type Row = {
     _id: ObjectId
     sheetId: ObjectId
-    isValid: boolean
+    error: string // eventuale errore di validazione
 
     data: Data
 

@@ -239,7 +239,7 @@ export type Row = {
   __typename?: 'Row';
   _id: Scalars['ObjectId']['output'];
   data: Scalars['Data']['output'];
-  isValid: Scalars['Boolean']['output'];
+  error?: Maybe<Scalars['String']['output']>;
   updatedOn: Scalars['Timestamp']['output'];
 };
 
@@ -372,14 +372,14 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData: any } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, isValid: boolean, data: any, updatedOn: Date }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, updatedOn: Date }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -469,7 +469,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, isValid: boolean, data: any } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -478,7 +478,7 @@ export type PatchRowMutationVariables = Exact<{
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, updatedOn: Date, isValid: boolean, data: any } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, updatedOn: Date, error?: string | null, data: any } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -781,6 +781,7 @@ export const GetSheetDocument = gql`
     workbook {
       _id
       name
+      commonData
     }
     commonData
     ownerId
@@ -831,7 +832,7 @@ export const GetRowsDocument = gql`
     query getRows($sheetId: ObjectId!) {
   rows(sheetId: $sheetId) {
     _id
-    isValid
+    error
     data
     updatedOn
   }
@@ -1244,7 +1245,7 @@ export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
     _id
-    isValid
+    error
     data
   }
 }
@@ -1282,7 +1283,7 @@ export const PatchRowDocument = gql`
     _id
     __typename
     updatedOn
-    isValid
+    error
     data
   }
 }
@@ -1926,7 +1927,7 @@ export type ReportEntryResolvers<ContextType = any, ParentType extends Resolvers
 export type RowResolvers<ContextType = any, ParentType extends ResolversParentTypes['Row'] = ResolversParentTypes['Row']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
-  isValid?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

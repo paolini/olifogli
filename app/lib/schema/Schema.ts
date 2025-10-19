@@ -2,6 +2,11 @@ import { Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet } from '@/app/lib/models'
 import { Field } from './fields'
 
+export type DerivedData = {
+    error: string,
+    data: Data,
+}
+
 export default class Schema {
     fields: Field[]
     name: string // da usare nel codice
@@ -20,6 +25,14 @@ export default class Schema {
         const cleaned: Data = Object.fromEntries(this.fields
             .map(field => [field.name, field.clean(data[field.name] || "")]))
         return cleaned
+    }
+
+    computeDerivedData(data: Data): DerivedData {
+        const isValid = this.isValid(data)
+        return {
+            error: isValid ? '' : 'errore validazione',
+            data,
+        }
     }
 
     // da integrare con un set di condizioni completo

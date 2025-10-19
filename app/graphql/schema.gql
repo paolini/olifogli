@@ -50,7 +50,7 @@ input SheetInput {
 
 type Row {
   _id: ObjectId!
-  isValid: Boolean!
+  error: String
   updatedOn: Timestamp!
   data: Data!
 }

@@ -14,19 +14,22 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     const createdOn = new Date()
     const updatedOn = createdOn
     const createdBy = user._id
-    const updatedBy = user._id
-    const data = schema.clean(args.data)
-    const isValid = schema.isValid(data) // TODO compute this!
+    const updatedBy = user._id    
+    let data = schema.clean(args.data)
+    const derivedData = await schema.computeDerivedData(data)
+    data = derivedData.data
+    const error = derivedData.error || ''
     const rowsCollection = await getRowsCollection()
-
     const result = await rowsCollection.insertOne({ 
         data, 
         sheetId: args.sheetId, 
-        isValid, 
+        error,
         updatedOn, 
         updatedBy, 
         createdOn, 
         createdBy
     })
-    return await rowsCollection.findOne({ _id: result.insertedId });
+    const row = await rowsCollection.findOne({ _id: result.insertedId })
+    if (!row) throw new Error('Row not found after creation')
+    return row
 }

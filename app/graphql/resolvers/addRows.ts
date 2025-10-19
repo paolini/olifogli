@@ -25,8 +25,7 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     const validatedRows: WithoutId<Row>[] = objectRows
         .map(row => schema.clean(row as Data))
         .map(data => ({
-            data, 
-            isValid: schema.isValid(data),
+            ...schema.computeDerivedData(data),
             sheetId,
             createdBy,
             createdOn,

@@ -51,7 +51,7 @@ function TableRow({schema, row, onClick}: {
   row: WithId<Row>, 
   onClick?: () => void,
 }) {
-  const className = `clickable${row.isValid ? "" : " alert"}`
+  const className = `clickable${row.error ? " alert" : ""}`
   return <tr className={className} onClick={() => onClick && onClick()}>
     {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
   </tr>
@@ -149,7 +149,7 @@ export const ADD_ROW = gql`
   mutation addRow($sheetId: ObjectId!, $data: Data!) {
     addRow(sheetId: $sheetId, data: $data) {
       _id
-      isValid
+      error
       data
     }
   }
@@ -161,7 +161,7 @@ const PATCH_ROW = gql`
       _id
       __typename
       updatedOn
-      isValid
+      error
       data
     }
   }
