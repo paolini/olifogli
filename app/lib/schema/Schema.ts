@@ -28,20 +28,21 @@ export default class Schema {
     }
 
     computeDerivedData(data: Data): DerivedData {
-        const isValid = this.isValid(data)
+        for (let i=0; i < this.fields.length; i++) {
+            const field = this.fields[i]
+            const value = data[field.name]
+            if (!field.isValid(value)) return {
+                error: `campo "${field.header}" non valido`,
+                data,
+            }
+        }
         return {
-            error: isValid ? '' : 'errore validazione',
+            error: '',
             data,
         }
     }
 
-    // da integrare con un set di condizioni completo
     isValid(row: Data): boolean {
-        for (let i=0; i < this.fields.length; i++) {
-            const field = this.fields[i]
-            const value = row[field.name]
-            if (!field.isValid(value)) return false
-        }
         return true
     } 
 

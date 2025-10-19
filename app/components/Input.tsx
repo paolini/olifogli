@@ -93,9 +93,9 @@ export function NumericInput({value, setValue, onEnter}: {
 }
 
 export function ScoreInput({value, setValue, onEnter}: {
-  value: string, 
-  setValue: (value: string) => void,
-  onEnter?: () => void,
+    value: string, 
+    setValue: (value: string) => void,
+    onEnter?: () => void,
   }) {
   return <input value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}} onKeyDown={onKeyDown}/>
 

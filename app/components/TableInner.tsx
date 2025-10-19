@@ -27,7 +27,9 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
     <tbody>
       {rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
       {currentRowId 
-        ? <tr><td><button className="bg-alert" onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
+        ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
+          aggiungi riga
+          </button></td></tr>
         : <InputRow sheetId={sheet._id.toString()} schema={schema}/>}
     </tbody>
   </table>
@@ -54,6 +56,7 @@ function TableRow({schema, row, onClick}: {
   const className = `clickable${row.error ? " alert" : ""}`
   return <tr className={className} onClick={() => onClick && onClick()}>
     {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
+    {row.error && <td className="error">{row.error}</td>}
   </tr>
 }
 
@@ -96,8 +99,12 @@ function InputRow({sheetId, schema, row, done}: {
         : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
     )}
     <td className="actions-cell">
-      <button className="bg-green-60" disabled={loading} onClick={save}>salva</button>
-      {row?._id && <button className="ml-1 bg-error" disabled={loading} onClick={deleteFunction}>elimina</button>}
+      <button className="bg-green-60" disabled={loading} onClick={save}>
+        salva
+      </button>
+      {row?._id && <button className="ml-1 bg-error" disabled={loading} onClick={deleteFunction}>
+        elimina
+      </button>}
     </td>
   </tr>
 
