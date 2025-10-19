@@ -172,7 +172,7 @@ async function main() {
     // Inserisci row
     const rowDoc = {
       sheetId: sheet._id,
-      isValid: true,
+      error: '',
       data: rowData,
       createdOn: now,
       createdBy: null,

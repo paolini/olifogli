@@ -67,7 +67,7 @@ olifogli/
 {
   _id: ObjectId
   sheetId: ObjectId
-  isValid: boolean
+  error: string // '' se è valido
   data: Record<string, string>  // Dati flessibili key-value
   createdOn: Date
   createdBy: ObjectId

@@ -1,9 +1,6 @@
-import { ObjectId } from 'bson'
-
 import { Context } from '../types'
 import { get_authenticated_user, check_user_can_view_sheet } from './utils'
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
-import { Sheet, User } from '@/app/lib/models'
 import { QueryRowsArgs } from '../generated'
 
 export default async function rows (_: unknown, { sheetId }: QueryRowsArgs, context: Context) {

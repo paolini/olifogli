@@ -104,7 +104,7 @@ async function main() {
     // Inserisci row
     const rowDoc = {
       sheetId: sheet._id,
-      isValid: true,
+      error: '',
       data: {
         cognome: row.surname || '',
         nome: row.name || '',

@@ -31,6 +31,7 @@ const GET_SHEET = gql`
             workbook {
                 _id
                 name
+                commonData
             }
             commonData
             ownerId
@@ -85,7 +86,7 @@ const GET_ROWS = gql`
   query getRows($sheetId: ObjectId!) {
     rows(sheetId: $sheetId) {
       _id
-      isValid
+      error
       data
       updatedOn
     }

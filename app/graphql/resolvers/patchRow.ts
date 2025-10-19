@@ -18,16 +18,21 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
     check_user_can_edit_rows(user,sheet)
     const schema = schemas[sheet.schema]
+    console.log('patchRow', {row, updatedOn});
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
-    const isValid = schema.isValid(data)
+    const derivedData = await schema.computeDerivedData(data)
+    data.score = derivedData.data.score
+    const error = derivedData.error || ''
     const $set = {
         data,
-        isValid,
+        error,
         updatedOn: new Date(),
         updatedBy: user._id,
     }
     await rowsCollection.updateOne({ _id }, { $set })
-    return await rowsCollection.findOne({ _id })
+    const updatedRow = await rowsCollection.findOne({ _id })
+    if (!updatedRow) throw new Error('Row not found after update')
+    return updatedRow
 }
 
