@@ -40,7 +40,7 @@ export class ComputedField extends Field {
         this.editable = false
     }
 
-    valueIsValid(_: string): boolean {
+    isValid(_: string): boolean {
         return true
     }
 }
