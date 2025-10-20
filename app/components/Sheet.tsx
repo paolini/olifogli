@@ -70,7 +70,7 @@ export default function SheetElement({sheetId}: {
             }
             {!profile.isAdmin &&
                 <Link href="/">
-                <Button>← Torna all'elenco dei fogli</Button>
+                <Button>← Torna all&apos;elenco dei fogli</Button>
                 </Link>
             }
         </div>
