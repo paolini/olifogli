@@ -11,6 +11,7 @@ export default async function addWorkbook(_: unknown, { name }: { name: string }
   const result = await collection.insertOne({
     name,
     ownerId: user._id,
+    commonData: {},
     createdOn: now,
     updatedOn: now,
     createdBy: user._id,

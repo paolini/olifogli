@@ -2,12 +2,18 @@ import { Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet } from '@/app/lib/models'
 import { Field } from './fields'
 
+export type DerivedData = {
+    error: string,
+    data: Data,
+}
+
 export default class Schema {
     fields: Field[]
     name: string // da usare nel codice
     header: string // da usare nella UI
     scan_fields: Field[] // nome dei campi presi dalla scansione
-    
+    fields_to_be_copied_on_new_row: string[] = [] // nomi dei campi da copiare quando si crea una nuova riga
+
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields
         this.header = header
@@ -21,13 +27,22 @@ export default class Schema {
         return cleaned
     }
 
-    // da integrare con un set di condizioni completo
-    isValid(row: Data): boolean {
+    computeDerivedData(data: Data): DerivedData {
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
-            const value = row[field.name]
-            if (!field.isValid(value)) return false
+            const value = data[field.name]
+            if (!field.isValid(value)) return {
+                error: `campo "${field.header}" non valido`,
+                data,
+            }
         }
+        return {
+            error: '',
+            data,
+        }
+    }
+
+    isValid(row: Data): boolean {
         return true
     } 
 

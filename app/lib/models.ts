@@ -21,6 +21,14 @@ export type User = {
     lastLogin?: Date
 }
 
+/**
+ * owner: può fare tutto (i superutenti sono considerati owner di tutti i fogli)
+ * admin: può fare tutto sui fogli dove ha questo permesso
+ *        in particolare può dare permessi admin/editor/view a chi vuole
+ * editor: può modificare i dati, ma non i metadati (nome, schema, permessi)
+ * view: può solo vedere i dati, non può modificarli
+ */
+
 export type SheetPermissionRole = 'owner' | 'admin' | 'editor' | 'view';
 
 export type Permission = {
@@ -38,6 +46,12 @@ export type Sheet = {
     workbookId: ObjectId
     commonData: Record<string, string>
     createdAt: Date
+    closed?: boolean
+    closedBy?: string
+    closedOn?: Date
+    locked?: boolean
+    lockedBy?: string
+    lockedOn?: Date
 }
 
 export type Data = {
@@ -47,7 +61,7 @@ export type Data = {
 export type Row = {
     _id: ObjectId
     sheetId: ObjectId
-    isValid: boolean
+    error: string // eventuale errore di validazione
 
     data: Data
 
@@ -61,6 +75,7 @@ export type Workbook = {
     _id: ObjectId
     name: string
     ownerId: ObjectId
+    commonData: Record<string, string>
     createdOn: Date
     updatedOn: Date
     createdBy: ObjectId

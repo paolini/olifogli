@@ -31,10 +31,17 @@ const GET_SHEET = gql`
             workbook {
                 _id
                 name
+                commonData
             }
             commonData
             ownerId
             nRows
+            closed
+            closedBy
+            closedOn
+            locked
+            lockedBy
+            lockedOn
         }
     }
 `
@@ -51,13 +58,17 @@ export default function SheetElement({sheetId}: {
     if (!sheet || error) return <Error error={error} /> 
 
     return <>
-        <h1>{sheet.name} [
-            {sheet.schema} 
-            {} {profile.isAdmin 
-                ? <Link href={`/workbook/${sheet.workbook._id}`}>{sheet.workbook.name}</Link> 
-                : sheet.workbook.name}
-            ]
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+            <h1 className="flex-1">{sheet.name} [
+                {sheet.schema} 
+                {} {sheet.workbook.name}]
+            </h1>
+            {profile.isAdmin && (
+                <Link href={`/workbook/${sheet.workbook._id}`}>
+                    <Button>← Torna alla raccolta <i>{sheet.workbook.name}</i></Button>
+                </Link>
+            )}
+        </div>
         <table className="my-2">
             <tbody>
                 {sheet.commonData && Object.entries(sheet.commonData).map(([key, value]) => (
@@ -75,7 +86,7 @@ const GET_ROWS = gql`
   query getRows($sheetId: ObjectId!) {
     rows(sheetId: $sheetId) {
       _id
-      isValid
+      error
       data
       updatedOn
     }
@@ -127,7 +138,7 @@ function SheetBody({sheet,profile}: {
         }
         { tab !== 'table' && 
             <Button className="mr-2 my-2" onClick={() => setTab('table')}>
-                Torna alla tabella
+                Torna al foglio
             </Button>
         }
         { tab === 'csv' &&   

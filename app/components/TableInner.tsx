@@ -2,221 +2,257 @@ import { useState, memo } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
 import Schema from '@/app/lib/schema/Schema'
-import { Field } from '@/app/lib/schema/fields'
+import { ChoiceAnswerField, Field } from '@/app/lib/schema/fields'
 
 import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row, Sheet } from '@/app/graphql/generated'
 
 export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema}: {
-    rows: Row[],
-    currentRowId: ObjectId|null,
-    setCurrentRowId: (id: ObjectId|null) => void,
-    sheet: Sheet,
-    schema: Schema,
-  }) {
-    return <table>
-      <thead>
-        <tr>
-          {schema.fields.map(field => 
-            <th scope="col" key={field.name} className={field.css_style}>
+  rows: Row[],
+  currentRowId: ObjectId|null,
+  setCurrentRowId: (id: ObjectId|null) => void,
+  sheet: Sheet,
+  schema: Schema,
+}) {
+  return <table className="my-table">
+    <thead>
+      <tr>
+        {schema.fields.map(field => 
+          <th scope="col" key={field.name} className={field.css_style}>
             {field.header}
-            </th>)}
-        </tr>
-      </thead>
-      <tbody>
-        { rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
-        { currentRowId 
-          ? <tr><td><button className="bg-alert" onClick={() => setCurrentRowId(null)}>nuova riga</button></td></tr>
-          : <InputRow sheetId={sheet._id.toString()} schema={schema}/>}
-      </tbody>
-    </table>
+          </th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
+      {currentRowId 
+        ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
+          aggiungi riga
+          </button></td></tr>
+        : <InputRow sheetId={sheet._id.toString()} schema={schema}/>}
+    </tbody>
+  </table>
 }
   
 const MyRow = memo(MyRowInternal)
 
 function MyRowInternal({current, sheetId, schema, row, setCurrentRowId}: {
-current: boolean,
-sheetId: string,
-schema: Schema,
-row: WithId<Row>,
-setCurrentRowId: (id: ObjectId|null) => void
+  current: boolean,
+  sheetId: string,
+  schema: Schema,
+  row: WithId<Row>,
+  setCurrentRowId: (id: ObjectId|null) => void
 }) {
-if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)}/>
-else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} />
+  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)}/>
+  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} />
 }
 
 function TableRow({schema, row, onClick}: {
-    schema: Schema,
-    row: WithId<Row>, 
-    onClick?: () => void,
+  schema: Schema,
+  row: WithId<Row>, 
+  onClick?: () => void,
 }) {
-const className = `clickable${row.isValid ? "" : " alert"}`
-return <tr className={className} onClick={() => onClick && onClick()}>
-    { schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
-</tr>
+  const className = `clickable${row.error ? " alert" : ""}`
+  return <tr className={className} onClick={() => onClick && onClick()}>
+    {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
+    {row.error && <td className="error">{row.error}</td>}
+  </tr>
 }
 
 function TableCell({field, value}:{
-field: Field,
-value: string,
+  field: Field,
+  value: string,
 }) {
-return <td key={field.name} className={field.css_style}>{value}</td>
+  let extra_css="";
+  if (field instanceof ChoiceAnswerField) {
+    if (value.length === 7) {
+      extra_css = value.charAt(0) === value.charAt(3) 
+        ? " correct" 
+        : value.charAt(0) == '-' ? "" : " incorrect";
+    }
+  }
+  return <td key={field.name} className={field.css_style+extra_css}>
+    {field instanceof ChoiceAnswerField 
+    ? <ChoiceAnswerSpan value={value}/>
+    : value}
+  </td>
+}
+
+function ChoiceAnswerSpan({value}: {value: string}) {
+  if (value.length === 0) return '';
+  if (value.length === 1) return value;
+  if (value.length !== 7) return value.charAt(0);
+  const answer = value.charAt(0)
+  const correct = value.charAt(3)
+  const original = value.charAt(4)
+  return <>
+    <span className={answer===correct ? "correct" : "incorrect"}>{answer}</span>
+  </>
 }
 
 function InputRow({sheetId, schema, row, done}: {
-sheetId: string,
-schema: Schema, 
-row?: WithId<Row>,
-done?: () => void
+  sheetId: string,
+  schema: Schema, 
+  row?: WithId<Row>,
+  done?: () => void
 }) {
-const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
-const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
-const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
-const [fields, setFields] = useState<Data>(Object.fromEntries(schema.fields.map(f => [f.name, row?.data[f.name] || ''])))
-    
-const loading = addLoading || patchLoading || deleteLoading
-const error = addError || patchError || deleteError
-const modified = hasBeenModified()
+  const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
+  const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
+  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
+  const [fields, setFields] = useState<Data>(Object.fromEntries(schema.fields.map(f => [f.name, row?.data[f.name] || ''])))
+  
+  const loading = addLoading || patchLoading || deleteLoading
+  const error = addError || patchError || deleteError
+  const modified = hasBeenModified()
 
-if (loading) return <tr><td>...</td></tr>
-if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
+  if (loading) return <tr><td>...</td></tr>
+  if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
 
-return <tr className={modified ? "alert": ""}>
-    { schema.fields.map(field => 
-    field.editable
-    ? <td key={field.name} className={field.css_style}>
-            <InputCell
+  return <tr className={modified ? "alert": ""}>
+    {schema.fields.map(field => 
+      field.editable
+        ? <td key={field.name} className={field.css_style}>
+          <InputCell
             field={field}
             value={fields[field.name]||''} 
             setValue={v => setFields(fields => ({...fields, [field.name]: v}))}
             onEnter={save}
-            />
+          />
         </td>
-    : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
+        : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
     )}
-    <td>
-    <button disabled={loading} onClick={save}>salva</button>
-    { row?._id && <button disabled={loading} onClick={deleteFunction}>elimina</button>}
+    <td className="actions-cell">
+      <button className="bg-green-60" disabled={loading} onClick={save}>
+        salva
+      </button>
+      {row?._id && <button className="ml-1 bg-error" disabled={loading} onClick={deleteFunction}>
+        elimina
+      </button>}
     </td>
-</tr>
+  </tr>
 
-function hasBeenModified() {
+  function hasBeenModified() {
     for (const field of schema.fields) {
-    if (!row && fields[field.name] !== '') return true;
-    if (row && fields[field.name] !== row.data[field.name]) return true;
+      if (!row && fields[field.name] !== '') return true;
+      if (row && fields[field.name] !== row.data[field.name]) return true;
     }
     return false;
-}
+  }
 
-function dismissError() {
+  function dismissError() {
     if (addError) return addReset()
     if (patchError) return patchReset()
     if (deleteError) return deleteReset()
-}
+  }
 
-async function save() {
+  async function save() {
     if (row?._id) {
-    // patch
-    await patchRow({variables: {
+      // patch
+      await patchRow({variables: {
         _id: row._id,
         data: fields,
         updatedOn: row.updatedOn || new Date(),
-    }})
+      }})
     } else {
-    // insert
-    await addRow({variables: {
+      // insert
+      await addRow({variables: {
         sheetId,
         data: fields,
-    }})
-    setFields(fields => ({
-        ...fields,
-        cognome: '',
-        nome: '',
-        dataNascita: '',
-    }))
+      }})
+      setFields(fields => Object.fromEntries(
+        Object.entries(fields)
+        .map(([key, value]) => schema.fields_to_be_copied_on_new_row.includes(key)
+            ? [key, value]
+            : [key, '']
+      )))
     }
     if (done) done()
-}
+  }
 
-async function deleteFunction() {
+  async function deleteFunction() {
     if (!row?._id) throw new Error("cannot delete a row which was not saved")
     await deleteRow({variables: { _id: row._id }})
-}
+  }
 }
 
 export const ADD_ROW = gql`
-    mutation addRow($sheetId: ObjectId!, $data: Data!) {
+  mutation addRow($sheetId: ObjectId!, $data: Data!) {
     addRow(sheetId: $sheetId, data: $data) {
-        _id
-        isValid
-        data
+      _id
+      error
+      data
     }
-}`
+  }
+`
 
 const PATCH_ROW = gql`
-    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
+  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
     patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
-        _id
-        __typename
-        updatedOn
-        isValid
-        data
+      _id
+      __typename
+      updatedOn
+      error
+      data
     }
-}`
+  }
+`
 
 const DELETE_ROW = gql`
-    mutation deleteRow($_id: ObjectId!) {
+  mutation deleteRow($_id: ObjectId!) {
     deleteRow(_id: $_id)
-}`
+  }
+`
 
 export function useAddRow() {
-    return useMutation<{ addRow: Row }>(ADD_ROW, {
-        update(cache, { data }) {
-        if (!data) return      
-        const newRow = data.addRow // Assumendo che la mutazione restituisca la nuova riga          
-        cache.modify({
-            fields: {
-            rows(existingRows = [], { readField }) {
-                // Controlla se la riga è già presente per evitare duplicati
-                if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
-                return existingRows
-                }
-                return [...existingRows, newRow]
-            },
-            },
-        })
-        }
-    })
+  return useMutation<{ addRow: Row }>(ADD_ROW, {
+    update(cache, { data }) {
+      if (!data) return      
+      const newRow = data.addRow // Assumendo che la mutazione restituisca la nuova riga          
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            // Controlla se la riga è già presente per evitare duplicati
+            if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
+              return existingRows
+            }
+            return [...existingRows, newRow]
+          },
+        },
+      })
+    }
+  })
 }
 
 export function usePatchRow() {
-    return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
-        update(cache, { data }) {
-        const updatedRow = data?.patchRow
-        if (!updatedRow) return
+  return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
+    update(cache, { data }) {
+      const updatedRow = data?.patchRow
+      if (!updatedRow) return
 
-        cache.modify({
-            id: cache.identify(updatedRow),
-            fields: Object.fromEntries(
-            Object.entries(updatedRow).map(([key, value]) => [key, () => value])
-            ),
-        })
-        }})
+      cache.modify({
+        id: cache.identify(updatedRow),
+        fields: Object.fromEntries(
+          Object.entries(updatedRow).map(([key, value]) => [key, () => value])
+        ),
+      })
+    }
+  })
 }
 
 export function useDeleteRow() {
-    return useMutation<{ deleteRow: string }>(DELETE_ROW, {
-        update(cache, { data }) {
-        const deletedId = data?.deleteRow
-        if (!deletedId) return
+  return useMutation<{ deleteRow: string }>(DELETE_ROW, {
+    update(cache, { data }) {
+      const deletedId = data?.deleteRow
+      if (!deletedId) return
 
-        cache.modify({
-            fields: {
-            rows(existingRows = [], { readField }) {
-                return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
-            },
-            },
-        })
-        }})
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
+          },
+        },
+      })
+    }
+  })
 }
