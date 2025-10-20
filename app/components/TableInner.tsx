@@ -91,11 +91,14 @@ function ChoiceAnswerSpan({value, showStandardAnswers}:
   if (value.length === 0) return '';
   if (value.length === 1) return value;
   if (value.length !== 7) return value.charAt(0);
-  const answer = value.charAt(0)
-  const correct = value.charAt(3)
-  const original = value.charAt(4)
+
+  // showStandardAnswers decides whether to show 
+  // the corresponding answers in the standard permutation (211/311)
+
+  const answer = showStandardAnswers ? value.charAt(4) : value.charAt(0);
+  const correct = showStandardAnswers ? value.charAt(5) : value.charAt(3)
   return <>
-      <span className={answer===correct ? "correct" : "incorrect"}>{showStandardAnswers?original:answer}</span>
+      <span className={answer===correct ? "correct" : "incorrect"}>{answer}</span>
   </>
 }
 
