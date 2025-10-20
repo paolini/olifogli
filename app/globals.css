@@ -117,6 +117,14 @@ td.workbook-data-value {
   min-width: 50ex;
 }
 
+td.correct {
+  background-color: rgb(165, 244, 165);
+}
+
+td.incorrect {
+  background-color: rgb(233, 115, 115)
+}
+
 .field-id, .field-id input, .field-zona_id, .field-scuola_id {
   max-width: 7ex;
 }
