@@ -2,7 +2,7 @@ import { useState, memo } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
 import Schema from '@/app/lib/schema/Schema'
-import { Field } from '@/app/lib/schema/fields'
+import { ChoiceAnswerField, Field } from '@/app/lib/schema/fields'
 
 import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
@@ -64,7 +64,31 @@ function TableCell({field, value}:{
   field: Field,
   value: string,
 }) {
-  return <td key={field.name} className={field.css_style}>{value}</td>
+  let extra_css="";
+  if (field instanceof ChoiceAnswerField) {
+    if (value.length === 7) {
+      extra_css = value.charAt(0) === value.charAt(3) 
+        ? " correct" 
+        : value.charAt(0) == '-' ? "" : " incorrect";
+    }
+  }
+  return <td key={field.name} className={field.css_style+extra_css}>
+    {field instanceof ChoiceAnswerField 
+    ? <ChoiceAnswerSpan value={value}/>
+    : value}
+  </td>
+}
+
+function ChoiceAnswerSpan({value}: {value: string}) {
+  if (value.length === 0) return '';
+  if (value.length === 1) return value;
+  if (value.length !== 7) return value.charAt(0);
+  const answer = value.charAt(0)
+  const correct = value.charAt(3)
+  const original = value.charAt(4)
+  return <>
+    <span className={answer===correct ? "correct" : "incorrect"}>{answer}</span>
+  </>
 }
 
 function InputRow({sheetId, schema, row, done}: {

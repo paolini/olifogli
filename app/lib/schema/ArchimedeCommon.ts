@@ -36,16 +36,20 @@ export default class ArchimedeCommon extends Schema {
     computeDerivedData(data: Data): DerivedData {
         const validated = super.computeDerivedData(data)
         data = validated.data
-        data.score = ''
+        data = {...data, score:''}
         if (validated.error) return validated
         const variant = data['variant'] || ''
         if (!variant) return {
             error: 'variante mancante',
             data,
         }
-        const answers = this.fields.filter(f => f instanceof ChoiceAnswerField).map(f => data[f.name] || '')
-        const {score, error} = decodePermutations(variant, answers);
-        data = {...data, score: `${score}`}
+        const choice_fields = this.fields.filter(f => f instanceof ChoiceAnswerField)
+        const answers = choice_fields.map(f => data[f.name] || '')
+        const {score, error, extended_answers} = decodePermutations(variant, answers);
+        data.score = `${score}`
+        choice_fields.forEach((f, i) => {
+            data[f.name] = extended_answers[i] || ''
+        })
         return {
             error,
             data
