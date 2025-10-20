@@ -63,11 +63,16 @@ export default function SheetElement({sheetId}: {
                 {sheet.schema} 
                 {} {sheet.workbook.name}]
             </h1>
-            {profile.isAdmin && (
+            {profile.isAdmin &&
                 <Link href={`/workbook/${sheet.workbook._id}`}>
                     <Button>← Torna alla raccolta <i>{sheet.workbook.name}</i></Button>
                 </Link>
-            )}
+            }
+            {!profile.isAdmin &&
+                <Link href="/">
+                <Button>← Torna all'elenco dei fogli</Button>
+                </Link>
+            }
         </div>
         <table className="my-2">
             <tbody>
