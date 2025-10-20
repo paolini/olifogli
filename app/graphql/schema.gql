@@ -7,6 +7,7 @@ type Workbook {
   _id: ObjectId
   name: String
   ownerId: ObjectId
+  commonData: Data!
   sheetsCount: Int
 }
 
@@ -31,6 +32,12 @@ type Sheet {
   workbook: Workbook!
   commonData: Data!
   nRows: Int!
+  closed: Boolean
+  closedBy: String
+  closedOn: Timestamp
+  locked: Boolean
+  lockedBy: String
+  lockedOn: Timestamp
 }
 
 input SheetInput {
@@ -43,7 +50,7 @@ input SheetInput {
 
 type Row {
   _id: ObjectId!
-  isValid: Boolean!
+  error: String
   updatedOn: Timestamp!
   data: Data!
 }
@@ -81,6 +88,29 @@ type ScanResults {
   rawData: Data!
 }
 
+type ReportEntry {
+  sheetId: ObjectId!
+  sheetName: String!
+  studentName: String!
+  studentSurname: String!
+  classYear: String
+  classSection: String
+  score: Float!
+  rank: Int!
+}
+
+type ScoreDistribution {
+  score: Float!
+  count: Int!
+}
+
+type WorkbookReport {
+  schema: String!
+  totalStudents: Int!
+  top100: [ReportEntry!]!
+  scoreDistribution: [ScoreDistribution!]!
+}
+
 type Query {
   hello: String
   me: User
@@ -95,6 +125,7 @@ type Query {
   scanResults(jobId: ObjectId!): [ScanResults!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
+  workbookReports(workbookId: ObjectId!): [WorkbookReport!]!
 }
 
 type Mutation {
@@ -106,6 +137,7 @@ type Mutation {
   addRow(sheetId: ObjectId!, data: Data!): Row
   patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row
   deleteRow(_id: ObjectId!): ObjectId
+  deleteAllRows(sheetId: ObjectId!): Int
   addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
   
   deleteScan(jobId: ObjectId!): Boolean
@@ -115,6 +147,12 @@ type Mutation {
   # New mutation to delete a workbook when empty
   deleteWorkbook(_id: ObjectId!): ObjectId
 
+  updateWorkbook(
+    _id: ObjectId!
+    name: String
+    commonData: Data
+  ): Boolean
+
   updateSheet(
     _id: ObjectId!
     name: String
@@ -122,4 +160,9 @@ type Mutation {
     permissions: [PermissionInput!]
     commonData: Data
   ): Boolean
+
+  closeSheet(_id: ObjectId!): Boolean
+  openSheet(_id: ObjectId!): Boolean
+  lockSheet(_id: ObjectId!): Boolean
+  unlockSheet(_id: ObjectId!): Boolean
 }

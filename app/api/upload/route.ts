@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb'
 
 import { get_context } from '@/app/graphql/types'
 import { getScanJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
-import { check_user_can_edit_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
+import { check_user_can_edit_rows, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { schemas } from '@/app/lib/schema'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         const schema = schemas[sheet.schema]
 
         try {
-            check_user_can_edit_sheet(user,sheet)
+            check_user_can_edit_rows(user,sheet)
         } catch (error) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }

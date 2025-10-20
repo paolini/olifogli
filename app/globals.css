@@ -86,8 +86,12 @@ td {
   border: 1px solid gray;
 }
 
-td .thick-border-right {
-  border-right: 4px solid red;
+td.thick-border-right, th.thick-border-right {
+  border-right: 4px solid gray;
+}
+
+td.thick-border-left, th.thick-border-left {
+  border-left: 4px solid gray;
 }
 
 table {
@@ -99,6 +103,28 @@ th {
   border: 1px solid gray;
 }
 
+th {
+  border-bottom: 4px solid gray;
+}
+
+.my-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+td.workbook-data-value {
+  min-width: 50ex;
+}
+
+td.correct {
+  background-color: rgb(165, 244, 165);
+}
+
+td.incorrect {
+  background-color: rgb(233, 115, 115)
+}
+
 .field-id, .field-id input, .field-zona_id, .field-scuola_id {
   max-width: 7ex;
 }
@@ -107,32 +133,33 @@ th {
   max-width: 10ex;
 }
 
-.field-cognome, .field-cognome input {
+.field-surname, .field-surname input {
   max-width: 16ex;
 }
 
-.field-nome, .field-nome input {
+.field-name, .field-name input {
   max-width: 16ex;
 }
 
-.field-dataNascita, .field-dataNascita input {
-  max-width: 10ex;
+.field-birthDate, .field-birthDate input {
+  max-width: 13ex;
 }
 
-.field-classe, .field-classe input {
+.field-classYear, .field-classYear input {
   max-width: 5ex;
 }
 
-.field-sezione, .field-sezione input { 
-  max-width: 5ex;
+.field-classSection, .field-classSection input {
+  max-width: 8ex;
 }
 
-.field-scuola, .field-scuola input {
+.field-school, .field-school input {
   max-width: 20ex;
 }
 
 .field-ChoiceAnswer, .field-ChoiceAnswer input {
   max-width: 3ex;
+  text-align: center;
 }
 
 .field-NumberAnswer, .field-NumberAnswer input {
@@ -147,3 +174,22 @@ th {
   max-width: 4ex;
 }
 
+.field-variant, .field-variant input {
+  max-width: 8ex;
+}
+
+.actions-cell {
+  min-width: 15ex;
+}
+
+th.field-classYear {
+  font-size: 80%;
+}
+
+th.field-score {
+  font-size: 40%;
+}
+
+.my-table th {
+  background-color: pink;
+}

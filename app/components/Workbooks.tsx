@@ -87,7 +87,7 @@ export default function Workbooks() {
                   onClick={() => handleDeleteWorkbook(workbook._id?.toString(), workbook.name)}
                   className="bg-red-500 hover:bg-red-600 text-white text-sm px-2 py-1"
                 >
-                  Cancella
+                  Elimina
                 </Button>
               )}
             </td>

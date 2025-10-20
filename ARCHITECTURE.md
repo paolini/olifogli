@@ -39,6 +39,7 @@ olifogli/
   _id: ObjectId
   name: string
   ownerId: ObjectId
+  commonData: Record<string, string>  // Dati flessibili key-value
   createdOn: Date
   updatedOn: Date
   createdBy: ObjectId
@@ -52,6 +53,12 @@ olifogli/
   _id: ObjectId
   createdAt: Date
   permissions: Permission[]  // Sistema di autorizzazioni strutturato
+  closed?: boolean           // Foglio chiuso, non modificabile
+  closedBy?: string          // Email di chi ha chiuso il foglio
+  closedOn?: Date            // Quando è stato chiuso
+  locked?: boolean           // Foglio bloccato (solo admin sistema)
+  lockedBy?: string          // Email di chi ha bloccato il foglio
+  lockedOn?: Date            // Quando è stato bloccato
 }
 ```
 
@@ -60,7 +67,7 @@ olifogli/
 {
   _id: ObjectId
   sheetId: ObjectId
-  isValid: boolean
+  error: string // '' se è valido
   data: Record<string, string>  // Dati flessibili key-value
   createdOn: Date
   createdBy: ObjectId
@@ -99,18 +106,60 @@ olifogli/
 - `User`: Utente del sistema
 - `ScanJob`: Job di acquisizione OMR
 - `ScanResults`: Risultati dell'acquisizione
+- `WorkbookReport`: Report aggregato con classifica e distribuzione punteggi
+- `ReportEntry`: Singola entry nella classifica con dati studente e punteggio
+- `ScoreDistribution`: Distribuzione dei punteggi per grafico
 
 #### Queries Principali
 - `workbooks`: Lista workbook utente
 - `sheets(workbookId)`: Fogli in un workbook
 - `rows(sheetId)`: Righe in un foglio
 - `scanJobs(sheetId)`: Job di scansione per un foglio
+- `workbookReports(workbookId)`: Report aggregati per workbook (archimede-biennio e archimede-triennio)
 
 #### Mutations Principali
 - `addWorkbook(name)`: Crea nuovo workbook
+- `updateWorkbook(_id, name, commonData)`: Aggiorna workbook (solo owner o admin)
+- `deleteWorkbook(_id)`: Elimina workbook (solo se vuoto)
 - `addSheet(...)`: Crea nuovo foglio
+- `updateSheet(_id, ...)`: Aggiorna foglio
 - `addRow(sheetId, data)`: Aggiunge riga
 - `addRows(sheetId, columns, rows)`: Import bulk CSV
+- `closeSheet(_id)`: Chiude un foglio (solo admin del foglio)
+- `openSheet(_id)`: Riapre un foglio (solo admin del foglio)
+- `lockSheet(_id)`: Blocca un foglio (solo admin di sistema)
+- `unlockSheet(_id)`: Sblocca un foglio (solo admin di sistema)
+
+## Gestione Stato dei Fogli
+
+### Stati dei Fogli
+I fogli possono trovarsi in tre stati:
+1. **Aperto e Sbloccato** (default): Modificabile da tutti gli utenti autorizzati
+2. **Chiuso**: Non modificabile, ma configurabile dagli admin del foglio
+3. **Bloccato**: Non modificabile, configurabile solo dagli admin di sistema
+
+### Controlli di Accesso per Stato
+
+#### Foglio Aperto (closed=false, locked=false)
+- Gli utenti con permesso `editor` o superiore possono modificare le righe
+- Gli utenti con permesso `admin` o owner possono modificare i metadati
+- Gli admin del foglio possono chiudere il foglio
+
+#### Foglio Chiuso (closed=true, locked=false)
+- Nessuno può modificare le righe (inclusi admin del foglio)
+- Gli admin del foglio possono ancora modificare permessi e commonData
+- Gli admin del foglio possono riaprire il foglio
+- Gli admin di sistema possono bloccare il foglio
+
+#### Foglio Bloccato (locked=true)
+- Solo gli admin di sistema possono modificare qualsiasi cosa
+- Gli admin del foglio non possono modificare nulla
+- Solo gli admin di sistema possono sbloccare il foglio
+
+### Workflow Tipico
+1. Durante la raccolta dati: foglio aperto
+2. Al termine della raccolta: admin del foglio chiude il foglio
+3. Per archiviazione permanente: admin di sistema blocca il foglio
 
 ## Sistema di Autenticazione
 
@@ -186,6 +235,17 @@ I file PDF devono seguire il pattern: `{schema}-{jobId}.pdf`
 - **Button/Input**: Componenti UI base
 - **UserProfile**: Gestione profilo utente
 - **Workbooks/Sheets**: Gestione contenuti
+- **WorkbookConfigure**: Configurazione workbook (campi chiave-valore, eliminazione)
+- **WorkbookReport**: Visualizzazione report aggregati workbook
+
+### Reporting e Analisi
+- **WorkbookReport**: Component per visualizzazione report workbook
+  - Supporta report separati per archimede-biennio e archimede-triennio
+  - Tab "Risultati": Classifica degli studenti per punteggio
+  - Tab "Distribuzione": Grafico a barre della distribuzione dei punteggi
+  - Tab "Configurazione": Gestione campi chiave-valore del workbook e configurazioni
+  - Rispetta i permessi utente: mostra solo dati da fogli accessibili
+  - Visualizza nome foglio, cognome, nome, classe, sezione e punteggio
 
 ## Schema e Validazione
 

@@ -14,6 +14,7 @@ import sheet from './resolvers/sheet'
 import rows from './resolvers/rows'
 import scanJobs from './resolvers/scanJobs'
 import scanResults from './resolvers/scanResults'
+import workbookReports from './resolvers/workbookReports'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -22,11 +23,17 @@ import addSheets from './resolvers/addSheets'
 import addRow from './resolvers/addRow'
 import patchRow from './resolvers/patchRow'
 import deleteRow from './resolvers/deleteRow'
+import deleteAllRows from './resolvers/deleteAllRows'
 import addRows from './resolvers/addRows'
 import deleteScan from './resolvers/deleteScan'
 import addWorkbook from './resolvers/addWorkbook'
 import deleteWorkbook from './resolvers/deleteWorkbook'
+import updateWorkbook from './resolvers/updateWorkbook'
 import updateSheet from './resolvers/updateSheet'
+import closeSheet from './resolvers/closeSheet'
+import openSheet from './resolvers/openSheet'
+import lockSheet from './resolvers/lockSheet'
+import unlockSheet from './resolvers/unlockSheet'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -48,6 +55,7 @@ export const resolvers: Resolvers = {
     rows,
     scanJobs,
     scanResults,
+    workbookReports,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
   },
 
@@ -85,11 +93,17 @@ export const resolvers: Resolvers = {
     addRow,
     patchRow,
     deleteRow,
+    deleteAllRows,
     addRows,
     deleteScan,
     addWorkbook,
     deleteWorkbook,
+    updateWorkbook,
     updateSheet,
+    closeSheet,
+    openSheet,
+    lockSheet,
+    unlockSheet,
   },
 
   Timestamp,
