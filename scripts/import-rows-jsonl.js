@@ -121,8 +121,8 @@ async function main() {
         ownerId: ownerId,
         schema: schema,
         commonData: {
-          name: schoolId,
-          schoolId: schoolId,
+          "Nome_scuola": schoolId,
+          "Città_scuola": '',
         },
         createdAt: now,
         permissions: [],
@@ -131,7 +131,7 @@ async function main() {
       sheet = { ...sheetDoc, _id: res.insertedId };
       sheetMap.set(schoolId, sheet); // Aggiungi alla mappa usando school_id
       createdSheetsCount++;
-      console.log(`Creato sheet: ${schoolId}`);
+      console.log(`Creato foglio ${schoolId} per scuola ${schoolId}`);
     }
 
     // Prepara i dati della riga

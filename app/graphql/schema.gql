@@ -139,6 +139,7 @@ type Mutation {
   deleteRow(_id: ObjectId!): ObjectId
   deleteAllRows(sheetId: ObjectId!): Int
   addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
+  validateRows(sheetId: ObjectId!): Int
   
   deleteScan(jobId: ObjectId!): Boolean
 
