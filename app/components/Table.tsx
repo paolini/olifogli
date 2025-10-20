@@ -11,9 +11,10 @@ import ErrorElement from './Error'
 
 export default function Table({rows, sheet}:{
   rows: Row[],
-  sheet: Sheet, 
+  sheet: Sheet,
 }) {
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
+  const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
   const schema = schemas[sheet.schema]
   // Always call hooks unconditionally
   const criteria = useCriteria(schema)
@@ -27,14 +28,24 @@ export default function Table({rows, sheet}:{
     {view_rows.length < rows.length && <span> ({view_rows.length} visualizzate)</span>}
     <br />
     <Ordering criteria={criteria}/>
-      <LoadingWrapper>
-        <TableInner 
-          rows={view_rows} 
-          currentRowId={currentRowId} 
-          setCurrentRowId={setCurrentRowId} 
-          sheet={sheet} 
-          schema={schema}
-        />
-      </LoadingWrapper>
-  </>
+    { ['archimede-biennio','archimede-triennio'].includes(schema.name) && (
+      <>
+        <br />
+        <label>
+          <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
+          {' '}Mostra risposte standard
+        </label>
+      </>
+    )}
+    <LoadingWrapper>
+      <TableInner 
+        rows={view_rows} 
+        currentRowId={currentRowId} 
+        setCurrentRowId={setCurrentRowId} 
+        sheet={sheet} 
+        schema={schema}
+        showStandardAnswers={showStandardAnswers}
+      />
+    </LoadingWrapper>
+</>
 }

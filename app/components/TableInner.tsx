@@ -8,12 +8,13 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row, Sheet } from '@/app/graphql/generated'
 
-export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema}: {
+export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers}: {
   rows: Row[],
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
   sheet: Sheet,
   schema: Schema,
+  showStandardAnswers: boolean
 }) {
   return <table className="my-table">
     <thead>
@@ -25,7 +26,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
       </tr>
     </thead>
     <tbody>
-      {rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} />)} 
+      {rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} showStandardAnswers={showStandardAnswers} />)} 
       {currentRowId 
         ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
           aggiungi riga
@@ -37,32 +38,35 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
   
 const MyRow = memo(MyRowInternal)
 
-function MyRowInternal({current, sheetId, schema, row, setCurrentRowId}: {
+function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStandardAnswers}: {
   current: boolean,
   sheetId: string,
   schema: Schema,
   row: WithId<Row>,
   setCurrentRowId: (id: ObjectId|null) => void
+  showStandardAnswers: boolean
 }) {
   if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)}/>
-  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} />
+  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} showStandardAnswers={showStandardAnswers} />
 }
 
-function TableRow({schema, row, onClick}: {
+function TableRow({schema, row, onClick, showStandardAnswers}: {
   schema: Schema,
-  row: WithId<Row>, 
+  row: WithId<Row>,
   onClick?: () => void,
+  showStandardAnswers: boolean
 }) {
   const className = `clickable${row.error ? " alert" : ""}`
   return <tr className={className} onClick={() => onClick && onClick()}>
-    {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]}/>) }
+    {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} />)}
     {row.error && <td className="error">{row.error}</td>}
   </tr>
 }
 
-function TableCell({field, value}:{
+function TableCell({field, value, showStandardAnswers}:{
   field: Field,
   value: string,
+  showStandardAnswers?: boolean
 }) {
   let extra_css="";
   if (field instanceof ChoiceAnswerField) {
@@ -74,12 +78,16 @@ function TableCell({field, value}:{
   }
   return <td key={field.name} className={field.css_style+extra_css}>
     {field instanceof ChoiceAnswerField 
-    ? <ChoiceAnswerSpan value={value}/>
+    ? <ChoiceAnswerSpan value={value} showStandardAnswers={showStandardAnswers ?? false} />
     : value}
   </td>
 }
 
-function ChoiceAnswerSpan({value}: {value: string}) {
+function ChoiceAnswerSpan({value, showStandardAnswers}: 
+  {
+    value: string, 
+    showStandardAnswers: boolean
+  }) {
   if (value.length === 0) return '';
   if (value.length === 1) return value;
   if (value.length !== 7) return value.charAt(0);
@@ -87,7 +95,7 @@ function ChoiceAnswerSpan({value}: {value: string}) {
   const correct = value.charAt(3)
   const original = value.charAt(4)
   return <>
-    <span className={answer===correct ? "correct" : "incorrect"}>{answer}</span>
+      <span className={answer===correct ? "correct" : "incorrect"}>{showStandardAnswers?original:answer}</span>
   </>
 }
 
