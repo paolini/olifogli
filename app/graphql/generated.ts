@@ -50,6 +50,7 @@ export type Mutation = {
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
   updateWorkbook?: Maybe<Scalars['Boolean']['output']>;
+  validateRows?: Maybe<Scalars['Int']['output']>;
 };
 
 
@@ -154,6 +155,11 @@ export type MutationUpdateWorkbookArgs = {
   _id: Scalars['ObjectId']['input'];
   commonData?: InputMaybe<Scalars['Data']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationValidateRowsArgs = {
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 export type Permission = {
@@ -1882,6 +1888,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
   updateWorkbook?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateWorkbookArgs, '_id'>>;
+  validateRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationValidateRowsArgs, 'sheetId'>>;
 };
 
 export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['ObjectId'], any> {

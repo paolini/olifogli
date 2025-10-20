@@ -120,7 +120,8 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                     sheet: null,
                     commonData: {
                         Nome_scuola: row.data?.Nome_scuola || '',
-                        "Città_scuola": row.data["Città_scuola"] || ''
+                        "Città_scuola": row.data["Città_scuola"] || '',
+                        "Distretto":  row.data["Nome_distretto"] || '',
                     }
                 })
             }
