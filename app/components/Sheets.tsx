@@ -49,6 +49,12 @@ const DELETE_WORKBOOK = gql`
     }
 `
 
+const VALIDATE_ROWS = gql`
+    mutation ValidateRows($sheetId: ObjectId!) {
+        validateRows(sheetId: $sheetId)
+    }
+`
+
 export default function Sheets({ workbookId }: { workbookId?: ObjectId }) {
     const profile = useProfile()
     return <div className="p-4">
@@ -68,6 +74,7 @@ function SheetsTable({ workbookId, profile }: {
     })
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
+    const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
     // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     // Stato per la paginazione
@@ -136,7 +143,6 @@ function SheetsTable({ workbookId, profile }: {
                         <th>Schema</th>
                         {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
                         <th>righe</th>
-                        <th>permessi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -170,6 +176,7 @@ function SheetsTable({ workbookId, profile }: {
         )}
         <Error error={deleteWorkbookError} />
         <Error error={deleteSheetsError} />
+        <Error error={validateRowsError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={deleteEmptySheets}>
@@ -177,6 +184,9 @@ function SheetsTable({ workbookId, profile }: {
                 </Button> 
                 <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={deleteSelectedSheets}>
                     Elimina {selectedIds.length} {selectedIds.length === 1 ? 'foglio selezionato' : 'fogli selezionati'}
+                </Button>
+                <Button disabled={selectedIds.length === 0 || validatingRows} onClick={validateSelectedSheets}>
+                    Rivalida {selectedIds.length} {selectedIds.length === 1 ? 'foglio selezionato' : 'fogli selezionati'}
                 </Button>
                 <Button variant="danger" disabled={sheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     Elimina raccolta
@@ -197,6 +207,18 @@ function SheetsTable({ workbookId, profile }: {
       if (!confirm(`Sei sicuro di voler eliminare ${selectedIds.length} fogli selezionati?`)) return
       await deleteSheets({ variables: { ids: selectedIds.map(id => new ObjectId(id)) } })
       setSelectedIds([])
+      refetch()
+    }
+
+    async function validateSelectedSheets() {
+      if (!confirm(`Sei sicuro di voler validare ${selectedIds.length} fogli selezionati?`)) return
+      console.log('validateSelectedSheets: validating', selectedIds.length, 'sheets')
+      for (const id of selectedIds) {
+        console.log('validateSelectedSheets: validating sheet', id)
+        const result = await validateRows({ variables: { sheetId: new ObjectId(id) } })
+        console.log('validateSelectedSheets: result for sheet', id, ':', result)
+      }
+      console.log('validateSelectedSheets: refetching data')
       refetch()
     }
 
@@ -238,7 +260,6 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
             </td>
         )}
         <td>{sheet.nRows}</td>
-        <td>{sheet.permissions?.map(p => `${p.email || 'ID:' + p.userId} (${p.role})`).join(', ') || ''}</td>
         { sheet.schema === 'scuole' && profile?.isAdmin && selected &&
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
