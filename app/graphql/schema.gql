@@ -48,6 +48,12 @@ input SheetInput {
   commonData: Data
 }
 
+input UpdateSheetInput {
+  _id: ObjectId!
+  permissions: [PermissionInput!]
+  commonData: Data
+}
+
 type Row {
   _id: ObjectId!
   error: String
@@ -132,6 +138,7 @@ type Mutation {
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId
   deleteSheet(_id: ObjectId!): Boolean
   addSheets(sheets: [SheetInput!]!): Boolean
+  updateSheets(sheets: [UpdateSheetInput!]!): Boolean
   deleteSheets(ids: [ObjectId!]!): Boolean
 
   addRow(sheetId: ObjectId!, data: Data!): Row

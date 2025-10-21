@@ -20,6 +20,7 @@ import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
 import deleteSheets from './resolvers/deleteSheets'
 import addSheets from './resolvers/addSheets'
+import updateSheets from './resolvers/updateSheets'
 import addRow from './resolvers/addRow'
 import patchRow from './resolvers/patchRow'
 import deleteRow from './resolvers/deleteRow'
@@ -90,6 +91,7 @@ export const resolvers: Resolvers = {
     deleteSheet,
     deleteSheets,
     addSheets,
+    updateSheets,
 
     addRow,
     patchRow,

@@ -49,6 +49,7 @@ export type Mutation = {
   patchRow?: Maybe<Row>;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
+  updateSheets?: Maybe<Scalars['Boolean']['output']>;
   updateWorkbook?: Maybe<Scalars['Boolean']['output']>;
   validateRows?: Maybe<Scalars['Int']['output']>;
 };
@@ -148,6 +149,11 @@ export type MutationUpdateSheetArgs = {
   name?: InputMaybe<Scalars['String']['input']>;
   permissions?: InputMaybe<Array<PermissionInput>>;
   schema?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationUpdateSheetsArgs = {
+  sheets: Array<UpdateSheetInput>;
 };
 
 
@@ -305,6 +311,12 @@ export type SheetInput = {
   workbookId: Scalars['ObjectId']['input'];
 };
 
+export type UpdateSheetInput = {
+  _id: Scalars['ObjectId']['input'];
+  commonData?: InputMaybe<Scalars['Data']['input']>;
+  permissions?: InputMaybe<Array<PermissionInput>>;
+};
+
 export type User = {
   __typename?: 'User';
   _id: Scalars['ObjectId']['output'];
@@ -372,6 +384,13 @@ export type AddSheetsMutationVariables = Exact<{
 
 
 export type AddSheetsMutation = { __typename?: 'Mutation', addSheets?: boolean | null };
+
+export type UpdateSheetsMutationVariables = Exact<{
+  sheets: Array<UpdateSheetInput> | UpdateSheetInput;
+}>;
+
+
+export type UpdateSheetsMutation = { __typename?: 'Mutation', updateSheets?: boolean | null };
 
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -468,6 +487,13 @@ export type DeleteWorkbookMutationVariables = Exact<{
 
 
 export type DeleteWorkbookMutation = { __typename?: 'Mutation', deleteWorkbook?: ObjectId | null };
+
+export type ValidateRowsMutationVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type ValidateRowsMutation = { __typename?: 'Mutation', validateRows?: number | null };
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -773,6 +799,37 @@ export function useAddSheetsMutation(baseOptions?: Apollo.MutationHookOptions<Ad
 export type AddSheetsMutationHookResult = ReturnType<typeof useAddSheetsMutation>;
 export type AddSheetsMutationResult = Apollo.MutationResult<AddSheetsMutation>;
 export type AddSheetsMutationOptions = Apollo.BaseMutationOptions<AddSheetsMutation, AddSheetsMutationVariables>;
+export const UpdateSheetsDocument = gql`
+    mutation UpdateSheets($sheets: [UpdateSheetInput!]!) {
+  updateSheets(sheets: $sheets)
+}
+    `;
+export type UpdateSheetsMutationFn = Apollo.MutationFunction<UpdateSheetsMutation, UpdateSheetsMutationVariables>;
+
+/**
+ * __useUpdateSheetsMutation__
+ *
+ * To run a mutation, you first call `useUpdateSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSheetsMutation, { data, loading, error }] = useUpdateSheetsMutation({
+ *   variables: {
+ *      sheets: // value for 'sheets'
+ *   },
+ * });
+ */
+export function useUpdateSheetsMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSheetsMutation, UpdateSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateSheetsMutation, UpdateSheetsMutationVariables>(UpdateSheetsDocument, options);
+      }
+export type UpdateSheetsMutationHookResult = ReturnType<typeof useUpdateSheetsMutation>;
+export type UpdateSheetsMutationResult = Apollo.MutationResult<UpdateSheetsMutation>;
+export type UpdateSheetsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetsMutation, UpdateSheetsMutationVariables>;
 export const GetSheetDocument = gql`
     query getSheet($sheetId: ObjectId!) {
   sheet(sheetId: $sheetId) {
@@ -1247,6 +1304,37 @@ export function useDeleteWorkbookMutation(baseOptions?: Apollo.MutationHookOptio
 export type DeleteWorkbookMutationHookResult = ReturnType<typeof useDeleteWorkbookMutation>;
 export type DeleteWorkbookMutationResult = Apollo.MutationResult<DeleteWorkbookMutation>;
 export type DeleteWorkbookMutationOptions = Apollo.BaseMutationOptions<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
+export const ValidateRowsDocument = gql`
+    mutation ValidateRows($sheetId: ObjectId!) {
+  validateRows(sheetId: $sheetId)
+}
+    `;
+export type ValidateRowsMutationFn = Apollo.MutationFunction<ValidateRowsMutation, ValidateRowsMutationVariables>;
+
+/**
+ * __useValidateRowsMutation__
+ *
+ * To run a mutation, you first call `useValidateRowsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useValidateRowsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [validateRowsMutation, { data, loading, error }] = useValidateRowsMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions<ValidateRowsMutation, ValidateRowsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ValidateRowsMutation, ValidateRowsMutationVariables>(ValidateRowsDocument, options);
+      }
+export type ValidateRowsMutationHookResult = ReturnType<typeof useValidateRowsMutation>;
+export type ValidateRowsMutationResult = Apollo.MutationResult<ValidateRowsMutation>;
+export type ValidateRowsMutationOptions = Apollo.BaseMutationOptions<ValidateRowsMutation, ValidateRowsMutationVariables>;
 export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
@@ -1823,6 +1911,7 @@ export type ResolversTypes = {
   SheetInput: SheetInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
+  UpdateSheetInput: UpdateSheetInput;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
   WorkbookReport: ResolverTypeWrapper<WorkbookReport>;
@@ -1851,6 +1940,7 @@ export type ResolversParentTypes = {
   SheetInput: SheetInput;
   String: Scalars['String']['output'];
   Timestamp: Scalars['Timestamp']['output'];
+  UpdateSheetInput: UpdateSheetInput;
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
   WorkbookReport: WorkbookReport;
@@ -1887,6 +1977,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
+  updateSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetsArgs, 'sheets'>>;
   updateWorkbook?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateWorkbookArgs, '_id'>>;
   validateRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationValidateRowsArgs, 'sheetId'>>;
 };
