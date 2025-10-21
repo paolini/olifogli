@@ -166,8 +166,15 @@ td.incorrect {
   max-width: 4ex;
 }
 
-.field-ScoreAnswer, .field-ScoreAnswer input {
-  max-width: 4ex;
+th.field-score {
+  font-size: 70%;
+}
+
+td.field-score {
+  font-weight: bold;
+  min-width: 4ex;
+  text-align: right;
+  padding-right: 4pt;
 }
 
 .field-punti, .field-punti input {
@@ -184,10 +191,6 @@ td.incorrect {
 
 th.field-classYear {
   font-size: 80%;
-}
-
-th.field-score {
-  font-size: 40%;
 }
 
 .my-table th {

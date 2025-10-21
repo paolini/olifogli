@@ -69,37 +69,21 @@ function TableCell({field, value, showStandardAnswers}:{
   showStandardAnswers?: boolean
 }) {
   let extra_css="";
+  let correct_value = undefined;
   if (field instanceof ChoiceAnswerField) {
     if (value.length === 7) {
-      extra_css = value.charAt(0) === value.charAt(3) 
-        ? " correct" 
-        : value.charAt(0) == '-' ? "" : " incorrect";
+      // showStandardAnswers decides whether to show 
+      // the corresponding answers in the standard permutation (211/311)
+      correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
+      value = showStandardAnswers ? value.charAt(4) : value.charAt(0);
+      extra_css = value === correct_value
+        ? " correct"
+        : value == '-' ? "" : " incorrect";
     }
   }
   return <td key={field.name} className={field.css_style+extra_css}>
-    {field instanceof ChoiceAnswerField 
-    ? <ChoiceAnswerSpan value={value} showStandardAnswers={showStandardAnswers ?? false} />
-    : value}
+      {value}
   </td>
-}
-
-function ChoiceAnswerSpan({value, showStandardAnswers}: 
-  {
-    value: string, 
-    showStandardAnswers: boolean
-  }) {
-  if (value.length === 0) return '';
-  if (value.length === 1) return value;
-  if (value.length !== 7) return value.charAt(0);
-
-  // showStandardAnswers decides whether to show 
-  // the corresponding answers in the standard permutation (211/311)
-
-  const answer = showStandardAnswers ? value.charAt(4) : value.charAt(0);
-  const correct = showStandardAnswers ? value.charAt(5) : value.charAt(3)
-  return <>
-      <span className={answer===correct ? "correct" : "incorrect"}>{answer}</span>
-  </>
 }
 
 function InputRow({sheetId, schema, row, done}: {
