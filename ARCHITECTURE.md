@@ -384,9 +384,68 @@ npm run migrate:create    # Crea nuova migrazione
 ## Monitoring e Logging
 
 ### Application Logging
-- **Console Logging**: Per development e debugging
-- **Database Logging**: Stato processing in scan_jobs
-- **Error Tracking**: Gestione errori centralizzata
+Il sistema utilizza un **plugin Apollo Server** per logging automatico di tutte le richieste GraphQL.
+
+#### GraphQL Request Logging
+- **Plugin**: `graphqlLoggerPlugin` in `app/graphql/logger-plugin.ts`
+- **Cosa viene loggato**:
+  - Tipo operazione (Query/Mutation)
+  - Nome operazione
+  - User ID dell'utente autenticato
+  - Durata dell'operazione (ms)
+  - Stato (success/error)
+  - Errori eventuali
+  - Variabili (solo in development)
+
+#### Formato Log
+```
+[timestamp] | TYPE | operationName | user=userId | duration | status
+```
+
+**Esempio Development:**
+```
+[2025-10-21T14:32:15.123Z] | QUERY | workbooks | user=507f1f77bcf86cd799439011 | 45ms | OK
+[2025-10-21T14:32:16.456Z] | MUTATION | addSheet | user=507f1f77bcf86cd799439011 | 120ms | OK | vars={"name":"Gara 2025"}
+[2025-10-21T14:32:17.789Z] | MUTATION | addRow | anonymous | 50ms | ERROR: Not authenticated
+```
+
+**Esempio Production:**
+```
+[2025-10-21T14:32:15.123Z] | QUERY | workbooks | user=507f1f77bcf86cd799439011 | 45ms | OK
+[2025-10-21T14:32:16.456Z] | MUTATION | addSheet | user=507f1f77bcf86cd799439011 | 120ms | OK
+```
+
+#### Destinazione Log
+
+**Development**: Console
+
+**Production**: **Dual logging** - sia console che file persistenti
+- **Console (Docker logs)**: Per debugging immediato
+  ```bash
+  docker logs olifogli-app -f
+  docker logs olifogli-app 2>&1 | grep ERROR
+  ```
+  
+- **File persistenti**: Volume `/app/logs` (sopravvive agli aggiornamenti)
+  ```bash
+  # Sul server: /docker/olifogli/logs/
+  tail -f logs/graphql-$(date +%Y-%m-%d).log
+  tail -f logs/graphql-errors-$(date +%Y-%m-%d).log
+  ```
+
+**Rotazione**: File giornalieri automatici (`graphql-YYYY-MM-DD.log`)
+
+**Volume Docker**: 
+```yaml
+volumes:
+  - ./logs:/app/logs
+```
+
+**Vantaggio chiave**: I log NON vengono persi quando aggiorni l'immagine e Docker ricrea il container.
+
+#### Altri Log
+- **Database Logging**: Stato processing in scan_jobs (collection MongoDB)
+- **Worker Logging**: Log del worker Python in `oliscan` container
 
 ### Health Checks
 - **MongoDB Connection**: Verifica connessione database

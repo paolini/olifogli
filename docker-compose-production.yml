@@ -6,6 +6,11 @@ services:
       - MONGODB_URI=mongodb://db:27017/olifogli
       - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app1
+      - LOG_DIR=/app/logs
+    volumes:
+      - ./logs:/app/logs
+      - ./spool:/app/spool
+      - ./data:/app/data
     networks:
       - backend
 
@@ -16,6 +21,11 @@ services:
       - MONGODB_URI=mongodb://db:27017/olifogli
       - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app2
+      - LOG_DIR=/app/logs
+    volumes:
+      - ./logs:/app/logs
+      - ./spool:/app/spool
+      - ./data:/app/data
     networks:
       - backend
 
@@ -26,6 +36,11 @@ services:
       - MONGODB_URI=mongodb://db:27017/olifogli
       - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app3
+      - LOG_DIR=/app/logs
+    volumes:
+      - ./logs:/app/logs
+      - ./spool:/app/spool
+      - ./data:/app/data
     networks:
       - backend
 
