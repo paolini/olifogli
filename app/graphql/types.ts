@@ -7,12 +7,18 @@ import { getToken } from "next-auth/jwt"
 export type Context = {
   req: NextRequest
   user_id?: ObjectId
+  email?: string
 }
 
 export async function get_context(req: NextRequest): Promise<Context> {
   const token = await getToken({ req }) as OLIMANAGER_TOKEN
   const user_id = token?.user_id
-  return {req, user_id: user_id ? new ObjectId(user_id) : undefined};
+  const email = token?.email ?? undefined
+  return {
+    req,
+    user_id: user_id ? new ObjectId(user_id) : undefined,
+    email
+  };
 }
 
 export const Timestamp = new GraphQLScalarType({
