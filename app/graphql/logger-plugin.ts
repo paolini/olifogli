@@ -4,8 +4,24 @@ import type {
   GraphQLRequestContext 
 } from '@apollo/server'
 import { Context } from './types'
-import { appendFileSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
+
+// Crea la directory dei log se non esiste
+// (eseguito una sola volta all'avvio del modulo)
+const logDir = process.env.LOG_DIR
+if (logDir) {
+  try {
+    if (!existsSync(logDir)) {
+      console.log(`Creating log directory at ${logDir}`)
+      mkdirSync(logDir, { recursive: true })
+    }
+  } catch (err) {
+    console.error('Failed to create log directory:', err)
+  }
+} else {
+    console.warn('LOG_DIR is not defined. GraphQL logs will not be saved to file.')
+}
 
 interface LogEntry {
   timestamp: string
@@ -45,12 +61,16 @@ export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
         // Determina il tipo di operazione
         const operationType = requestContext.operation?.operation || 'unknown'
         
+        // Recupera email utente dal context (già presente nel token NextAuth)
+        const userEmail = context.email
+        
         // Prepara l'entry di log
         const logEntry: LogEntry = {
           timestamp: new Date().toISOString(),
           type: operationType as 'query' | 'mutation',
           operation,
           userId: context.user_id?.toString(),
+          email: userEmail,
           variables: requestContext.request.variables,
           duration,
           status: errors ? 'error' : 'success',
@@ -80,13 +100,13 @@ export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
  * Formatta il log entry in formato leggibile
  */
 function formatLogEntry(entry: LogEntry): string {
-  const { timestamp, type, operation, userId, duration, status, error, variables } = entry
+  const { timestamp, type, operation, email, duration, status, error, variables } = entry
   
   const parts = [
     `[${timestamp}]`,
     `${type.toUpperCase()}`,
     operation,
-    userId ? `user=${userId}` : 'anonymous',
+    email ? `user=${email}` : 'anonymous',
     `${duration}ms`,
     status === 'error' ? `ERROR: ${error}` : 'OK'
   ]
