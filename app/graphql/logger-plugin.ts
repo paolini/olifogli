@@ -29,7 +29,7 @@ interface LogEntry {
   operation: string
   userId?: string
   email?: string
-  variables?: Record<string, any>
+  variables?: Record<string, unknown>
   duration?: number
   error?: string
   status: 'success' | 'error'
