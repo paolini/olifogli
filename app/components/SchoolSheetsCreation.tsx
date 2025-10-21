@@ -1,6 +1,6 @@
 import { ObjectId } from 'bson'
 import { useEffect, useState } from 'react'
-import { useGetSheetsQuery, useGetRowsQuery, Row, Sheet, useAddSheetsMutation, Permission } from '../graphql/generated'
+import { useGetSheetsQuery, useGetRowsQuery, Row, Sheet, useAddSheetsMutation, useUpdateSheetsMutation, Permission } from '../graphql/generated'
 import Error from './Error'
 import Button from './Button'
 import { Data } from '../lib/models'
@@ -48,19 +48,28 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
 
     async function jobs() {
         if (!rows || !sheets) throw "error"
+        console.log('=== INIZIO PROCESSING JOBS ===')
+        console.log(`Sheets totali: ${sheets.length}`)
+        console.log(`Rows totali: ${rows.length}`)
         const jobs: Record<string,Job> = {}
 
         function addJob(job: Job) {
             const id = job.name + '-' + job.schema
             const existing = jobs[id]
+            const DEBUG_CODE = 'FEPS01000N'
+            const shouldLog = job.name.includes(DEBUG_CODE)
+            
             if (!existing) {
+                // Nuovo job: viene creato
                 jobs[id] = {
                     ...job,
                     message: 'crea',
                     selected: job.permissions.length > 0
                 }
+                if (shouldLog) console.log(`[${job.name}] ${job.schema}: crea (nuovo)`, {permissions: job.permissions, commonData: job.commonData, hasSheet: !!job.sheet})
             } else {
                 if (existing.message === 'crea') {
+                    // Il job esiste ed è in stato "crea": lo aggiorniamo
                     existing.rowId = job.rowId
                     // Merge permissions avoiding duplicates
                     const mergedPermissions = [...existing.permissions]
@@ -78,13 +87,17 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                         ...existing.commonData, 
                         ...job.commonData}
                     existing.message = 'aggiorna'
+                    if (shouldLog) console.log(`[${job.name}] ${job.schema}: aggiorna (era "crea")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
                 } else {
+                    // Il job esiste ed è già stato aggiornato: duplicato
                     existing.message = 'duplicato'
                     existing.selected = false
+                    if (shouldLog) console.log(`[${job.name}] ${job.schema}: duplicato (era "${existing.message}")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
                 }
             }
         }
 
+        console.log('--- Processing sheets esistenti ---')
         for (const sheet of sheets) {
             if (sheet.schema !=='archimede-biennio' && sheet.schema !== 'archimede-triennio') continue
             addJob({
@@ -97,6 +110,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
             })
         }
 
+        console.log('--- Processing rows CSV ---')
         for (const row of rows || []) {
             const codice_meccanografico = row.data?.Codice_meccanografico || ''
             const email = row.data?.Email_referente || ''
@@ -136,14 +150,24 @@ export const ADD_SHEETS = gql`
   }
 `
 
+export const UPDATE_SHEETS = gql`
+  mutation UpdateSheets($sheets: [UpdateSheetInput!]!) {
+    updateSheets(sheets: $sheets)
+  }
+`
+
 function Process({jobsCallback, workbookId, sheetId, done}: {
     jobsCallback: () => Promise<Record<string,Job>>,
     workbookId: ObjectId
     sheetId: ObjectId
     done: () => void
 }) {
-    const [createSheets, {loading, error}] = useAddSheetsMutation()
+    const [createSheets, {loading: loadingCreate, error: errorCreate}] = useAddSheetsMutation()
+    const [updateSheetsMutation, {loading: loadingUpdate, error: errorUpdate}] = useUpdateSheetsMutation()
     const [jobs, setJobs] = useState<null|Record<string,Job>>(null)
+    
+    const loading = loadingCreate || loadingUpdate
+    const error = errorCreate || errorUpdate
     
     useEffect(() => {
         jobsCallback().then(setJobs)
@@ -174,13 +198,17 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
                         type="checkbox" 
                         checked={job.selected} 
                         onChange={() => {
-                            setJobs(jobs => ({
-                                ...jobs,
-                                [job.name]: {
-                                    ...job,
-                                    selected: !job.selected
+                            setJobs(jobs => {
+                                if (!jobs) return jobs
+                                const id = job.name + '-' + job.schema
+                                return {
+                                    ...jobs,
+                                    [id]: {
+                                        ...jobs[id],
+                                        selected: !jobs[id].selected
+                                    }
                                 }
-                            }))
+                            })
                         }}
                         />
                     {} {job.message}
@@ -205,24 +233,60 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
         </table>
     </>
 
-    function go() {
-        createSheets({
-            variables: {
-                sheets: Object.values(jobs || {}).filter(job => job.selected && job.message === 'crea')
-                    .map(job => ({
-                        schema: job.schema,
-                        workbookId,
-                        name: job.name,
-                        permissions: job.permissions,
-                        commonData: job.commonData,
-                    }))
-            },
-            refetchQueries: ['GetSheets'],
-            onCompleted: () => {
-                done()
+    async function go() {
+        const jobsList = Object.values(jobs || {}).filter(job => job.selected)
+        
+        // Separa i job da creare da quelli da aggiornare
+        const sheetsToCreate = jobsList
+            .filter(job => job.message === 'crea')
+            .map(job => ({
+                schema: job.schema,
+                workbookId,
+                name: job.name,
+                permissions: job.permissions.map(p => ({
+                    email: p.email,
+                    userId: p.userId,
+                    role: p.role
+                })),
+                commonData: job.commonData,
+            }))
+        
+        const sheetsToUpdate = jobsList
+            .filter(job => job.message === 'aggiorna' && job.sheet?._id)
+            .map(job => ({
+                _id: job.sheet!._id!,
+                permissions: job.permissions.map(p => ({
+                    email: p.email,
+                    userId: p.userId,
+                    role: p.role
+                })),
+                commonData: job.commonData,
+            }))
+        
+        console.log('Sheets to create:', sheetsToCreate)
+        console.log('Sheets to update:', sheetsToUpdate)
+        
+        try {
+            // Crea nuovi fogli
+            if (sheetsToCreate.length > 0) {
+                await createSheets({
+                    variables: { sheets: sheetsToCreate },
+                    refetchQueries: ['GetSheets'],
+                })
             }
-        })
-
+            
+            // Aggiorna fogli esistenti
+            if (sheetsToUpdate.length > 0) {
+                await updateSheetsMutation({
+                    variables: { sheets: sheetsToUpdate },
+                    refetchQueries: ['GetSheets'],
+                })
+            }
+            
+            done()
+        } catch (err) {
+            console.error('Error in go():', err)
+        }
     }
 }
 
