@@ -5,11 +5,13 @@ import { NextRequest } from 'next/server'; // Usa i tipi corretti per Next.js 13
 import { typeDefs } from './typedefs'
 import { resolvers } from './resolvers'
 import { Context, get_context } from './types'
+import { graphqlLoggerPlugin } from './logger-plugin'
 
 // Creazione del server Apollo
 const server = new ApolloServer<Context>({
   typeDefs,
   resolvers,
+  plugins: [graphqlLoggerPlugin],
 });
 
 let handler;
