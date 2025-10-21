@@ -51,6 +51,7 @@ const permutations: {
 type MappingResult = {
     answers_mapping: {[key:string]:string},
     answers_inverse_mapping: {[key:string]:string},
+    questions_permutation: number[],
     questions_inverse_permutation: number[],
     correct_answers: string[],
 }
@@ -69,11 +70,11 @@ function computeVariantMappings(variantCode:string): MappingResult|string {
     const answerCode = variantCode.charAt(1);
     const questionCode = variantCode.charAt(2);
 
-    const permQuestions = permutations.questions[questionCode];
+    const questions_permutation = permutations.questions[questionCode].map(i => i-1);
     const permutation_answers = permutations.answers[answerCode];
     const correct_answers = permutations.correct[year].split('');
 
-    if (!permQuestions) {
+    if (!questions_permutation) {
         return "codice compito non valido";
     }
     if (!permutation_answers) {
@@ -85,8 +86,8 @@ function computeVariantMappings(variantCode:string): MappingResult|string {
 
     const answers_mapping = Object.fromEntries("ABCDEX-".split('').map((a,i) => ([a, permutation_answers.charAt(i)])));
     const questions_inverse_permutation = Array(16).map(_ => -1);
-    permQuestions.forEach((q,i) => {
-        questions_inverse_permutation[q-1] = i;
+    questions_permutation.forEach((q,i) => {
+        questions_inverse_permutation[q] = i;
     })
     const answers_inverse_mapping: {[key:string]:string} = Object.fromEntries(
         Object.entries(answers_mapping).map(
@@ -95,6 +96,7 @@ function computeVariantMappings(variantCode:string): MappingResult|string {
         answers_mapping,
         answers_inverse_mapping,
         questions_inverse_permutation,
+        questions_permutation,
         correct_answers,
     };
     variant_to_permutations[variantCode] = result;
@@ -113,6 +115,7 @@ export default function decodePermutations(variantCode: string, answers: string[
     const {
         answers_mapping,
         answers_inverse_mapping,
+        questions_permutation,
         questions_inverse_permutation,
         correct_answers,
     } = mappingResult;
@@ -121,7 +124,9 @@ export default function decodePermutations(variantCode: string, answers: string[
     const correct_answer_count = correct_answers.reduce((count: number, correctAnswer: string, i: number) => count + (remapped_answers[i] === correctAnswer ? 1 : 0), 0);
     const empty_answer_count = remapped_answers.reduce((count: number, answer: string) => count + (answer === '-' || answer === 'X' ? 1 : 0), 0);
     const score = correct_answer_count*5 + empty_answer_count;
-    const extended_answers = questions_inverse_permutation.map((j,i) => `${answers[i].charAt(0) || ' '} [${answers_inverse_mapping[correct_answers[j]]}${remapped_answers[i]}${correct_answers[i]}]`);
+    const extended_answers = questions_permutation.map(
+        (j,i) => 
+            `${answers[i].charAt(0) || ' '} [${answers_inverse_mapping[correct_answers[j]]}${remapped_answers[i]}${correct_answers[i]}]`);
     return {
         error: '',
         score,
