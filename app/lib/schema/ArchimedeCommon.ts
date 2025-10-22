@@ -1,5 +1,5 @@
 import { Data } from '../models'
-import { Field, ChoiceAnswerField, ComputedField } from './fields'
+import { Field, ChoiceAnswerField, ComputedField, DateField } from './fields'
 import decodePermutations from './PERMUTATIONS'
 import Schema, { DerivedData } from './Schema'
 
@@ -9,7 +9,7 @@ export default class ArchimedeCommon extends Schema {
             new Field('variant',"codice compito"),
             new Field('surname', "cognome"),
             new Field('name', "nome"),
-            new Field('birthDate', 'data di nascita'),
+            new DateField('birthDate', 'data di nascita'),
             new Field('classYear','classe'),
             new Field('classSection','sezione'),
             new ChoiceAnswerField('r01', '1').add_css_style('thick-border-left'),
