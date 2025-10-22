@@ -5,6 +5,7 @@ export class Field {
     editable: boolean
     widget: string // identify the HTML input widget
     alternativeNames: string[] // alternative names for CSV column matching
+    required: boolean = true
 
     constructor(name: string, header?: string, alternativeNames?: string[]) {
         this.name = name
@@ -30,7 +31,7 @@ export class Field {
     }
 
     isValid(value: string): boolean {
-        return value !== ""
+        return !this.required || value !== ''
     }
 }
     
@@ -66,5 +67,64 @@ export class ScoreAnswerField extends Field {
         super(name, header, alternativeNames)
         this.css_style += ` field-ScoreAnswer`
         this.widget = 'ScoreInput'
+    }
+}
+
+export class DateField extends Field {
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
+        super(name, header, alternativeNames)
+        this.css_style += ` field-Date`
+        this.widget = 'DateInput'
+    }
+
+    clean(value: string): string {
+        // normalizza la data in formato gg/mm/aaaa
+        value = value.trim()
+
+        // se è nel formato yyyy-mm-dd la converte in dd/mm/yyyy
+        const iso_date_match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (iso_date_match) {
+            const year = iso_date_match[1]
+            const month = iso_date_match[2]
+            const day = iso_date_match[3]
+            return `${day}/${month}/${year}`
+        }
+
+        // 0 padding delle singole cifre
+        const parts = value.split('/').map(part => 
+            part.length === 1
+            ? '0' + part
+            : part
+        )
+
+        // se l'anno ha due cifre, aggiunge il secolo 20
+        if (parts.length === 3 && parts[2].length === 2) {
+            parts[2] = '20' + parts[2]
+        }
+
+        return parts.join('/')
+    }
+
+    isValid(value: string): boolean {
+        // se non è richiesto e il valore è vuoto, è valido
+        if (!this.required && value === '') return true
+        
+        // deve essere della forma gg/mm/yyyy ed estrae i valori
+        const match = value.match(/^([0-9]{2})\/([0-9]{2})\/([0-9]{4})$/)
+        if (!match) return false
+
+        const day = parseInt(match[1], 10)
+        const month = parseInt(match[2], 10)
+        const year = parseInt(match[3], 10)
+        
+        // Verifica che il giorno sia valido per il mese/anno
+        const date = new Date(year, month - 1, day)
+        
+        // Verifica che la data creata corrisponda ai valori inseriti
+        // (questo gestisce automaticamente anni bisestili e giorni per mese)
+        if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+            return false
+        }
+        return true;
     }
 }

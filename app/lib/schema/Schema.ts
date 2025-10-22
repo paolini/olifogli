@@ -42,10 +42,6 @@ export default class Schema {
         }
     }
 
-    isValid(row: Data): boolean {
-        return true
-    } 
-
     csv_header(): string[] {
         return this.fields.map(field => field.name)
     }

@@ -13,6 +13,7 @@ export function InputCell({field, value, setValue, onEnter}: {
     case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter}/>
     case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter}/>
     case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter}/>
+    case 'DateInput': return <DateInput value={value} setValue={setValue} onEnter={onEnter}/>
     default: return <span>[invalid widget {field.widget}]</span>
   }
 }
@@ -37,6 +38,120 @@ export function Input({type, size, value, setValue, width, onEnter}:{
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") onEnter()
+  }
+}
+
+export function DateInput({type, size, value, setValue, width, onEnter}:{
+  type?: string,
+  size?: number,
+  value: string,
+  width?: string,
+  setValue?: (value: string) => void,
+  onEnter?: () => void,
+}) {
+  return <input 
+    type={type} 
+    width={width} 
+    size={size} 
+    value={value} 
+    onChange={onChange} 
+    onKeyDown={onKeyDown}
+    onBlur={onBlur}
+    style={{ padding: '1px 1px' }} // Add padding for better UX
+  />
+
+  function normalize(value: string): string {
+    // rimpiazza tutti i caratteri non numerici con /
+    value = value.split('').map(c => (c >= '0' && c <= '9' ? c : '/')).join('')
+
+    // rimpiazza doppie barre con una sola barra
+    value = value.replace(/\/+/g, '/')
+
+    // aggiunge padding di 0 se ci sono meno di due cifre
+    const parts = value.split('/').map((part, index) =>
+      (part.length === 1 && (index < 2)) 
+        ? '0' + part 
+        : part)
+
+    // aggiunge secolo 20 se ho tre elementi e il terzo ha due cifre
+    if (parts.length === 3 && 2===parts[2].length) {
+      parts[2] = '20' + parts[2]
+    }
+
+    // aggiunge 200 se l'anno ha una sola cifra
+    if (parts.length === 3 && 1 === parts[2].length) {
+      parts[2] = '200' + parts[2]
+    }
+
+    value = parts.join('/')
+    return value
+  }
+
+  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!setValue) return
+    setValue(e.target.value)
+//    setValue(normalize(e.target.value))
+  }
+
+  function onBlur() {
+    if (!setValue) return
+    const originalValue = value
+    value = normalize(originalValue)
+
+    if (value!==originalValue) {
+      setValue(value)
+    }
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (onEnter && e.key === "Enter") {
+      onEnter()
+      return
+    }
+
+    if (!setValue) return
+
+    const input = e.target as HTMLInputElement
+
+    let key = e.key
+    if (key === ' ') key = '/'
+
+    if (key >= '0' && key <= '9' || key === '/') {      
+      let cursorPos = input.selectionStart || 0
+      let cursorEnd = input.selectionEnd || 0
+      let value = input.value
+      // rimpiazza eventuali '|' con '/'
+      value = value.replace(/\|/g, '/')
+
+      // inserisci carattere e '|' come cursore
+      value = input.value.slice(0, cursorPos) + key + '|' + input.value.slice(cursorEnd)
+
+      // sostituisci eventuali doppie barre con una sola barra
+      value = value.replace(/\/+/g, '/')
+      value = value.replace(/\/\|\//g, '/|')
+
+      // Aggiungi una barra se value = "gg|" o "gg/mm|"
+      if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
+        value = value.replace('|', '/|')
+      }
+
+      cursorPos = value.indexOf('|')
+      value = value.replace('|', '')
+
+      // Aggiorna il valore e il cursors
+      setValue(value)
+
+      // Imposta la posizione del cursore
+      setTimeout(() => {
+        const input = document.activeElement as HTMLInputElement
+        if (input) {
+          input.setSelectionRange(cursorPos, cursorPos)
+        }
+      }, 0)
+
+      // Previeni l'inserimento normale
+      e.preventDefault()
+    }
   }
 }
 
