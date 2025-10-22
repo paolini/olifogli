@@ -6,6 +6,7 @@ import Schema, { DerivedData } from './Schema'
 export default class ArchimedeCommon extends Schema {
     constructor(name: string, description: string) {
         super(name, description, [
+            new Field('id',"codice studente",["ID concorrente"]).set_hidden().set_optional(),
             new Field('variant',"codice compito"),
             new Field('surname', "cognome"),
             new Field('name', "nome"),
@@ -30,7 +31,9 @@ export default class ArchimedeCommon extends Schema {
             new ChoiceAnswerField('r16', '16').add_css_style('thick-border-right'),
             new ComputedField('score', 'punti').add_css_style('thick-border-right'),
         ])
-        this.fields_to_be_copied_on_new_row = ['classYear','classSection']
+        this.fields_to_be_copied_on_new_row = ['classYear', 'classSection']
+        this.fields_to_be_ignored_on_inport = ['Nome concorrente', 'Email', 'ID utente', 'Genere', 'Codice fiscale', 'Ruolo', 'Verificato', 'Approvato/a', 'Approvato/a il', 'Idoneo/a', 'Codice meccanografico', 'Tipo scuola', 'Nome scuola', 'Città scuola', 'Provincia scuola', 'Sigla provincia scuola', 'Regione scuola', 'Email scuola', 'Data creazione membro'];
+
     }
 
     computeDerivedData(data: Data): DerivedData {
