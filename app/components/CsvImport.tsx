@@ -291,14 +291,14 @@ export default function CsvImport({schemaName, sheetId, done}:{
             console.log(`res.data`, res.errors);
             if (res.errors) setError(res.errors?.map(e => `${e}`).join(', '))
             else setError(`Qualcosa è andato storto`)
-            return 0
+            return false;
         }
         await client.reFetchObservableQueries();
         setData([]);
         return true;
     } catch(error) {
         setError(`${error}`)
-        return false
+        return false;
     }    
     
   }
