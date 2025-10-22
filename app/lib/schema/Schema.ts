@@ -13,6 +13,7 @@ export default class Schema {
     header: string // da usare nella UI
     scan_fields: Field[] // nome dei campi presi dalla scansione
     fields_to_be_copied_on_new_row: string[] = [] // nomi dei campi da copiare quando si crea una nuova riga
+    fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
 
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields

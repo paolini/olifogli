@@ -6,6 +6,7 @@ import { ObjectId } from 'bson'
 
 import { schemas } from "../lib/schema"
 import Error from './Error'
+import { Field } from "../lib/schema/fields";
 
 const ADD_ROWS = gql`
     mutation addRows(
@@ -26,7 +27,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
     done: () => void,
 }) {
   const schema = schemas[schemaName]
-  const columns = schema.fields.map(field => field.name)
+  const columns = schema.fields
   const [delimiter, setDelimiter] = useState<string>('')
   const client = useApolloClient()
   const [addRows] = useMutation(ADD_ROWS);
@@ -34,143 +35,6 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [error, setError] = useState<string | null>(null)
   const [headerMode, setHeaderMode] = useState<'auto'|'yes'|'no'>('auto');
   const [columnMapping, setColumnMapping] = useState<number[]|null>(null);
-
-  // Stima se la prima riga è un'intestazione
-  function estimateHeaderRow(csvData: string[][]): boolean {
-    if (csvData.length < 2) return false;
-    const firstRow = csvData[0];
-    let score = 0;
-    for (let col = 0; col < firstRow.length; col++) {
-      const header = firstRow[col];
-      const freqMap: Record<string, number> = {};
-      for (const row of csvData) {
-        const val = row[col] || '';
-        for (const ch of val) freqMap[ch] = (freqMap[ch] || 0) + 1;
-      }
-      // Calcola la probabilità che i caratteri dell'intestazione siano estratti casualmente
-      let headerProb = 1;
-      const total = Object.values(freqMap).reduce((a,b)=>a+b,0);
-      for (const ch of header) {
-        if (freqMap[ch]) headerProb *= freqMap[ch]/total;
-        else headerProb *= 1/(total+1);
-      }
-      score += headerProb;
-    }
-    // Se la probabilità media è molto bassa, la prima riga è probabilmente un'intestazione
-    return score/firstRow.length < 0.05;
-  }
-
-  // Calcola la probabilità media che la prima riga sia intestazione
-  function getHeaderProbability(csvData: string[][]): number {
-    if (csvData.length < 2) return 0;
-    const firstRow = csvData[0];
-    let score = 0;
-    for (let col = 0; col < firstRow.length; col++) {
-      const header = firstRow[col];
-      const freqMap: Record<string, number> = {};
-      for (const row of csvData) {
-        const val = row[col] || '';
-        for (const ch of val) freqMap[ch] = (freqMap[ch] || 0) + 1;
-      }
-      // Calcola la probabilità che i caratteri dell'intestazione siano estratti casualmente
-      let headerProb = 1;
-      const total = Object.values(freqMap).reduce((a,b)=>a+b,0);
-      for (const ch of header) {
-        if (freqMap[ch]) headerProb *= freqMap[ch]/total;
-        else headerProb *= 1/(total+1);
-      }
-      score += headerProb;
-    }
-    return score/firstRow.length;
-  }
-
-  // Function to reorder CSV columns based on header matching with schema fields
-  function reorderColumnsToMatchSchema(csvData: string[][]): string[][] {
-    if (csvData.length === 0) return csvData;
-    const headerRow = csvData[0];
-    const dataRows = csvData.slice(1);
-    // Create a mapping from all possible field names (including alternatives) to their preferred positions
-    const fieldNameToIndex = new Map<string, number>();
-    schema.fields.forEach((field, index) => {
-      field.getAllNames().forEach(name => {
-        fieldNameToIndex.set(name.toLowerCase(), index);
-      });
-    });
-    // Find the best matching order for CSV columns
-    const columnMapping: number[] = [];
-    const usedIndices = new Set<number>();
-    // First pass: exact matches
-    for (let csvCol = 0; csvCol < headerRow.length; csvCol++) {
-      const csvHeader = headerRow[csvCol].toLowerCase().trim();
-      const schemaIndex = fieldNameToIndex.get(csvHeader);
-      if (schemaIndex !== undefined && !usedIndices.has(schemaIndex)) {
-        columnMapping[schemaIndex] = csvCol;
-        usedIndices.add(schemaIndex);
-      }
-    }
-    // Second pass: partial matches (contains)
-    for (let csvCol = 0; csvCol < headerRow.length; csvCol++) {
-      const csvHeader = headerRow[csvCol].toLowerCase().trim();
-      if (columnMapping.includes(csvCol)) continue;
-      for (let schemaIndex = 0; schemaIndex < schema.fields.length; schemaIndex++) {
-        if (usedIndices.has(schemaIndex)) continue;
-        const field = schema.fields[schemaIndex];
-        const allFieldNames = field.getAllNames().map(name => name.toLowerCase());
-        const hasMatch = allFieldNames.some(fieldName => 
-          csvHeader.includes(fieldName) || fieldName.includes(csvHeader)
-        );
-        if (hasMatch) {
-          columnMapping[schemaIndex] = csvCol;
-          usedIndices.add(schemaIndex);
-          break;
-        }
-      }
-    }
-    // Fill remaining positions with unmapped CSV columns
-    let nextAvailableCsvCol = 0;
-    for (let schemaIndex = 0; schemaIndex < Math.max(schema.fields.length, headerRow.length); schemaIndex++) {
-      if (columnMapping[schemaIndex] === undefined) {
-        while (nextAvailableCsvCol < headerRow.length && columnMapping.includes(nextAvailableCsvCol)) {
-          nextAvailableCsvCol++;
-        }
-        if (nextAvailableCsvCol < headerRow.length) {
-          columnMapping[schemaIndex] = nextAvailableCsvCol;
-          nextAvailableCsvCol++;
-        }
-      }
-    }
-    // Reorder all rows according to the mapping
-    const reorderedData: string[][] = [];
-    for (const row of csvData) {
-      const reorderedRow: string[] = [];
-      for (let schemaIndex = 0; schemaIndex < Math.max(schema.fields.length, row.length); schemaIndex++) {
-        const csvIndex = columnMapping[schemaIndex];
-        if (csvIndex !== undefined && csvIndex < row.length) {
-          reorderedRow[schemaIndex] = row[csvIndex];
-        } else {
-          reorderedRow[schemaIndex] = '';
-        }
-      }
-      reorderedData.push(reorderedRow);
-    }
-    setColumnMapping([...columnMapping]);
-    return reorderedData;
-  }
-
-  function restoreOriginalOrder() {
-    if (!columnMapping || data.length === 0) return;
-    // Inverti la permutazione
-    const restored: string[][] = data.map(row => {
-      const originalRow: string[] = [];
-      for (let i = 0; i < columnMapping.length; i++) {
-        const mappedIndex = columnMapping[i];
-        originalRow[mappedIndex] = row[i];
-      }
-      return originalRow;
-    });
-    setData(restored);
-    setColumnMapping(null);
-  }
 
   return <div className="p-4 border rounded-lg shadow-md">
       Caricamento di dati tramite file CSV  &nbsp; &nbsp;
@@ -241,6 +105,152 @@ export default function CsvImport({schemaName, sheetId, done}:{
       )}
   </div>
 
+    // Stima se la prima riga è un'intestazione
+  function estimateHeaderRow(csvData: string[][]): boolean {
+    if (csvData.length < 2) return false;
+    const firstRow = csvData[0];
+    let score = 0;
+    for (let col = 0; col < firstRow.length; col++) {
+      const header = firstRow[col];
+      const freqMap: Record<string, number> = {};
+      for (const row of csvData) {
+        const val = row[col] || '';
+        for (const ch of val) freqMap[ch] = (freqMap[ch] || 0) + 1;
+      }
+      // Calcola la probabilità che i caratteri dell'intestazione siano estratti casualmente
+      let headerProb = 1;
+      const total = Object.values(freqMap).reduce((a,b)=>a+b,0);
+      for (const ch of header) {
+        if (freqMap[ch]) headerProb *= freqMap[ch]/total;
+        else headerProb *= 1/(total+1);
+      }
+      score += headerProb;
+    }
+    // Se la probabilità media è molto bassa, la prima riga è probabilmente un'intestazione
+    return score/firstRow.length < 0.05;
+  }
+
+  // Calcola la probabilità media che la prima riga sia intestazione
+  function getHeaderProbability(csvData: string[][]): number {
+    if (csvData.length < 2) return 0;
+    const firstRow = csvData[0];
+    let score = 0;
+    for (let col = 0; col < firstRow.length; col++) {
+      const header = firstRow[col];
+      const freqMap: Record<string, number> = {};
+      for (const row of csvData) {
+        const val = row[col] || '';
+        for (const ch of val) freqMap[ch] = (freqMap[ch] || 0) + 1;
+      }
+      // Calcola la probabilità che i caratteri dell'intestazione siano estratti casualmente
+      let headerProb = 1;
+      const total = Object.values(freqMap).reduce((a,b)=>a+b,0);
+      for (const ch of header) {
+        if (freqMap[ch]) headerProb *= freqMap[ch]/total;
+        else headerProb *= 1/(total+1);
+      }
+      score += headerProb;
+    }
+    return score/firstRow.length;
+  }
+
+  // Function to reorder CSV columns based on header matching with schema fields
+  function reorderColumnsToMatchSchema(csvData: string[][]): string[][] {
+    if (csvData.length === 0) return csvData;
+    const headerRow = csvData[0];
+    const dataRows = csvData.slice(1);
+    // Create a mapping from all possible field names (including alternatives) to their preferred positions
+    const fieldNameToIndex = new Map<string, number>();
+    schema.fields.forEach((field, index) => {
+      field.getAllNames().forEach(name => {
+        fieldNameToIndex.set(name.toLowerCase(), index);
+      });
+    });
+    schema.fields_to_be_ignored_on_inport.forEach(name => {
+      const key = name.toLowerCase();
+      if (!fieldNameToIndex.has(key)) {
+        fieldNameToIndex.set(key, -1);
+      }
+    });
+    let last_column = schema.fields.length
+    // Find the best matching order for CSV columns
+    const columnMapping: number[] = [];
+    const usedIndices = new Set<number>();
+    // First pass: exact matches
+    for (let csvCol = 0; csvCol < headerRow.length; csvCol++) {
+      const csvHeader = headerRow[csvCol].toLowerCase().trim();
+      const schemaIndex = fieldNameToIndex.get(csvHeader);
+      if (schemaIndex === -1) {
+        columnMapping[last_column++] = csvCol;
+      } else if (schemaIndex !== undefined && !usedIndices.has(schemaIndex)) {
+        columnMapping[schemaIndex] = csvCol;
+        usedIndices.add(schemaIndex);
+      }
+    }
+    // Second pass: partial matches (contains)
+    for (let csvCol = 0; csvCol < headerRow.length; csvCol++) {
+      const csvHeader = headerRow[csvCol].toLowerCase().trim();
+      if (columnMapping.includes(csvCol)) continue;
+      for (let schemaIndex = 0; schemaIndex < schema.fields.length; schemaIndex++) {
+        if (usedIndices.has(schemaIndex)) continue;
+        const field = schema.fields[schemaIndex];
+        const allFieldNames = field.getAllNames().map(name => name.toLowerCase());
+        const hasMatch = allFieldNames.some(fieldName => 
+          csvHeader.includes(fieldName) || fieldName.includes(csvHeader)
+        );
+        if (hasMatch) {
+          columnMapping[schemaIndex] = csvCol;
+          usedIndices.add(schemaIndex);
+          break;
+        }
+      }
+    }
+    // Fill remaining positions with unmapped CSV columns
+    let nextAvailableCsvCol = 0;
+    for (let schemaIndex = 0; schemaIndex < Math.max(schema.fields.length, headerRow.length); schemaIndex++) {
+      if (columnMapping[schemaIndex] === undefined) {
+        while (nextAvailableCsvCol < headerRow.length && columnMapping.includes(nextAvailableCsvCol)) {
+          nextAvailableCsvCol++;
+        }
+        if (nextAvailableCsvCol < headerRow.length) {
+          columnMapping[schemaIndex] = nextAvailableCsvCol;
+          nextAvailableCsvCol++;
+        }
+      }
+    }
+    // Reorder all rows according to the mapping
+    const reorderedData: string[][] = [];
+    for (const row of csvData) {
+      const reorderedRow: string[] = [];
+      for (let schemaIndex = 0; schemaIndex < Math.max(schema.fields.length, row.length); schemaIndex++) {
+        const csvIndex = columnMapping[schemaIndex];
+        if (csvIndex !== undefined && csvIndex < row.length) {
+          reorderedRow[schemaIndex] = row[csvIndex];
+        } else {
+          reorderedRow[schemaIndex] = '';
+        }
+      }
+      reorderedData.push(reorderedRow);
+    }
+    setColumnMapping([...columnMapping]);
+    return reorderedData;
+  }
+
+  function restoreOriginalOrder() {
+    if (!columnMapping || data.length === 0) return;
+    // Inverti la permutazione
+    const restored: string[][] = data.map(row => {
+      const originalRow: string[] = [];
+      for (let i = 0; i < columnMapping.length; i++) {
+        const mappedIndex = columnMapping[i];
+        originalRow[mappedIndex] = row[i];
+      }
+      return originalRow;
+    });
+    setData(restored);
+    setColumnMapping(null);
+  }
+
   function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -267,10 +277,10 @@ export default function CsvImport({schemaName, sheetId, done}:{
     });
   };
 
-  async function importRows(rows: string[][]): Promise<number> {
+  async function importRows(rows: string[][]): Promise<boolean> {
     const variables = {
         sheetId,
-        columns,
+        columns: columns.map(field => field.name),
         rows
     }
 
@@ -285,10 +295,10 @@ export default function CsvImport({schemaName, sheetId, done}:{
         }
         await client.reFetchObservableQueries();
         setData([]);
-        return res.data.addRow;
+        return true;
     } catch(error) {
         setError(`${error}`)
-        return 0
+        return false
     }    
     
   }
@@ -310,9 +320,9 @@ export default function CsvImport({schemaName, sheetId, done}:{
 
 function CsvTable({data, columns, setData, importRows, done, columnMapping, hasHeaderRow}: {
     data: string[][],
-    columns: string[],
+    columns: Field[],
     setData: (data: string[][]) => void,
-    importRows: (rows: string[][]) => Promise<number>,
+    importRows: (rows: string[][]) => Promise<boolean>,
     done: () => void,
     columnMapping: number[]|null,
     hasHeaderRow: boolean
@@ -335,10 +345,10 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
     if (data.length === 0) return <Error error="tabella vuota" />
     const first_row = data[0];
 
-    const filled_columns = [...columns]
+    const filled_column_headers = [...columns.map(field => field.header || field.name)]
 
     for (let i = columns.length; i < first_row.length; i++) {
-        filled_columns[i] = ''
+        filled_column_headers[i] = ''
     }
 
     const crop_data = data.slice(0, maxShownRows)
@@ -366,7 +376,7 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
         <table><thead>
             <tr style={hasHeaderRow ? {background: '#ffeeba'} : {}}>
                 <th>#</th>
-                {filled_columns.map((t, index) => <th key={index}>
+                {filled_column_headers.map((t, index) => <th key={index}>
                     { ["move", "delete"].includes(action) 
                         ? <button className="px-1" onClick={() => clickColumn(index)}>{t||'▿'}</button>
                         : t
@@ -453,8 +463,12 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
         const hasHeader = hasHeaderRow;
         const rowsToImport = hasHeader ? data.slice(1) : data;
         const res = await importRows(rowsToImport.map(row => row.slice(0,columns.length)))
-        done()
-        setAction('done')
+        if (res) {
+          setAction('done')
+          done()
+        } else {
+          // è stato settato un errore, non abbandonare la pagina!
+        }
     }
 
     function restoreColumns() {

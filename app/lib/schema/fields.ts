@@ -6,6 +6,7 @@ export class Field {
     widget: string // identify the HTML input widget
     alternativeNames: string[] // alternative names for CSV column matching
     required: boolean = true
+    hidden: boolean = false
 
     constructor(name: string, header?: string, alternativeNames?: string[]) {
         this.name = name
@@ -18,6 +19,21 @@ export class Field {
 
     add_css_style(style: string) {
         this.css_style += ` ${style}`
+        return this
+    }
+
+    set_required() {
+        this.required = true
+        return this
+    }
+
+    set_optional() {
+        this.required = false
+        return this
+    }
+
+    set_hidden() {
+        this.hidden = true
         return this
     }
 
