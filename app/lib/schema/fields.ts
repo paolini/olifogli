@@ -5,6 +5,7 @@ export class Field {
     editable: boolean
     widget: string // identify the HTML input widget
     alternativeNames: string[] // alternative names for CSV column matching
+    required: boolean = true
 
     constructor(name: string, header?: string, alternativeNames?: string[]) {
         this.name = name
@@ -30,7 +31,7 @@ export class Field {
     }
 
     isValid(value: string): boolean {
-        return value !== ""
+        return !this.required || value !== ''
     }
 }
     
@@ -68,3 +69,38 @@ export class ScoreAnswerField extends Field {
         this.widget = 'ScoreInput'
     }
 }
+
+export class DateField extends Field {
+    constructor(name: string, header?: string, alternativeNames?: string[]) {
+        super(name, header, alternativeNames)
+        this.css_style += ` field-Date`
+        this.widget = 'DateInput'
+    }
+
+    clean(value: string): string {
+        // normalizza la data in formato gg/mm/aaaa
+        value = value.trim()
+
+        // se è nel formato yyyy-mm-dd la converte in dd/mm/yyyy
+        const iso_date_match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (iso_date_match) {
+            const year = iso_date_match[1]
+            const month = iso_date_match[2]
+            const day = iso_date_match[3]
+            return `${day}/${month}/${year}`
+        }
+
+        // 0 padding delle singole cifre
+        const parts = value.split('/').map(part => 
+            part.length === 1
+            ? '0' + part
+            : part
+        )
+
+        // se l'anno ha due cifre, aggiunge il secolo 20
+        if (parts.length === 3 && parts[2].length === 2) {
+            parts[2] = '20' + parts[2]
+        }
+
+        return parts.join('/')
+    }
