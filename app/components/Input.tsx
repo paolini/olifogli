@@ -118,7 +118,7 @@ export function DateInput({type, size, value, setValue, width, onEnter}:{
 
     if (key >= '0' && key <= '9' || key === '/') {      
       let cursorPos = input.selectionStart || 0
-      let cursorEnd = input.selectionEnd || 0
+      const cursorEnd = input.selectionEnd || 0
       let value = input.value
       // rimpiazza eventuali '|' con '/'
       value = value.replace(/\|/g, '/')

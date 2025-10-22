@@ -70,7 +70,6 @@ function TableCell({field, value, showStandardAnswers}:{
 }) {
   let extra_css="";
   let correct_value = undefined;
-  let original_value = value;
   if (field instanceof ChoiceAnswerField) {
     if (value.length === 7) {
       // showStandardAnswers decides whether to show 
@@ -82,7 +81,7 @@ function TableCell({field, value, showStandardAnswers}:{
         : value == '-' ? "" : " incorrect";
     }
   }
-  return <td key={field.name} className={field.css_style+extra_css} title={original_value}>
+  return <td key={field.name} className={field.css_style+extra_css}>
       {value}
   </td>
 }
