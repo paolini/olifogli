@@ -5,6 +5,7 @@ import Button from './Button'
 import Error from './Error'
 import { Sheet, useDeleteSheetMutation, User } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
+import { myTimestamp } from '../lib/util'
 
 const DELETE_SHEET = gql`
     mutation DeleteSheet($_id: ObjectId!) {
@@ -47,9 +48,10 @@ const UNLOCK_SHEET = gql`
   }
 `
 
-export default function SheetConfigure({sheet, profile}: {
+export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     sheet: Sheet
     profile: User | null
+    sheetContainsErrors: boolean
 }) {
     const router = useRouter()
     const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
@@ -82,8 +84,8 @@ export default function SheetConfigure({sheet, profile}: {
                 modifica
             </Button>}
         {edit && <>
-                <Button className="mx-2" onClick={cancel}>
-                    Annulla
+                <Button className="mr-2" onClick={cancel}>
+                    termina modifiche
                 </Button>
                 {sheet.locked ? (
                     profile?.isAdmin && (
@@ -102,7 +104,7 @@ export default function SheetConfigure({sheet, profile}: {
                             disabled={opening}
                             onClick={doOpenSheet}
                         >
-                            {opening ? 'Apertura...' : 'Apri foglio'}
+                            {'Apri foglio'}
                         </Button>
                     )
                 ) : (
@@ -111,10 +113,10 @@ export default function SheetConfigure({sheet, profile}: {
                             <Button 
                                 className="mx-2"
                                 variant="alert" 
-                                disabled={closing}
+                                disabled={sheetContainsErrors || closing}
                                 onClick={doCloseSheet}
                             >
-                                {closing ? 'Chiusura...' : 'Chiudi foglio'}
+                                {'Chiudi foglio'}
                             </Button>
                         )}
                         {profile?.isAdmin && (
@@ -124,7 +126,7 @@ export default function SheetConfigure({sheet, profile}: {
                                 disabled={locking}
                                 onClick={doLockSheet}
                             >
-                                {locking ? 'Blocco...' : 'Blocca foglio'}
+                                {'Blocca foglio'}
                             </Button>
                         )}
                     </>
@@ -148,39 +150,48 @@ export default function SheetConfigure({sheet, profile}: {
                     </Button>
                 }
         </>}
+        <div className="my-2">
+            { sheetContainsErrors && <span>Il foglio contiene errori, non può essere chiuso.</span>}
+        </div>
         <table>
+            <tbody>
+            <tr>
+                <th className="bg-gray-200">stato</th>
+                <td className="p-2">
+                {sheet.locked ? (
+                    <>
+                    <span className="text-red-600 font-semibold">Bloccato</span>
+                    {sheet.lockedOn && (
+                        <span className="text-sm text-gray-600 ml-2">
+                        da {sheet.lockedBy || 'sconosciuto'} 
+                        {} il {myTimestamp(sheet.lockedOn)}
+                        </span>
+                    )}
+                    </>
+                ) : sheet.closed ? (
+                    <>
+                    <span className="text-orange-600 font-semibold">Chiuso</span>
+                    {sheet.closedOn && (
+                        <span className="text-sm text-gray-600 ml-2">
+                        da {sheet.closedBy || 'sconosciuto'} 
+                        {} il {myTimestamp(sheet.closedOn)}
+                        </span>
+                    )}
+                    </>
+                ) : (
+                    <span className="text-green-600">Aperto</span>
+                )}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <table className="my-2">
         <thead>
             <tr>
                 <th className="bg-gray-200">permessi</th>
             </tr>
         </thead>
         <tbody>
-          <tr>
-            <th className="bg-gray-200">stato</th>
-            <td>
-              {sheet.locked ? (
-                <>
-                  <span className="text-red-600 font-semibold">Bloccato</span>
-                  {sheet.lockedOn && (
-                    <span className="text-sm text-gray-600 ml-2">
-                      (da {sheet.lockedBy || 'sconosciuto'} il {new Date(sheet.lockedOn).toLocaleString()})
-                    </span>
-                  )}
-                </>
-              ) : sheet.closed ? (
-                <>
-                  <span className="text-orange-600 font-semibold">Chiuso</span>
-                  {sheet.closedOn && (
-                    <span className="text-sm text-gray-600 ml-2">
-                      (da {sheet.closedBy || 'sconosciuto'} il {new Date(sheet.closedOn).toLocaleString()})
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-green-600">Aperto</span>
-              )}
-            </td>
-          </tr>
           {permissions.map((permission, index) => (
               <tr key={index}>
               <td>{permission.email || `ID: ${permission.userId}`} ({permission.role})</td>
@@ -190,6 +201,9 @@ export default function SheetConfigure({sheet, profile}: {
                 </Button></td>}
             </tr>
           ))}
+          {permissions.length === 0 && 
+            <tr><td>Nessun permesso configurato</td></tr>
+          }
           {edit &&
           <tr>
             <td>

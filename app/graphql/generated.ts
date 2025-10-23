@@ -892,7 +892,7 @@ export type GetSheetLazyQueryHookResult = ReturnType<typeof useGetSheetLazyQuery
 export type GetSheetSuspenseQueryHookResult = ReturnType<typeof useGetSheetSuspenseQuery>;
 export type GetSheetQueryResult = Apollo.QueryResult<GetSheetQuery, GetSheetQueryVariables>;
 export const GetRowsDocument = gql`
-    query getRows($sheetId: ObjectId!) {
+    query GetRows($sheetId: ObjectId!) {
   rows(sheetId: $sheetId) {
     _id
     error

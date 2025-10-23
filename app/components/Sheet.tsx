@@ -88,7 +88,7 @@ export default function SheetElement({sheetId}: {
 }
 
 const GET_ROWS = gql`
-  query getRows($sheetId: ObjectId!) {
+  query GetRows($sheetId: ObjectId!) {
     rows(sheetId: $sheetId) {
       _id
       error
@@ -116,14 +116,23 @@ function SheetBody({sheet,profile}: {
     const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
     const schema = schemas[sheet.schema]
     const user_can_configure = true // profile && (profile.isAdmin || sheet.ownerId === profile._id)
+    const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
     
 
     return <>
+        { tab !== 'table' && 
+            <div className="flex justify-end mb-2">
+                <Button onClick={() => setTab('table')}>
+                    ← Torna al foglio
+                </Button>
+            </div>
+        }
         { tab === 'table' && 
             <>
+                {!(sheet.closed || sheet.locked) && <>
                 <Button onClick={() => setTab('csv')}>
                     Importa da CSV
                 </Button>
@@ -132,7 +141,7 @@ function SheetBody({sheet,profile}: {
                 </Button>
                 {} <Button onClick={() => setTab('scans')}>
                     Importa da scansioni
-                </Button>
+                </Button></>}
                 {} { user_can_configure && 
                 <Button variant="alert" onClick={() =>setTab('configure') }>
                     configura
@@ -141,11 +150,6 @@ function SheetBody({sheet,profile}: {
                 <Table sheet={sheet} rows={data.rows} />
             </>
         }
-        { tab !== 'table' && 
-            <Button className="mr-2 my-2" onClick={() => setTab('table')}>
-                Torna al foglio
-            </Button>
-        }
         { tab === 'csv' &&   
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
         }
@@ -153,7 +157,7 @@ function SheetBody({sheet,profile}: {
             <ScansImport sheet={sheet} data_rows={data.rows} />
         }
         { tab === 'configure' && 
-            <SheetConfigure sheet={sheet} profile={profile}/>
+            <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
         }
     </>
     
