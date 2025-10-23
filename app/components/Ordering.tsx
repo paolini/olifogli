@@ -46,8 +46,8 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
             const v1 = criterioToString(c1)
             const v2 = criterioToString(c2)
             return <Fragment key={field.name}>
-              <option value={v1}>{v1}</option>
-              <option value={v2}>{v2}</option>
+              <option value={v1}>{field.header} ↑</option>
+              <option value={v2}>{field.header} ↓</option>
             </Fragment>
           }
           )}
@@ -58,7 +58,7 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
       Filtra per {[...criteria.criteriCerca,null].map((criterio,i) => {
         return <Fragment key={`f-${i}`}>
           {i>0 && <span> + </span>}
-          <select key={`s-${i}`} value={criterio?.campo.header || ''} onChange={e => cambiaCriterioCerca(i, e.target.value)}>
+          <select key={`s-${i}`} value={criterio?.campo.name || ''} onChange={e => cambiaCriterioCerca(i, e.target.value)}>
             <option key="" value="">{criterio?"rimuovi":(i>0?"aggiungi":"scegli campo")}</option>
             { criteria.schema.fields.map(field => {
               return <option key={field.name} value={field.name}>{field.header}</option>
