@@ -25,7 +25,9 @@ export default function Table({rows, sheet}:{
 
   return <>
     <span>{rows.length} righe</span>
-    {view_rows.length < rows.length && <span> ({view_rows.length} visualizzate)</span>}
+    {' • '}
+    <span>{rows.filter(row => row.error).length} con errori</span>
+    {view_rows.length < rows.length && <>{' • '}<span>({view_rows.length} visualizzate)</span></>}
     <br />
     <Ordering criteria={criteria}/>
     { ['archimede-biennio','archimede-triennio'].includes(schema.name) && (

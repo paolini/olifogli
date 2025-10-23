@@ -13,6 +13,7 @@ import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
+import { Lock, Archive, Unlock } from 'lucide-react';
 
 const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
@@ -26,6 +27,8 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
                 role
             }
             nRows
+            closed
+            locked
             ownerId
         }
     }
@@ -143,6 +146,7 @@ function SheetsTable({ workbookId, profile }: {
                         <th>Schema</th>
                         {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
                         <th>righe</th>
+                        <th>stato</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -260,6 +264,14 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
             </td>
         )}
         <td>{sheet.nRows}</td>
+        <td className=""><span className="flex">
+            {sheet.locked 
+                ? <><Lock size={16} className="text-red-600" />&nbsp;chiuso</> 
+                : sheet.closed 
+                    ? <><Archive size={16} className="text-orange-500" />&nbsp;bloccato</> 
+                    : <><Unlock size={16} className="text-green-600" />&nbsp;aperto</>}
+            </span>
+        </td>
         { sheet.schema === 'scuole' && profile?.isAdmin && selected &&
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
