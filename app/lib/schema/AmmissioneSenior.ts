@@ -1,4 +1,4 @@
-import { Field, ChoiceAnswerField, ComputedField } from './fields'
+import { Field, ChoiceAnswerField } from './fields'
 import Schema from './Schema'
 import { Row, ScanResults } from '@/app/graphql/generated'
 import { Data } from '@/app/lib/models'
@@ -15,7 +15,7 @@ export default class AmmissioneSenior extends Schema {
             new Field('zona_id'),
             new Field('zona'),
             new Field('variante'),
-            new ComputedField('risposte'),
+            new Field('risposte').set_editable(false).set_optional(),
             new ChoiceAnswerField('r01','01'),
             new ChoiceAnswerField('r02','02'),
             new ChoiceAnswerField('r03','03'),
@@ -36,7 +36,7 @@ export default class AmmissioneSenior extends Schema {
             new ChoiceAnswerField('r18','18'),
             new ChoiceAnswerField('r19','19'),
             new ChoiceAnswerField('r20','20'),
-            new ComputedField('punti'),
+            new Field('punti').set_numeric(true).set_editable(false).set_optional().add_css_style('thick-border-right'),
         ])
         this.name = "ammissione_senior"
         this.scan_fields = this.fields.filter(f => 

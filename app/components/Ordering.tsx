@@ -144,10 +144,9 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
   }
 
 function confronta(campo: Field, camporow1: string, camporow2: string): number {
-  const campiNumero: string[] = ["classe", "codice", "punteggio"]
   const campiData: string[] = ["data_nascita"]
 
-  if (campiNumero.includes(campo.name)) {
+  if (campo.numeric) {
     return (
       (parseFloat(camporow1) - parseFloat(camporow2) > 0)? 1 :
         (parseFloat(camporow1) - parseFloat(camporow2) < 0)? -1 : 0

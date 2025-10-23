@@ -7,6 +7,7 @@ export class Field {
     alternativeNames: string[] // alternative names for CSV column matching
     required: boolean = true
     hidden: boolean = false
+    numeric: boolean = false
 
     constructor(name: string, header?: string, alternativeNames?: string[]) {
         this.name = name
@@ -37,6 +38,16 @@ export class Field {
         return this
     }
 
+    set_editable(editable: boolean) {
+        this.editable = editable
+        return this
+    }
+
+    set_numeric(numeric: boolean) {
+        this.numeric = numeric
+        return this
+    }
+
     // Get all possible names for this field (main name + alternatives)
     getAllNames(): string[] {
         return [this.name, this.header, ...this.alternativeNames]
@@ -48,17 +59,6 @@ export class Field {
 
     isValid(value: string): boolean {
         return !this.required || value !== ''
-    }
-}
-    
-export class ComputedField extends Field {
-    constructor(name: string, header?: string, alternativeNames?: string[]) {
-        super(name, header, alternativeNames)
-        this.editable = false
-    }
-
-    isValid(_: string): boolean {
-        return true
     }
 }
 
@@ -75,6 +75,7 @@ export class NumericAnswerField extends Field {
         super(name, header, alternativeNames)
         this.css_style += ` field-NumericAnswer`
         this.widget = 'NumericInput'
+        this.numeric = true
     }
 }
 
@@ -83,6 +84,7 @@ export class ScoreAnswerField extends Field {
         super(name, header, alternativeNames)
         this.css_style += ` field-ScoreAnswer`
         this.widget = 'ScoreInput'
+        this.numeric = true
     }
 }
 
