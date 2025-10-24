@@ -1,3 +1,15 @@
+type FieldOptions = {
+    header?: string
+    alternativeNames?: string[]
+    css_style?: string
+    editable?: boolean
+    widget?: string
+    additionalCssStyle?: string
+    hidden?: boolean
+    required?: boolean
+    numeric?: boolean
+}
+
 export class Field {
     name: string // used as key in data structures
     header: string // used as human-readable header in UI
@@ -9,43 +21,17 @@ export class Field {
     hidden: boolean = false
     numeric: boolean = false
 
-    constructor(name: string, header?: string, alternativeNames?: string[]) {
+    constructor(name: string, {header, editable, widget, alternativeNames, additionalCssStyle, hidden, required, numeric}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_style = `field-${this.name}`
-        this.editable = true
-        this.widget = 'Input'
+        if (additionalCssStyle) {
+            this.css_style += ` ${additionalCssStyle}`
+        }
+        if (this.hidden !== undefined) this.hidden = this.hidden
+        this.editable = editable !== undefined ? editable : true
+        this.widget = widget || 'Input'
         this.alternativeNames = alternativeNames || []
-    }
-
-    add_css_style(style: string) {
-        this.css_style += ` ${style}`
-        return this
-    }
-
-    set_required() {
-        this.required = true
-        return this
-    }
-
-    set_optional() {
-        this.required = false
-        return this
-    }
-
-    set_hidden() {
-        this.hidden = true
-        return this
-    }
-
-    set_editable(editable: boolean) {
-        this.editable = editable
-        return this
-    }
-
-    set_numeric(numeric: boolean) {
-        this.numeric = numeric
-        return this
     }
 
     // Get all possible names for this field (main name + alternatives)
@@ -67,8 +53,8 @@ export class Field {
 }
 
 export class ChoiceAnswerField extends Field {
-    constructor(name: string, header?: string, alternativeNames?: string[]) {
-        super(name, header, alternativeNames)
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
         this.css_style += ` field-ChoiceAnswer`
         this.widget = 'ChoiceInput'
     }
@@ -79,8 +65,8 @@ export class ChoiceAnswerField extends Field {
 }
 
 export class NumericAnswerField extends Field {
-    constructor(name: string, header?: string, alternativeNames?: string[]) {
-        super(name, header, alternativeNames)
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
         this.css_style += ` field-NumericAnswer`
         this.widget = 'NumericInput'
         this.numeric = true
@@ -88,8 +74,8 @@ export class NumericAnswerField extends Field {
 }
 
 export class ScoreAnswerField extends Field {
-    constructor(name: string, header?: string, alternativeNames?: string[]) {
-        super(name, header, alternativeNames)
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
         this.css_style += ` field-ScoreAnswer`
         this.widget = 'ScoreInput'
         this.numeric = true
@@ -97,8 +83,8 @@ export class ScoreAnswerField extends Field {
 }
 
 export class DateField extends Field {
-    constructor(name: string, header?: string, alternativeNames?: string[]) {
-        super(name, header, alternativeNames)
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
         this.css_style += ` field-Date`
         this.widget = 'DateInput'
     }
