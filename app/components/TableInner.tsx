@@ -17,6 +17,9 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
   showStandardAnswers: boolean
 }) {
   return <table className="my-table">
+    <colgroup>
+      {schema.fields.map(field => <col key={field.name} className={field.css_style} />)}
+    </colgroup>
     <thead>
       <tr>
         {schema.fields.map(field => 
@@ -60,6 +63,7 @@ function TableRow({schema, row, onClick, showStandardAnswers}: {
   return <tr className={className} onClick={() => onClick && onClick()}>
     {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} />)}
     {row.error && <td className="error">{row.error}</td>}
+    {!row.error && <td>{`${row._id}`}</td> }
   </tr>
 }
 
@@ -81,7 +85,7 @@ function TableCell({field, value, showStandardAnswers}:{
         : value == '-' ? "" : " incorrect";
     }
   }
-  return <td key={field.name} className={field.css_style+extra_css}>
+  return <td key={field.name} className={`${field.css_style}${extra_css}`}>
       {value}
   </td>
 }
@@ -95,17 +99,18 @@ function InputRow({sheetId, schema, row, done}: {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
-  const [fields, setFields] = useState<Data>(Object.fromEntries(schema.fields.map(f => [f.name, row?.data[f.name] || ''])))
+  const columns = schema.fields
+  const [fields, setFields] = useState<Data>(Object.fromEntries(columns.map(f => [f.name, row?.data[f.name] || ''])))
   
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
   const modified = hasBeenModified()
 
   if (loading) return <tr><td>...</td></tr>
-  if (error) return <tr className="error" onClick={dismissError}><td colSpan={99}>Errore: {error.message}</td></tr>
+  if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length}>Errore: {error.message}</td><td></td></tr>
 
   return <tr className={modified ? "alert": ""}>
-    {schema.fields.map(field => 
+    {columns.map(field => 
       field.editable
         ? <td key={field.name} className={field.css_style}>
           <InputCell
@@ -128,7 +133,7 @@ function InputRow({sheetId, schema, row, done}: {
   </tr>
 
   function hasBeenModified() {
-    for (const field of schema.fields) {
+    for (const field of columns) {
       if (!row && fields[field.name] !== '') return true;
       if (row && fields[field.name] !== row.data[field.name]) return true;
     }

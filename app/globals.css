@@ -98,19 +98,42 @@ table {
   border-collapse: collapse;
 }
 
-table, 
-th {
+table, th {
   border: 1px solid gray;
+  box-sizing: border-box;
 }
 
 th {
   border-bottom: 4px solid gray;
 }
 
+table.my-table {
+    table-layout: fixed;
+    width: auto;
+}
+
+.my-table th {
+  background-color: rgb(174, 233, 241);
+}
+
 .my-table td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  height: 32px;
+}
+
+.my-table input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.my-table td {
+  width: 30px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px;
 }
 
 td.workbook-data-value {
@@ -125,74 +148,83 @@ td.incorrect {
   background-color: rgb(233, 115, 115)
 }
 
-.field-id, .field-id input, .field-zona_id, .field-scuola_id {
-  max-width: 7ex;
+/** Field-specific styles **/
+
+col.field-id, col.field-zona_id, col.field-scuola_id {
+  width: 8ex;
 }
 
-.field-zona, .field-zona input {
-  max-width: 10ex;
+col.field-zona {
+  width: 5ex;
 }
 
-.field-surname, .field-surname input {
-  max-width: 16ex;
+col.field-surname {
+  width: 15ex;
 }
 
-.field-name, .field-name input {
-  max-width: 16ex;
+col.field-name {
+  width: 15ex;
 }
 
-.field-birthDate, .field-birthDate input {
-  max-width: 13ex;
+col.field-birthDate {
+  width: 10.5ex;
 }
 
-.field-classYear, .field-classYear input {
-  max-width: 5ex;
+col.field-classYear {
+  width: 6ex;
 }
 
-.field-classSection, .field-classSection input {
-  max-width: 8ex;
-}
-
-.field-school, .field-school input {
-  max-width: 20ex;
-}
-
-.field-ChoiceAnswer, .field-ChoiceAnswer input {
-  max-width: 3ex;
+td.field-classYear {
   text-align: center;
 }
 
-.field-NumberAnswer, .field-NumberAnswer input {
-  max-width: 4ex;
+col.field-classSection {
+  width: 8ex;
 }
 
-th.field-score {
+td.field-classSection {
+  text-align: center;
+}
+
+col.field-school {
+  width: 20ex;
+}
+
+col.field-ChoiceAnswer {
+  width: 3ex;
+}
+
+th.field-ChoiceAnswer, td.field-ChoiceAnswer {
+  text-align: center;
+}
+
+td.field-NumberAnswer {
+  width: 4ex;
+}
+
+col.field-score {
   font-size: 70%;
+  width: 6ex;
 }
 
 td.field-score {
   font-weight: bold;
-  min-width: 4ex;
   text-align: right;
   padding-right: 4pt;
 }
 
-.field-punti, .field-punti input {
-  max-width: 4ex;
+col.field-punti {
+  width: 4ex;
 }
 
-.field-variant, .field-variant input {
-  max-width: 8ex;
+col.field-variant {
+  width: 8ex;
 }
 
-.actions-cell {
-  min-width: 15ex;
-}
-
-th.field-classYear {
+col.field-classYear {
   font-size: 80%;
 }
 
-.my-table th {
-  background-color: pink;
+col.actions-cell {
+  width: 15ex;
 }
