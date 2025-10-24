@@ -21,13 +21,11 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
     const derived_data = await schema.computeDerivedData(data)
-    console.log({data})
     const $set = {
         ...derived_data,
         updatedOn: new Date(),
         updatedBy: user._id,
     }
-    console.log($set)
     await rowsCollection.updateOne({ _id }, { $set })
     const updatedRow = await rowsCollection.findOne({ _id })
     if (!updatedRow) throw new Error('Row not found after update')

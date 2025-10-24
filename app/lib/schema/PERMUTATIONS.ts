@@ -70,19 +70,19 @@ function computeVariantMappings(variantCode:string): MappingResult|string {
     const answerCode = variantCode.charAt(1);
     const questionCode = variantCode.charAt(2);
 
-    const questions_permutation = permutations.questions[questionCode].map(i => i-1);
+    const questions_permutation = permutations.questions[questionCode]?.map(i => i-1);
     const permutation_answers = permutations.answers[answerCode];
-    const correct_answers = permutations.correct[year].split('');
-
+    const correct_raw = permutations.correct[year];
     if (!questions_permutation) {
         return "codice compito non valido";
     }
     if (!permutation_answers) {
         return "codice compito non valido";
     }
-    if (!correct_answers) {
+    if (!correct_raw) {
         return "codice compito non valido";
     }
+    const correct_answers = correct_raw.split('');
 
     const answers_mapping = Object.fromEntries("ABCDEX-".split('').map((a,i) => ([a, permutation_answers.charAt(i)])));
     const questions_inverse_permutation = Array(16).map(_ => -1);
