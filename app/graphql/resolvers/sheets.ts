@@ -3,7 +3,6 @@ import { get_authenticated_user } from './utils'
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { QuerySheetsArgs, Sheet } from '../generated'
 import type { GraphQLResolveInfo, SelectionSetNode } from 'graphql'
-import workbook from './workbook'
 
 function selectionHasField(selectionSet: SelectionSetNode | undefined, name: string, info: GraphQLResolveInfo): boolean {
   if (!selectionSet) return false
