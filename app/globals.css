@@ -191,14 +191,14 @@ col.field-school {
 }
 
 col.field-ChoiceAnswer {
-  width: 3ex;
+  width: 2ex;
 }
 
 th.field-ChoiceAnswer, td.field-ChoiceAnswer {
   text-align: center;
 }
 
-td.field-NumberAnswer {
+col.field-NumberAnswer {
   width: 4ex;
 }
 
