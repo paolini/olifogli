@@ -48,7 +48,7 @@ export default class Schema {
     }
 
     csv_row(row: Data): string[] {
-        return this.fields.map(field => row[field.name])
+        return this.fields.map(field => field.csv(row[field.name]))
     }
 
     /*
