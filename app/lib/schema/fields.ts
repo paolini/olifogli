@@ -50,6 +50,19 @@ export class Field {
     csv(value: string): string {
         return value
     }
+
+    compare(value1: string, value2: string): number {
+        if (this.numeric) {
+            return (
+            (parseFloat(value1) - parseFloat(value2) > 0) ? 1 :
+                (parseFloat(value1) - parseFloat(value2) < 0) ? -1 : 0
+            )
+        }
+  return (
+      (value1.toUpperCase() > value2.toUpperCase()) ? 1 :
+        (value1.toUpperCase() < value2.toUpperCase()) ? -1 : 0
+    )
+}
 }
 
 export class ChoiceAnswerField extends Field {
@@ -138,5 +151,12 @@ export class DateField extends Field {
             return false
         }
         return true;
+    }
+
+    compare(value1: string, value2: string): number {
+        return (
+        (Date.parse(value1) > Date.parse(value2)) ? 1 :
+            (Date.parse(value1) < Date.parse(value2)) ? -1 : 0
+        )
     }
 }
