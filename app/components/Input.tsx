@@ -160,7 +160,7 @@ export function ChoiceInput({value, setValue, onEnter}:{
   setValue: (value: string) => void,
   onEnter?: () => void,
   }) {
-  return <input style={{width: "1.2em", textAlign:"center"}} type="text" value={value?value.charAt(0):''} size={1} onChange={onChange} onKeyDown={onKeyDown}/>
+  return <input style={{width: "2ex", textAlign:"center"}} type="text" value={value?value.charAt(0):''} size={1} onChange={onChange} onKeyDown={onKeyDown}/>
 
   function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") {
