@@ -134,7 +134,7 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
     let res: number = 0
 
     while (i < criteriOrdina.length) {
-      res = confronta(criteriOrdina[i].campo, row1?.data[criteriOrdina[i].campo.name] || "", row2?.data[criteriOrdina[i].campo.name] || "")
+      res = criteriOrdina[i].campo.compare(row1?.data[criteriOrdina[i].campo.name] || "", row2?.data[criteriOrdina[i].campo.name] || "")
       if (! (res == 0)) {
         return res * criteriOrdina[i].direzione
       }
@@ -142,27 +142,6 @@ function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2:
     }
     return res
   }
-
-function confronta(campo: Field, camporow1: string, camporow2: string): number {
-  const campiData: string[] = ["data_nascita"]
-
-  if (campo.numeric) {
-    return (
-      (parseFloat(camporow1) - parseFloat(camporow2) > 0)? 1 :
-        (parseFloat(camporow1) - parseFloat(camporow2) < 0)? -1 : 0
-    )
-  }
-  if (campiData.includes(campo.name)) {
-    return (
-      (Date.parse(camporow1) > Date.parse(camporow2))? 1 :
-        (Date.parse(camporow1) < Date.parse(camporow2))? -1 : 0
-    )
-  }
-  return (
-      (camporow1.toUpperCase() > camporow2.toUpperCase())? 1 :
-        (camporow1.toUpperCase() < camporow2.toUpperCase())?  -1 : 0
-    )
-}
 
 function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, campo: Field, value: string): void {
     let i: number
