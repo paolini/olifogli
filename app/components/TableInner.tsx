@@ -63,7 +63,6 @@ function TableRow({schema, row, onClick, showStandardAnswers}: {
   return <tr className={className} onClick={() => onClick && onClick()}>
     {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} />)}
     {row.error && <td className="error">{row.error}</td>}
-    {!row.error && <td>{`${row._id}`}</td> }
   </tr>
 }
 
