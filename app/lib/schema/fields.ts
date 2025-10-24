@@ -60,6 +60,10 @@ export class Field {
     isValid(value: string): boolean {
         return !this.required || value !== ''
     }
+
+    csv(value: string): string {
+        return value
+    }
 }
 
 export class ChoiceAnswerField extends Field {
@@ -67,6 +71,10 @@ export class ChoiceAnswerField extends Field {
         super(name, header, alternativeNames)
         this.css_style += ` field-ChoiceAnswer`
         this.widget = 'ChoiceInput'
+    }
+
+    csv(value: string): string {
+        return value ? value.charAt(0) : ''
     }
 }
 
