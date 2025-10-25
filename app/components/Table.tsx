@@ -23,11 +23,12 @@ export default function Table({rows, sheet}:{
     return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
   }
   const view_rows = filtraEOrdina(criteria, rows)
+  const n_rows_with_errors = rows.filter(r => r.error).length
 
   return <>
     <span>{rows.length} righe</span>
     {' • '}
-    <span>{rows.filter(row => row.error).length} non valide</span>
+    <span>{n_rows_with_errors} {n_rows_with_errors === 1 ? "non valida" : "non valide"}</span>
     {view_rows.length < rows.length && <>{' • '}<span>({view_rows.length} visualizzate)</span></>}
     <br />
     <Ordering criteria={criteria}/>

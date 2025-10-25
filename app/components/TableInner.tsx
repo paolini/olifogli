@@ -101,11 +101,12 @@ function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditional
 function TableInfoCells({row}: {
   row: WithId<Row>|undefined
 }) {
+  const modified = row?.updatedOn && row?.updatedOn !== row?.createdOn
   return <>
     <td className="createdOn">{row?.createdOn && myTimestamp(row.createdOn)}</td>
     <td className="createdBy">{row?.createdBy || ''}</td> 
-    <td className="updatedOn">{row?.updatedOn && myTimestamp(row?.updatedOn)}</td>
-    <td className="updatedBy">{row?.updatedBy || ''}</td>
+    <td className="updatedOn">{modified && myTimestamp(row.updatedOn)}</td>
+    <td className="updatedBy">{modified && row?.updatedBy || ''}</td>
   </>
 }
 
