@@ -1,4 +1,4 @@
-import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 
 import { Context } from '../types'
@@ -17,10 +17,15 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
     check_user_can_edit_rows(user,sheet)
+
+    const workbooksCollection = await getWorkbooksCollection()
+    const workbook = await workbooksCollection.findOne({_id: sheet.workbookId})
+    if (!workbook) throw new Error('Workbook not found for sheet')
+
     const schema = schemas[sheet.schema]
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
-    const derived_data = await schema.computeDerivedData(data)
+    const derived_data = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
     const $set = {
         ...derived_data,
         updatedOn: new Date(),

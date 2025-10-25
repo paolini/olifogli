@@ -28,7 +28,7 @@ export default class Schema {
         return cleaned
     }
 
-    computeDerivedData(data: Data): DerivedData {
+    computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = data[field.name]
