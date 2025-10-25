@@ -14,8 +14,8 @@ export default async function addWorkbook(_: unknown, { name }: { name: string }
     commonData: {},
     createdOn: now,
     updatedOn: now,
-    createdBy: user._id,
-    updatedBy: user._id,
+    createdBy: user.email,
+    updatedBy: user.email,
   })
   if (!result.acknowledged) throw new Error('Failed to create workbook')
   const workbook = await collection.findOne({ _id: result.insertedId })

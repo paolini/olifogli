@@ -18,8 +18,8 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     const schema = schemas[sheet.schema]
     const createdOn = new Date()
     const updatedOn = createdOn
-    const createdBy = user._id
-    const updatedBy = user._id    
+    const createdBy = user.email
+    const updatedBy = user.email    
     let data = schema.clean(args.data)
     const derivedData = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
     data = derivedData.data

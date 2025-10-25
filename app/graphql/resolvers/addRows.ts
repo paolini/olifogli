@@ -14,7 +14,7 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     check_user_can_edit_rows(user, sheet)
     const schema = schemas[sheet.schema]
     const createdOn = new Date()
-    const createdBy = user._id
+    const createdBy = user.email
     const updatedOn = createdOn
     const updatedBy = createdBy
     // Applica filtro permission: forza tutti i campi filterField ai rispettivi filterValue

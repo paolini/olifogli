@@ -23,7 +23,7 @@ export default async function updateWorkbook(_: unknown, args: MutationUpdateWor
   if (Object.keys(update).length === 0) return true
 
   update.updatedOn = new Date()
-  update.updatedBy = user._id
+  update.updatedBy = user.email
 
   const res = await workbooks.updateOne({ _id: args._id }, { $set: update })
   if (!res.acknowledged) throw new Error('update failed')

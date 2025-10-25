@@ -80,13 +80,20 @@ th {
   overflow: hidden;
 }
 
+th.createdOn, th.createdBy, th.updatedOn, th.updatedBy,
+td.createdOn, td.createdBy, td.updatedOn, td.updatedBy {
+  font-size: 70%;
+  text-align: center;
+  padding: 2px 4px;
+}
+
 td {
   overflow: hidden; 
   text-overflow: ellipsis;
   border: 1px solid gray;
 }
 
-td.thick-border-right, th.thick-border-right {
+td.thick-border-right, th.thick-border-right, td.updatedBy, th.updatedBy {
   border-right: 4px solid gray;
 }
 

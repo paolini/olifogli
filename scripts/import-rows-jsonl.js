@@ -175,9 +175,9 @@ async function main() {
       error: '',
       data: rowData,
       createdOn: now,
-      createdBy: null,
+      createdBy: 'import-rows-jsonl',
       updatedOn: now,
-      updatedBy: null,
+      updatedBy: 'import-rows-jsonl',
     };
     
     await rowsCol.insertOne(rowDoc);

@@ -66,9 +66,9 @@ export type Row = {
     data: Data
 
     createdOn: Date
-    createdBy: ObjectId
+    createdBy: string
     updatedOn: Date
-    updatedBy: ObjectId
+    updatedBy: string
 }
 
 export type Workbook = {
@@ -78,8 +78,8 @@ export type Workbook = {
     commonData: Record<string, string>
     createdOn: Date
     updatedOn: Date
-    createdBy: ObjectId
-    updatedBy: ObjectId
+    createdBy: string
+    updatedBy: string
 }
 
 export type ScanMessage = {
