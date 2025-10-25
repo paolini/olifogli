@@ -1,5 +1,5 @@
 import { Data } from '../models'
-import { Field, ChoiceAnswerField, DateField } from './fields'
+import { Field, ChoiceAnswerField, DateField, OptionsField } from './fields'
 import {decodePermutations, buildPermutationsObject} from './PERMUTATIONS'
 import Schema, { DerivedData } from './Schema'
 
@@ -11,7 +11,7 @@ export default class ArchimedeCommon extends Schema {
             new Field('surname',{header: "cognome"}),
             new Field('name',{header: "nome"}),
             new DateField('birthDate',{header: 'data di nascita'}),
-            new Field('classYear',{header:'classe'}),
+            new OptionsField('classYear', ['1','2','3','4','5'], {header:'classe', numeric: true, alternativeNames: ['anno']}),
             new Field('classSection',{header:'sezione'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r02', {header: '2'}),

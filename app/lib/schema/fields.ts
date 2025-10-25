@@ -66,6 +66,21 @@ export class Field {
     }
 }
 
+export class OptionsField extends Field {
+    choices: string[]
+    constructor(name: string, choices: string[], options: FieldOptions = {}) {
+        super(name, options) 
+        this.choices = choices
+    }
+
+    isValid(value: string): boolean {
+        if (!super.isValid(value)) return false
+        if (value === '') return true // non richiesto e vuoto
+        return this.choices.includes(value)
+    }
+}
+
+
 export class ChoiceAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
