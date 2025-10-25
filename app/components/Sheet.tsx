@@ -116,7 +116,10 @@ function SheetBody({sheet,profile}: {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'table';
     const [tab, setTabState] = useState<TabType>(initialTab);
 
-    const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {variables: {sheetId: sheet._id}});
+    const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {
+        variables: {sheetId: sheet._id},
+        pollInterval: 5000 // millisecondi
+    });
     const schema = schemas[sheet.schema]
     const user_can_configure = true // profile && (profile.isAdmin || sheet.ownerId === profile._id)
     const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
