@@ -145,7 +145,15 @@ td.correct {
 }
 
 td.incorrect {
-  background-color: rgb(233, 115, 115)
+  background-color: rgb(233, 115, 115);
+}
+
+td.empty {
+  background-color: white;
+}
+
+td.invalid {
+  background-color:rgb(255, 255, 0)
 }
 
 /** Field-specific styles **/

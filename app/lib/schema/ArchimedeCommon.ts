@@ -1,6 +1,6 @@
 import { Data } from '../models'
 import { Field, ChoiceAnswerField, DateField } from './fields'
-import decodePermutations from './PERMUTATIONS'
+import {decodePermutations, buildPermutationsObject} from './PERMUTATIONS'
 import Schema, { DerivedData } from './Schema'
 
 export default class ArchimedeCommon extends Schema {
@@ -36,8 +36,8 @@ export default class ArchimedeCommon extends Schema {
 
     }
 
-    computeDerivedData(data: Data): DerivedData {
-        const validated = super.computeDerivedData(data)
+    computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
+        const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
         data = validated.data
         data = {...data, score:''}
         if (validated.error) return validated
@@ -48,14 +48,22 @@ export default class ArchimedeCommon extends Schema {
         }
         const choice_fields = this.fields.filter(f => f instanceof ChoiceAnswerField)
         const answers = choice_fields.map(f => data[f.name] || '')
-        const {score, error, extended_answers} = decodePermutations(variant, answers);
-        data.score = `${score}`
-        choice_fields.forEach((f, i) => {
-            data[f.name] = extended_answers[i] || ''
-        })
-        return {
-            error,
-            data
+        try {
+            const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
+            const {score, error, extended_answers} = decodePermutations(variant, answers, permutations);
+            data.score = `${score}`
+            choice_fields.forEach((f, i) => {
+                data[f.name] = extended_answers[i] || ''
+            })
+            return {
+                error,
+                data
+            }
+        } catch (e) {
+            return {
+                error: `errore di configurazione della raccolta: ${(e as Error).message}`,
+                data,
+            }
         }
     }
 }

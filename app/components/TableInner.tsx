@@ -73,6 +73,7 @@ function TableCell({field, value, showStandardAnswers}:{
 }) {
   let extra_css="";
   let correct_value = undefined;
+  let title = value;
   if (field instanceof ChoiceAnswerField) {
     if (value.length === 7) {
       // showStandardAnswers decides whether to show 
@@ -80,11 +81,15 @@ function TableCell({field, value, showStandardAnswers}:{
       correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
       value = showStandardAnswers ? value.charAt(4) : value.charAt(0);
       extra_css = value === correct_value
-        ? " correct"
-        : value == '-' ? "" : " incorrect";
+        ? "correct"
+        : value === '-' 
+          ? "empty" 
+            : ["A", "B", "C", "D", "E"].includes(value) 
+              ? "incorrect" 
+              : "invalid";
     }
   }
-  return <td key={field.name} className={`${field.css_style}${extra_css}`}>
+  return <td key={field.name} title={title} className={`${field.css_style} ${extra_css}`}>
       {value}
   </td>
 }

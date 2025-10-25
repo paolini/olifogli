@@ -44,7 +44,7 @@ export default function WorkbookConfigure({workbook, profile, sheetsCount}: {
             </Button>}
         {edit && <>
                 <Button className="mx-2" onClick={cancel}>
-                    Annulla
+                    termina modifiche
                 </Button>
                 {canModify && 
                     <Button className="mx-2" variant="danger" disabled={deleting || (sheetsCount || 0) > 0} onClick={() => {
