@@ -87,6 +87,7 @@ function TableCell({field, value, showStandardAnswers}:{
             : ["A", "B", "C", "D", "E"].includes(value) 
               ? "incorrect" 
               : "invalid";
+      title = value === correct_value ? value : `${value} (invece di ${correct_value})`;
     }
   }
   return <td key={field.name} title={title} className={`${field.css_style} ${extra_css}`}>

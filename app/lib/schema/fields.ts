@@ -155,9 +155,15 @@ export class DateField extends Field {
     }
 
     compare(value1: string, value2: string): number {
+        const v1 = value1.length === 10 
+            ? `${value1.substring(6,10)}-${value1.substring(3,5)}-${value1.substring(0,2)}` 
+            : value1;
+        const v2 = value2.length === 10 
+            ? `${value2.substring(6,10)}-${value2.substring(3,5)}-${value2.substring(0,2)}` 
+            : value2;
         return (
-        (Date.parse(value1) > Date.parse(value2)) ? 1 :
-            (Date.parse(value1) < Date.parse(value2)) ? -1 : 0
+            (v1 > v2) ? 1 :
+            (v1 < v2) ? -1 : 0
         )
     }
 }
