@@ -1,4 +1,4 @@
-import { useState, memo, useEffect } from 'react'
+import { useState, memo, useEffect, useRef } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
 import Schema from '@/app/lib/schema/Schema'
@@ -65,14 +65,19 @@ function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStan
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean
 }) {
-  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)} showAdditionalColumns={showAdditionalColumns} />
-  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
+  const [focusFieldName, setFocusFieldName] = useState<string|null>(null)
+  
+  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)} showAdditionalColumns={showAdditionalColumns} focusFieldName={focusFieldName} />
+  else return <TableRow schema={schema} row={row} onCellClick={(fieldName) => {
+    setCurrentRowId(row._id)
+    setFocusFieldName(fieldName)
+  }} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
 }
 
-function TableRow({schema, row, onClick, showStandardAnswers, showAdditionalColumns}: {
+function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditionalColumns}: {
   schema: Schema,
   row: WithId<Row>,
-  onClick?: () => void,
+  onCellClick?: (fieldName: string) => void,
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean
 }) {
@@ -86,9 +91,9 @@ function TableRow({schema, row, onClick, showStandardAnswers, showAdditionalColu
     '--fade-delay': `-${elapsedTime}s` 
   } as React.CSSProperties : undefined
   
-  return <tr className={className} style={style} onClick={() => onClick && onClick()}>
+  return <tr className={className} style={style}>
     { showAdditionalColumns && <TableInfoCells row={row} />}
-    {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} />)}
+    {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick && onCellClick(field.name)} />)}
     {row.error && <td className="alert">{row.error}</td>}
   </tr>
 }
@@ -104,10 +109,11 @@ function TableInfoCells({row}: {
   </>
 }
 
-function TableCell({field, value, showStandardAnswers}:{
+function TableCell({field, value, showStandardAnswers, onClick}:{
   field: Field,
   value: string,
-  showStandardAnswers?: boolean
+  showStandardAnswers?: boolean,
+  onClick?: () => void
 }) {
   let extra_css="";
   let correct_value = undefined;
@@ -128,17 +134,18 @@ function TableCell({field, value, showStandardAnswers}:{
       title = value === correct_value ? value : `${value} (invece di ${correct_value})`;
     }
   }
-  return <td key={field.name} title={title} className={`${field.css_style} ${extra_css}`}>
+  return <td key={field.name} title={title} className={`${field.css_style} ${extra_css}`} onClick={onClick}>
       {value}
   </td>
 }
 
-function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
+function InputRow({sheetId, schema, row, done, showAdditionalColumns, focusFieldName}: {
   sheetId: string,
   schema: Schema, 
   row?: WithId<Row>,
   done?: () => void,
-  showAdditionalColumns: boolean
+  showAdditionalColumns: boolean,
+  focusFieldName?: string|null
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
@@ -146,10 +153,26 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
   const columns = schema.fields
   const [fields, setFields] = useState<Data>(Object.fromEntries(columns.map(f => [f.name, row?.data[f.name] || ''])))
   const [cacheUpdatedOn] = useState(row?.updatedOn) // controllo se la riga mi cambia sotto i piedi
+  const firstInputRef = useRef<HTMLInputElement>(null)
+  const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({})
   
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
   const modified = hasBeenModified()
+
+  // Mette il focus sul primo input quando viene creata una nuova riga
+  useEffect(() => {
+    if (!row && !loading && firstInputRef.current) {
+      firstInputRef.current.focus()
+    }
+  }, [row, loading])
+
+  // Mette il focus sul campo cliccato quando si modifica una riga esistente
+  useEffect(() => {
+    if (row && focusFieldName && fieldRefs.current[focusFieldName]) {
+      fieldRefs.current[focusFieldName]?.focus()
+    }
+  }, [row, focusFieldName])
 
   // Controlla se la riga è stata modificata da un altro utente
   useEffect(() => {
@@ -165,18 +188,25 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
 
   return <tr className={modified ? "alert": ""}>
     {showAdditionalColumns && <TableInfoCells row={row} />}
-    {columns.map(field => 
-      field.editable
+    {columns.map((field, index) => {
+      const isFirstEditable = field.editable && columns.slice(0, index).every(f => !f.editable)
+      return field.editable
         ? <td key={field.name} className={field.css_style + (fieldHasBeenModified(field.name) ? " modified" : "")}>
           <InputCell
             field={field}
             value={fields[field.name]||''} 
             setValue={v => setFields(fields => ({...fields, [field.name]: v}))}
             onEnter={save}
+            inputRef={(el) => {
+              if (isFirstEditable) {
+                firstInputRef.current = el
+              }
+              fieldRefs.current[field.name] = el
+            }}
           />
         </td>
         : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
-    )}
+    })}
     <td className="actions-cell">
       <button className="bg-green-60" disabled={loading} onClick={save}>
         salva
