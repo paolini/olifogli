@@ -93,7 +93,10 @@ const GET_ROWS = gql`
       _id
       error
       data
+      createdOn
+      createdBy
       updatedOn
+      updatedBy
     }
   }
 `

@@ -42,8 +42,8 @@ olifogli/
   commonData: Record<string, string>  // Dati flessibili key-value
   createdOn: Date
   updatedOn: Date
-  createdBy: ObjectId
-  updatedBy: ObjectId
+  createdBy: string  // Email dell'utente
+  updatedBy: string  // Email dell'utente
 }
 ```
 
@@ -70,9 +70,9 @@ olifogli/
   error: string // '' se è valido
   data: Record<string, string>  // Dati flessibili key-value
   createdOn: Date
-  createdBy: ObjectId
+  createdBy: string  // Email dell'utente
   updatedOn: Date
-  updatedBy: ObjectId
+  updatedBy: string  // Email dell'utente
 }
 ```
 

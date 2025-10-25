@@ -127,9 +127,9 @@ async function main() {
         punti: row.score || '',
       },
       createdOn: now,
-      createdBy: null,
+      createdBy: 'import-rows-csv',
       updatedOn: now,
-      updatedBy: null,
+      updatedBy: 'import-rows-csv',
     };
     await rowsCol.insertOne(rowDoc);
     console.log(`Aggiunta riga a sheet ${sheetName}`);

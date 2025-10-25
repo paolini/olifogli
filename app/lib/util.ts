@@ -1,5 +1,6 @@
 
-export function myTimestamp(date: string | Date): string {
+export function myTimestamp(date: string | Date | undefined | null): string {
+    if (date === undefined || date === null) return '???'
     date = new Date(date)    
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0')

@@ -57,7 +57,10 @@ input UpdateSheetInput {
 type Row {
   _id: ObjectId!
   error: String
+  createdOn: Timestamp
+  createdBy: String
   updatedOn: Timestamp!
+  updatedBy: String!
   data: Data!
 }
 

@@ -15,6 +15,7 @@ export default function Table({rows, sheet}:{
 }) {
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
+  const [ showAdditionalColumns, setShowAdditionalColumns ] = useState<boolean>(false)
   const schema = schemas[sheet.schema]
   // Always call hooks unconditionally
   const criteria = useCriteria(schema)
@@ -37,6 +38,10 @@ export default function Table({rows, sheet}:{
           <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
           {' '}Mostra risposte standard
         </label>
+        <label className="ml-4">
+          <input type="checkbox" checked={showAdditionalColumns} onChange={e => setShowAdditionalColumns(e.target.checked)} />
+          {' '}Mostra colonne informative
+        </label>
       </>
     )}
     <LoadingWrapper>
@@ -47,6 +52,7 @@ export default function Table({rows, sheet}:{
         sheet={sheet} 
         schema={schema}
         showStandardAnswers={showStandardAnswers}
+        showAdditionalColumns={showAdditionalColumns}
       />
     </LoadingWrapper>
 </>

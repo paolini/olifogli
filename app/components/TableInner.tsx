@@ -7,21 +7,36 @@ import { ChoiceAnswerField, Field } from '@/app/lib/schema/fields'
 import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row, Sheet } from '@/app/graphql/generated'
+import { myTimestamp } from '../lib/util'
+import Table from './Table'
 
-export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers}: {
+export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns}: {
   rows: Row[],
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
   sheet: Sheet,
   schema: Schema,
-  showStandardAnswers: boolean
+  showStandardAnswers: boolean,
+  showAdditionalColumns: boolean
 }) {
   return <table className="my-table">
     <colgroup>
+      { showAdditionalColumns && <>
+        <col className="createdOn" />
+        <col className="createdBy" />
+        <col className="updatedOn" /> 
+        <col className="updatedBy" />
+      </>}
       {schema.fields.map(field => <col key={field.name} className={field.css_style} />)}
     </colgroup>
     <thead>
       <tr>
+        { showAdditionalColumns && <>
+          <th scope="col" className="createdOn">istante creazione</th>
+          <th scope="col" className="createdBy">creato da</th>
+          <th scope="col" className="updatedOn">istante modifica</th>
+          <th scope="col" className="updatedBy">aggiornato da</th>
+        </>}
         {schema.fields.map(field => 
           <th scope="col" key={field.name} className={field.css_style}>
             {field.header}
@@ -29,41 +44,56 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
       </tr>
     </thead>
     <tbody>
-      {rows.map((row) => <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} showStandardAnswers={showStandardAnswers} />)} 
+      {rows.map((row) => 
+        <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />)} 
       {currentRowId 
         ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
           aggiungi riga
           </button></td></tr>
-        : <InputRow sheetId={sheet._id.toString()} schema={schema}/>}
+        : <InputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} />}
     </tbody>
   </table>
 }
   
 const MyRow = memo(MyRowInternal)
 
-function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStandardAnswers}: {
+function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStandardAnswers, showAdditionalColumns}: {
   current: boolean,
   sheetId: string,
   schema: Schema,
   row: WithId<Row>,
-  setCurrentRowId: (id: ObjectId|null) => void
-  showStandardAnswers: boolean
+  setCurrentRowId: (id: ObjectId|null) => void,
+  showStandardAnswers: boolean,
+  showAdditionalColumns: boolean
 }) {
-  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)}/>
-  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} showStandardAnswers={showStandardAnswers} />
+  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)} showAdditionalColumns={showAdditionalColumns} />
+  else return <TableRow schema={schema} row={row} onClick={() => setCurrentRowId(row._id)} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
 }
 
-function TableRow({schema, row, onClick, showStandardAnswers}: {
+function TableRow({schema, row, onClick, showStandardAnswers, showAdditionalColumns}: {
   schema: Schema,
   row: WithId<Row>,
   onClick?: () => void,
-  showStandardAnswers: boolean
+  showStandardAnswers: boolean,
+  showAdditionalColumns: boolean
 }) {
   const className = `clickable${row.error ? " alert" : ""}`
   return <tr className={className} onClick={() => onClick && onClick()}>
+    { showAdditionalColumns && <TableInfoCells row={row} />}
     {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} />)}
     {row.error && <td className="error">{row.error}</td>}
   </tr>
+}
+
+function TableInfoCells({row}: {
+  row: WithId<Row>|undefined
+}) {
+  return <>
+    <td className="createdOn">{row?.createdOn && myTimestamp(row.createdOn)}</td>
+    <td className="createdBy">{row?.createdBy || ''}</td> 
+    <td className="updatedOn">{row?.updatedOn && myTimestamp(row?.updatedOn)}</td>
+    <td className="updatedBy">{row?.updatedBy || ''}</td>
+  </>
 }
 
 function TableCell({field, value, showStandardAnswers}:{
@@ -95,11 +125,12 @@ function TableCell({field, value, showStandardAnswers}:{
   </td>
 }
 
-function InputRow({sheetId, schema, row, done}: {
+function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
   sheetId: string,
   schema: Schema, 
   row?: WithId<Row>,
-  done?: () => void
+  done?: () => void,
+  showAdditionalColumns: boolean
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
@@ -115,6 +146,7 @@ function InputRow({sheetId, schema, row, done}: {
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length}>Errore: {error.message}</td><td></td></tr>
 
   return <tr className={modified ? "alert": ""}>
+    {showAdditionalColumns && <TableInfoCells row={row} />}
     {columns.map(field => 
       field.editable
         ? <td key={field.name} className={field.css_style}>
@@ -187,6 +219,10 @@ export const ADD_ROW = gql`
       _id
       error
       data
+      createdOn
+      createdBy
+      updatedOn
+      updatedBy
     }
   }
 `
@@ -196,7 +232,10 @@ const PATCH_ROW = gql`
     patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
       _id
       __typename
+      createdOn
+      createdBy
       updatedOn
+      updatedBy
       error
       data
     }

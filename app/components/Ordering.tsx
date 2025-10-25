@@ -123,24 +123,30 @@ export function InputCerca({field, type, criteria, size}:{
 }
 
 function tableOrdina(criteriOrdina: CriterioOrd[], rows: WithId<Row>[]): WithId<Row>[] {
-    if (criteriOrdina.length == 0) return rows
     const rowssort: WithId<Row>[] = [...rows]
     rowssort.sort((a: WithId<Row>, b: WithId<Row>) => confrontaCriteri(criteriOrdina, a, b))
     return rowssort
   }
 
 function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2: WithId<Row>): number {
-    let i: number = 0
     let res: number = 0
 
-    while (i < criteriOrdina.length) {
+    for (let i=0; i < criteriOrdina.length; i++) {
       res = criteriOrdina[i].campo.compare(row1?.data[criteriOrdina[i].campo.name] || "", row2?.data[criteriOrdina[i].campo.name] || "")
-      if (! (res == 0)) {
+      if (res !== 0) {
         return res * criteriOrdina[i].direzione
       }
-      i++
     }
-    return res
+    // Ordinamento finale per createdOn (se presente e valido)
+    if (row1.createdOn && row2.createdOn) {
+      const t1 = new Date(row1.createdOn).getTime()
+      const t2 = new Date(row2.createdOn).getTime()
+      if (!isNaN(t1) && !isNaN(t2)) {
+        res = t1 - t2
+        return res
+      }
+    }
+    return 0
   }
 
 function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, campo: Field, value: string): void {

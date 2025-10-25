@@ -29,7 +29,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const $set = {
         ...derived_data,
         updatedOn: new Date(),
-        updatedBy: user._id,
+        updatedBy: user.email,
     }
     await rowsCollection.updateOne({ _id }, { $set })
     const updatedRow = await rowsCollection.findOne({ _id })

@@ -250,8 +250,11 @@ export type ReportEntry = {
 export type Row = {
   __typename?: 'Row';
   _id: Scalars['ObjectId']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
+  createdOn?: Maybe<Scalars['Timestamp']['output']>;
   data: Scalars['Data']['output'];
   error?: Maybe<Scalars['String']['output']>;
+  updatedBy: Scalars['String']['output'];
   updatedOn: Scalars['Timestamp']['output'];
 };
 
@@ -404,7 +407,7 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, updatedOn: Date }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -462,7 +465,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -501,7 +504,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -510,7 +513,7 @@ export type PatchRowMutationVariables = Exact<{
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, updatedOn: Date, error?: string | null, data: any } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, data: any } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -897,7 +900,10 @@ export const GetRowsDocument = gql`
     _id
     error
     data
+    createdOn
+    createdBy
     updatedOn
+    updatedBy
   }
 }
     `;
@@ -1166,6 +1172,8 @@ export const GetSheetsDocument = gql`
       role
     }
     nRows
+    closed
+    locked
     ownerId
   }
 }
@@ -1341,6 +1349,10 @@ export const AddRowDocument = gql`
     _id
     error
     data
+    createdOn
+    createdBy
+    updatedOn
+    updatedBy
   }
 }
     `;
@@ -1376,7 +1388,10 @@ export const PatchRowDocument = gql`
   patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
     _id
     __typename
+    createdOn
+    createdBy
     updatedOn
+    updatedBy
     error
     data
   }
@@ -2024,8 +2039,11 @@ export type ReportEntryResolvers<ContextType = any, ParentType extends Resolvers
 
 export type RowResolvers<ContextType = any, ParentType extends ResolversParentTypes['Row'] = ResolversParentTypes['Row']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
