@@ -73,7 +73,8 @@ function SheetsTable({ workbookId, profile }: {
     const router = useRouter()
     const [creationId, setCreationId] = useState<ObjectId|null>(null)
     const { loading, error, data, refetch } = useGetSheetsQuery({
-        variables: { workbookId }
+        variables: { workbookId },
+        pollInterval: 10000 // millisecondi
     })
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)

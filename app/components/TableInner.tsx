@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { useState, memo, useEffect } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
 import Schema from '@/app/lib/schema/Schema'
@@ -8,7 +8,6 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row, Sheet } from '@/app/graphql/generated'
 import { myTimestamp } from '../lib/util'
-import Table from './Table'
 
 export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns}: {
   rows: Row[],
@@ -77,11 +76,20 @@ function TableRow({schema, row, onClick, showStandardAnswers, showAdditionalColu
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean
 }) {
-  const className = `clickable${row.error ? " alert" : ""}`
-  return <tr className={className} onClick={() => onClick && onClick()}>
+  // Calcola quanto tempo è passato dall'ultimo aggiornamento
+  const timeSinceUpdate = row.updatedOn ? Date.now() - new Date(row.updatedOn).getTime() : Infinity
+  const isRecent = timeSinceUpdate < 60000
+  const elapsedTime = isRecent ? timeSinceUpdate / 1000 : 0 // tempo già trascorso in secondi
+  
+  const className = `clickable${isRecent ? " recently-added" : ""}`
+  const style = isRecent ? { 
+    '--fade-delay': `-${elapsedTime}s` 
+  } as React.CSSProperties : undefined
+  
+  return <tr className={className} style={style} onClick={() => onClick && onClick()}>
     { showAdditionalColumns && <TableInfoCells row={row} />}
     {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} />)}
-    {row.error && <td className="error">{row.error}</td>}
+    {row.error && <td className="alert">{row.error}</td>}
   </tr>
 }
 
@@ -137,10 +145,20 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
   const columns = schema.fields
   const [fields, setFields] = useState<Data>(Object.fromEntries(columns.map(f => [f.name, row?.data[f.name] || ''])))
+  const [cacheUpdatedOn] = useState(row?.updatedOn) // controllo se la riga mi cambia sotto i piedi
   
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
   const modified = hasBeenModified()
+
+  // Controlla se la riga è stata modificata da un altro utente
+  useEffect(() => {
+    if (cacheUpdatedOn && row && row.updatedOn !== cacheUpdatedOn) {
+      if (loading) return // evita di mostrare l'alert se stiamo salvando noi stessi
+      alert("la riga che stai modificando è stata aggiornata da un altro utente. Per non creare conflitti devo annullare le tue modifiche.")
+      if (done) done()
+    }
+  }, [cacheUpdatedOn, row, done, loading])
 
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length}>Errore: {error.message}</td><td></td></tr>
@@ -149,7 +167,7 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
     {showAdditionalColumns && <TableInfoCells row={row} />}
     {columns.map(field => 
       field.editable
-        ? <td key={field.name} className={field.css_style}>
+        ? <td key={field.name} className={field.css_style + (fieldHasBeenModified(field.name) ? " modified" : "")}>
           <InputCell
             field={field}
             value={fields[field.name]||''} 
@@ -169,12 +187,14 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns}: {
     </td>
   </tr>
 
-  function hasBeenModified() {
-    for (const field of columns) {
-      if (!row && fields[field.name] !== '') return true;
-      if (row && fields[field.name] !== row.data[field.name]) return true;
-    }
+  function fieldHasBeenModified(fieldName: string) {
+    if (!row && fields[fieldName] !== '') return true;
+    if (row && fields[fieldName] !== row.data[fieldName]) return true;
     return false;
+  }
+
+  function hasBeenModified() {
+    return columns.some(field => fieldHasBeenModified(field.name));
   }
 
   function dismissError() {

@@ -70,8 +70,31 @@ tr.error {
   background-color: var(--error);
 }
 
+/* effetto sfumatura per le righe con errori recentemente aggiunti */
+td.error-recent {
+  background-color: #87eff9;
+}
+
 tr.alert {
   background-color: var(--alert);
+}
+td.alert {
+  background-color: var(--alert)
+}
+
+tr.recently-added {
+  animation: fadeHighlight 60s ease-out;
+  animation-delay: var(--fade-delay, 0s);
+  animation-fill-mode: both;
+}
+
+@keyframes fadeHighlight {
+  0% {
+    background-color: #90EE90; /* verde chiaro */
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 th {
@@ -99,6 +122,10 @@ td.thick-border-right, th.thick-border-right, td.updatedBy, th.updatedBy {
 
 td.thick-border-left, th.thick-border-left {
   border-left: 4px solid gray;
+}
+
+td.modified {
+  background-color: rgb(255, 89, 0);
 }
 
 table {
