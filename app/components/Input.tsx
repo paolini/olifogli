@@ -114,7 +114,7 @@ export function DateInput({type, size, value, setValue, width, onEnter}:{
     const input = e.target as HTMLInputElement
 
     let key = e.key
-    if (key === ' ') key = '/'
+    if (key === ' ' || key==='.') key = '/'
 
     if (key >= '0' && key <= '9' || key === '/') {      
       let cursorPos = input.selectionStart || 0
@@ -184,6 +184,13 @@ export function ChoiceInput({value, setValue, onEnter}:{
     } else if (e.key.length === 1) {
       // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
       let  char = e.key.toUpperCase()
+      if (char === '0') char = '-'
+      else if (char === '1') char = 'A'
+      else if (char === '2') char = 'B'
+      else if (char === '3') char = 'C'
+      else if (char === '4') char = 'D'
+      else if (char === '5') char = 'E'
+      else if (char === '6') char = 'X'
       if (! "ABCDEX-".includes(char)) char = 'X'
       e.preventDefault() // Previeni l'inserimento normale
       setValue(char) // Sostituisci il valore
