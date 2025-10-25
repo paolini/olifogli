@@ -20,7 +20,10 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
       role: p.role as 'admin' | 'editor' | 'view'
     }))
   }
-  if (args.commonData && typeof args.commonData === 'object') update.commonData = args.commonData
+  if (args.commonData && typeof args.commonData === 'object') {
+    check_admin(user)
+    update.commonData = args.commonData
+  }
 
   if (Object.keys(update).length === 0) return true
 

@@ -133,6 +133,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                     permissions,
                     sheet: null,
                     commonData: {
+                        Codice_meccanografico: codice_meccanografico || '',
                         Nome_scuola: row.data?.Nome_scuola || '',
                         "Città_scuola": row.data["Città_scuola"] || '',
                         "Distretto":  row.data["Nome_distretto"] || '',
