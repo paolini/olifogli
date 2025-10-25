@@ -28,10 +28,12 @@ export class Field {
         if (additionalCssStyle) {
             this.css_style += ` ${additionalCssStyle}`
         }
-        if (this.hidden !== undefined) this.hidden = this.hidden
         this.editable = editable !== undefined ? editable : true
-        this.widget = widget || 'Input'
         this.alternativeNames = alternativeNames || []
+        this.widget = widget || 'Input'
+        this.hidden = hidden !== undefined ? hidden : this.hidden
+        this.required = required !== undefined ? required : true
+        this.numeric = numeric !== undefined ? numeric : false
     }
 
     // Get all possible names for this field (main name + alternatives)
@@ -53,16 +55,15 @@ export class Field {
 
     compare(value1: string, value2: string): number {
         if (this.numeric) {
-            return (
-            (parseFloat(value1) - parseFloat(value2) > 0) ? 1 :
-                (parseFloat(value1) - parseFloat(value2) < 0) ? -1 : 0
-            )
+            const n1 = parseFloat(value1)
+            const n2 = parseFloat(value2)
+            return ((n1 > n2) ? 1 : (n1 < n2) ? -1 : 0)
+        } else {
+            const v1 = value1.toLowerCase()
+            const v2 = value2.toLowerCase()
+            return ((v1 > v2) ? 1 : (v1 < v2) ? -1 : 0)
         }
-  return (
-      (value1.toUpperCase() > value2.toUpperCase()) ? 1 :
-        (value1.toUpperCase() < value2.toUpperCase()) ? -1 : 0
-    )
-}
+    }
 }
 
 export class ChoiceAnswerField extends Field {
