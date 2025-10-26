@@ -112,9 +112,11 @@ class Job:
                     raise LaTeXFormatError(f"Invalid format in line {lineno}")
         return True
 
-    def call_latexmk(self, filepath, template_dir):
+    def call_latexmk(self, filepath, template_dir, dest_file_path):
         """
-        call latexmk to generate a pdf file from filepath, and return its full name with path
+        call latexmk to generate a pdf file from filepath, 
+        using the template in template_dir,
+        and then copies it to dest_file_path
         """
         tmp_dir = os.path.join(TMP_DIR, self.job_id)
         os.makedirs(tmp_dir, exist_ok=True)
@@ -125,17 +127,16 @@ class Job:
             with open(mainfile, "w", encoding="utf-8") as f:
                 f.write(rf'\input{{header.tex}}\begin{{document}}\input{{{filename}}}\end{{document}}')
 
-            cmd = ['latexmk', '-pdf', '-interaction=nonstopmode', 'main']
+            cmd = ['latexmk', '-pdf', '-interaction=nonstopmode', '-quiet', 'main']
             env = os.environ.copy()
             env['TEXINPUTS'] = f"{template_dir}:{env.get('TEXINPUTS', '')}"
             try:
                 subprocess.run(cmd, check=True, env=env, cwd=tmp_dir)
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(f"latexmk failed on file {filepath} in {tmp_dir} with exit code {e.returncode}") from e
-            return os.path.join(tmp_dir, 'main.pdf')
+            shutil.copy(os.path.join(tmp_dir, 'main.pdf'), dest_file_path)
         finally:            
             shutil.rmtree(tmp_dir)
-            pass
 
     # Funzione per elaborare i file
     def process(self):
@@ -159,21 +160,17 @@ class Job:
         try:
             self.update_status("processing", "Elaborazione in corso")
             self.check_file_format()
-            output_file = self.call_latexmk(filepath, template_dir)
+
             data_directory = os.path.join(DATA_DIR, self.job_id)
             os.makedirs(data_directory, exist_ok=True)
             filename_no_ext = os.path.splitext(os.path.basename(filepath))[0]
             dest_file_path = os.path.join(data_directory, filename_no_ext + '.pdf')
-            shutil.copy(output_file, dest_file_path)
-
+            self.call_latexmk(filepath, template_dir, dest_file_path)
+            return self.completed()
         except Exception as e:
             print(f"Error processing {filepath}: {str(e)}", flush=True, file=sys.stderr)
             self.update_status("error", f"Processing {filepath}: {str(e)}")
             return self.abort()
-
-        # remove temporary directory
-
-        return self.completed()
 
 # Worker principale
 def worker():
