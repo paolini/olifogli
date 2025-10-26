@@ -220,6 +220,7 @@ table.my-table {
   z-index: 10;
   border-bottom: none;
   background-clip: padding-box;
+  text-align: center;
 }
 
 .my-table thead {
@@ -314,6 +315,18 @@ col.field-school {
   width: 20ex;
 }
 
+col.field-variant {
+  width: 8ex;
+}
+
+td.field-variant {
+  text-align: center;
+}
+
+col.field-classYear {
+  font-size: 80%;
+}
+
 col.field-ChoiceAnswer {
   width: 2ex;
 }
@@ -331,22 +344,14 @@ col.field-score {
   width: 6ex;
 }
 
-td.field-score {
-  font-weight: bold;
-  text-align: right;
-  padding-right: 4pt;
-}
-
-col.field-punti {
+col.field-score {
   width: 4ex;
 }
 
-col.field-variant {
-  width: 8ex;
-}
-
-col.field-classYear {
-  font-size: 80%;
+td.field-score {
+  font-weight: bold;
+  text-align: center;
+  padding-right: 4pt;
 }
 
 col.actions-cell {
