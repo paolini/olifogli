@@ -47,7 +47,7 @@ export default function Table({rows, sheet}:{
         </>
       )}
     </div>
-    <div className="table-wrapper">
+    <div className="table-scroll-container">
       <LoadingWrapper>
         <TableInner 
           rows={view_rows} 

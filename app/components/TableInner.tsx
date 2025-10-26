@@ -18,6 +18,8 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean
 }) {
+  const columns = schema.fields.filter(f => !f.hidden);
+
   return <table className="my-table">
     <colgroup>
       { showAdditionalColumns && <>
@@ -26,7 +28,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
         <col className="updatedOn" /> 
         <col className="updatedBy" />
       </>}
-      {schema.fields.map(field => <col key={field.name} className={field.css_style} />)}
+      {columns.map(field => <col key={field.name} className={field.css_style} />)}
       <col className="actions-cell" />
     </colgroup>
     <thead>
@@ -37,7 +39,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
           <th scope="col" className="updatedOn">istante modifica</th>
           <th scope="col" className="updatedBy">aggiornato da</th>
         </>}
-        {schema.fields.map(field => 
+        {columns.map(field => 
           <th scope="col" key={field.name} className={field.css_style}>
             {field.header}
           </th>)}
@@ -92,10 +94,12 @@ function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditional
   const style = isRecent ? { 
     '--fade-delay': `-${elapsedTime}s` 
   } as React.CSSProperties : undefined
+
+  const columns = schema.fields.filter(f => !f.hidden);
   
   return <tr className={className} style={style}>
     { showAdditionalColumns && <TableInfoCells row={row} />}
-    {schema.fields.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick && onCellClick(field.name)} />)}
+    {columns.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick && onCellClick(field.name)} />)}
     {row.error && <td className="alert">{row.error}</td>}
   </tr>
 }
@@ -153,7 +157,7 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns, focusField
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
-  const columns = schema.fields
+  const columns = schema.fields.filter(f => !f.hidden);
   const [fields, setFields] = useState<Data>(Object.fromEntries(columns.map(f => [f.name, row?.data[f.name] || ''])))
   const [cacheUpdatedOn] = useState(row?.updatedOn) // controllo se la riga mi cambia sotto i piedi
   const firstInputRef = useRef<HTMLInputElement>(null)

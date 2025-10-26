@@ -7,12 +7,12 @@ export default class ArchimedeCommon extends Schema {
     constructor(name: string, description: string) {
         super(name, description, [
             new Field('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
-            new Field('variant',{header: "codice compito"}),
             new Field('surname',{header: "cognome"}),
             new Field('name',{header: "nome"}),
             new DateField('birthDate',{header: 'data di nascita'}),
             new OptionsField('classYear', ['1','2','3','4','5'], {header:'classe', numeric: true, alternativeNames: ['anno']}),
             new Field('classSection',{header:'sezione'}),
+            new Field('variant',{header: "codice compito", additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r02', {header: '2'}),
             new ChoiceAnswerField('r03', {header: '3'}),
