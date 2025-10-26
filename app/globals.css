@@ -191,6 +191,20 @@ table.my-table {
     width: auto;
     border-collapse: separate;
     border-spacing: 0;
+    font-size: 12px;
+}
+
+/* Media queries per font-size responsive */
+@media (min-width: 1400px) {
+  table.my-table {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1800px) {
+  table.my-table {
+    font-size: 16px;
+  }
 }
 
 .table-container {
