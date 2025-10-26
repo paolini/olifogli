@@ -193,7 +193,7 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns, focusField
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length}>Errore: {error.message}</td><td></td></tr>
 
-  return <tr className={modified ? "alert": ""}>
+  return <tr className={modified ? "modified": ""}>
     {showAdditionalColumns && <TableInfoCells row={row} />}
     {columns.map((field, index) => {
       const isFirstEditable = field.editable && columns.slice(0, index).every(f => !f.editable)
