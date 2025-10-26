@@ -1,7 +1,10 @@
+import { CSSProperties } from "react"
+
 type FieldOptions = {
     header?: string
     alternativeNames?: string[]
-    css_style?: string
+    css_class?: string
+    css_style?: CSSProperties|((value:string)=>CSSProperties)
     editable?: boolean
     widget?: string
     additionalCssStyle?: string
@@ -13,7 +16,8 @@ type FieldOptions = {
 export class Field {
     name: string // used as key in data structures
     header: string // used as human-readable header in UI
-    css_style: string // used in CSS
+    css_class: string // used in CSS
+    css_style: undefined | CSSProperties | ((value: string) => CSSProperties)
     editable: boolean
     widget: string // identify the HTML input widget
     alternativeNames: string[] // alternative names for CSV column matching
@@ -21,13 +25,14 @@ export class Field {
     hidden: boolean = false
     numeric: boolean = false
 
-    constructor(name: string, {header, editable, widget, alternativeNames, additionalCssStyle, hidden, required, numeric}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, widget, alternativeNames, additionalCssStyle, css_style, hidden, required, numeric}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
-        this.css_style = `field-${this.name}`
+        this.css_class = `field-${this.name}`
         if (additionalCssStyle) {
-            this.css_style += ` ${additionalCssStyle}`
+            this.css_class += ` ${additionalCssStyle}`
         }
+        this.css_style = css_style || undefined
         this.editable = editable !== undefined ? editable : true
         this.alternativeNames = alternativeNames || []
         this.widget = widget || 'Input'
@@ -84,7 +89,7 @@ export class OptionsField extends Field {
 export class ChoiceAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
-        this.css_style += ` field-ChoiceAnswer`
+        this.css_class += ` field-ChoiceAnswer`
         this.widget = 'ChoiceInput'
     }
 
@@ -96,7 +101,7 @@ export class ChoiceAnswerField extends Field {
 export class NumericAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
-        this.css_style += ` field-NumericAnswer`
+        this.css_class += ` field-NumericAnswer`
         this.widget = 'NumericInput'
         this.numeric = true
     }
@@ -105,7 +110,7 @@ export class NumericAnswerField extends Field {
 export class ScoreAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
-        this.css_style += ` field-ScoreAnswer`
+        this.css_class += ` field-ScoreAnswer`
         this.widget = 'ScoreInput'
         this.numeric = true
     }
@@ -114,7 +119,7 @@ export class ScoreAnswerField extends Field {
 export class DateField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
-        this.css_style += ` field-Date`
+        this.css_class += ` field-Date`
         this.widget = 'DateInput'
     }
 
