@@ -11,24 +11,25 @@ export type PermutationsObject = {
         invalid: number,
     }
 };
-/* 
-esempio:
-permutations_correct_2:	DCEABDACACDECBAE
-permutations_correct_3:	BAEDCBDAEDCBACEB
-permutations_questions_1:	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-permutations_questions_2:	[2, 1, 4, 3, 6, 7, 8, 5, 11, 12, 9, 10, 16, 15, 14, 13]
-permutations_questions_3:	[3, 4, 1, 2, 8, 7, 6, 5, 10, 11, 12, 9, 13, 16, 14, 15]
-permutations_questions_4:	[4, 2, 3, 1, 7, 8, 5, 6, 12, 9, 10, 11, 15, 13, 16, 14]
-permutations_questions_5:	[4, 1, 2, 3, 8, 5, 7, 6, 11, 10, 12, 9, 13, 15, 14, 16]
-permutations_questions_6:	[3, 2, 4, 1, 6, 8, 5, 7, 12, 10, 11, 9, 13, 14, 16, 15]
-permutations_questions_7:	[1, 3, 4, 2, 7, 6, 8, 5, 10, 12, 9, 11, 16, 13, 15, 14]
-permutations_questions_8:	[2, 3, 1, 4, 5, 7, 6, 8, 9, 11, 10, 12, 14, 16, 13, 15]
-permutations_answers_1:	ABCDE
-permutations_answers_2:	BADEC
-permutations_answers_3:	CEABD
-permutations_answers_4:	DCEAB
-permutations_answers_5:	EDBCA
-*/
+/*******
+ * esempio: !!! QUESTI NON SONO I DATI REALI, SONO SOLO DI ESEMPIO
+ * 
+ * permutations_correct_2:	BDBBABCBDBEDDBAC
+ * permutations_correct_3:	CDBBDBABDEBDEDBA
+ * permutations_questions_1:	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+ * permutations_questions_2:	[3, 4, 1, 2, 8, 7, 6, 5, 10, 11, 12, 9, 13, 16, 14, 15]
+ * permutations_questions_3:	[2, 1, 4, 3, 6, 7, 8, 5, 11, 12, 9, 10, 16, 15, 14, 13]
+ * permutations_questions_4:	[3, 2, 4, 1, 6, 8, 5, 7, 12, 10, 11, 9, 13, 14, 16, 15]
+ * permutations_questions_5:	[4, 1, 2, 3, 8, 5, 7, 6, 11, 10, 12, 9, 13, 15, 14, 16]
+ * permutations_questions_6:	[1, 3, 4, 2, 7, 6, 8, 5, 10, 12, 9, 11, 16, 13, 15, 14]
+ * permutations_questions_7:	[4, 2, 3, 1, 7, 8, 5, 6, 12, 9, 10, 11, 15, 13, 16, 14]
+ * permutations_questions_8:	[2, 3, 1, 4, 5, 7, 6, 8, 9, 11, 10, 12, 14, 16, 13, 15]
+ * permutations_answers_1:	ABCDE
+ * permutations_answers_2:	EDBCA
+ * permutations_answers_3:	DCEAB
+ * permutations_answers_4:	CEABD
+ * permutations_answers_5:	BADEC
+ ******/
 
 export function buildPermutationsObject(sheetCommonData?: Data, workbookCommonData?: Data) {
     const commonData = {...(workbookCommonData || {}), ...(sheetCommonData || {})};
@@ -89,58 +90,6 @@ export function buildPermutationsObject(sheetCommonData?: Data, workbookCommonDa
 
     return permutations;
 }
-
-/**
- * codici compito archimede 2025
- *
- * i codici di permutazione sono 2xy per il biennio e 3xy per il triennio
- * y (da 1 a 8) è il codice permutazione domanda
- * x (da 1 a 5) è il codice permutazione risposta
- *
- * se il codice di permutazione è, ad esempio, y=2, la sequenza 2143 6785 ... ... 
- * va così interpretata: i quesiti sono elencati in modo che per primo appaia 
- * quello che nel compito base del biennio (codice 211) è il quesito 2, 
- * per secondo il quesito 1, per terzo il 4, per quarto il 3, per quinto il 6, 
- * per sesto il 7, per settimo l'8 e per ottavo il 5
- *
- * se la permutazione è, ad esempio, CEABD va così interpretata: per ciascun quesito, 
- * le risposte sono elencate in modo che per prima appaia quella 
- * che nel compito base del biennio (codice 211) è la risposta C, 
- * per seconda la risposta E, per terza la risposta A, 
- * per quarta la B e per quinta la D
- **/
-
-/*
-const permutations: {
-    correct: {[key:string]: string},
-    questions: {[key:string]: number[]},
-    answers: {[key:string]: string},
-} = {
-    correct: {
-        "2": "DCEABDACACDECBAE",
-        "3": "BAEDCBDAEDCBACEB",
-        "4": "ADCBEDCABDCEDEAB",
-        "5": "ACDEDBCAEBADBACE",
-    },
-    questions: {
-        "1": [1, 2, 3, 4,  5, 6, 7, 8,  9, 10, 11, 12,  13, 14, 15, 16],
-        "2": [2, 1, 4, 3,  6, 7, 8, 5,  11, 12, 9, 10,  16, 15, 14, 13], 
-        "3": [3, 4, 1, 2,  8, 7, 6, 5,  10, 11, 12, 9,  13, 16, 14, 15],
-        "4": [4, 2, 3, 1,  7, 8, 5, 6,  12, 9, 10, 11,  15, 13, 16, 14],
-        "5": [4, 1, 2, 3,  8, 5, 7, 6,  11, 10, 12, 9,  13, 15, 14, 16],
-        "6": [3, 2, 4, 1,  6, 8, 5, 7,  12, 10, 11, 9,  13, 14, 16, 15],
-        "7": [1, 3, 4, 2,  7, 6, 8, 5,  10, 12, 9, 11,  16, 13, 15, 14],
-        "8": [2, 3, 1, 4,  5, 7, 6, 8,  9, 11, 10, 12,  14, 16, 13, 15]
-    },
-    answers: {
-        "1": "ABCDEX-",
-        "2": "BADECX-",
-        "3": "CEABDX-",
-        "4": "DCEABX-",
-        "5": "EDBCAX-"
-    }
-};
-*/
 
 type MappingResult = {
     answers_mapping: {[key:string]:string},
