@@ -10,7 +10,7 @@ export default class ArchimedeCommon extends Schema {
             new Field('surname',{header: "cognome"}),
             new Field('name',{header: "nome"}),
             new DateField('birthDate',{header: 'data di nascita'}),
-            new OptionsField('classYear', ['1','2','3','4','5'], {header:'classe', numeric: true, alternativeNames: ['anno']}),
+            new OptionsField('classYear', ['1','2','3','4','5'], {header:'anno di corso', numeric: true, alternativeNames: ['anno']}),
             new Field('classSection',{header:'sezione'}),
             new Field('variant',{header: "codice compito", additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
