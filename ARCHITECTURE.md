@@ -179,6 +179,7 @@ I fogli possono trovarsi in tre stati:
 - Admin override capabilities
 
 ## Sistema di Processing OMR
+Sta nella directory `worker`.
 
 ### Worker Architecture
 Il worker Python gira in un **container Docker separato** (`paolini/oliscan:latest`) e monitora continuamente la directory spool condivisa per nuovi file PDF da processare.
@@ -203,8 +204,8 @@ Il worker Python gira in un **container Docker separato** (`paolini/oliscan:late
     └── *.png        # Immagini risultanti dall'elaborazione
 ```
 
-#### File Naming Convention
-I file PDF devono seguire il pattern: `{schema}-{jobId}.pdf`
+#### Formato dei file
+I file PDF con le scansioni devono seguire il pattern `{schema}-{jobId}.pdf`
 - `schema`: Tipo di questionario (es. "archimede", "distrettuale")
 - `jobId`: ObjectId del scan_job MongoDB
 
@@ -213,6 +214,46 @@ I file PDF devono seguire il pattern: `{schema}-{jobId}.pdf`
 - **Immagini Elaborate**: Salvate in `data/{jobId}/` 
 - **Metadati**: Memorizzati in MongoDB (`scan_results` collection)
 - **Directory Names**: Corrispondono agli ObjectId MongoDB per linking diretto
+
+## Sistema di generazione fogli personalizzati
+Sta nella directory `sheetgenwoker`.
+
+### Worker Architecture
+L'architettura è la stessa del sistema OMR. Il worker Python gira in un **container Docker separato** (`paolini/sheetgen:latest`) e monitora continuamente la directory sheetgenspool condivisa per nuovi file PDF da processare.
+
+#### Directory Structure (Condivisa tra Containers)
+```
+/app/sheetgenspool/          # Directory condivisa via Docker volumes
+├── processing/      # File PDF in elaborazione
+├── completed/       # File PDF processati con successo
+├── aborted/         # File PDF con errori di processing
+└── tmp/            # Directory temporanee worker
+
+/app/sheetgendata/           # Directory risultati condivisa
+└── {jobId}/         # Directory per ogni job (nome = ObjectId MongoDB)
+    └── *.pdf        # Fogli personalizzati generati
+```
+
+#### Formato dei file
+I nomi dei file di input devono seguire il pattern: `{schema}-{jobId}.tex`
+- `schema`: Tipo di questionario (es. "archimede", "distrettuale")
+- `jobId`: ObjectId del scan_job MongoDB
+
+Ogni file contiene una sequenza di righe con questo formato (UTF-8):
+```
+% questo è un commento
+\fogliorisp{Leonard}{Euler}{3}{1}{4}
+\fogliorisp{Johann Carl Friedrich}{Gauß}{0123456789}{}{0123456789}
+\fogliorisp{Cesare}{Arzelà}{8}{0123456789}{7}
+\fogliorisp{Leonard}{Euler}{3}{1}{4}
+```
+
+#### Storage dei Risultati
+- **tex Originali**: Spostati in `spool/completed/` o `spool/aborted/`
+- **PDF generati**: Salvate in `data/{jobId}/` 
+- **Metadati**: TODO: ancora da memorizzare in MongoDB in qualche modo (`scan_results` collection)
+- **Directory Names**: Corrispondono agli ObjectId MongoDB per linking diretto
+
 
 ## Componenti Frontend
 
