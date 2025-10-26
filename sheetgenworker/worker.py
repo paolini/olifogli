@@ -134,7 +134,7 @@ class Job:
                 raise RuntimeError(f"latexmk failed on file {filepath} in {tmp_dir} with exit code {e.returncode}") from e
             return os.path.join(tmp_dir, 'main.pdf')
         finally:            
-            # shutil.rmtree(tmp_dir)
+            shutil.rmtree(tmp_dir)
             pass
 
     # Funzione per elaborare i file
