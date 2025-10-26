@@ -43,7 +43,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
           <th scope="col" key={field.name} className={field.css_style}>
             {field.header}
           </th>)}
-        <th scope="col" className="actions-cell">azioni</th>
+        <th scope="col" className="actions-cell"></th>
       </tr>
     </thead>
     <tbody>
