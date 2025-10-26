@@ -276,19 +276,20 @@ td.workbook-data-value {
 }
 
 td.correct {
-  background-color: rgb(165, 244, 165);
+  background-color: #bbd6ab;
 }
 
 td.incorrect {
-  background-color: rgb(233, 115, 115);
+  background-color: #de9db9;
 }
 
 td.empty {
-  background-color: white;
+  background-color: #fbe6a3;
 }
 
 td.invalid {
-  background-color:rgb(255, 255, 0)
+  background-color: #de9db9;
+  color: white;
 }
 
 /** Field-specific styles **/
