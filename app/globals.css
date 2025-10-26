@@ -284,12 +284,11 @@ td.incorrect {
 }
 
 td.empty {
-  background-color: #fbe6a3;
+  background-color: #ffffff;
 }
 
 td.invalid {
-  background-color: #de9db9;
-  color: white;
+  background-color: #fbe6a3;
 }
 
 /** Field-specific styles **/
