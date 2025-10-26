@@ -3,6 +3,13 @@
 
 module.exports = {
   async up(db, client) {
+    // Verifica se la collection scan_messages esiste
+    const collections = await db.listCollections({ name: 'scan_messages' }).toArray();
+    if (collections.length === 0) {
+      // Se la collection non esiste, non c'è nulla da migrare
+      return;
+    }
+
     // Ottieni tutti i messaggi
     const scanMessages = await db.collection('scan_messages').find({}).toArray();
     // Raggruppa i messaggi per (sheetId, jobId)
