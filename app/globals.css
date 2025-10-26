@@ -169,8 +169,12 @@ td.thick-border-left, th.thick-border-left {
   border-left: 4px solid gray;
 }
 
+tr.modified {
+  background-color: rgb(190, 235, 202);
+}
+
 td.modified {
-  background-color: rgb(255, 89, 0);
+  background-color: rgb(34, 125, 59);
 }
 
 table {
