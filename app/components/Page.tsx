@@ -4,10 +4,12 @@ import { ReactNode } from 'react'
 import NavBar from '@/app/components/NavBar'
 
 export default function Page({children}: {children: ReactNode}) {
-    return <div className="p-1">
+    return <div className="page-wrapper">
         <ApolloProviderClient>
             <NavBar />
-            {children}
+            <div className="page-content">
+                {children}
+            </div>
         </ApolloProviderClient>
     </div>
 }

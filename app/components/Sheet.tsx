@@ -57,34 +57,36 @@ export default function SheetElement({sheetId}: {
     const { sheet } = data
     if (!sheet || error) return <Error error={error} /> 
 
-    return <>
-        <div className="flex items-center gap-3 mb-2">
-            <h1 className="flex-1">{sheet.name} [
-                {sheet.schema} 
-                {} {sheet.workbook.name}]
-            </h1>
-            {profile.isAdmin &&
-                <Link href={`/workbook/${sheet.workbook._id}`}>
-                    <Button>← Torna alla raccolta <i>{sheet.workbook.name}</i></Button>
-                </Link>
-            }
-            {!profile.isAdmin &&
-                <Link href="/">
-                <Button>← Torna all&apos;elenco dei fogli</Button>
-                </Link>
-            }
+    return <div className="sheet-wrapper">
+        <div className="sheet-header">
+            <div className="flex items-center gap-3 mb-2">
+                <h1 className="flex-1">{sheet.name} [
+                    {sheet.schema} 
+                    {} {sheet.workbook.name}]
+                </h1>
+                {profile.isAdmin &&
+                    <Link href={`/workbook/${sheet.workbook._id}`}>
+                        <Button>← Torna alla raccolta <i>{sheet.workbook.name}</i></Button>
+                    </Link>
+                }
+                {!profile.isAdmin &&
+                    <Link href="/">
+                    <Button>← Torna all&apos;elenco dei fogli</Button>
+                    </Link>
+                }
+            </div>
+            <table className="my-2">
+                <tbody>
+                    {sheet.commonData && Object.entries(sheet.commonData).map(([key, value]) => (
+                        <tr key={key}>
+                            <td className="bg-gray-200">{key.replace('_', ' ')}</td>
+                            <td>{value as string || ''}</td>
+                        </tr>))}
+                </tbody>
+            </table>
         </div>
-        <table className="my-2">
-            <tbody>
-                {sheet.commonData && Object.entries(sheet.commonData).map(([key, value]) => (
-                    <tr key={key}>
-                        <td className="bg-gray-200">{key.replace('_', ' ')}</td>
-                        <td>{value as string || ''}</td>
-                    </tr>))}
-            </tbody>
-        </table>
         <SheetBody sheet={sheet} profile={profile} />
-    </>
+    </div>
 }
 
 const GET_ROWS = gql`
@@ -128,7 +130,7 @@ function SheetBody({sheet,profile}: {
     if (loading || !data) return <Loading />
     
 
-    return <>
+    return <div className="sheet-body-wrapper">
         { tab !== 'table' && 
             <div className="flex justify-end mb-2">
                 <Button onClick={() => setTab('table')}>
@@ -138,21 +140,22 @@ function SheetBody({sheet,profile}: {
         }
         { tab === 'table' && 
             <>
-                {!(sheet.closed || sheet.locked) && <>
-                <Button onClick={() => setTab('csv')}>
-                    Importa da CSV
-                </Button>
-                {} <Button onClick={() => csv_download()}>
-                    Scarica CSV
-                </Button>
-                {} <Button onClick={() => setTab('scans')}>
-                    Importa da scansioni
-                </Button></>}
-                {} { user_can_configure && 
-                <Button variant="alert" onClick={() =>setTab('configure') }>
-                    configura
-                </Button>}
-                <br />
+                <div className="sheet-body-controls">
+                    {!(sheet.closed || sheet.locked) && <>
+                    <Button onClick={() => setTab('csv')}>
+                        Importa da CSV
+                    </Button>
+                    {} <Button onClick={() => csv_download()}>
+                        Scarica CSV
+                    </Button>
+                    {} <Button onClick={() => setTab('scans')}>
+                        Importa da scansioni
+                    </Button></>}
+                    {} { user_can_configure && 
+                    <Button variant="alert" onClick={() =>setTab('configure') }>
+                        configura
+                    </Button>}
+                </div>
                 <Table sheet={sheet} rows={data.rows} />
             </>
         }
@@ -165,7 +168,7 @@ function SheetBody({sheet,profile}: {
         { tab === 'configure' && 
             <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
         }
-    </>
+    </div>
     
     // Aggiorna la query string quando cambia il tab
     function setTab(newTab: typeof validTabs[number]) {

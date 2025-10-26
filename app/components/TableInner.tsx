@@ -27,6 +27,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
         <col className="updatedBy" />
       </>}
       {schema.fields.map(field => <col key={field.name} className={field.css_style} />)}
+      <col className="actions-cell" />
     </colgroup>
     <thead>
       <tr>
@@ -40,6 +41,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
           <th scope="col" key={field.name} className={field.css_style}>
             {field.header}
           </th>)}
+        <th scope="col" className="actions-cell">azioni</th>
       </tr>
     </thead>
     <tbody>

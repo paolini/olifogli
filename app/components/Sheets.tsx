@@ -85,14 +85,30 @@ function SheetsTable({ workbookId, profile }: {
     const [displayLimit, setDisplayLimit] = useState(20)
     // Stato per il filtro schema
     const [schemaFilter, setSchemaFilter] = useState<string>('')
+    // Stato per il filtro distretto
+    const [distrettoFilter, setDistrettoFilter] = useState<string>('')
+    // Stato per il filtro stato (aperto/chiuso/bloccato)
+    const [statoFilter, setStatoFilter] = useState<string>('')
 
     if (loading) return <Loading />;
     if (error) return <Error error={error.message} />;
     if (!data) return <div>No data</div>;
     const allSheets = data.sheets ?? [];
-    const sheets = schemaFilter 
-        ? allSheets.filter(s => s.schema === schemaFilter)
-        : allSheets;
+    let sheets = allSheets;
+    if (schemaFilter) {
+        sheets = sheets.filter(s => s.schema === schemaFilter);
+    }
+    if (distrettoFilter) {
+        sheets = sheets.filter(s => s.commonData?.Distretto === distrettoFilter);
+    }
+    if (statoFilter) {
+        sheets = sheets.filter(s => {
+            if (statoFilter === 'aperto') return !s.closed && !s.locked;
+            if (statoFilter === 'chiuso_o_bloccato') return s.closed || s.locked;
+            if (statoFilter === 'chiuso_non_bloccato') return s.closed && !s.locked;
+            return true;
+        });
+    }
     const displayedSheets = sheets.slice(0, displayLimit);
     const hasMore = sheets.length > displayLimit;
 
@@ -120,6 +136,13 @@ function SheetsTable({ workbookId, profile }: {
     // Calcola gli schemi unici presenti nei fogli
     const availableSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
         .sort()
+    
+    // Calcola i distretti unici presenti nei fogli
+    const availableDistretti = Array.from(new Set(
+        allSheets
+            .filter(s => s.commonData?.Distretto)
+            .map(s => s.commonData!.Distretto as string)
+    )).sort()
 
     return <>
         {allSheets.length === 0 ? (
@@ -135,7 +158,21 @@ function SheetsTable({ workbookId, profile }: {
                         </option>
                     ))}
                 </select>
-                <span>{sheets.length} {sheets.length === 1 ? "foglio" : "fogli"} {schemaFilter && ` (su ${allSheets.length})`}</span>
+                <select value={distrettoFilter} onChange={e => setDistrettoFilter(e.target.value)} className="border rounded px-2 py-1">
+                    <option value="">Tutti i distretti</option>
+                    {availableDistretti.map(distretto => (
+                        <option key={distretto} value={distretto}>
+                            {distretto}
+                        </option>
+                    ))}
+                </select>
+                <select value={statoFilter} onChange={e => setStatoFilter(e.target.value)} className="border rounded px-2 py-1">
+                    <option value="">Tutti gli stati</option>
+                    <option value="aperto">Aperti</option>
+                    <option value="chiuso_o_bloccato">Chiusi o bloccati</option>
+                    <option value="chiuso_non_bloccato">Chiusi ma non bloccati</option>
+                </select>
+                <span>{sheets.length} {sheets.length === 1 ? "foglio" : "fogli"} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${allSheets.length})`}</span>
             </div>
             <table>
                 <thead>

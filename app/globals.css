@@ -22,6 +22,12 @@
 }
 */
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .bg-error {
   background: var(--error)
 }
@@ -34,6 +40,45 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 4px;
+}
+
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sheet-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sheet-header {
+  flex-shrink: 0;
+}
+
+.sheet-body-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sheet-body-controls {
+  flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 a {
@@ -90,7 +135,7 @@ tr.recently-added {
 
 @keyframes fadeHighlight {
   0% {
-    background-color: #90EE90; /* verde chiaro */
+    background-color: #f4ff92;
   }
   100% {
     background-color: transparent;
@@ -144,9 +189,46 @@ th {
 table.my-table {
     table-layout: fixed;
     width: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.table-header {
+  flex-shrink: 0;
+  padding-bottom: 10px;
+}
+
+.table-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0;
 }
 
 .my-table th {
+  background-color: rgb(174, 233, 241);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: none;
+  background-clip: padding-box;
+}
+
+.my-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.my-table thead tr {
   background-color: rgb(174, 233, 241);
 }
 
