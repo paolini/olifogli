@@ -28,7 +28,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
         <col className="updatedOn" /> 
         <col className="updatedBy" />
       </>}
-      {columns.map(field => <col key={field.name} className={field.css_style} />)}
+      {columns.map(field => <col key={field.name} className={field.css_class} />)}
       <col className="actions-cell" />
     </colgroup>
     <thead>
@@ -40,7 +40,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
           <th scope="col" className="updatedBy">aggiornato da</th>
         </>}
         {columns.map(field => 
-          <th scope="col" key={field.name} className={field.css_style}>
+          <th scope="col" key={field.name} className={field.css_class}>
             {field.header}
           </th>)}
         <th scope="col" className="actions-cell"></th>
@@ -141,7 +141,12 @@ function TableCell({field, value, showStandardAnswers, onClick}:{
       title = value === correct_value ? value : `${value} (invece di ${correct_value})`;
     }
   }
-  return <td key={field.name} title={title} className={`${field.css_style} ${extra_css}`} onClick={onClick}>
+
+  const style = typeof field.css_style === 'function' 
+    ? field.css_style(value) 
+    : field.css_style;
+
+  return <td key={field.name} title={title} className={`${field.css_class} ${extra_css}`} onClick={onClick} style={style}>
       {value}
   </td>
 }
@@ -198,7 +203,7 @@ function InputRow({sheetId, schema, row, done, showAdditionalColumns, focusField
     {columns.map((field, index) => {
       const isFirstEditable = field.editable && columns.slice(0, index).every(f => !f.editable)
       return field.editable
-        ? <td key={field.name} className={field.css_style + (fieldHasBeenModified(field.name) ? " modified" : "")}>
+        ? <td key={field.name} className={field.css_class + (fieldHasBeenModified(field.name) ? " modified" : "")}>
           <InputCell
             field={field}
             value={fields[field.name]||''} 
