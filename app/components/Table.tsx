@@ -82,8 +82,8 @@ export default function Table({rows, sheet, edit}:{
       setViewRows(viewRows => tableOrdina(sort_criteria, viewRows))
     } else {
       setViewRows(viewRows => [...viewRows].sort((a,b) => {
-        const aValue = (a as any)[field];
-        const bValue = (b as any)[field];
+        const aValue = a[field as keyof Row];
+        const bValue = b[field as keyof Row];
         if (aValue < bValue) return -direction;
         if (aValue > bValue) return direction;
         return 0;
