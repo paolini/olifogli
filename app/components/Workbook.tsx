@@ -76,44 +76,28 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
           <h1 className="text-2xl font-bold flex-1">{workbook?.name}</h1>
         </div>
         
-        <div className="flex gap-0 my-4 border-b border-gray-300">
+        <div className="tab-container">
             <button
                 onClick={() => setActiveTab('fogli')}
-                className={`px-4 py-2 font-medium transition-colors ${
-                    activeTab === 'fogli' 
-                        ? 'bg-white border-l border-t border-r border-gray-300 border-b-white -mb-px rounded-t text-blue-600' 
-                        : 'bg-gray-100 text-gray-600 hover:text-gray-800 border-b border-gray-300'
-                }`}
+                className={`tab-button ${activeTab === 'fogli' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
                 Fogli
             </button>
             <button
                 onClick={() => setActiveTab('list')}
-                className={`px-4 py-2 font-medium transition-colors ${
-                    activeTab === 'list' 
-                        ? 'bg-white border-l border-t border-r border-gray-300 border-b-white -mb-px rounded-t text-blue-600' 
-                        : 'bg-gray-100 text-gray-600 hover:text-gray-800 border-b border-gray-300'
-                }`}
+                className={`tab-button ${activeTab === 'list' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
                 Risultati
             </button>
             <button
                 onClick={() => setActiveTab('distribuzione')}
-                className={`px-4 py-2 font-medium transition-colors ${
-                    activeTab === 'distribuzione' 
-                        ? 'bg-white border-l border-t border-r border-gray-300 border-b-white -mb-px rounded-t text-blue-600' 
-                        : 'bg-gray-100 text-gray-600 hover:text-gray-800 border-b border-gray-300'
-                }`}
+                className={`tab-button ${activeTab === 'distribuzione' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
                 Distribuzione Punteggi
             </button>
             <button
                 onClick={() => setActiveTab('configura')}
-                className={`px-4 py-2 font-medium transition-colors ${
-                    activeTab === 'configura' 
-                        ? 'bg-white border-l border-t border-r border-gray-300 border-b-white -mb-px rounded-t text-blue-600' 
-                        : 'bg-gray-100 text-gray-600 hover:text-gray-800 border-b border-gray-300'
-                }`}
+                className={`tab-button ${activeTab === 'configura' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
                 Configurazione
             </button>
