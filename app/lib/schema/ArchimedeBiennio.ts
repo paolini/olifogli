@@ -7,4 +7,8 @@ export default class ArchimedeBiennio extends ArchimedeCommon {
         this.fields.filter(f => f instanceof OptionsField)
             .forEach(f => {f.choices = ['1','2']})
     }
+
+    sheet_title(sheet_name: string, workbook_name: string): string {
+        return `${workbook_name} ‒ ${sheet_name} ‒ biennio`
+    }
 }

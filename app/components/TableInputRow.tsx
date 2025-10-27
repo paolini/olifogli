@@ -134,6 +134,7 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
 
   async function deleteFunction() {
     if (!row?._id) throw new Error("cannot delete a row which was not saved")
+    if (!confirm("Sei sicuro di voler eliminare questa riga?")) return
     await deleteRow({variables: { _id: row._id }})
   }
 }

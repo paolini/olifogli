@@ -63,5 +63,8 @@ export default class Schema {
     row_to_sheet_data(row: Row): Partial<Sheet> {
         throw new Error(`row_to_sheet_data not implemented for schema "${this.name}"`)
     }
-}
 
+    sheet_title(sheet_name: string, workbook_name: string): string {
+        return `${workbook_name} ‒ ${sheet_name} ‒ ${this.header}`
+    }
+}
