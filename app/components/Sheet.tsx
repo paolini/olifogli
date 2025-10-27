@@ -101,7 +101,7 @@ function SheetBody({sheet,profile}: {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
-    const validTabs = ['info','table', 'csv', 'scans', 'configure'] as const;
+    const validTabs = ['info','table', 'edit', 'csv', 'scans', 'configure'] as const;
     type TabType = typeof validTabs[number];
     function isTabType(tab: string | null): tab is TabType {
         return validTabs.includes(tab as TabType);
@@ -132,7 +132,13 @@ function SheetBody({sheet,profile}: {
                 className={`tab-button ${tab === 'table' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('table')}
             >
-                Tabella
+                Visualizza dati
+            </button>
+            <button 
+                className={`tab-button ${tab === 'edit' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('edit')}
+            >
+                Modifica dati
             </button>
             {!(sheet.closed || sheet.locked) && (
                 <>
@@ -166,7 +172,12 @@ function SheetBody({sheet,profile}: {
         }
         { tab === 'table' && 
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <Table sheet={sheet} rows={data.rows} />
+                <Table sheet={sheet} rows={data.rows} edit={false}/>
+            </div>
+        }
+        { tab === 'edit' && 
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <Table sheet={sheet} rows={data.rows} edit={true}/>
             </div>
         }
         { tab === 'csv' &&   
@@ -199,7 +210,11 @@ function SheetInfo({sheet,data}:{
     sheet: Sheet
     data?: {rows: Row[]}
 }) {
+    const rows = data?.rows
     const schema = schemas[sheet.schema]
+    const n_rows_with_errors = rows?.filter(r => r.error).length
+
+    if (rows === undefined) return <Loading />
 
     return <>
         <table className="my-2">
@@ -211,6 +226,14 @@ function SheetInfo({sheet,data}:{
                     </tr>))}
             </tbody>
         </table>
+        <div>
+              <span>{rows.length} righe</span>
+              {' • '}
+              <span>{n_rows_with_errors} {n_rows_with_errors === 1 ? "non valida" : "non valide"}</span>
+              {/* view_rows.length < rows.length && <>{' • '}<span>({view_rows.length} visualizzate)</span></> */}
+              <br />
+        </div>
+        
         <div className="sheet-body-controls">
             <Button onClick={() => csv_download()}>
                 Scarica CSV
