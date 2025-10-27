@@ -74,8 +74,18 @@ export default function Table({rows, sheet, edit}:{
     </div>
   </div>
 
-  function setSort(field: Field, direction: number) {
-    const sort_criteria = [{ campo: field, direzione: direction }]
-    setViewRows(viewRows => tableOrdina(sort_criteria, viewRows))
+  function setSort(field: Field|string, direction: number) {
+    if (field instanceof Field) {
+      const sort_criteria = [{ campo: field, direzione: direction }]
+      setViewRows(viewRows => tableOrdina(sort_criteria, viewRows))
+    } else {
+      setViewRows(viewRows => [...viewRows].sort((a,b) => {
+        const aValue = (a as any)[field];
+        const bValue = (b as any)[field];
+        if (aValue < bValue) return -direction;
+        if (aValue > bValue) return direction;
+        return 0;
+      }))
+    }
   }
 }
