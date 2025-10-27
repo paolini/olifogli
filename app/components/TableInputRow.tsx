@@ -8,13 +8,14 @@ import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
 import { TableInfoCells, TableCell } from './TableRow'
 
-export default function TableInputRow({sheetId, schema, row, done, showAdditionalColumns, focusFieldName}: {
+export default function TableInputRow({sheetId, schema, row, done, showAdditionalColumns, focusFieldName, onMoveToNext}: {
   sheetId: string,
   schema: Schema, 
   row?: WithId<Row>,
   done?: () => void,
   showAdditionalColumns: boolean,
-  focusFieldName?: string|null
+  focusFieldName?: string|null,
+  onMoveToNext?: () => void
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
@@ -65,7 +66,7 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
             field={field}
             value={fields[field.name]||''} 
             setValue={v => setFields(fields => ({...fields, [field.name]: v}))}
-            onEnter={save}
+            onEnter={() => save(true)}
             inputRef={(el) => {
               if (isFirstEditable) {
                 firstInputRef.current = el
@@ -77,7 +78,7 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
         : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
     })}
     <td className="actions-cell">
-      <button className="bg-green-60" disabled={loading} onClick={save}>
+      <button className="bg-green-60" disabled={loading} onClick={() => save(false)}>
         salva
       </button>
       {row?._id && <button className="ml-1 bg-error" disabled={loading} onClick={deleteFunction}>
@@ -102,7 +103,7 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
     if (deleteError) return deleteReset()
   }
 
-  async function save() {
+  async function save(continue_editing?: boolean) {
     if (row?._id) {
       // patch
       await patchRow({variables: {
@@ -123,7 +124,12 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
             : [key, '']
       )))
     }
-    if (done) done()
+    // Se c'è una riga successiva, passa ad essa, altrimenti chiama done
+    if (continue_editing && onMoveToNext) {
+      onMoveToNext()
+    } else if (done) {
+      done()
+    }
   }
 
   async function deleteFunction() {

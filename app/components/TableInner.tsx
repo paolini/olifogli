@@ -97,15 +97,44 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
 }) {
   const [focusFieldName, setFocusFieldName] = useState<string|null>(null)  
 
+  // Trova la prima colonna editabile vuota
+  function findFirstEmptyEditableField(row: Row): string | null {
+    const editableFields = schema.fields.filter(f => !f.hidden && f.editable)
+    for (const field of editableFields) {
+      const value = row.data[field.name]
+      if (!value || value === '') {
+        return field.name
+      }
+    }
+    // Se tutti i campi sono pieni, ritorna il primo campo editabile
+    return editableFields.length > 0 ? editableFields[0].name : null
+  }
+
+  // Gestisce il passaggio alla riga successiva
+  function moveToNextRow(currentIndex: number) {
+    if (currentIndex < rows.length - 1) {
+      const nextRow = rows[currentIndex + 1]
+      setCurrentRowId(nextRow._id)
+      const firstEmptyField = findFirstEmptyEditableField(nextRow)
+      setFocusFieldName(firstEmptyField)
+    } else {
+      // Se siamo all'ultima riga, chiudi la modalità di modifica
+      setCurrentRowId(null)
+      setFocusFieldName(null)
+    }
+  }
+
   return <tbody>
-      {rows.map((row) => (edit && row._id === currentRowId) 
+      {rows.map((row, index) => (edit && row._id === currentRowId) 
         ? <TableInputRow 
+            key={row._id.toString()}
             sheetId={sheet._id.toString()} 
             schema={schema} 
             row={row} 
             done={() => setCurrentRowId(null)} 
             showAdditionalColumns={showAdditionalColumns} 
             focusFieldName={focusFieldName} 
+            onMoveToNext={() => moveToNextRow(index)}
             />
         : <MyRow 
             key={row._id.toString()} 
