@@ -418,3 +418,24 @@ col.actions-cell {
   width: 15ex;
 }
 
+.sort-icon-button {
+  margin: 1px;
+  border-radius: 2px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.sort-icon-button.sort-hidden {
+  opacity: 0;
+}
+
+.my-table th:hover .sort-icon-button.sort-hidden {
+  opacity: 1;
+}
+
+.sort-icon-button.sort-visible {
+  opacity: 1;
+}
+

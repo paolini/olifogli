@@ -8,8 +8,79 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row, Sheet } from '@/app/graphql/generated'
 import { myTimestamp } from '../lib/util'
+import { Criteria } from './Ordering'
+import SortIcon from './SortIcon'
 
-export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns}: {
+export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns, setSort, criteria, edit}: {
+  rows: Row[],
+  currentRowId: ObjectId|null,
+  setCurrentRowId: (id: ObjectId|null) => void,
+  sheet: Sheet,
+  schema: Schema,
+  showStandardAnswers: boolean,
+  showAdditionalColumns: boolean,
+  setSort: (field: Field, direction: number) => void,
+  criteria?: Criteria,
+  edit?: boolean
+}) {
+  return <table className="my-table">
+    <TableHeaders 
+      schema={schema} 
+      showAdditionalColumns={showAdditionalColumns} 
+      setSort={setSort}
+      criteria={criteria}
+    />
+    <TableBody 
+      rows={rows} 
+      currentRowId={currentRowId} 
+      setCurrentRowId={setCurrentRowId} 
+      sheet={sheet} 
+      schema={schema} 
+      showStandardAnswers={showStandardAnswers} 
+      showAdditionalColumns={showAdditionalColumns} 
+    />
+  </table>
+}
+
+function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
+  schema: Schema,
+  showAdditionalColumns: boolean,
+  setSort: (field: Field, direction: number) => void,
+  criteria?: Criteria
+}) {
+  const columns = schema.fields.filter(f => !f.hidden);
+
+  return <>
+      <colgroup>
+        { showAdditionalColumns && <>
+          <col className="createdOn" />
+          <col className="createdBy" />
+          <col className="updatedOn" /> 
+          <col className="updatedBy" />
+        </>}
+        {columns.map(field => <col key={field.name} className={field.css_class} />)}
+        <col className="actions-cell" />
+      </colgroup>
+      <thead>
+        <tr>
+          { showAdditionalColumns && <>
+            <th scope="col" className="createdOn">istante creazione</th>
+            <th scope="col" className="createdBy">creato da</th>
+            <th scope="col" className="updatedOn">istante modifica</th>
+            <th scope="col" className="updatedBy">aggiornato da</th>
+          </>}
+          {columns.map(field => 
+            <th scope="col" key={field.name} className={field.css_class} style={{ position: 'relative' }}>
+              {field.header}
+              <SortIcon field={field} criteria={criteria} setSort={setSort} />
+            </th>)}
+          <th scope="col" className="actions-cell"></th>
+        </tr>
+      </thead>
+    </>
+}
+
+function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns}: {
   rows: Row[],
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
@@ -18,35 +89,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean
 }) {
-  const columns = schema.fields.filter(f => !f.hidden);
-
-  return <table className="my-table">
-    <colgroup>
-      { showAdditionalColumns && <>
-        <col className="createdOn" />
-        <col className="createdBy" />
-        <col className="updatedOn" /> 
-        <col className="updatedBy" />
-      </>}
-      {columns.map(field => <col key={field.name} className={field.css_class} />)}
-      <col className="actions-cell" />
-    </colgroup>
-    <thead>
-      <tr>
-        { showAdditionalColumns && <>
-          <th scope="col" className="createdOn">istante creazione</th>
-          <th scope="col" className="createdBy">creato da</th>
-          <th scope="col" className="updatedOn">istante modifica</th>
-          <th scope="col" className="updatedBy">aggiornato da</th>
-        </>}
-        {columns.map(field => 
-          <th scope="col" key={field.name} className={field.css_class}>
-            {field.header}
-          </th>)}
-        <th scope="col" className="actions-cell"></th>
-      </tr>
-    </thead>
-    <tbody>
+  return <tbody>
       {rows.map((row) => 
         <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />)} 
       {currentRowId 
@@ -55,9 +98,8 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
           </button></td></tr>
         : <InputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} />}
     </tbody>
-  </table>
 }
-  
+
 const MyRow = memo(MyRowInternal)
 
 function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStandardAnswers, showAdditionalColumns}: {

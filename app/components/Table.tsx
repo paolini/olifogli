@@ -1,13 +1,14 @@
 "use client"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ObjectId } from 'mongodb'
 
 import { Row, Sheet } from '@/app/graphql/generated'
-import { Ordering, useCriteria, filtraEOrdina } from '@/app/components/Ordering'
+import { Ordering, useCriteria, filtraEOrdina, tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
 import LoadingWrapper from './LoadingWrapper'
 import { schemas } from '../lib/schema'
 import ErrorElement from './Error'
+import { Field } from '../lib/schema/fields'
 
 export default function Table({rows, sheet, edit}:{
   rows: Row[],
@@ -17,20 +18,34 @@ export default function Table({rows, sheet, edit}:{
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
   const [ showAdditionalColumns, setShowAdditionalColumns ] = useState<boolean>(false)
+  const [ viewRows, setViewRows ] = useState<Row[]>(rows)
   const schema = schemas[sheet.schema]
-  // Always call hooks unconditionally
-  const criteria = useCriteria(schema)
+
+  useEffect(() => {
+    const map_id_to_incoming_row = Object.fromEntries(rows.map((row,i) => [row._id.toString(), {row,i}])) 
+    const replacedRows: Row[] = viewRows.map(r => {
+      const row = map_id_to_incoming_row[r._id.toString()]?.row
+      if (row === undefined) return undefined
+      delete map_id_to_incoming_row[r._id.toString()]
+      return row
+    }).filter(r => r!==undefined)
+
+    setViewRows(viewRows => [
+      // Mantieni solo le righe che sono ancora presenti
+      ...replacedRows,
+      // Aggiungi le nuove righe
+      ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
+    ])
+  }, [rows])
+
   if (!schema) {
     return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
   }
-  const view_rows = filtraEOrdina(criteria, rows)
 
   return <div className="table-container">
     <div className="table-header">
-      <Ordering criteria={criteria}/>
       { ['archimede-biennio','archimede-triennio'].includes(schema.name) && (
         <>
-          <br />
           <label>
             <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
             {' '}Mostra risposte standard
@@ -45,15 +60,22 @@ export default function Table({rows, sheet, edit}:{
     <div className="table-scroll-container">
       <LoadingWrapper>
         <TableInner 
-          rows={view_rows} 
+          rows={viewRows} 
           currentRowId={currentRowId} 
           setCurrentRowId={setCurrentRowId} 
           sheet={sheet} 
           schema={schema}
           showStandardAnswers={showStandardAnswers}
           showAdditionalColumns={showAdditionalColumns}
+          edit={edit}
+          setSort={setSort}
         />
       </LoadingWrapper>
     </div>
   </div>
+
+  function setSort(field: Field, direction: number) {
+    const sort_criteria = [{ campo: field, direzione: direction }]
+    setViewRows(viewRows => tableOrdina(sort_criteria, viewRows))
+  }
 }
