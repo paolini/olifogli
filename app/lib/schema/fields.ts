@@ -60,9 +60,11 @@ export class Field {
 
     compare(value1: string, value2: string): number {
         if (this.numeric) {
-            const n1 = parseFloat(value1)
-            const n2 = parseFloat(value2)
-            return ((n1 > n2) ? 1 : (n1 < n2) ? -1 : 0)
+            const n1 = parseFloat(value1) || 0
+            const n2 = parseFloat(value2) || 0
+            const r = ((n1 > n2) ? 1 : (n1 < n2) ? -1 : 0)
+            console.log(`Comparing numeric values: ${value1} vs ${value2} => ${r}`)
+            return r
         } else {
             const v1 = value1.toLowerCase()
             const v2 = value2.toLowerCase()
