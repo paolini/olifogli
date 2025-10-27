@@ -9,8 +9,8 @@ import { get_context } from '@/app/graphql/types'
 
 const SCANS_DATA_DIR = process.env.SCANS_DATA_DIR || '';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ sheetId: string, jobId: string, filename: string }> }) {
-    const {sheetId, jobId, filename} = await params
+export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string, filename: string }> }) {
+    const {jobId, filename} = await params
     const context = await get_context(req) 
     const user = await get_authenticated_user(context)
 
