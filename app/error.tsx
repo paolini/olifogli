@@ -2,6 +2,7 @@
  
 import { useEffect } from 'react'
 import Button from './components/Button'
+import NavBar from './components/NavBar'
 export default function Error({
   error,
   reset,
@@ -16,16 +17,19 @@ export default function Error({
  
   return (
     <div>
-      <h2>Qualcosa è andato storto!</h2>
-      <p>{`${error}`}</p>
-      <Button
-        onClick={
-          // Attempt to recover by trying to re-render the segment
-          () => reset()
-        }
-      >
-        Riprova
-      </Button>
+      <NavBar />
+      <div className="p-4">
+        <h2>Qualcosa è andato storto!</h2>
+        <p>{`${error}`}</p>
+        <Button
+          onClick={
+            // Attempt to recover by trying to re-render the segment
+            () => reset()
+          }
+        >
+          Riprova
+        </Button>
+      </div>
     </div>
   )
 }
