@@ -95,34 +95,51 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
   showAdditionalColumns: boolean,
   edit?: boolean
 }) {
+  const [focusFieldName, setFocusFieldName] = useState<string|null>(null)  
+
   return <tbody>
-      {rows.map((row) => 
-        <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={edit ? setCurrentRowId : undefined} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />)} 
+      {rows.map((row) => (edit && row._id === currentRowId) 
+        ? <TableInputRow 
+            sheetId={sheet._id.toString()} 
+            schema={schema} 
+            row={row} 
+            done={() => setCurrentRowId(null)} 
+            showAdditionalColumns={showAdditionalColumns} 
+            focusFieldName={focusFieldName} 
+            />
+        : <MyRow 
+            key={row._id.toString()} 
+            schema={schema} 
+            row={row} 
+            showStandardAnswers={showStandardAnswers} 
+            showAdditionalColumns={showAdditionalColumns} 
+            onCellClick={fieldName => onCellClick(row, fieldName)}
+            />)} 
       {edit && (currentRowId 
         ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
           aggiungi riga
           </button></td></tr>
         : <TableInputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} />)}
-    </tbody>
+  </tbody>
+
+  function onCellClick(row: WithId<Row>, fieldName: string) {
+    if (edit) {
+      setCurrentRowId(row._id)
+      setFocusFieldName(fieldName)
+    }
+  }
+
 }
 
 const MyRow = memo(MyRowInternal)
 
-function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStandardAnswers, showAdditionalColumns}: {
-  current: boolean,
-  sheetId: string,
+function MyRowInternal({schema, row, showStandardAnswers, showAdditionalColumns, onCellClick}: {
   schema: Schema,
   row: WithId<Row>,
-  setCurrentRowId?: (id: ObjectId|null) => void,
   showStandardAnswers: boolean,
-  showAdditionalColumns: boolean
+  showAdditionalColumns: boolean,
+  onCellClick: (fieldName: string) => void
 }) {
-  const [focusFieldName, setFocusFieldName] = useState<string|null>(null)
-  
-  if (current && setCurrentRowId) return <TableInputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)} showAdditionalColumns={showAdditionalColumns} focusFieldName={focusFieldName} />
-  else return <TableRow schema={schema} row={row} onCellClick={setCurrentRowId ? (fieldName) => {
-    setCurrentRowId(row._id)
-    setFocusFieldName(fieldName)
-  } : undefined} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
+  return <TableRow schema={schema} row={row} onCellClick={onCellClick} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
 }
 

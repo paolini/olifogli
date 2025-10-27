@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { ObjectId } from 'mongodb'
 
 import { Row, Sheet } from '@/app/graphql/generated'
-import { Ordering, useCriteria, filtraEOrdina, tableOrdina } from '@/app/components/Ordering'
+import { tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
 import LoadingWrapper from './LoadingWrapper'
 import { schemas } from '../lib/schema'
