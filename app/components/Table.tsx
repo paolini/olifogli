@@ -22,20 +22,22 @@ export default function Table({rows, sheet, edit}:{
   const schema = schemas[sheet.schema]
 
   useEffect(() => {
-    const map_id_to_incoming_row = Object.fromEntries(rows.map((row,i) => [row._id.toString(), {row,i}])) 
-    const replacedRows: Row[] = viewRows.map(r => {
-      const row = map_id_to_incoming_row[r._id.toString()]?.row
-      if (row === undefined) return undefined
-      delete map_id_to_incoming_row[r._id.toString()]
-      return row
-    }).filter(r => r!==undefined)
+    setViewRows(prevViewRows => {
+      const map_id_to_incoming_row = Object.fromEntries(rows.map((row,i) => [row._id.toString(), {row,i}])) 
+      const replacedRows: Row[] = prevViewRows.map(r => {
+        const row = map_id_to_incoming_row[r._id.toString()]?.row
+        if (row === undefined) return undefined
+        delete map_id_to_incoming_row[r._id.toString()]
+        return row
+      }).filter(r => r!==undefined)
 
-    setViewRows(viewRows => [
-      // Mantieni solo le righe che sono ancora presenti
-      ...replacedRows,
-      // Aggiungi le nuove righe
-      ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
-    ])
+      return [
+        // Mantieni solo le righe che sono ancora presenti
+        ...replacedRows,
+        // Aggiungi le nuove righe
+        ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
+      ]
+    })
   }, [rows])
 
   if (!schema) {
