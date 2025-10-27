@@ -19,7 +19,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
   schema: Schema,
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean,
-  setSort: (field: Field, direction: number) => void,
+  setSort: (field: Field|string, direction: number) => void,
   criteria?: Criteria,
   edit?: boolean
 }) {
@@ -46,30 +46,36 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
 function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
   schema: Schema,
   showAdditionalColumns: boolean,
-  setSort: (field: Field, direction: number) => void,
+  setSort: (field: Field|string, direction: number) => void,
   criteria?: Criteria
 }) {
   const columns = schema.fields.filter(f => !f.hidden);
 
+  const additional_columns = [
+    {name: 'createdOn', label: 'istante creazione'},
+    {name: 'createdBy', label: 'creato da'},
+    {name: 'updatedOn', label: 'istante modifica'},
+    {name: 'updatedBy', label: 'aggiornato da'},
+  ]
+
   return <>
       <colgroup>
-        { showAdditionalColumns && <>
-          <col className="createdOn" />
-          <col className="createdBy" />
-          <col className="updatedOn" /> 
-          <col className="updatedBy" />
-        </>}
+        { showAdditionalColumns && 
+          additional_columns.map(col => <col key={col.name} className={col.name} />)
+        }
         {columns.map(field => <col key={field.name} className={field.css_class} />)}
         <col className="actions-cell" />
       </colgroup>
       <thead>
         <tr>
-          { showAdditionalColumns && <>
-            <th scope="col" className="createdOn">istante creazione</th>
-            <th scope="col" className="createdBy">creato da</th>
-            <th scope="col" className="updatedOn">istante modifica</th>
-            <th scope="col" className="updatedBy">aggiornato da</th>
-          </>}
+          { showAdditionalColumns && 
+            additional_columns.map(col => (
+              <th scope="col" key={col.name} className={col.name}>
+                {col.label}
+                <SortIcon field={col.name} criteria={criteria} setSort={setSort} />
+              </th>
+            ))
+          }
           {columns.map(field => 
             <th scope="col" key={field.name} className={field.css_class} style={{ position: 'relative' }}>
               {field.header}

@@ -7,9 +7,9 @@ import { Field } from '../lib/schema/fields'
 
 export default function SortIcon({ field, criteria, setSort }: 
     { 
-      field: Field, 
+      field: Field|string, // Field object or field name 
       criteria?: Criteria, 
-      setSort: (field: Field, direction: number) => void }
+      setSort: (field: Field|string, direction: number) => void }
   ) {
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
