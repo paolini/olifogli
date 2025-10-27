@@ -9,9 +9,10 @@ import LoadingWrapper from './LoadingWrapper'
 import { schemas } from '../lib/schema'
 import ErrorElement from './Error'
 
-export default function Table({rows, sheet}:{
+export default function Table({rows, sheet, edit}:{
   rows: Row[],
   sheet: Sheet,
+  edit?: boolean
 }) {
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
@@ -23,15 +24,9 @@ export default function Table({rows, sheet}:{
     return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
   }
   const view_rows = filtraEOrdina(criteria, rows)
-  const n_rows_with_errors = rows.filter(r => r.error).length
 
   return <div className="table-container">
     <div className="table-header">
-      <span>{rows.length} righe</span>
-      {' • '}
-      <span>{n_rows_with_errors} {n_rows_with_errors === 1 ? "non valida" : "non valide"}</span>
-      {view_rows.length < rows.length && <>{' • '}<span>({view_rows.length} visualizzate)</span></>}
-      <br />
       <Ordering criteria={criteria}/>
       { ['archimede-biennio','archimede-triennio'].includes(schema.name) && (
         <>
