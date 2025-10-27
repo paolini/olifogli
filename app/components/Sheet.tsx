@@ -101,7 +101,7 @@ function SheetBody({sheet,profile}: {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
-    const validTabs = ['info','table', 'edit', 'csv', 'scans', 'configure'] as const;
+    const validTabs = ['info','table', 'edit', 'csv', 'scans', 'download'] as const;
     type TabType = typeof validTabs[number];
     function isTabType(tab: string | null): tab is TabType {
         return validTabs.includes(tab as TabType);
@@ -112,12 +112,11 @@ function SheetBody({sheet,profile}: {
         variables: {sheetId: sheet._id},
         pollInterval: tab==='edit' ? undefined : 5000
     });
-    const user_can_configure = true // profile && (profile.isAdmin || sheet.ownerId === profile._id)
-    const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
     
+    const schema = schemas[sheet.schema]
 
     return <div className="sheet-body-wrapper">
         <div className="tab-container">
@@ -125,48 +124,36 @@ function SheetBody({sheet,profile}: {
                 className={`tab-button ${tab === 'info' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('info')}
             >
-                Informazioni
-            </button>
-            <button 
-                className={`tab-button ${tab === 'table' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                onClick={() => setTab('table')}
-            >
-                Visualizza dati
+                PANNELLO
             </button>
             <button 
                 className={`tab-button ${tab === 'edit' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('edit')}
             >
-                Modifica dati
+                INSERIMENTO DATI
             </button>
-            {!(sheet.closed || sheet.locked) && (
-                <>
-                    <button 
-                        className={`tab-button ${tab === 'csv' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                        onClick={() => setTab('csv')}
-                    >
-                        Importa CSV
-                    </button>
-                    <button 
-                        className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                        onClick={() => setTab('scans')}
-                    >
-                        Importa scansioni
-                    </button>
-                </>
-            )}
-            {user_can_configure && (
-                <button 
-                    className={`tab-button ${tab === 'configure' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                    onClick={() => setTab('configure')}
-                >
-                    Configura
-                </button>
-            )}
+            <button 
+                disabled={sheet.closed || sheet.locked || false}
+                className={`tab-button ${tab === 'csv' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('csv')}>
+                IMPORTA CSV
+            </button>
+            <button 
+                disabled={sheet.closed || sheet.locked || false}
+                className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('scans')}>
+                IMPORTA SCANSIONI
+            </button>
+            <button 
+                className={`tab-button ${tab === 'download' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('download')}>
+                SCARICA CSV
+            </button>
+
         </div>
         { tab === 'info' && 
             <div>
-                <SheetInfo sheet={sheet} data={data} />
+                <SheetInfo sheet={sheet} data={data} profile={profile} />
             </div>
         }
         { tab === 'table' && 
@@ -189,9 +176,11 @@ function SheetBody({sheet,profile}: {
                 <ScansImport sheet={sheet} data_rows={data.rows} />
             </div>
         }
-        { tab === 'configure' && 
+        { tab === 'download' && 
             <div>
-                <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
+                <Button onClick={() => csv_download()}>
+                    Scarica CSV
+                </Button>
             </div>
         }
     </div>
@@ -203,17 +192,29 @@ function SheetBody({sheet,profile}: {
         params.set('tab', newTab);
         router.replace('?' + params.toString(), { scroll: false });
     }
+
+    async function csv_download() {
+        if (!data) return
+        const filename = myTimestamp(new Date()).replace(':', '-').replace(' ', '_') + '.csv'
+
+        downloadCSVWithPapa(
+            schema.csv_header(),
+            data.rows.map(row => schema.csv_row(row.data)),
+            filename
+        )
+    }
 }
 
-function SheetInfo({sheet,data}:{
+function SheetInfo({sheet,data,profile}:{
     sheet: Sheet
     data?: {rows: Row[]}
+    profile: User | null
 }) {
     const rows = data?.rows
-    const schema = schemas[sheet.schema]
     const n_rows_with_errors = rows?.filter(r => r.error).length
 
     if (rows === undefined) return <Loading />
+    const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
 
     return <>
         <table className="my-2">
@@ -234,23 +235,10 @@ function SheetInfo({sheet,data}:{
         </div>
         
         <div className="sheet-body-controls">
-            <Button onClick={() => csv_download()}>
-                Scarica CSV
-            </Button>
         </div>
+
+        <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
     </>  
-
-    async function csv_download() {
-        if (!data) return
-        const filename = myTimestamp(new Date()).replace(':', '-').replace(' ', '_') + '.csv'
-
-        downloadCSVWithPapa(
-            schema.csv_header(),
-            data.rows.map(row => schema.csv_row(row.data)),
-            filename
-        )
-    }
-
 }
 
 function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dati.csv") {
