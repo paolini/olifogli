@@ -17,7 +17,7 @@ import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 import SheetConfigure from './SheetConfigure'
 
-const GET_SHEET = gql`
+const _ = gql`
     query getSheet($sheetId: ObjectId!) {
         sheet(sheetId: $sheetId) {
             _id
@@ -56,13 +56,13 @@ export default function SheetElement({sheetId}: {
 
     const { sheet } = data
     if (!sheet || error) return <Error error={error} /> 
+    const schema = schemas[sheet.schema]
 
     return <div className="sheet-wrapper">
         <div className="sheet-header">
             <div className="flex items-center gap-3 mb-2">
-                <h1 className="flex-1">{sheet.name} [
-                    {sheet.schema} 
-                    {} {sheet.workbook.name}]
+                <h1 className="flex-1">
+                    {schema.sheet_title(sheet.name, sheet.workbook.name || '?')}
                 </h1>
                 {profile.isAdmin &&
                     <Link href={`/workbook/${sheet.workbook._id}`}>
