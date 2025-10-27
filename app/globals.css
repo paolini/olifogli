@@ -8,6 +8,8 @@
   --alert: #cfd90a;
   --error: #eb7b7b;
   --secondary: #2929ee;
+  --tabs-border: rgb(0, 0, 0); /* #d1d5db; */
+  --tabs-inactive-border: green;
 }
 
 /*
@@ -112,7 +114,7 @@ h2 {
   display: flex;
   gap: 0;
   margin-bottom: 1rem;
-  border-bottom: 1px solid #d1d5db;
+  border-bottom: 1px solid var(--tabs-border);
 }
 
 .tab-button {
@@ -121,18 +123,19 @@ h2 {
   transition-property: color, background-color, border-color;
   transition-duration: 150ms;
   border-bottom: 1px solid #d1d5db;
-  border-top-left-radius: 0.25rem;
-  border-top-right-radius: 0.25rem;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  margin-right: 2px;
 }
 
 .tab-button-active {
   background-color: white;
-  border-left: 1px solid #d1d5db;
-  border-top: 1px solid #d1d5db;
-  border-right: 1px solid #d1d5db;
+  border-left: 1px solid var(--tabs-border);
+  border-top: 1px solid var(--tabs-border);
+  border-right: 1px solid var(--tabs-border);
   border-bottom: 1px solid white;
   margin-bottom: -1px;
-  color: #2563eb;
+  color: #000000;
 }
 
 .tab-button-inactive {
