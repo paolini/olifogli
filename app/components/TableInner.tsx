@@ -38,6 +38,7 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
       schema={schema} 
       showStandardAnswers={showStandardAnswers} 
       showAdditionalColumns={showAdditionalColumns} 
+      edit={edit}
     />
   </table>
 }
@@ -80,23 +81,24 @@ function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
     </>
 }
 
-function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns}: {
+function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns, edit}: {
   rows: Row[],
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
   sheet: Sheet,
   schema: Schema,
   showStandardAnswers: boolean,
-  showAdditionalColumns: boolean
+  showAdditionalColumns: boolean,
+  edit?: boolean
 }) {
   return <tbody>
       {rows.map((row) => 
-        <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={setCurrentRowId} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />)} 
-      {currentRowId 
+        <MyRow key={row._id.toString()} current={row._id === currentRowId} sheetId={sheet._id.toString()} schema={schema} row={row} setCurrentRowId={edit ? setCurrentRowId : undefined} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />)} 
+      {edit && (currentRowId 
         ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
           aggiungi riga
           </button></td></tr>
-        : <InputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} />}
+        : <InputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} />)}
     </tbody>
 }
 
@@ -107,17 +109,17 @@ function MyRowInternal({current, sheetId, schema, row, setCurrentRowId, showStan
   sheetId: string,
   schema: Schema,
   row: WithId<Row>,
-  setCurrentRowId: (id: ObjectId|null) => void,
+  setCurrentRowId?: (id: ObjectId|null) => void,
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean
 }) {
   const [focusFieldName, setFocusFieldName] = useState<string|null>(null)
   
-  if (current) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)} showAdditionalColumns={showAdditionalColumns} focusFieldName={focusFieldName} />
-  else return <TableRow schema={schema} row={row} onCellClick={(fieldName) => {
+  if (current && setCurrentRowId) return <InputRow sheetId={sheetId} schema={schema} row={row} done={() => setCurrentRowId(null)} showAdditionalColumns={showAdditionalColumns} focusFieldName={focusFieldName} />
+  else return <TableRow schema={schema} row={row} onCellClick={setCurrentRowId ? (fieldName) => {
     setCurrentRowId(row._id)
     setFocusFieldName(fieldName)
-  }} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
+  } : undefined} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
 }
 
 function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditionalColumns}: {
