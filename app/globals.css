@@ -235,7 +235,7 @@ th {
 /* Specific styles for common data table */
 table.commondata {
   border-collapse: collapse;
-  margin-bottom: 12px;
+  margin-bottom: 12px  ;
 }
 
 table.commondata th {
