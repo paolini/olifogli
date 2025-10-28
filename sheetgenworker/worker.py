@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 import csv
 import datetime
+import json
 import os
 from pathlib import Path
 import re
@@ -29,6 +30,7 @@ DB_NAME = os.getenv("DB_NAME", "olifogli")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "sheetgen_jobs")
 RESULTS_COLLECTION_NAME = os.getenv("RESULTS_COLLECTION_NAME", "sheetgen_results")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 10))  # Controlla nuovi file ogni N secondi
+KEEP_TMP_FOLDERS = os.getenv("KEEP_TMP_FOLDERS", "") # if the variable is nonempty, keep tmp folders after generation (useful for debugging)
 DEFAULT_TEMPLATE_NAME = None
 
 os.makedirs(SPOOL_DIR, exist_ok=True)
@@ -37,9 +39,7 @@ os.makedirs(ABORTED_DIR, exist_ok=True)
 os.makedirs(COMPLETED_DIR, exist_ok=True)
 os.makedirs(TMP_DIR, exist_ok=True)
 
-file_format_pattern = re.compile(
-    r'^\\fogliorisp\{([^{}\\%@]*)\}\{([^{}\\%@]*)\}\{([0-9]*)\}\{([0-9]*)\}\{([0-9]*)\}$'
-)
+invalid_latex_chars = re.compile(r"[#$%&_{}\~\^\\]")
 
 class LaTeXFormatError(Exception):
     """Custom exception for invalid LaTeX lines."""
@@ -90,27 +90,30 @@ class Job:
         self.update_status("completed", f"Generazione foglio completata")
         os.rename(filepath, os.path.join(COMPLETED_DIR, os.path.basename(filepath)))
 
-    def check_file_format(self):
-        r"""
-        Checks that the file contains only commented lines (%) or lines in the format:
-        `\fogliorisp{<name>}{<surname>}{<digits>}{<digits>}{<digits>}`
-        Fields 1 and 2 cannot contain { } \ % @
-        Fields 3, 4, 5 must contain only digits (0-9) or be empty
-        Stops at the first invalid line and returns False.
+    def validate_id(self, record):
         """
-        # Regex:
-        # Fields 1-2: no { } \ % @
-        # Fields 3-5: digits only or empty
+        get an id from the given record.
+        """
+        if 'id' in record:
+            id = record['id']
+            if not(isinstance(id, str)):
+                raise TypeError(f'non-string id in line {{lineno}}')
+            if len(id) != 3:
+                raise ValueError(f'id without length 3 in line {{lineno}}')
+            if 'id1' in record or 'id2' in record or 'id3' in record:
+                raise ValueError(f'line {{lineno}} contains both "id" and separate id characters')
+            id1 = id[0]
+            id2 = id[1]
+            id3 = id[2]
+        else:
+            id1 = record.get('id1', '')
+            id2 = record.get('id2', '')
+            id3 = record.get('id3', '')
+        if (id1 and not(id1.isdigit())) or (id2 and not(id2.isdigit())) or (id3 and not(id3.isdigit())):
+            raise ValueError(f'non-digit id in line {{lineno}}')
 
-        filepath = self.input_path
-        with open(filepath, 'r', encoding='utf-8') as f:
-            for lineno, line in enumerate(f, start=1):
-                line = line.strip()
-                if not line or line.startswith('%'):
-                    continue  # ignore empty lines or comments
-                if not file_format_pattern.match(line):
-                    raise LaTeXFormatError(f"Invalid format in line {lineno}")
-        return True
+        return id1, id2, id3
+
 
     def call_latexmk(self, filepath, template_dir, dest_file_path):
         """
@@ -121,12 +124,19 @@ class Job:
         tmp_dir = os.path.join(TMP_DIR, self.job_id)
         os.makedirs(tmp_dir, exist_ok=True)
         try:
-            shutil.copy(filepath, tmp_dir)
-            filename = os.path.basename(filepath)
+            with open(filepath, "r", encoding="utf-8") as f:
+                records = [json.loads(line) for line in f]
             mainfile = os.path.join(tmp_dir, 'main.tex')
             with open(mainfile, "w", encoding="utf-8") as f:
-                f.write(rf'\input{{header.tex}}\begin{{document}}\input{{{filename}}}\end{{document}}')
-
+                f.write('\\input{header.tex}\\begin{document}\n')
+                for lineno, record in enumerate(records, start=1):
+                    name = record.get('name', '')                    
+                    surname = record.get('surname', '')
+                    if invalid_latex_chars.search(name) or invalid_latex_chars.search(surname):
+                        raise ValueError(f'invalid Latex chars in name/surname in line {{lineno}}')
+                    id1, id2, id3 = self.validate_id(record)
+                    f.write(f'\\fogliorisp{{{name}}}{{{surname}}}{{{id1}}}{{{id2}}}{{{id3}}}\n')
+                f.write('\\end{document}\n')
             cmd = ['latexmk', '-pdf', '-interaction=nonstopmode', '-quiet', 'main']
             env = os.environ.copy()
             env['TEXINPUTS'] = f"{template_dir}:{env.get('TEXINPUTS', '')}"
@@ -135,8 +145,9 @@ class Job:
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(f"latexmk failed on file {filepath} in {tmp_dir} with exit code {e.returncode}") from e
             shutil.copy(os.path.join(tmp_dir, 'main.pdf'), dest_file_path)
-        finally:            
-            shutil.rmtree(tmp_dir)
+        finally:
+            if not(KEEP_TMP_FOLDERS):
+                shutil.rmtree(tmp_dir)
 
     # Funzione per elaborare i file
     def process(self):
@@ -159,7 +170,6 @@ class Job:
         
         try:
             self.update_status("processing", "Elaborazione in corso")
-            self.check_file_format()
 
             data_directory = os.path.join(DATA_DIR, self.job_id)
             os.makedirs(data_directory, exist_ok=True)
@@ -189,7 +199,7 @@ def worker():
 
     while True:
         for filename in os.listdir(SPOOL_DIR):
-            if filename.endswith(".tex"):
+            if filename.endswith(".jsonl"):
                 spool_filepath = os.path.join(SPOOL_DIR, filename)
                 work_filepath = os.path.join(PROCESSING_DIR, filename) 
                 try:
@@ -197,7 +207,8 @@ def worker():
                 except Exception as e:
                     print(f"Failed to move {spool_filepath} to {work_filepath}: {e}", flush=True, file=sys.stderr)
                     continue
-                [schema, job_id] = filename[:-4].split('-')
+                filename_no_ext = os.path.splitext(os.path.basename(filename))[0]
+                [schema, job_id] = filename_no_ext.split('-')
                 try:
                     Job(schema, job_id, work_filepath)
                 except Exception as e:
