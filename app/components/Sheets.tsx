@@ -233,9 +233,12 @@ function SheetsTable({ workbookId, profile }: {
                 <Button variant="danger" disabled={sheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     Elimina raccolta
                 </Button>
-          </div>
+            </div>
         }
-
+        { 
+            selectedIds.length > 0 && 
+            <BulkCommonDataSetter sheets={sheets.filter(sheet => selectedIds.includes(sheet._id.toString()))}  />
+        }
         {creationId && workbookId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
     </>
 
@@ -352,4 +355,19 @@ function SheetForm({ workbookId }: { workbookId: ObjectId }) {
         setName('')
         setSchema('')
     }
+}
+
+function BulkCommonDataSetter({sheets}:{
+    sheets: Partial<Sheet>[]
+}) {
+    return <div className="p-4 border rounded bg-gray-50">
+        <h2 className="font-bold mb-2">Modifica dati comuni</h2>
+        <table className="commondata">
+            <tr>
+                <th><input className="p-1" placeholder="campo"/></th>
+                <td><input className="p-1"placeholder="valore"/></td>
+            </tr>
+        </table>
+        <button>Applica</button> su {sheets.length} fogli
+    </div>
 }

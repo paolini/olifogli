@@ -16,6 +16,7 @@ import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 import SheetConfigure from './SheetConfigure'
+import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -211,25 +212,36 @@ function SheetInfo({sheet,data,profile}:{
     profile: User | null
 }) {
     const rows = data?.rows
-    const n_rows_with_errors = rows?.filter(r => r.error).length
+    const n_valid_rows = rows?.filter(r => !r.error).length
+    const schema = schemas[sheet.schema]
 
     if (rows === undefined) return <Loading />
     const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
 
     return <>
-        <table className="my-2">
+        <table className="my-2 commondata">
             <tbody>
-                {sheet.commonData && Object.entries(sheet.commonData).map(([key, value]) => (
-                    <tr key={key}>
-                        <td className="bg-gray-200">{key.replace('_', ' ')}</td>
-                        <td>{value as string || ''}</td>
-                    </tr>))}
+                { (schema instanceof ArchimedeCommon) 
+                    ?   <>
+                            <tr><th>Scuola</th>
+                                    <td>{sheet.commonData["Nome_scuola"]}</td></tr>
+                            <tr><th>Città</th>
+                                    <td>{sheet.commonData["Città_scuola"]}</td></tr>
+                            <tr><th>Distretto</th>
+                                    <td>{sheet.commonData["Distretto"].replace("Distretto di ","")}</td></tr>
+                        </>
+                    : Object.entries(sheet.commonData || {}).map(([key, value]) => (
+                        <tr key={key}>
+                            <th>{key}</th>
+                            <td>{value as string || ''}</td>
+                        </tr>))
+                }
             </tbody>
         </table>
         <div>
-              <span>{rows.length} righe</span>
+              <span>{rows.length} {rows.length === 1 ? "riga" : "righe"}</span>
               {' • '}
-              <span>{n_rows_with_errors} {n_rows_with_errors === 1 ? "non valida" : "non valide"}</span>
+              <span>{n_valid_rows} {n_valid_rows === 1 ? "valida" : "valide"}</span>
               {/* view_rows.length < rows.length && <>{' • '}<span>({view_rows.length} visualizzate)</span></> */}
               <br />
         </div>
