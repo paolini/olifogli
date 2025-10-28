@@ -332,7 +332,7 @@ export type User = {
 export type Workbook = {
   __typename?: 'Workbook';
   _id?: Maybe<Scalars['ObjectId']['output']>;
-  commonData: Scalars['Data']['output'];
+  commonData?: Maybe<Scalars['Data']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   ownerId?: Maybe<Scalars['ObjectId']['output']>;
   sheetsCount?: Maybe<Scalars['Int']['output']>;
@@ -400,7 +400,7 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData: any } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -527,7 +527,7 @@ export type GetWorkbookQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, ownerId?: ObjectId | null, commonData: any, sheetsCount?: number | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }>, me?: { __typename?: 'User', _id: ObjectId, email: string, name?: string | null, isAdmin?: boolean | null } | null };
+export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, ownerId?: ObjectId | null, commonData?: any | null, sheetsCount?: number | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }>, me?: { __typename?: 'User', _id: ObjectId, email: string, name?: string | null, isAdmin?: boolean | null } | null };
 
 export type UpdateWorkbookMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -2111,7 +2111,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 
 export type WorkbookResolvers<ContextType = any, ParentType extends ResolversParentTypes['Workbook'] = ResolversParentTypes['Workbook']> = {
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
-  commonData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  commonData?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   sheetsCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;

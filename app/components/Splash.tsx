@@ -15,6 +15,10 @@ export default function Splash() {
     <Button className="px-10 py-5 m-5" onClick={() => signIn()}>LOGIN</Button>
   </div>
 
+  return <div>
+    <Workbooks />
+  </div>
+
   if (profile?.isAdmin) {
     return <div>
       <Workbooks />

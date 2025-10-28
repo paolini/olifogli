@@ -59,8 +59,14 @@ export default function Workbooks() {
     }
   }
 
+  if (workbooks.length === 0 && !profile.isAdmin) {
+    return <div className="p-4">
+      <p>Non hai accesso a nessun foglio.</p>
+    </div>
+  }
+
   return <div className="p-4 space-y-4">
-    <h1>Raccolte</h1>
+    <h1>Competizioni</h1>
     <table className="table-auto">
       <thead>
         <tr className="border-b">

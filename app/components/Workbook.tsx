@@ -39,7 +39,7 @@ const DELETE_WORKBOOK = gql`
 export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const { loading, error, data, refetch } = useGetWorkbookQuery({variables: { workbookId }})
+    const { loading, error, data } = useGetWorkbookQuery({variables: { workbookId }})
     
     const tabParam = searchParams.get('tab')
     const validTabs = ['fogli', 'list', 'distribuzione', 'configura'] as const
@@ -95,12 +95,14 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
             >
                 Distribuzione Punteggi
             </button>
+            { profile?.isAdmin &&
             <button
                 onClick={() => setActiveTab('configura')}
                 className={`tab-button ${activeTab === 'configura' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
                 Configurazione
             </button>
+            }
         </div>
 
         {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} />}
