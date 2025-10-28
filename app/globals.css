@@ -235,7 +235,7 @@ th {
 /* Specific styles for common data table */
 table.commondata {
   border-collapse: collapse;
-  margin-bottom: 12px;
+  margin-bottom: 12px  ;
 }
 
 table.commondata th {
@@ -343,7 +343,7 @@ td.correct {
 }
 
 td.incorrect {
-  background-color: #de9db9;
+  background-color: #de9d9b; /* c'era un errore (ultimi due caratteri scambiati) */
 }
 
 td.empty {
@@ -351,7 +351,7 @@ td.empty {
 }
 
 td.invalid {
-  background-color: #fbe6a3;
+  background-color: #e6b8af; /* #fbe6a3; */
 }
 
 /** Field-specific styles **/
