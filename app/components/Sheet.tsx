@@ -244,11 +244,11 @@ function SheetInfoPanel({sheet,profile}:{
             <table className="my-2 commondata">
                 <tbody>
                     <tr><th>Scuola</th>
-                            <td>{sheet.commonData["Nome_scuola"]}</td></tr>
+                        <td>{sheet.commonData["Nome_scuola"]}</td></tr>
                     <tr><th>Città</th>
-                            <td>{sheet.commonData["Città_scuola"]}</td></tr>
+                        <td>{sheet.commonData["Città_scuola"]}</td></tr>
                     <tr><th>Distretto</th>
-                            <td>{sheet.commonData["Distretto"].replace("Distretto di ","")}</td></tr>
+                        <td>{sheet.commonData["Distretto"]?.replace("Distretto di ","")}</td></tr>
                 </tbody>
             </table>
             {sheet.commonData["info"] && 
