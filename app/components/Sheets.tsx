@@ -14,6 +14,8 @@ import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
 import { useRouter } from 'next/navigation';
 import { Lock, Archive, Unlock } from 'lucide-react';
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
 
 const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
@@ -383,6 +385,7 @@ function BulkCommonDataSetter({sheets, onApply}:{
     const [field, setField] = useState('')
     const [value, setValue] = useState('')
     const [loading, setLoading] = useState(false)
+    const [useTextarea, setUseTextarea] = useState(false)
 
     const handleApply = async () => {
         if (!field.trim()) return
@@ -396,11 +399,35 @@ function BulkCommonDataSetter({sheets, onApply}:{
 
     return <div className="p-4 border rounded bg-gray-50">
         <h2 className="font-bold mb-2">Modifica dati comuni</h2>
+        <div className="mb-2">
+            <label className="flex items-center gap-2">
+                <input type="checkbox" checked={useTextarea} onChange={e => setUseTextarea(e.target.checked)} />
+                Usa editor markdown per il valore
+            </label>
+        </div>
         <table className="commondata">
             <tbody>
             <tr>
                 <th><input className="p-1" placeholder="campo" value={field} onChange={e => setField(e.target.value)}/></th>
-                <td><input className="p-1" placeholder="valore" value={value} onChange={e => setValue(e.target.value)}/></td>
+                <td>
+                    {useTextarea ? (
+                        <MDEditor
+                            value={value}
+                            onChange={(val) => setValue(val || '')}
+                            preview="edit"
+                            hideToolbar={false}
+                            visibleDragbar={false}
+                            height={150}
+                        />
+                    ) : (
+                        <input 
+                            className="p-1" 
+                            placeholder="valore" 
+                            value={value} 
+                            onChange={e => setValue(e.target.value)}
+                        />
+                    )}
+                </td>
             </tr>
             </tbody>
         </table>
