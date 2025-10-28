@@ -17,6 +17,7 @@ import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 import SheetConfigure from './SheetConfigure'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
+import ReactMarkdown from 'react-markdown'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -219,25 +220,7 @@ function SheetInfo({sheet,data,profile}:{
     const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
 
     return <>
-        <table className="my-2 commondata">
-            <tbody>
-                { (schema instanceof ArchimedeCommon) 
-                    ?   <>
-                            <tr><th>Scuola</th>
-                                    <td>{sheet.commonData["Nome_scuola"]}</td></tr>
-                            <tr><th>Città</th>
-                                    <td>{sheet.commonData["Città_scuola"]}</td></tr>
-                            <tr><th>Distretto</th>
-                                    <td>{sheet.commonData["Distretto"].replace("Distretto di ","")}</td></tr>
-                        </>
-                    : Object.entries(sheet.commonData || {}).map(([key, value]) => (
-                        <tr key={key}>
-                            <th>{key}</th>
-                            <td>{value as string || ''}</td>
-                        </tr>))
-                }
-            </tbody>
-        </table>
+        <SheetInfoPanel sheet={sheet} profile={profile} />
         <div>
               <span>{rows.length} {rows.length === 1 ? "riga" : "righe"}</span>
               {' • '}
@@ -252,6 +235,47 @@ function SheetInfo({sheet,data,profile}:{
         <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
     </>  
 }
+
+function SheetInfoPanel({sheet,profile}:{
+    sheet: Sheet
+    profile: User | null
+}) {
+    const schema = schemas[sheet.schema]
+
+    if (schema instanceof ArchimedeCommon) {
+        return <>
+            <table className="my-2 commondata">
+                <tbody>
+                    <tr><th>Scuola</th>
+                            <td>{sheet.commonData["Nome_scuola"]}</td></tr>
+                    <tr><th>Città</th>
+                            <td>{sheet.commonData["Città_scuola"]}</td></tr>
+                    <tr><th>Distretto</th>
+                            <td>{sheet.commonData["Distretto"].replace("Distretto di ","")}</td></tr>
+                </tbody>
+            </table>
+            {sheet.commonData["info"] && 
+                <div className="border border-gray-600 rounded-lg my-4 p-4 max-w-2xl bg-gray-50 shadow-md">
+                    <ReactMarkdown>{sheet.commonData["info"]}</ReactMarkdown>
+                </div>
+            }
+        </>
+    } else {
+        return <>
+            <table className="my-2 commondata">
+                <tbody>
+                    {Object.entries(sheet.commonData || {}).map(([key, value]) => (
+                        <tr key={key}>
+                            <th>{key}</th>
+                            <td>{value as string || ''}</td>
+                        </tr>))
+                    }
+                </tbody>
+            </table>
+        </>
+    }
+}
+
 
 function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dati.csv") {
     const csv = Papa.unparse({
