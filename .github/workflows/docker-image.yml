@@ -75,5 +75,5 @@ jobs:
         port: ${{ secrets.SSH_PORT || 22 }}
         script: |
           cd docker/olifogli
-          docker-compose pull
-          docker-compose up -d
+          docker compose pull
+          docker compose up -d
