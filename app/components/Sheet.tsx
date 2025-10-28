@@ -215,7 +215,7 @@ function SheetInfo({sheet,data,profile}:{
     const rows = data?.rows
     const n_valid_rows = rows?.filter(r => !r.error).length
     const schema = schemas[sheet.schema]
-
+    
     if (rows === undefined) return <Loading />
     const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
 
@@ -229,11 +229,8 @@ function SheetInfo({sheet,data,profile}:{
               <br />
         </div>
         
-        <div className="sheet-body-controls">
-        </div>
-
         <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
-    </>  
+    </>
 }
 
 function SheetInfoPanel({sheet,profile}:{

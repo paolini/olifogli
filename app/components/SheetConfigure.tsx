@@ -6,6 +6,9 @@ import Error from './Error'
 import { Sheet, useDeleteSheetMutation, User } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
 import { myTimestamp } from '../lib/util'
+import ArchimedeBiennio from '../lib/schema/ArchimedeBiennio'
+import { schemas } from '../lib/schema'
+import ArchimedeTriennio from '../lib/schema/ArchimedeTriennio'
 
 const DELETE_SHEET = gql`
     mutation DeleteSheet($_id: ObjectId!) {
@@ -55,7 +58,6 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
 }) {
     const router = useRouter()
     const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
-    const [edit,setEdit] = useState(false)
     const [permissions, setPermissions] = useState(sheet.permissions || [])
     const [newEmail, setNewEmail] = useState('')
     const [newRole, setNewRole] = useState<'admin' | 'editor'>('editor')
@@ -68,7 +70,14 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const [openSheet, {loading: opening, error: openError, reset: openReset}] = useMutation(OPEN_SHEET)
     const [lockSheet, {loading: locking, error: lockError, reset: lockReset}] = useMutation(LOCK_SHEET)
     const [unlockSheet, {loading: unlocking, error: unlockError, reset: unlockReset}] = useMutation(UNLOCK_SHEET)
-    const canModifyData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
+    // questi utenti possono modificare i commondata del foglio oltre 
+    // che tutto il resto
+    const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
+    // questi utenti possono aprire/chiudere ma non bloccare.
+    // possono anche gestire i permessi di acceso al foglio (altri utenti)
+    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => p.userId === profile._id && p.role === 'admin'))
+
+    const schema = schemas[sheet.schema]
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
     if (updateError) return <Error error={updateError} dismiss={updateReset }/>
@@ -79,77 +88,49 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
 
     return <>
-        {!edit && 
-            <Button onClick={() => setEdit(true)}>
-                modifica
-            </Button>}
-        {edit && <>
-                <Button className="mr-2" onClick={cancel}>
-                    termina modifiche
-                </Button>
-                {sheet.locked ? (
-                    profile?.isAdmin && (
-                        <Button 
-                            className="mx-2"
-                            disabled={unlocking}
-                            onClick={doUnlockSheet}
-                        >
-                            {unlocking ? 'Sblocco...' : 'Sblocca foglio'}
-                        </Button>
-                    )
-                ) : sheet.closed ? (
-                    canModifyData && (
-                        <Button 
-                            className="mx-2"
-                            disabled={opening}
-                            onClick={doOpenSheet}
-                        >
-                            {'Apri foglio'}
-                        </Button>
-                    )
-                ) : (
+            <div>
+                <b>Stato del foglio {}
+                {schema instanceof ArchimedeBiennio && "biennio"}
+                {schema instanceof ArchimedeTriennio && "triennio"}
+                : {}
+                { sheet.locked && 
                     <>
-                        {canModifyData && (
-                            <Button 
-                                className="mx-2"
-                                variant="alert" 
-                                disabled={sheetContainsErrors || closing}
-                                onClick={doCloseSheet}
-                            >
-                                {'Chiudi foglio'}
-                            </Button>
-                        )}
-                        {profile?.isAdmin && (
-                            <Button 
-                                className="mx-2"
-                                variant="danger" 
-                                disabled={locking}
-                                onClick={doLockSheet}
-                            >
-                                {'Blocca foglio'}
-                            </Button>
-                        )}
+                    <span className="text-red-600 font-semibold">finalizzato</span>.
+                    <Button className="mx-4" disabled={!canModifySensibleData}>apri</Button>
                     </>
-                )}
-                {canModifyData &&
-                    <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
-                        if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
-                            doClearSheet()
-                        }
-                        }}>
-                        Svuota questo foglio ({sheet.nRows} righe)
-                    </Button>
                 }
-                {canModifyData && 
-                    <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
-                        if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
-                            doDelete()
-                        }
-                        }}>
-                        Elimina questo foglio
-                    </Button>
+                { !sheet.locked && sheet.closed &&
+                    <>
+                    <span className="text-orange-600 font-semibold">chiuso</span>.
+                    <Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button>
+                    </>
+                    }
+                { !sheet.locked && !sheet.closed &&<>
+                    <span className="text-green-600 font-semibold">aperto</span>.
+                    <Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>chiudi</Button>
+                </>}
+                </b>
+            </div>
+            <div className="my-32"/>
+            <hr/>
+        { canModifySensibleData && 
+            <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
+                if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
+                    doClearSheet()
                 }
-        </>}
+                }}>
+                Svuota questo foglio ({sheet.nRows} righe)
+            </Button>
+        }
+        { canModifySensibleData && 
+            <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
+                if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
+                    doDelete()
+                }
+                }}>
+                Elimina questo foglio
+            </Button>
+        }
         <div className="my-2">
             { sheetContainsErrors && <span>Il foglio contiene errori, non può essere chiuso.</span>}
         </div>
@@ -195,16 +176,14 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
           {permissions.map((permission, index) => (
               <tr key={index}>
               <td>{permission.email || `ID: ${permission.userId}`} ({permission.role})</td>
-              {edit && 
                 <td><Button variant="danger" disabled={updating} onClick={() => removePermission(index)}>
                     rimuovi
-                </Button></td>}
+                </Button></td>
             </tr>
           ))}
           {permissions.length === 0 && 
             <tr><td>Nessun permesso configurato</td></tr>
           }
-          {edit &&
           <tr>
             <td>
             <input
@@ -223,7 +202,7 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                     Aggiungi
                 </Button>
             </td>
-          </tr>}
+          </tr>
         </tbody>
         </table>
 
@@ -232,13 +211,12 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                 <tr>
                     <th className="bg-gray-200">campo</th>
                     <th className="bg-gray-200">valore</th>
-                    {edit && canModifyData && <th className="bg-gray-200"></th>}
                 </tr>
             </thead>
             <tbody>
                 {Object.entries(commonData as Data).map(([key,value])=> <tr key={key}>
                     <th className="bg-gray-200">{key.replace('_',' ')}</th>
-                    {edit && canModifyData ? (
+                    {canModifySensibleData ? (
                         <td>
                             <input
                                 type="text"
@@ -250,7 +228,7 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                     ) : (
                         <td>{value}</td>
                     )}
-                    {edit && canModifyData && 
+                    {canModifySensibleData && 
                         <td>
                             <Button variant="danger" disabled={updating} onClick={() => removeCommonDataField(key)}>
                                 rimuovi
@@ -258,7 +236,7 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                         </td>
                     }
                 </tr>)}
-                {edit && canModifyData &&
+                {canModifySensibleData &&
                     <tr>
                         <td>
                             <input
@@ -286,16 +264,6 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
             </tbody>
         </table>
     </>
-
-    function cancel() {
-        setPermissions(sheet.permissions || [])
-        setCommonData(sheet.commonData || {})
-        setNewEmail('')
-        setNewRole('editor')
-        setNewFieldKey('')
-        setNewFieldValue('')
-        setEdit(false)
-    }
 
     function updateCommonDataField(key: string, value: string) {
         const newData = { ...commonData, [key]: value }
@@ -363,11 +331,10 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
             variables: {sheetId: sheet._id},
             refetchQueries: ['getSheet', 'GetRows']
         })
-        setEdit(false)
     }
 
     async function doCloseSheet() {
-        if (!confirm("Se chiudi il foglio nessuno potrà modificarne le righe. Ma potrai riaprirlo se necessario.")) return
+        if (!confirm("Se chiudi il foglio nessuno potrà modificarne le righe e permetterai la finalizzazione dei dati. Finché non verrà finalizzato dagli amministratori potrai riaprirlo se necessario.")) return
         await closeSheet({
             variables: {_id: sheet._id},
             refetchQueries: ['getSheet']
@@ -375,6 +342,7 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     }
 
     async function doOpenSheet() {
+        if (!confirm("Sei sicuro di voler riaprire questo foglio? Gli utenti potranno nuovamente modificarlo, ma impedirai la finalizzazione dati.")) return
         await openSheet({
             variables: {_id: sheet._id},
             refetchQueries: ['getSheet']
