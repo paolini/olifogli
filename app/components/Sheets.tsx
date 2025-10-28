@@ -58,6 +58,12 @@ const VALIDATE_ROWS = gql`
     }
 `
 
+const UPDATE_SHEETS = gql`
+    mutation UpdateSheets($sheets: [UpdateSheetInput!]!) {
+        updateSheets(sheets: $sheets)
+    }
+`
+
 export default function Sheets({ workbookId }: { workbookId?: ObjectId }) {
     const profile = useProfile()
     return <div className="p-4">
@@ -79,6 +85,7 @@ function SheetsTable({ workbookId, profile }: {
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
+    const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
     // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     // Stato per la paginazione
@@ -235,9 +242,10 @@ function SheetsTable({ workbookId, profile }: {
                 </Button>
             </div>
         }
+        <Error error={updateSheetsError} />
         { 
-            selectedIds.length > 0 && 
-            <BulkCommonDataSetter sheets={sheets.filter(sheet => selectedIds.includes(sheet._id.toString()))}  />
+            selectedIds.length > 0 && profile?.isAdmin &&
+            <BulkCommonDataSetter sheets={sheets.filter(sheet => selectedIds.includes(sheet._id.toString()))} onApply={applyBulkCommonData} />
         }
         {creationId && workbookId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
     </>
@@ -276,6 +284,17 @@ function SheetsTable({ workbookId, profile }: {
         awaitRefetchQueries: true
       })
       router.push('/')
+    }
+
+    async function applyBulkCommonData(field: string, value: string) {
+        if (!profile?.isAdmin) return
+        const selectedSheets = sheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
+        const updates = selectedSheets.map(sheet => ({
+            _id: sheet._id,
+            commonData: { ...sheet.commonData, [field]: value }
+        }))
+        await updateSheets({ variables: { sheets: updates } })
+        refetch()
     }
 
 }
@@ -357,17 +376,36 @@ function SheetForm({ workbookId }: { workbookId: ObjectId }) {
     }
 }
 
-function BulkCommonDataSetter({sheets}:{
-    sheets: Partial<Sheet>[]
+function BulkCommonDataSetter({sheets, onApply}:{
+    sheets: Partial<Sheet>[],
+    onApply: (field: string, value: string) => Promise<void>
 }) {
+    const [field, setField] = useState('')
+    const [value, setValue] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    const handleApply = async () => {
+        if (!field.trim()) return
+        setLoading(true)
+        try {
+            await onApply(field, value)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return <div className="p-4 border rounded bg-gray-50">
         <h2 className="font-bold mb-2">Modifica dati comuni</h2>
         <table className="commondata">
+            <tbody>
             <tr>
-                <th><input className="p-1" placeholder="campo"/></th>
-                <td><input className="p-1"placeholder="valore"/></td>
+                <th><input className="p-1" placeholder="campo" value={field} onChange={e => setField(e.target.value)}/></th>
+                <td><input className="p-1" placeholder="valore" value={value} onChange={e => setValue(e.target.value)}/></td>
             </tr>
+            </tbody>
         </table>
-        <button>Applica</button> su {sheets.length} fogli
+        <Button disabled={loading || !field.trim()} onClick={handleApply}>
+            {loading ? 'Applicazione...' : 'Applica'}
+        </Button> su {sheets.length} fogli
     </div>
 }
