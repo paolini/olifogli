@@ -339,11 +339,11 @@ td.workbook-data-value {
 }
 
 td.correct {
-  background-color: #bbd6ab;
+  background-color: #dce9d5; /* #bbd6ab; */
 }
 
 td.incorrect {
-  background-color: #de9db9;
+  background-color: #dfbab1; /* #de9d9b; */
 }
 
 td.empty {
@@ -351,7 +351,7 @@ td.empty {
 }
 
 td.invalid {
-  background-color: #fbe6a3;
+  background-color: #de9d9b; /* #fbe6a3; */
 }
 
 /** Field-specific styles **/
