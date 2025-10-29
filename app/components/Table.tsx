@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, SetStateAction, Dispatch } from 'react'
 import { ObjectId } from 'mongodb'
 
 import { Row, Sheet } from '@/app/graphql/generated'
@@ -12,17 +12,18 @@ import { Field } from '../lib/schema/fields'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import Button from './Button'
 
-export default function Table({rows, sheet, edit}:{
+export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}:{
   rows: Row[],
   sheet: Sheet,
-  edit?: boolean
+  edit?: boolean,
+  selectedIds: Set<string>,
+  setSelectedIds: Dispatch<SetStateAction<Set<string>>>
 }) {
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
   const [ showAdditionalColumns, setShowAdditionalColumns ] = useState<boolean>(false)
   const [ showHiddenColumns, setShowHiddenColumns ] = useState<boolean>(false)
   const [ viewRows, setViewRows ] = useState<Row[]>(rows)
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
 
   const schema = schemas[sheet.schema]
 
@@ -51,8 +52,8 @@ export default function Table({rows, sheet, edit}:{
 
   return <div className="table-container">
     <div className="table-header">
-      {selectedRows.size > 0 && <div className="selected-rows-indicator">
-        {selectedRows.size} {`${selectedRows.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+      {selectedIds.size > 0 && <div className="selected-rows-indicator">
+        {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
         <Button>genera PDF scansioni</Button>
       </div>}
         {(schema instanceof ArchimedeCommon) &&
@@ -74,8 +75,8 @@ export default function Table({rows, sheet, edit}:{
       <LoadingWrapper>
         <TableInner 
           rows={viewRows} 
-          selectedRows={selectedRows}
-          setSelectedRows={setSelectedRows}
+          selectedIds={selectedIds}
+          setSelectedIds={setSelectedIds}
           currentRowId={currentRowId} 
           setCurrentRowId={setCurrentRowId} 
           sheet={sheet} 
@@ -104,6 +105,4 @@ export default function Table({rows, sheet, edit}:{
       }))
     }
   }
-
-  async function generateScanPDFs() {
-  }
+}

@@ -35,18 +35,6 @@ export default function ScansImport({sheet, data_rows}:{
             </label>
         </div>    
         <ScansLog sheet={sheet} data_rows={data_rows}/>
-        {/*
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <div className="flex flex-col gap-4">
-                { error && <ErrorElement error={error} dismiss={()=>setError('')}/> }
-                <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />
-                <label htmlFor="scansFileInput" onClick={handleClick} className="cursor-pointer">
-                    <Button disabled={busy}>carica PDF</Button>
-                </label>
-            </div>    
-            <ScansLog sheet={sheet} data_rows={data_rows}/>
-        </ErrorBoundary>
-        */}
     </>
 
     async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {

@@ -3,20 +3,20 @@ import { gql, useQuery } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ObjectId } from 'bson'
-import Link from 'next/link'
 
-import Loading from '@/app/components/Loading'
-import Error from '@/app/components/Error'
-import Table from '@/app/components/Table'
-import CsvImport from '@/app/components/CsvImport'
-import ScansImport from '@/app/components/ScansImport'
+import Error from './Error'
+import Loading from './Loading'
 import Button from './Button'
+import Table from './Table'
+import CsvImport from './CsvImport'
+import ScansImport from './ScansImport'
 import { schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
-import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
+import { useBreadcrumbs } from './BreadcrumbsProvider'
 import SheetInfo from './SheetInfo'
+import ScansPdfExport from './ScansPdfExport'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -61,7 +61,7 @@ export default function SheetElement({sheetId}: {
             const schema = schemas[sheet.schema]
             setBreadcrumbs([
                 { label: sheet.workbook.name || '?', href: `/workbook/${sheet.workbook._id}` },
-                { label: `${sheet.name} ‒ ${schema.header_essential}` }
+                { label: `${sheet.name} ‒ ${schema?.header_essential}` }
             ])
         }
         return () => setBreadcrumbs([])
@@ -97,6 +97,8 @@ function SheetBody({sheet,profile}: {
     sheet: Sheet
     profile: User|null
 }) {
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
@@ -132,13 +134,11 @@ function SheetBody({sheet,profile}: {
                 INSERIMENTO DATI
             </button>
             <button 
-                disabled={sheet.closed || sheet.locked || false}
                 className={`tab-button ${tab === 'csv' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('csv')}>
                 IMPORTA CSV
             </button>
             <button 
-                disabled={sheet.closed || sheet.locked || false}
                 className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('scans')}>
                 IMPORTA SCANSIONI
@@ -157,13 +157,18 @@ function SheetBody({sheet,profile}: {
         </div>
         }
         { tab === 'edit' && 
-            <Table sheet={sheet} rows={data.rows} edit={true}/>
+            <Table sheet={sheet} rows={data.rows} edit={true} selectedIds={selectedIds} setSelectedIds={setSelectedIds} />
         }
         { tab === 'csv' &&   
-            <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
+            ((sheet.closed || sheet.locked) 
+                ? <Error error="Il foglio è chiuso. Non è possibile importare dati." />
+                : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
+            )
         }
-        { tab === 'scans' && 
+        { tab === 'scans' && <>
+            <ScansPdfExport sheet={sheet} selectedIds={selectedIds} />
             <ScansImport sheet={sheet} data_rows={data.rows} />
+        </>
         }
         { tab === 'download' && 
             <div>

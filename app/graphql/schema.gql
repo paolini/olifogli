@@ -152,7 +152,7 @@ type Mutation {
   validateRows(sheetId: ObjectId!): Int
   
   deleteScan(jobId: ObjectId!): Boolean
-  requestScanPdfGeneration(sheetId: ObjectId!, selectedRows: [ObjectId!]!): Boolean
+  requestScanSheetGeneration(sheetId: ObjectId!, selectedRowIds: [ObjectId!]!): Boolean
 
   # New mutation to create a workbook
   addWorkbook(name: String!): Workbook
