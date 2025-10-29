@@ -115,7 +115,7 @@ olifogli/
 - `sheets(workbookId)`: Fogli in un workbook
 - `rows(sheetId)`: Righe in un foglio
 - `scanJobs(sheetId)`: Job di scansione per un foglio
-- `workbookReports(workbookId)`: Report aggregati per workbook (archimede-biennio e archimede-triennio)
+- `workbookReports(workbookId)`: Report aggregati per workbook (archimede_biennio e archimede_triennio)
 
 #### Mutations Principali
 - `addWorkbook(name)`: Crea nuovo workbook
@@ -281,7 +281,7 @@ Ogni file contiene una sequenza di righe con questo formato (UTF-8):
 
 ### Reporting e Analisi
 - **WorkbookReport**: Component per visualizzazione report workbook
-  - Supporta report separati per archimede-biennio e archimede-triennio
+  - Supporta report separati per archimede_biennio e archimede_triennio
   - Tab "Risultati": Classifica degli studenti per punteggio
   - Tab "Distribuzione": Grafico a barre della distribuzione dei punteggi
   - Tab "Configurazione": Gestione campi chiave-valore del workbook e configurazioni

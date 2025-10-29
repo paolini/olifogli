@@ -21,7 +21,7 @@ async function main() {
   const [,, workbookId, schema] = process.argv;
   if (!workbookId) {
     console.error('Usage: node scripts/import-rows.js <workbookId> <schema> < input.csv');
-    console.error('Example: node scripts/import-rows.js 68ee3b9965595f7f38e4db97 archimede-triennio < data.csv');
+    console.error('Example: node scripts/import-rows.js 68ee3b9965595f7f38e4db97 archimede_triennio < data.csv');
     process.exit(1);
   }
   if (!ObjectId.isValid(workbookId)) {
@@ -29,7 +29,7 @@ async function main() {
     process.exit(1);
   }
   if (!schema) {
-    console.error('Schema is required (e.g., archimede-triennio, archimede-biennio, ammissione_senior, scuole)');
+    console.error('Schema is required (e.g., archimede_triennio, archimede_biennio, ammissione_senior, scuole)');
     process.exit(1);
   }
   const MONGODB_URI = process.env.MONGODB_URI;

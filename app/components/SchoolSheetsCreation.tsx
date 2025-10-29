@@ -11,7 +11,7 @@ type Job = {
     rowId: ObjectId|null,
     sheet: Partial<Sheet>|null,
     name: string,
-    schema: "archimede-biennio"|"archimede-triennio",
+    schema: "archimede_biennio"|"archimede_triennio",
     permissions: Permission[],
     commonData: Data,
     message?: string,
@@ -99,7 +99,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
 
         console.log('--- Processing sheets esistenti ---')
         for (const sheet of sheets) {
-            if (sheet.schema !=='archimede-biennio' && sheet.schema !== 'archimede-triennio') continue
+            if (sheet.schema !=='archimede_biennio' && sheet.schema !== 'archimede_triennio') continue
             addJob({
                 sheet,
                 rowId: null,
@@ -125,7 +125,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                     permissions.push({ email: coord, role: 'view' });
                 }
             }
-            for (const schema of ['archimede-biennio', 'archimede-triennio'] as const) {
+            for (const schema of ['archimede_biennio', 'archimede_triennio'] as const) {
                 addJob({
                     rowId: row._id,
                     name: codice_meccanografico,

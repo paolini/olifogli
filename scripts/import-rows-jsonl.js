@@ -35,7 +35,7 @@ async function main() {
   const [,, workbookId, schema] = process.argv;
   if (!workbookId) {
     console.error('Usage: node scripts/import-rows-jsonl.js <workbookId> <schema> < input.jsonl');
-    console.error('Example: node scripts/import-rows-jsonl.js 68ee3b9965595f7f38e4db97 archimede-biennio < data.jsonl');
+    console.error('Example: node scripts/import-rows-jsonl.js 68ee3b9965595f7f38e4db97 archimede_biennio < data.jsonl');
     process.exit(1);
   }
   if (!ObjectId.isValid(workbookId)) {
@@ -43,7 +43,7 @@ async function main() {
     process.exit(1);
   }
   if (!schema) {
-    console.error('Schema is required (e.g., archimede-triennio, archimede-biennio, ammissione_senior, scuole)');
+    console.error('Schema is required (e.g., archimede_triennio, archimede_biennio, ammissione_senior, scuole)');
     process.exit(1);
   }
   const MONGODB_URI = process.env.MONGODB_URI;
@@ -104,7 +104,7 @@ async function main() {
     }
 
     // Estrai school_id dalla prima parte del participationId (fino al primo trattino)
-    // Es: "AGIS00100X-archimede-biennio" -> "AGIS00100X"
+    // Es: "AGIS00100X-archimede_biennio" -> "AGIS00100X"
     const schoolId = participationId.split('-')[0];
     if (!schoolId) {
       console.warn('Impossibile estrarre school_id da participationId:', participationId);
