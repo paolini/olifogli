@@ -105,8 +105,5 @@ export default function Table({rows, sheet, edit}:{
     }
   }
 
-  function generateScanPDFs() {
-    const filename = ``
-    const payload = []
+  async function generateScanPDFs() {
   }
-}
