@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import Error from '@/app/components/Error'
@@ -9,6 +9,7 @@ import WorkbookSheets from '@/app/components/WorkbookSheets'
 import WorkbookRanking from '@/app/components/WorkbookRanking'
 import WorkbookDistribution from '@/app/components/WorkbookDistribution'
 import WorkbookConfigure from '@/app/components/WorkbookConfigure'
+import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
 import { useGetWorkbookQuery } from '../graphql/generated'
 
 const GET_WORKBOOK = gql`
@@ -40,6 +41,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { loading, error, data } = useGetWorkbookQuery({variables: { workbookId }})
+    const { setBreadcrumbs } = useBreadcrumbs()
     
     const tabParam = searchParams.get('tab')
     const validTabs = ['fogli', 'list', 'distribuzione', 'configura'] as const
@@ -52,12 +54,22 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'fogli'
     const [activeTab, setActiveTabState] = useState<TabType>(initialTab)
 
-    if (loading) return <Loading />
-    if (error) return <Error error={error} />
-
     const workbook = data?.workbook
     const profile = data?.me
     const sheetsCount = data?.sheets?.length || 0
+    
+    // Imposta i breadcrumbs
+    useEffect(() => {
+        if (workbook?.name) {
+            setBreadcrumbs([
+                { label: workbook.name }
+            ])
+        }
+        return () => setBreadcrumbs([])
+    }, [workbook?.name, setBreadcrumbs])
+
+    if (loading) return <Loading />
+    if (error) return <Error error={error} />
     
     // Funzione per cambiare tab e aggiornare l'URL
     function setActiveTab(newTab: TabType) {

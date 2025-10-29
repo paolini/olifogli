@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { gql, useQuery } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -18,6 +18,7 @@ import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 import SheetConfigure from './SheetConfigure'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import ReactMarkdown from 'react-markdown'
+import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -53,6 +54,21 @@ export default function SheetElement({sheetId}: {
 }) {
     const { data, error } = useGetSheetQuery({ variables: { sheetId } })
     const profile = useProfile()
+    const { setBreadcrumbs } = useBreadcrumbs()
+    
+    // Imposta i breadcrumbs
+    useEffect(() => {
+        if (data?.sheet) {
+            const sheet = data.sheet
+            const schema = schemas[sheet.schema]
+            setBreadcrumbs([
+                { label: sheet.workbook.name || '?', href: `/workbook/${sheet.workbook._id}` },
+                { label: `${sheet.name} ‒ ${schema.header_essential}` }
+            ])
+        }
+        return () => setBreadcrumbs([])
+    }, [data?.sheet, setBreadcrumbs])
+    
     if (error) return <Error error={error} />;
     if (!data || profile===undefined) return <Loading />;
 
@@ -64,7 +80,7 @@ export default function SheetElement({sheetId}: {
         <div className="sheet-header">
             <div className="flex items-center gap-3 mb-2">
                 <h1 className="flex-1">
-                    {schema.sheet_title(sheet.name, sheet.workbook.name || '?')}
+                    {`${sheet.workbook.name || '?'} ‒ ${sheet.name} ‒ ${schema.header_essential}`}
                 </h1>
                 {profile.isAdmin &&
                     <Link href={`/workbook/${sheet.workbook._id}`}>
