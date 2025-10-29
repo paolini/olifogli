@@ -5,12 +5,15 @@ import { ChoiceAnswerField, Field } from '@/app/lib/schema/fields'
 import { Row } from '@/app/graphql/generated'
 import { myTimestamp } from '../lib/util'
 
-export default function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditionalColumns}: {
+export default function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditionalColumns, showHiddenColumns, isSelected, onToggleSelect}: {
   schema: Schema,
   row: WithId<Row>,
   onCellClick?: (fieldName: string) => void,
   showStandardAnswers: boolean,
-  showAdditionalColumns: boolean
+  showAdditionalColumns: boolean,
+  showHiddenColumns: boolean,
+  isSelected?: boolean,
+  onToggleSelect?: () => void
 }) {
   // Calcola quanto tempo è passato dall'ultimo aggiornamento
   const timeSinceUpdate = row.updatedOn ? Date.now() - new Date(row.updatedOn).getTime() : Infinity
@@ -22,9 +25,16 @@ export default function TableRow({schema, row, onCellClick, showStandardAnswers,
     '--fade-delay': `-${elapsedTime}s` 
   } as React.CSSProperties : undefined
 
-  const columns = schema.fields.filter(f => !f.hidden);
+  const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
   
   return <tr className={className} style={style}>
+    <td className="checkbox-cell">
+      <input 
+        type="checkbox" 
+        checked={isSelected || false}
+        onChange={onToggleSelect}
+      />
+    </td>
     { showAdditionalColumns && <TableInfoCells row={row} />}
     {columns.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick && onCellClick(field.name)} />)}
     {row.error && <td className="alert">{row.error}</td>}

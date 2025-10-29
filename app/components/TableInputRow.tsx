@@ -8,19 +8,22 @@ import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
 import { TableInfoCells, TableCell } from './TableRow'
 
-export default function TableInputRow({sheetId, schema, row, done, showAdditionalColumns, focusFieldName, onMoveToNext}: {
+export default function TableInputRow({sheetId, schema, row, done, showAdditionalColumns, showHiddenColumns, focusFieldName, onMoveToNext, isSelected, onToggleSelect}: {
   sheetId: string,
   schema: Schema, 
   row?: WithId<Row>,
   done?: () => void,
   showAdditionalColumns: boolean,
+  showHiddenColumns: boolean,
   focusFieldName?: string|null,
-  onMoveToNext?: () => void
+  onMoveToNext?: () => void,
+  isSelected?: boolean,
+  onToggleSelect?: () => void
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
-  const columns = schema.fields.filter(f => !f.hidden);
+  const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
   const [fields, setFields] = useState<Data>(Object.fromEntries(columns.map(f => [f.name, row?.data[f.name] || ''])))
   const [cacheUpdatedOn] = useState(row?.updatedOn) // controllo se la riga mi cambia sotto i piedi
   const firstInputRef = useRef<HTMLInputElement>(null)
@@ -54,9 +57,18 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
   }, [cacheUpdatedOn, row, done, loading])
 
   if (loading) return <tr><td>...</td></tr>
-  if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length}>Errore: {error.message}</td><td></td></tr>
+  if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length + 1}>Errore: {error.message}</td><td></td></tr>
 
   return <tr className={modified ? "modified": ""}>
+    <td className="checkbox-cell">
+      {row && (
+        <input 
+          type="checkbox" 
+          checked={isSelected || false}
+          onChange={onToggleSelect}
+        />
+      )}
+    </td>
     {showAdditionalColumns && <TableInfoCells row={row} />}
     {columns.map((field, index) => {
       const isFirstEditable = field.editable && columns.slice(0, index).every(f => !f.editable)

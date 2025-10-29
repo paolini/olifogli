@@ -9,24 +9,48 @@ import SortIcon from './SortIcon'
 import TableInputRow from './TableInputRow'
 import TableRow from './TableRow'
 
-export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns, setSort, criteria, edit}: {
+export default function TableInner({rows, selectedRows, setSelectedRows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns, showHiddenColumns, setSort, criteria, edit}: {
   rows: Row[],
+  selectedRows: Set<string>,
+  setSelectedRows: (selected: Set<string>) => void,
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
   sheet: Sheet,
   schema: Schema,
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean,
+  showHiddenColumns: boolean,
   setSort: (field: Field|string, direction: number) => void,
   criteria?: Criteria,
   edit?: boolean
 }) {
+  const toggleSelectAll = () => {
+    if (selectedRows.size === rows.length) {
+      setSelectedRows(new Set())
+    } else {
+      setSelectedRows(new Set(rows.map(row => row._id.toString())))
+    }
+  }
+
+  const toggleSelectRow = (rowId: string) => {
+    const newSelected = new Set(selectedRows)
+    if (newSelected.has(rowId)) {
+      newSelected.delete(rowId)
+    } else {
+      newSelected.add(rowId)
+    }
+    setSelectedRows(newSelected)
+  }
+
   return <table className="my-table">
     <TableHeaders 
       schema={schema} 
       showAdditionalColumns={showAdditionalColumns} 
+      showHiddenColumns={showHiddenColumns}
       setSort={setSort}
       criteria={criteria}
+      allSelected={selectedRows.size === rows.length && rows.length > 0}
+      toggleSelectAll={toggleSelectAll}
     />
     <TableBody 
       rows={rows} 
@@ -36,18 +60,24 @@ export default function TableInner({rows, currentRowId, setCurrentRowId, sheet, 
       schema={schema} 
       showStandardAnswers={showStandardAnswers} 
       showAdditionalColumns={showAdditionalColumns} 
+      showHiddenColumns={showHiddenColumns}
       edit={edit}
+      selectedRows={selectedRows}
+      toggleSelectRow={toggleSelectRow}
     />
   </table>
 }
 
-function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
+function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort, criteria, allSelected, toggleSelectAll}: {
   schema: Schema,
   showAdditionalColumns: boolean,
+  showHiddenColumns: boolean,
   setSort: (field: Field|string, direction: number) => void,
-  criteria?: Criteria
+  criteria?: Criteria,
+  allSelected: boolean,
+  toggleSelectAll: () => void
 }) {
-  const columns = schema.fields.filter(f => !f.hidden);
+  const columns = schema.fields.filter(f => showHiddenColumns || !f.hidden);
 
   const additional_columns = [
     {name: 'createdOn', label: 'istante creazione'},
@@ -58,6 +88,7 @@ function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
 
   return <>
       <colgroup>
+        <col className="checkbox-cell" />
         { showAdditionalColumns && 
           additional_columns.map(col => <col key={col.name} className={col.name} />)
         }
@@ -66,6 +97,13 @@ function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
       </colgroup>
       <thead>
         <tr>
+          <th scope="col" className="checkbox-cell">
+            <input 
+              type="checkbox" 
+              checked={allSelected}
+              onChange={toggleSelectAll}
+            />
+          </th>
           { showAdditionalColumns && 
             additional_columns.map(col => (
               <th scope="col" key={col.name} className={col.name}>
@@ -85,7 +123,7 @@ function TableHeaders({schema, showAdditionalColumns, setSort, criteria}: {
     </>
 }
 
-function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns, edit}: {
+function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns, showHiddenColumns, edit, selectedRows, toggleSelectRow}: {
   rows: Row[],
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
@@ -93,13 +131,16 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
   schema: Schema,
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean,
-  edit?: boolean
+  showHiddenColumns: boolean,
+  edit?: boolean,
+  selectedRows: Set<string>,
+  toggleSelectRow: (rowId: string) => void
 }) {
   const [focusFieldName, setFocusFieldName] = useState<string|null>(null)  
 
   // Trova la prima colonna editabile vuota
   function findFirstEmptyEditableField(row: Row): string | null {
-    const editableFields = schema.fields.filter(f => !f.hidden && f.editable)
+    const editableFields = schema.fields.filter(f => (showHiddenColumns || !f.hidden) && f.editable)
     for (const field of editableFields) {
       const value = row.data[field.name]
       if (!value || value === '') {
@@ -133,8 +174,11 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
             row={row} 
             done={() => setCurrentRowId(null)} 
             showAdditionalColumns={showAdditionalColumns} 
+            showHiddenColumns={showHiddenColumns}
             focusFieldName={focusFieldName} 
             onMoveToNext={() => moveToNextRow(index)}
+            isSelected={selectedRows.has(row._id.toString())}
+            onToggleSelect={() => toggleSelectRow(row._id.toString())}
             />
         : <MyRow 
             key={row._id.toString()} 
@@ -142,13 +186,17 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
             row={row} 
             showStandardAnswers={showStandardAnswers} 
             showAdditionalColumns={showAdditionalColumns} 
+            showHiddenColumns={showHiddenColumns}
             onCellClick={fieldName => onCellClick(row, fieldName)}
+            isSelected={selectedRows.has(row._id.toString())}
+            onToggleSelect={() => toggleSelectRow(row._id.toString())}
             />)} 
       {edit && (currentRowId 
-        ? <tr><td colSpan={schema.fields.length}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
+        ? <tr><td colSpan={schema.fields.length + 1}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
           aggiungi riga
           </button></td></tr>
-        : <TableInputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} />)}
+        : <TableInputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} showHiddenColumns={showHiddenColumns} />
+      )}
   </tbody>
 
   function onCellClick(row: WithId<Row>, fieldName: string) {
@@ -157,18 +205,29 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
       setFocusFieldName(fieldName)
     }
   }
-
 }
 
 const MyRow = memo(MyRowInternal)
 
-function MyRowInternal({schema, row, showStandardAnswers, showAdditionalColumns, onCellClick}: {
+function MyRowInternal({schema, row, showStandardAnswers, showAdditionalColumns, showHiddenColumns, onCellClick, isSelected, onToggleSelect}: {
   schema: Schema,
   row: WithId<Row>,
   showStandardAnswers: boolean,
   showAdditionalColumns: boolean,
-  onCellClick: (fieldName: string) => void
+  showHiddenColumns: boolean,
+  onCellClick: (fieldName: string) => void,
+  isSelected: boolean,
+  onToggleSelect: () => void
 }) {
-  return <TableRow schema={schema} row={row} onCellClick={onCellClick} showStandardAnswers={showStandardAnswers} showAdditionalColumns={showAdditionalColumns} />
+  return <TableRow 
+    schema={schema} 
+    row={row} 
+    onCellClick={onCellClick} 
+    showStandardAnswers={showStandardAnswers} 
+    showAdditionalColumns={showAdditionalColumns} 
+    showHiddenColumns={showHiddenColumns}
+    isSelected={isSelected}
+    onToggleSelect={onToggleSelect}
+  />
 }
 

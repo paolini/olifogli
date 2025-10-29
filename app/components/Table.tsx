@@ -9,6 +9,8 @@ import LoadingWrapper from './LoadingWrapper'
 import { schemas } from '../lib/schema'
 import ErrorElement from './Error'
 import { Field } from '../lib/schema/fields'
+import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
+import Button from './Button'
 
 export default function Table({rows, sheet, edit}:{
   rows: Row[],
@@ -18,7 +20,10 @@ export default function Table({rows, sheet, edit}:{
   const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
   const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
   const [ showAdditionalColumns, setShowAdditionalColumns ] = useState<boolean>(false)
+  const [ showHiddenColumns, setShowHiddenColumns ] = useState<boolean>(false)
   const [ viewRows, setViewRows ] = useState<Row[]>(rows)
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
+
   const schema = schemas[sheet.schema]
 
   useEffect(() => {
@@ -46,29 +51,38 @@ export default function Table({rows, sheet, edit}:{
 
   return <div className="table-container">
     <div className="table-header">
-      { ['archimede-biennio','archimede-triennio'].includes(schema.name) && (
-        <>
+      {selectedRows.size > 0 && <div className="selected-rows-indicator">
+        {selectedRows.size} {`${selectedRows.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+        <Button>genera PDF scansioni</Button>
+      </div>}
+        {(schema instanceof ArchimedeCommon) &&
           <label>
             <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
             {' '}Mostra risposte standard
           </label>
-          <label className="ml-4">
-            <input type="checkbox" checked={showAdditionalColumns} onChange={e => setShowAdditionalColumns(e.target.checked)} />
-            {' '}Mostra colonne informative
-          </label>
-        </>
-      )}
+        }
+        <label className="ml-4">
+          <input type="checkbox" checked={showAdditionalColumns} onChange={e => setShowAdditionalColumns(e.target.checked)} />
+          {' '}Mostra colonne informative
+        </label>
+        <label className="ml-4">
+          <input type="checkbox" checked={showHiddenColumns} onChange={e => setShowHiddenColumns(e.target.checked)} />
+          {' '}Mostra colonne nascoste
+        </label>
     </div>
     <div className="table-scroll-container">
       <LoadingWrapper>
         <TableInner 
           rows={viewRows} 
+          selectedRows={selectedRows}
+          setSelectedRows={setSelectedRows}
           currentRowId={currentRowId} 
           setCurrentRowId={setCurrentRowId} 
           sheet={sheet} 
           schema={schema}
           showStandardAnswers={showStandardAnswers}
           showAdditionalColumns={showAdditionalColumns}
+          showHiddenColumns={showHiddenColumns}
           edit={edit}
           setSort={setSort}
         />
@@ -89,5 +103,10 @@ export default function Table({rows, sheet, edit}:{
         return 0;
       }))
     }
+  }
+
+  function generateScanPDFs() {
+    const filename = ``
+    const payload = []
   }
 }
