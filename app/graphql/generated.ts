@@ -47,6 +47,7 @@ export type Mutation = {
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
+  requestScanPdfGeneration?: Maybe<Scalars['Boolean']['output']>;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheets?: Maybe<Scalars['Boolean']['output']>;
@@ -135,6 +136,12 @@ export type MutationPatchRowArgs = {
   _id: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
   updatedOn: Scalars['Timestamp']['input'];
+};
+
+
+export type MutationRequestScanPdfGenerationArgs = {
+  selectedRows: Array<Scalars['ObjectId']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -1990,6 +1997,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
+  requestScanPdfGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanPdfGenerationArgs, 'selectedRows' | 'sheetId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
   updateSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetsArgs, 'sheets'>>;
