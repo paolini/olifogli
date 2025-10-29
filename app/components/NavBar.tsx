@@ -20,8 +20,8 @@ export default function Navbar() {
   const { breadcrumbs } = useBreadcrumbs();
   
   return (
-    <nav className="bg-white shadow-md">
-      <div className="flex justify-between items-center p-4">
+    <nav className="navbar">
+      <div className="flex justify-between items-center p-2">
         <div className="flex items-center gap-2">
           <Link href="/" className="text-xl font-bold hover:text-blue-600">
             olifogli {version}
@@ -30,7 +30,7 @@ export default function Navbar() {
             <span className="text-sm font-normal text-gray-500">({data.appInstance})</span>
           )}
           {breadcrumbs.length > 0 && (
-            <div className="flex items-center text-xl font-bold text-gray-600">
+            <div className="flex items-center text-2xl font-bold text-gray-600">
               {breadcrumbs.map((breadcrumb, index) => (
                 <span key={index} className="flex items-center">
                   <span className="mx-2">〉</span>
