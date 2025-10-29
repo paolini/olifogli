@@ -7,6 +7,7 @@ import { User } from "@/app/lib/models"
 import NavBar from "../components/NavBar"
 import Loading from "../components/Loading"
 import Error from "../components/Error"
+import { BreadcrumbsProvider } from '@/app/components/BreadcrumbsProvider'
 
 const USERS_QUERY = gql`
     query GetUsers {
@@ -20,8 +21,10 @@ const USERS_QUERY = gql`
 
 export default function Page() {
       return <ApolloProviderClient>
-        <NavBar />
-        <Users />
+        <BreadcrumbsProvider>
+          <NavBar />
+          <Users />
+        </BreadcrumbsProvider>
       </ApolloProviderClient>
 }
 
