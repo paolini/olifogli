@@ -1,14 +1,124 @@
+import Loading from '@/app/components/Loading'
+import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
+import ReactMarkdown from 'react-markdown'
 import { gql, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from './Button'
 import Error from './Error'
-import { Sheet, useDeleteSheetMutation, User } from '@/app/graphql/generated'
+import {Row, Sheet, User, useDeleteSheetMutation } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
 import { myTimestamp } from '../lib/util'
 import ArchimedeBiennio from '../lib/schema/ArchimedeBiennio'
 import { schemas } from '../lib/schema'
 import ArchimedeTriennio from '../lib/schema/ArchimedeTriennio'
+
+
+export default function SheetInfo({sheet,data,profile}:{
+    sheet: Sheet
+    data?: {rows: Row[]}
+    profile: User | null
+}) {
+    const rows = data?.rows
+    const n_valid_rows = rows?.filter(r => !r.error).length || 0
+    
+    if (rows === undefined) return <Loading />
+    const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
+
+    return <>
+        <SheetInfoPanel sheet={sheet} profile={profile} />
+        <div>
+              <span><b>{rows.length}</b> {rows.length === 1 ? "riga" : "righe"}</span>
+              {' • '}
+              <span><b>{n_valid_rows}</b> {n_valid_rows === 1 ? "valida" : "valide"}</span>
+              {n_valid_rows < rows.length && <>{' • '}<span>non è possibile chiudere il foglio</span></>}
+              <br />
+        </div>
+        
+        <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
+    </>
+}
+
+function SheetInfoPanel({sheet,profile}:{
+    sheet: Sheet
+    profile: User | null
+}) {
+    const [edit,setEdit] = useState(false)
+    const schema = schemas[sheet.schema]
+
+    if (!edit) {
+        return <>
+            <CustomPanelDisplay sheet={sheet} />
+            <Button onClick={() => setEdit(true)}>modifica</Button>
+        </>
+    } else {
+        return <>
+            <PanelEdit sheet={sheet} profile={profile} />
+            <Button onClick={() => setEdit(false)}>chiudi modifica</Button>
+        </>
+    }
+}
+
+function CustomPanelDisplay({sheet}: {
+    sheet: Sheet
+}) {
+    const schema = schemas[sheet.schema]
+    if (schema instanceof ArchimedeCommon) {
+        return <>
+            <table className="my-2 commondata">
+                <tbody>
+                    <tr><th>Scuola</th>
+                        <td>{sheet.commonData["Nome_scuola"]}</td></tr>
+                    <tr><th>Città</th>
+                        <td>{sheet.commonData["Città_scuola"]}</td></tr>
+                    <tr><th>Distretto</th>
+                        <td>{sheet.commonData["Distretto"]?.replace("Distretto di ","")}</td></tr>
+                </tbody>
+            </table>
+            {sheet.commonData["info"] && 
+                <div className="border border-gray-600 rounded-lg my-4 p-4 max-w-2xl bg-gray-50 shadow-md">
+                    <ReactMarkdown>{sheet.commonData["info"]}</ReactMarkdown>
+                </div>
+            }
+        </>
+    } else {
+        return <>
+            <table className="my-2 commondata">
+                <tbody>
+                    {Object.entries(sheet.commonData || {}).map(([key, value]) => (
+                        <tr key={key}>
+                            <th>{key}</th>
+                            <td>{value as string || ''}</td>
+                        </tr>))
+                    }
+                </tbody>
+            </table>
+        </>
+    }
+}
+
+function PanelEdit({sheet,profile}: {
+    sheet: Sheet
+    profile: User | null
+}) {
+    const router = useRouter()
+    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
+
+    if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
+
+    return <>
+        <table className="my-2 commondata">
+            <tbody>
+                {Object.entries(sheet.commonData || {}).map(([key, value]) => (
+                    <tr key={key}>
+                        <th>{key}</th>
+                        <td>{value as string || ''}</td>
+                    </tr>))
+                }
+            </tbody>
+        </table>
+    </>
+}
 
 const DELETE_SHEET = gql`
     mutation DeleteSheet($_id: ObjectId!) {
@@ -51,7 +161,7 @@ const UNLOCK_SHEET = gql`
   }
 `
 
-export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
+function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     sheet: Sheet
     profile: User | null
     sheetContainsErrors: boolean
@@ -88,84 +198,37 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
 
     return <>
-            <div>
-                <b>Stato del foglio {}
-                {schema instanceof ArchimedeBiennio && "biennio"}
-                {schema instanceof ArchimedeTriennio && "triennio"}
-                : {}
+            <table className="my-2 commondata"><tbody><tr>
+                <th>Stato del foglio {schema.header_essential}</th>
                 { sheet.locked && 
                     <>
-                    <span className="text-red-600 font-semibold">finalizzato</span>.
-                    <Button className="mx-4" disabled={!canModifySensibleData}>apri</Button>
+                    <td><span className="text-red-600 font-semibold">finalizzato</span></td>
+                    <td><Button className="mx-4" disabled={!canModifySensibleData}>apri</Button></td>
+                    {profile?.isAdmin && <td>
+                        <span className="text-sm text-gray-600 ml-2">
+                        bloccato da {sheet.lockedBy || 'sconosciuto'} 
+                        {} il {myTimestamp(sheet.lockedOn)}
+                        </span></td>}
                     </>
                 }
                 { !sheet.locked && sheet.closed &&
                     <>
-                    <span className="text-orange-600 font-semibold">chiuso</span>.
-                    <Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button>
-                    </>
-                    }
-                { !sheet.locked && !sheet.closed &&<>
-                    <span className="text-green-600 font-semibold">aperto</span>.
-                    <Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>chiudi</Button>
-                </>}
-                </b>
-            </div>
-            <div className="my-32"/>
-            <hr/>
-        { canModifySensibleData && 
-            <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
-                if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
-                    doClearSheet()
-                }
-                }}>
-                Svuota questo foglio ({sheet.nRows} righe)
-            </Button>
-        }
-        { canModifySensibleData && 
-            <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
-                if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
-                    doDelete()
-                }
-                }}>
-                Elimina questo foglio
-            </Button>
-        }
-        <div className="my-2">
-            { sheetContainsErrors && <span>Il foglio contiene errori, non può essere chiuso.</span>}
-        </div>
-        <table>
-            <tbody>
-            <tr>
-                <th className="bg-gray-200">stato</th>
-                <td className="p-2">
-                {sheet.locked ? (
-                    <>
-                    <span className="text-red-600 font-semibold">Bloccato</span>
-                    {sheet.lockedOn && (
+                    <td><span className="text-orange-600 font-semibold">chiuso</span></td>
+                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button></td>
+                    {profile?.isAdmin && <td>
                         <span className="text-sm text-gray-600 ml-2">
-                        da {sheet.lockedBy || 'sconosciuto'} 
-                        {} il {myTimestamp(sheet.lockedOn)}
-                        </span>
-                    )}
-                    </>
-                ) : sheet.closed ? (
-                    <>
-                    <span className="text-orange-600 font-semibold">Chiuso</span>
-                    {sheet.closedOn && (
-                        <span className="text-sm text-gray-600 ml-2">
-                        da {sheet.closedBy || 'sconosciuto'} 
+                        chiuso da {sheet.closedBy || 'sconosciuto'} 
                         {} il {myTimestamp(sheet.closedOn)}
-                        </span>
-                    )}
+                        </span></td>}
                     </>
-                ) : (
-                    <span className="text-green-600">Aperto</span>
-                )}
-                </td>
-            </tr>
-            </tbody>
-        </table>
+                }
+                { !sheet.locked && !sheet.closed &&<>
+                    <td><span className="text-green-600 font-semibold">aperto</span></td>
+                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>chiudi</Button></td>
+                </>}
+                </tr></tbody>
+            </table>
+
         <table className="my-2">
         <thead>
             <tr>
@@ -263,6 +326,27 @@ export default function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                 }
             </tbody>
         </table>
+
+        <div>
+        { canModifySensibleData && 
+            <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
+                if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
+                    doClearSheet()
+                }
+                }}>
+                Svuota questo foglio ({sheet.nRows} righe)
+            </Button>
+        }
+        { canModifySensibleData && 
+            <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
+                if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
+                    doDelete()
+                }
+                }}>
+                Elimina questo foglio
+            </Button>
+        }
+        </div>
     </>
 
     function updateCommonDataField(key: string, value: string) {

@@ -15,10 +15,8 @@ import { schemas } from '../lib/schema'
 import { myTimestamp } from '../lib/util'
 import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
-import SheetConfigure from './SheetConfigure'
-import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
-import ReactMarkdown from 'react-markdown'
 import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
+import SheetInfo from './SheetInfo'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -169,30 +167,20 @@ function SheetBody({sheet,profile}: {
             </button>
 
         </div>
+        <div className="flex-1 flex flex-col min-h-0 overflow-auto">
         { tab === 'info' && 
-            <div>
-                <SheetInfo sheet={sheet} data={data} profile={profile} />
-            </div>
-        }
-        { tab === 'table' && 
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <Table sheet={sheet} rows={data.rows} edit={false}/>
-            </div>
+        <div>
+            <SheetInfo sheet={sheet} data={data} profile={profile} />
+        </div>
         }
         { tab === 'edit' && 
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <Table sheet={sheet} rows={data.rows} edit={true}/>
-            </div>
+            <Table sheet={sheet} rows={data.rows} edit={true}/>
         }
         { tab === 'csv' &&   
-            <div>
-                <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
-            </div>
+            <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
         }
         { tab === 'scans' && 
-            <div>
-                <ScansImport sheet={sheet} data_rows={data.rows} />
-            </div>
+            <ScansImport sheet={sheet} data_rows={data.rows} />
         }
         { tab === 'download' && 
             <div>
@@ -201,6 +189,7 @@ function SheetBody({sheet,profile}: {
                 </Button>
             </div>
         }
+        </div>
     </div>
     
     // Aggiorna la query string quando cambia il tab
@@ -222,73 +211,6 @@ function SheetBody({sheet,profile}: {
         )
     }
 }
-
-function SheetInfo({sheet,data,profile}:{
-    sheet: Sheet
-    data?: {rows: Row[]}
-    profile: User | null
-}) {
-    const rows = data?.rows
-    const n_valid_rows = rows?.filter(r => !r.error).length
-    const schema = schemas[sheet.schema]
-    
-    if (rows === undefined) return <Loading />
-    const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
-
-    return <>
-        <SheetInfoPanel sheet={sheet} profile={profile} />
-        <div>
-              <span>{rows.length} {rows.length === 1 ? "riga" : "righe"}</span>
-              {' • '}
-              <span>{n_valid_rows} {n_valid_rows === 1 ? "valida" : "valide"}</span>
-              {/* view_rows.length < rows.length && <>{' • '}<span>({view_rows.length} visualizzate)</span></> */}
-              <br />
-        </div>
-        
-        <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
-    </>
-}
-
-function SheetInfoPanel({sheet,profile}:{
-    sheet: Sheet
-    profile: User | null
-}) {
-    const schema = schemas[sheet.schema]
-
-    if (schema instanceof ArchimedeCommon) {
-        return <>
-            <table className="my-2 commondata">
-                <tbody>
-                    <tr><th>Scuola</th>
-                        <td>{sheet.commonData["Nome_scuola"]}</td></tr>
-                    <tr><th>Città</th>
-                        <td>{sheet.commonData["Città_scuola"]}</td></tr>
-                    <tr><th>Distretto</th>
-                        <td>{sheet.commonData["Distretto"]?.replace("Distretto di ","")}</td></tr>
-                </tbody>
-            </table>
-            {sheet.commonData["info"] && 
-                <div className="border border-gray-600 rounded-lg my-4 p-4 max-w-2xl bg-gray-50 shadow-md">
-                    <ReactMarkdown>{sheet.commonData["info"]}</ReactMarkdown>
-                </div>
-            }
-        </>
-    } else {
-        return <>
-            <table className="my-2 commondata">
-                <tbody>
-                    {Object.entries(sheet.commonData || {}).map(([key, value]) => (
-                        <tr key={key}>
-                            <th>{key}</th>
-                            <td>{value as string || ''}</td>
-                        </tr>))
-                    }
-                </tbody>
-            </table>
-        </>
-    }
-}
-
 
 function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dati.csv") {
     const csv = Papa.unparse({
