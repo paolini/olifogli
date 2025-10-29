@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { useState, memo, Dispatch, SetStateAction } from 'react'
 import { WithId, ObjectId } from 'mongodb'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
@@ -9,10 +9,10 @@ import SortIcon from './SortIcon'
 import TableInputRow from './TableInputRow'
 import TableRow from './TableRow'
 
-export default function TableInner({rows, selectedRows, setSelectedRows, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns, showHiddenColumns, setSort, criteria, edit}: {
+export default function TableInner({rows, selectedIds, setSelectedIds, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns, showHiddenColumns, setSort, criteria, edit}: {
   rows: Row[],
-  selectedRows: Set<string>,
-  setSelectedRows: (selected: Set<string>) => void,
+  selectedIds: Set<string>,
+  setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
   sheet: Sheet,
@@ -25,21 +25,21 @@ export default function TableInner({rows, selectedRows, setSelectedRows, current
   edit?: boolean
 }) {
   const toggleSelectAll = () => {
-    if (selectedRows.size === rows.length) {
-      setSelectedRows(new Set())
+    if (selectedIds.size === rows.length) {
+      setSelectedIds(new Set())
     } else {
-      setSelectedRows(new Set(rows.map(row => row._id.toString())))
+      setSelectedIds(new Set(rows.map(row => row._id.toString())))
     }
   }
 
   const toggleSelectRow = (rowId: string) => {
-    const newSelected = new Set(selectedRows)
+    const newSelected = new Set(selectedIds)
     if (newSelected.has(rowId)) {
       newSelected.delete(rowId)
     } else {
       newSelected.add(rowId)
     }
-    setSelectedRows(newSelected)
+    setSelectedIds(newSelected)
   }
 
   return <table className="my-table">
@@ -49,7 +49,7 @@ export default function TableInner({rows, selectedRows, setSelectedRows, current
       showHiddenColumns={showHiddenColumns}
       setSort={setSort}
       criteria={criteria}
-      allSelected={selectedRows.size === rows.length && rows.length > 0}
+      allSelected={selectedIds.size === rows.length && rows.length > 0}
       toggleSelectAll={toggleSelectAll}
     />
     <TableBody 
@@ -62,7 +62,7 @@ export default function TableInner({rows, selectedRows, setSelectedRows, current
       showAdditionalColumns={showAdditionalColumns} 
       showHiddenColumns={showHiddenColumns}
       edit={edit}
-      selectedRows={selectedRows}
+      selectedIds={selectedIds}
       toggleSelectRow={toggleSelectRow}
     />
   </table>
@@ -123,7 +123,7 @@ function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort
     </>
 }
 
-function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns, showHiddenColumns, edit, selectedRows, toggleSelectRow}: {
+function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns, showHiddenColumns, edit, selectedIds, toggleSelectRow}: {
   rows: Row[],
   currentRowId: ObjectId|null,
   setCurrentRowId: (id: ObjectId|null) => void,
@@ -133,7 +133,7 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
   showAdditionalColumns: boolean,
   showHiddenColumns: boolean,
   edit?: boolean,
-  selectedRows: Set<string>,
+  selectedIds: Set<string>,
   toggleSelectRow: (rowId: string) => void
 }) {
   const [focusFieldName, setFocusFieldName] = useState<string|null>(null)  
@@ -177,7 +177,7 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
             showHiddenColumns={showHiddenColumns}
             focusFieldName={focusFieldName} 
             onMoveToNext={() => moveToNextRow(index)}
-            isSelected={selectedRows.has(row._id.toString())}
+            isSelected={selectedIds.has(row._id.toString())}
             onToggleSelect={() => toggleSelectRow(row._id.toString())}
             />
         : <MyRow 
@@ -188,7 +188,7 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
             showAdditionalColumns={showAdditionalColumns} 
             showHiddenColumns={showHiddenColumns}
             onCellClick={fieldName => onCellClick(row, fieldName)}
-            isSelected={selectedRows.has(row._id.toString())}
+            isSelected={selectedIds.has(row._id.toString())}
             onToggleSelect={() => toggleSelectRow(row._id.toString())}
             />)} 
       {edit && (currentRowId 

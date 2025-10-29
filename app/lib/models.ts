@@ -90,7 +90,6 @@ export type ScanMessage = {
 
 export type ScanJob = {
     _id: ObjectId
-    // jobId: string // old migrated scans
     sheetId: ObjectId
     timestamp: Date
     ownerId: ObjectId
@@ -104,3 +103,10 @@ export type ScanResults = {
     rawData: Data
 }
 
+export type ScanPdfJob = {
+    _id: ObjectId
+    sheetId: ObjectId
+    timestamp: Date
+    filename: string
+    status: 'pending' | 'completed'
+}

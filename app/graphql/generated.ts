@@ -47,7 +47,7 @@ export type Mutation = {
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
-  requestScanPdfGeneration?: Maybe<Scalars['Boolean']['output']>;
+  requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheets?: Maybe<Scalars['Boolean']['output']>;
@@ -139,8 +139,8 @@ export type MutationPatchRowArgs = {
 };
 
 
-export type MutationRequestScanPdfGenerationArgs = {
-  selectedRows: Array<Scalars['ObjectId']['input']>;
+export type MutationRequestScanSheetGenerationArgs = {
+  selectedRowIds: Array<Scalars['ObjectId']['input']>;
   sheetId: Scalars['ObjectId']['input'];
 };
 
@@ -387,6 +387,14 @@ export type ScanResultsQueryVariables = Exact<{
 
 
 export type ScanResultsQuery = { __typename?: 'Query', scanResults: Array<{ __typename?: 'ScanResults', _id: ObjectId, jobId: ObjectId, image: string, rawData: any }> };
+
+export type RequestScanSheetGenerationMutationVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+  selectedRowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+}>;
+
+
+export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
 
 export type AddSheetsMutationVariables = Exact<{
   sheets: Array<SheetInput> | SheetInput;
@@ -778,6 +786,38 @@ export type ScanResultsQueryHookResult = ReturnType<typeof useScanResultsQuery>;
 export type ScanResultsLazyQueryHookResult = ReturnType<typeof useScanResultsLazyQuery>;
 export type ScanResultsSuspenseQueryHookResult = ReturnType<typeof useScanResultsSuspenseQuery>;
 export type ScanResultsQueryResult = Apollo.QueryResult<ScanResultsQuery, ScanResultsQueryVariables>;
+export const RequestScanSheetGenerationDocument = gql`
+    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]!) {
+  requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
+}
+    `;
+export type RequestScanSheetGenerationMutationFn = Apollo.MutationFunction<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
+
+/**
+ * __useRequestScanSheetGenerationMutation__
+ *
+ * To run a mutation, you first call `useRequestScanSheetGenerationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestScanSheetGenerationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestScanSheetGenerationMutation, { data, loading, error }] = useRequestScanSheetGenerationMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *      selectedRowIds: // value for 'selectedRowIds'
+ *   },
+ * });
+ */
+export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.MutationHookOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>(RequestScanSheetGenerationDocument, options);
+      }
+export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
+export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
+export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
 export const AddSheetsDocument = gql`
     mutation AddSheets($sheets: [SheetInput!]!) {
   addSheets(sheets: $sheets)
@@ -1997,7 +2037,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
-  requestScanPdfGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanPdfGenerationArgs, 'selectedRows' | 'sheetId'>>;
+  requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'selectedRowIds' | 'sheetId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
   updateSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetsArgs, 'sheets'>>;

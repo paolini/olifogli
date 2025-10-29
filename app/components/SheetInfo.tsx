@@ -292,7 +292,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
 
     return <>
             <table className="my-2 commondata"><tbody><tr>
-                <th>Stato del foglio {schema.header_essential}</th>
+                <th>Stato del foglio {schema?.header_essential}</th>
                 { sheet.locked && 
                     <>
                     <td><span className="text-red-600 font-semibold">finalizzato</span></td>
