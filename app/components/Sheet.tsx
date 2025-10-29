@@ -75,23 +75,6 @@ export default function SheetElement({sheetId}: {
     const schema = schemas[sheet.schema]
 
     return <div className="sheet-wrapper">
-        <div className="sheet-header">
-            <div className="flex items-center gap-3 mb-2">
-                <h1 className="flex-1">
-                    {`${sheet.workbook.name || '?'} ‒ ${sheet.name} ‒ ${schema.header_essential}`}
-                </h1>
-                {profile.isAdmin &&
-                    <Link href={`/workbook/${sheet.workbook._id}`}>
-                        <Button>← Torna alla raccolta <i>{sheet.workbook.name}</i></Button>
-                    </Link>
-                }
-                {!profile.isAdmin &&
-                    <Link href="/">
-                    <Button>← Torna all&apos;elenco dei fogli</Button>
-                    </Link>
-                }
-            </div>
-        </div>
         <SheetBody sheet={sheet} profile={profile} />
     </div>
 }

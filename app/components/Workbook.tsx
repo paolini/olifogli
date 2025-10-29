@@ -84,10 +84,6 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     }
     
     return <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold flex-1">{workbook?.name}</h1>
-        </div>
-        
         <div className="tab-container">
             <button
                 onClick={() => setActiveTab('fogli')}
