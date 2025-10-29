@@ -10,6 +10,8 @@
   --secondary: #2929ee;
   --tabs-border: rgb(0, 0, 0); /* #d1d5db; */
   --tabs-inactive-border: green;
+  --recent-highlight: #f4ff92;
+  --recent-highlight-darker: #a3b500;
 }
 
 /*
@@ -42,11 +44,6 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-.navbar {
-  /*background: rgb(229, 229, 229);*/
-  /* box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);*/
 }
 
 .page-wrapper {
@@ -184,7 +181,7 @@ tr.recently-added {
 
 @keyframes fadeHighlight {
   0% {
-    background-color: #f4ff92;
+    background-color: var(--recent-highlight);
   }
   100% {
     background-color: transparent;
@@ -219,11 +216,11 @@ td.thick-border-left, th.thick-border-left {
 }
 
 tr.modified {
-  background-color: rgb(190, 235, 202);
+  background-color: var(--recent-highlight);
 }
 
 td.modified {
-  background-color: rgb(34, 125, 59);
+  background-color: var(--recent-highlight-darker);
 }
 
 table {
@@ -375,6 +372,10 @@ col.field-surname {
   width: 15ex;
 }
 
+td.field-id, td.field-id input {
+  text-align: center;
+}
+
 col.field-name {
   width: 15ex;
 }
@@ -387,7 +388,7 @@ col.field-classYear {
   width: 6ex;
 }
 
-td.field-classYear {
+td.field-classYear, td.field-classYear input {
   text-align: center;
 }
 
@@ -395,7 +396,7 @@ col.field-classSection {
   width: 8ex;
 }
 
-td.field-classSection {
+td.field-classSection, td.field-classSection input {
   text-align: center;
 }
 
@@ -407,7 +408,7 @@ col.field-variant {
   width: 8ex;
 }
 
-td.field-variant {
+td.field-variant, td.field-variant input {
   text-align: center;
 }
 
