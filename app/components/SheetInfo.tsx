@@ -45,16 +45,17 @@ function SheetInfoPanel({sheet,profile}:{
 }) {
     const [edit,setEdit] = useState(false)
     const schema = schemas[sheet.schema]
+    const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
 
     if (!edit) {
         return <>
             <CustomPanelDisplay sheet={sheet} />
-            <Button onClick={() => setEdit(true)}>modifica</Button>
+            {canModifySensibleData && <Button className="mb-4" onClick={() => setEdit(true)}>modifica</Button>}
         </>
     } else {
         return <>
             <PanelEdit sheet={sheet} profile={profile} />
-            <Button onClick={() => setEdit(false)}>chiudi modifica</Button>
+            <Button className="mb-4"onClick={() => setEdit(false)}>chiudi modifica</Button>
         </>
     }
 }
@@ -65,7 +66,7 @@ function CustomPanelDisplay({sheet}: {
     const schema = schemas[sheet.schema]
     if (schema instanceof ArchimedeCommon) {
         return <>
-            <table className="my-2 commondata">
+            <table className="commondata">
                 <tbody>
                     <tr><th>Scuola</th>
                         <td>{sheet.commonData["Nome_scuola"]}</td></tr>
@@ -95,29 +96,6 @@ function CustomPanelDisplay({sheet}: {
             </table>
         </>
     }
-}
-
-function PanelEdit({sheet,profile}: {
-    sheet: Sheet
-    profile: User | null
-}) {
-    const router = useRouter()
-    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
-
-    if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
-
-    return <>
-        <table className="my-2 commondata">
-            <tbody>
-                {Object.entries(sheet.commonData || {}).map(([key, value]) => (
-                    <tr key={key}>
-                        <th>{key}</th>
-                        <td>{value as string || ''}</td>
-                    </tr>))
-                }
-            </tbody>
-        </table>
-    </>
 }
 
 const DELETE_SHEET = gql`
@@ -161,25 +139,16 @@ const UNLOCK_SHEET = gql`
   }
 `
 
-function SheetConfigure({sheet, profile, sheetContainsErrors}: {
+function PanelEdit({sheet,profile}: {
     sheet: Sheet
     profile: User | null
-    sheetContainsErrors: boolean
 }) {
-    const router = useRouter()
-    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
-    const [permissions, setPermissions] = useState(sheet.permissions || [])
-    const [newEmail, setNewEmail] = useState('')
-    const [newRole, setNewRole] = useState<'admin' | 'editor'>('editor')
+    const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
     const [newFieldKey, setNewFieldKey] = useState('')
     const [newFieldValue, setNewFieldValue] = useState('')
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
-    const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
-    const [deleteAllRows, {loading: clearingSheet, error: clearError, reset: clearReset}] = useMutation(DELETE_ALL_ROWS)
-    const [closeSheet, {loading: closing, error: closeError, reset: closeReset}] = useMutation(CLOSE_SHEET)
-    const [openSheet, {loading: opening, error: openError, reset: openReset}] = useMutation(OPEN_SHEET)
-    const [lockSheet, {loading: locking, error: lockError, reset: lockReset}] = useMutation(LOCK_SHEET)
-    const [unlockSheet, {loading: unlocking, error: unlockError, reset: unlockReset}] = useMutation(UNLOCK_SHEET)
+    const router = useRouter()
+    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
     const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
@@ -190,85 +159,8 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const schema = schemas[sheet.schema]
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
-    if (updateError) return <Error error={updateError} dismiss={updateReset }/>
-    if (clearError) return <Error error={clearError} dismiss={clearReset }/>
-    if (closeError) return <Error error={closeError} dismiss={closeReset }/>
-    if (openError) return <Error error={openError} dismiss={openReset }/>
-    if (lockError) return <Error error={lockError} dismiss={lockReset }/>
-    if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
 
     return <>
-            <table className="my-2 commondata"><tbody><tr>
-                <th>Stato del foglio {schema.header_essential}</th>
-                { sheet.locked && 
-                    <>
-                    <td><span className="text-red-600 font-semibold">finalizzato</span></td>
-                    <td><Button className="mx-4" disabled={!canModifySensibleData}>apri</Button></td>
-                    {profile?.isAdmin && <td>
-                        <span className="text-sm text-gray-600 ml-2">
-                        bloccato da {sheet.lockedBy || 'sconosciuto'} 
-                        {} il {myTimestamp(sheet.lockedOn)}
-                        </span></td>}
-                    </>
-                }
-                { !sheet.locked && sheet.closed &&
-                    <>
-                    <td><span className="text-orange-600 font-semibold">chiuso</span></td>
-                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button></td>
-                    {profile?.isAdmin && <td>
-                        <span className="text-sm text-gray-600 ml-2">
-                        chiuso da {sheet.closedBy || 'sconosciuto'} 
-                        {} il {myTimestamp(sheet.closedOn)}
-                        </span></td>}
-                    </>
-                }
-                { !sheet.locked && !sheet.closed &&<>
-                    <td><span className="text-green-600 font-semibold">aperto</span></td>
-                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>chiudi</Button></td>
-                </>}
-                </tr></tbody>
-            </table>
-
-        <table className="my-2">
-        <thead>
-            <tr>
-                <th className="bg-gray-200">permessi</th>
-            </tr>
-        </thead>
-        <tbody>
-          {permissions.map((permission, index) => (
-              <tr key={index}>
-              <td>{permission.email || `ID: ${permission.userId}`} ({permission.role})</td>
-                <td><Button variant="danger" disabled={updating} onClick={() => removePermission(index)}>
-                    rimuovi
-                </Button></td>
-            </tr>
-          ))}
-          {permissions.length === 0 && 
-            <tr><td>Nessun permesso configurato</td></tr>
-          }
-          <tr>
-            <td>
-            <input
-              type="email"
-              value={newEmail}
-              placeholder="nuova email"
-              onChange={e => setNewEmail(e.target.value)}
-              />
-              {} <select value={newRole} onChange={e => setNewRole(e.target.value as 'admin' | 'editor')}>
-                <option value="editor">Editor</option>
-                <option value="admin">Admin</option>
-              </select>
-            </td>
-            <td>
-                <Button disabled={updating || !newEmail || !newEmail.includes('@')} onClick={addPermission}>
-                    Aggiungi
-                </Button>
-            </td>
-          </tr>
-        </tbody>
-        </table>
-
         <table className="my-2">
             <thead>
                 <tr>
@@ -326,29 +218,14 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                 }
             </tbody>
         </table>
-
-        <div>
-        { canModifySensibleData && 
-            <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
-                if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
-                    doClearSheet()
-                }
-                }}>
-                Svuota questo foglio ({sheet.nRows} righe)
-            </Button>
-        }
-        { canModifySensibleData && 
-            <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
-                if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
-                    doDelete()
-                }
-                }}>
-                Elimina questo foglio
-            </Button>
-        }
-        </div>
     </>
-
+ 
+    async function persistCommonData(data = commonData) {
+      await updateSheet({ variables: { _id: sheet._id, commonData: data },
+        refetchQueries: ['getSheet']
+      })
+    }
+ 
     function updateCommonDataField(key: string, value: string) {
         const newData = { ...commonData, [key]: value }
         setCommonData(newData)
@@ -372,6 +249,143 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
         setCommonData(newData)
         await persistCommonData(newData)
     }
+}
+
+function SheetConfigure({sheet, profile, sheetContainsErrors}: {
+    sheet: Sheet
+    profile: User | null
+    sheetContainsErrors: boolean
+}) {
+    const router = useRouter()
+    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
+    const [permissions, setPermissions] = useState(sheet.permissions || [])
+    const [newEmail, setNewEmail] = useState('')
+    const [newRole, setNewRole] = useState<'admin' | 'editor' | 'view'>('editor')
+    const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
+    const [deleteAllRows, {loading: clearingSheet, error: clearError, reset: clearReset}] = useMutation(DELETE_ALL_ROWS)
+    const [closeSheet, {loading: closing, error: closeError, reset: closeReset}] = useMutation(CLOSE_SHEET)
+    const [openSheet, {loading: opening, error: openError, reset: openReset}] = useMutation(OPEN_SHEET)
+    const [lockSheet, {loading: locking, error: lockError, reset: lockReset}] = useMutation(LOCK_SHEET)
+    const [unlockSheet, {loading: unlocking, error: unlockError, reset: unlockReset}] = useMutation(UNLOCK_SHEET)
+    // questi utenti possono modificare i commondata del foglio oltre 
+    // che tutto il resto
+    const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
+    // questi utenti possono aprire/chiudere ma non bloccare.
+    // possono anche gestire i permessi di acceso al foglio (altri utenti)
+    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => p.userId === profile._id && p.role === 'admin'))
+
+    const schema = schemas[sheet.schema]
+
+    if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
+    if (updateError) return <Error error={updateError} dismiss={updateReset }/>
+    if (clearError) return <Error error={clearError} dismiss={clearReset }/>
+    if (closeError) return <Error error={closeError} dismiss={closeReset }/>
+    if (openError) return <Error error={openError} dismiss={openReset }/>
+    if (lockError) return <Error error={lockError} dismiss={lockReset }/>
+    if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
+
+    const ROLE_LABELS: Record<string, string> = {
+        'admin': 'resposabile',
+        'editor': 'aiutante',
+        'view': 'supervisore'
+    }
+
+    return <>
+            <table className="my-2 commondata"><tbody><tr>
+                <th>Stato del foglio {schema.header_essential}</th>
+                { sheet.locked && 
+                    <>
+                    <td><span className="text-red-600 font-semibold">finalizzato</span></td>
+                    <td><Button className="mx-4" disabled={!canModifySensibleData}>apri</Button></td>
+                    {profile?.isAdmin && <td>
+                        <span className="text-sm text-gray-600 ml-2">
+                        bloccato da {sheet.lockedBy || 'sconosciuto'} 
+                        {} il {myTimestamp(sheet.lockedOn)}
+                        </span></td>}
+                    </>
+                }
+                { !sheet.locked && sheet.closed &&
+                    <>
+                    <td><span className="text-orange-600 font-semibold">chiuso</span></td>
+                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button></td>
+                    {profile?.isAdmin && <td>
+                        <span className="text-sm text-gray-600 ml-2">
+                        chiuso da {sheet.closedBy || 'sconosciuto'} 
+                        {} il {myTimestamp(sheet.closedOn)}
+                        </span></td>}
+                    </>
+                }
+                { !sheet.locked && !sheet.closed &&<>
+                    <td><span className="text-green-600 font-semibold">aperto</span></td>
+                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>chiudi</Button></td>
+                </>}
+                </tr></tbody>
+            </table>
+
+        <table className="commondata">
+        <thead>
+            <tr>
+                <th>email</th><th>permessi</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+          {permissions.map((permission, index) => (
+              <tr key={index}>
+              <td>{permission.email || `ID: ${permission.userId}`}</td>
+              <td>{ROLE_LABELS[permission.role]}</td>
+                <td>{<Button variant="danger" disabled={updating || (profile?.email===permission.email && !profile?.isAdmin)} onClick={() => removePermission(index)}>
+                    rimuovi
+                </Button>}</td>
+            </tr>
+          ))}
+          {permissions.length === 0 && 
+            <tr><td>Nessun permesso configurato</td></tr>
+          }
+          <tr>
+            <td>
+            <input
+              type="email"
+              value={newEmail}
+              placeholder="nuova email"
+              onChange={e => setNewEmail(e.target.value)}
+              />
+            </td><td>
+              {} <select value={newRole} onChange={e => setNewRole(e.target.value as 'admin' | 'editor' | 'view')}>
+                {Object.entries(ROLE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </td>
+            <td>
+                <Button disabled={updating || !newEmail || !newEmail.includes('@')} onClick={addPermission}>
+                    Aggiungi
+                </Button>
+            </td>
+          </tr>
+        </tbody>
+        </table>
+
+        <div>
+        { canModifySensibleData && 
+            <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
+                if (confirm(`Sei sicuro di voler svuotare questo foglio? Verranno eliminate ${sheet.nRows} righe.`)) {
+                    doClearSheet()
+                }
+                }}>
+                Svuota questo foglio ({sheet.nRows} righe)
+            </Button>
+        }
+        { canModifySensibleData && 
+            <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
+                if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
+                    doDelete()
+                }
+                }}>
+                Elimina questo foglio
+            </Button>
+        }
+        </div>
+    </>
 
     async function persistPermissions(next: typeof permissions) {
       setPermissions(next)
@@ -386,17 +400,10 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
       })
     }
 
-    async function persistCommonData(data = commonData) {
-      await updateSheet({ variables: { _id: sheet._id, commonData: data },
-        refetchQueries: ['getSheet']
-      })
-    }
-
     async function addPermission() {
       const email = newEmail.trim()
       if (!email) return
-      if (permissions.some(p => p.email === email)) { setNewEmail(''); return }
-      await persistPermissions([...permissions, { email, role: newRole }])
+      await persistPermissions([...permissions.filter(p => p.email !== email), { email, role: newRole }])
       setNewEmail('')
       setNewRole('editor')
     }
