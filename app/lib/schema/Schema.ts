@@ -11,6 +11,7 @@ export default class Schema {
     fields: Field[]
     name: string // da usare nel codice
     header: string // da usare nella UI
+    header_essential: string // senza il nome della gara
     scan_fields: Field[] // nome dei campi presi dalla scansione
     fields_to_be_copied_on_new_row: string[] = [] // nomi dei campi da copiare quando si crea una nuova riga
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
@@ -18,6 +19,7 @@ export default class Schema {
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields
         this.header = header
+        this.header_essential = header
         this.name = name
         this.scan_fields = []
     }
@@ -62,9 +64,5 @@ export default class Schema {
 
     row_to_sheet_data(row: Row): Partial<Sheet> {
         throw new Error(`row_to_sheet_data not implemented for schema "${this.name}"`)
-    }
-
-    sheet_title(sheet_name: string, workbook_name: string): string {
-        return `${workbook_name} ‒ ${sheet_name} ‒ ${this.header}`
     }
 }
