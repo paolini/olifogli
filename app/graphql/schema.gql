@@ -130,11 +130,12 @@ type Query {
   sheets(workbookId: ObjectId): [Sheet!]!
   sheet(sheetId: ObjectId!): Sheet
   rows(sheetId: ObjectId!): [Row!]!
-  scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
-  scanResults(jobId: ObjectId!): [ScanResults!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
   workbookReports(workbookId: ObjectId!): [WorkbookReport!]!
+  scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
+  scanResults(jobId: ObjectId!): [ScanResults!]!
+  scanSheetJobs(sheetId: ObjectId!): [ScanJob!]!
 }
 
 type Mutation {

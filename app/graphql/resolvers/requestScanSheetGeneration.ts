@@ -51,7 +51,7 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   
     
   const scanPdfJobsCollection = await getScanPdfJobsCollection()
-  const insertResult = await scanPdfJobsCollection.insertOne({
+  await scanPdfJobsCollection.insertOne({
       sheetId: sheet._id,
       timestamp: new Date(),
       filename: filename,
