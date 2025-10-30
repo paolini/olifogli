@@ -50,7 +50,7 @@ class Job:
         self.job_id = job_id
         self.template_name = template_name
         self.input_path = input_path
-        self.filename = None
+        self.filename = ""
         try:
             self.process()
         except Exception as e:
@@ -60,7 +60,6 @@ class Job:
 
     # Funzione per aggiornare lo stato nel database
     def update_status(self, status, message=""):
-        print(f"schema: {self.template_name}, filename: {self.filename}, status: {status}, message: {message}", flush=True)
         if not MONGO_URI:
             return
         if not self.job_id:
@@ -175,6 +174,7 @@ class Job:
             filename_no_ext = os.path.splitext(os.path.basename(filepath))[0]
             dest_file_path = os.path.join(data_directory, filename_no_ext + '.pdf')
             self.call_latexmk(filepath, template_dir, dest_file_path)
+            self.filename = dest_file_path
             return self.completed()
         except Exception as e:
             print(f"Error processing {filepath}: {str(e)}", flush=True, file=sys.stderr)
