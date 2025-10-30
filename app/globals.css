@@ -10,8 +10,12 @@
   --secondary: #2929ee;
   --tabs-border: rgb(0, 0, 0); /* #d1d5db; */
   --tabs-inactive-border: green;
-  --recent-highlight: #f4ff92;
-  --recent-highlight-darker: #a3b500;
+  --recent-highlight: #fbe6a3;
+  --recent-highlight-darker: #fbe6a3;
+  --correct-color: #bbd6ab;;
+  --incorrect-color: #de9d9b;;
+  --empty-color: transparent;
+  --invalid-color:  #e6b8af;
 }
 
 /*
@@ -174,7 +178,7 @@ td.alert {
 }
 
 tr.recently-added {
-  animation: fadeHighlight 60s ease-out;
+  animation: fadeHighlight 20s ease-out;
   animation-delay: var(--fade-delay, 0s);
   animation-fill-mode: both;
 }
@@ -299,13 +303,14 @@ table.my-table {
 }
 
 .my-table th {
-  background-color: rgb(174, 233, 241);
+  background-color: #d3e1f1;
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: none;
+  border-bottom: 4px solid gray;
   background-clip: padding-box;
   text-align: center;
+  padding: 8px;
 }
 
 .my-table thead {
@@ -335,7 +340,7 @@ table.my-table {
   width: 30px;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 2px;
+  padding: 4px;
 }
 
 td.workbook-data-value {
@@ -343,19 +348,19 @@ td.workbook-data-value {
 }
 
 td.correct {
-  background-color: #bbd6ab;
+  background-color: var(--correct-color);
 }
 
 td.incorrect {
-  background-color: #de9d9b; /* c'era un errore (ultimi due caratteri scambiati) */
+  background-color: var(--incorrect-color);
 }
 
 td.empty {
-  background-color: #ffffff;
+  background-color: var(--empty-color)
 }
 
 td.invalid {
-  background-color: #e6b8af; /* #fbe6a3; */
+  background-color: var(--invalid-color)
 }
 
 /** Field-specific styles **/
@@ -369,7 +374,7 @@ col.field-zona {
 }
 
 col.field-surname {
-  width: 15ex;
+  min-width: 20ex;
 }
 
 td.field-id, td.field-id input {
@@ -377,15 +382,19 @@ td.field-id, td.field-id input {
 }
 
 col.field-name {
-  width: 15ex;
+  min-width: 20ex;
 }
 
 col.field-birthDate {
-  width: 10.5ex;
+  min-width: 14ex;
+}
+
+td.field-birthDate, td.field-birthDate input {
+  text-align: center;
 }
 
 col.field-classYear {
-  width: 6ex;
+  min-width: 11ex;
 }
 
 td.field-classYear, td.field-classYear input {
@@ -393,7 +402,7 @@ td.field-classYear, td.field-classYear input {
 }
 
 col.field-classSection {
-  width: 8ex;
+  min-width: 12ex;
 }
 
 td.field-classSection, td.field-classSection input {
@@ -405,42 +414,30 @@ col.field-school {
 }
 
 col.field-variant {
-  width: 8ex;
+  min-width: 12ex;
 }
 
 td.field-variant, td.field-variant input {
   text-align: center;
-}
-
-col.field-classYear {
-  font-size: 80%;
-}
-
-col.field-ChoiceAnswer {
-  width: 2ex;
+  min-width: 8ex;
 }
 
 th.field-ChoiceAnswer, td.field-ChoiceAnswer {
   text-align: center;
+  min-width: 5ex;
 }
 
 col.field-NumberAnswer {
-  width: 4ex;
+  min-width: 5ex;
 }
 
 col.field-score {
-  font-size: 70%;
-  width: 6ex;
-}
-
-col.field-score {
-  width: 4ex;
+  min-width: 8ex;
 }
 
 td.field-score {
   font-weight: bold;
   text-align: center;
-  padding-right: 4pt;
 }
 
 col.actions-cell {
