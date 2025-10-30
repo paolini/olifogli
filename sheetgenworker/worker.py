@@ -25,9 +25,9 @@ PROCESSING_DIR = os.getenv("PROCESSING_DIR", os.path.join(SPOOL_DIR, "processing
 ABORTED_DIR = os.getenv("ABORTED_DIR", os.path.join(SPOOL_DIR, "aborted"))
 COMPLETED_DIR = os.getenv("COMPLETED_DIR", os.path.join(SPOOL_DIR, "completed"))
 TMP_DIR = os.getenv("TMP_DIR", os.path.join(SPOOL_DIR, "tmp"))
-MONGO_URI = os.getenv("MONGO_URI", "") # esempio: "mongodb://mongo:27017/", disable DB if blank.
+MONGO_URI = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "")) # esempio: "mongodb://mongo:27017/", disable DB if blank.
 DB_NAME = os.getenv("DB_NAME", "olifogli")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "sheetgen_jobs")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "scan_sheet_jobs")
 RESULTS_COLLECTION_NAME = os.getenv("RESULTS_COLLECTION_NAME", "sheetgen_results")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 10))  # Controlla nuovi file ogni N secondi
 KEEP_TMP_FOLDERS = os.getenv("KEEP_TMP_FOLDERS", "") # if the variable is nonempty, keep tmp folders after generation (useful for debugging)
@@ -50,6 +50,7 @@ class Job:
         self.job_id = job_id
         self.template_name = template_name
         self.input_path = input_path
+        self.filename = None
         try:
             self.process()
         except Exception as e:
@@ -59,7 +60,7 @@ class Job:
 
     # Funzione per aggiornare lo stato nel database
     def update_status(self, status, message=""):
-        print(f"schema: {self.template_name}, job_id: {self.job_id}, status: {status}, message: {message}", flush=True)
+        print(f"schema: {self.template_name}, filename: {self.filename}, status: {status}, message: {message}", flush=True)
         if not MONGO_URI:
             return
         if not self.job_id:
@@ -69,13 +70,11 @@ class Job:
         collection = db[COLLECTION_NAME]
         now = datetime.datetime.now(datetime.timezone.utc)
         collection.update_one(
-            {"_id": ObjectId(self.job_id)},
-            {"$push": {
-                "messages": {
-                    "timestamp": now,
-                    "status": status,
-                    "message": message
-                }
+            {"filename": self.filename},
+            {"$set": {
+                "status": status,
+                "message": message,
+                "timestamp": now
             }},
         )
         client.close()
@@ -154,7 +153,7 @@ class Job:
         filepath = self.input_path
         print(f"Processing {filepath}...", flush=True)
         # Aggiorna lo stato del file come "In elaborazione"
-        self.update_status("starting","Acquisizione iniziata")
+        self.update_status("processing","Acquisizione iniziata")
         
 
         if self.template_name is None:
@@ -185,6 +184,13 @@ class Job:
 # Worker principale
 def worker():
     print(f"Sheet generator Worker started, monitoring spool directory {SPOOL_DIR}", flush=True)
+    print(f"Using templates directory: {TEMPLATES_DIR}", flush=True)
+    print(f"Using data directory: {DATA_DIR}", flush=True)
+    print(f"Using processing directory: {PROCESSING_DIR}", flush=True)
+    print(f"Using aborted directory: {ABORTED_DIR}", flush=True)
+    print(f"Using completed directory: {COMPLETED_DIR}", flush=True)
+    print(f"Using tmp directory: {TMP_DIR}", flush=True)
+    print(f"MongoDB: {MONGO_URI if MONGO_URI else 'disabled'}", flush=True)
 
     if MONGO_URI:
         # Verifica la connessione al database MongoDB
@@ -200,6 +206,7 @@ def worker():
     while True:
         for filename in os.listdir(SPOOL_DIR):
             if filename.endswith(".jsonl"):
+                filename_no_ext = os.path.splitext(os.path.basename(filename))[0]
                 spool_filepath = os.path.join(SPOOL_DIR, filename)
                 work_filepath = os.path.join(PROCESSING_DIR, filename) 
                 try:
@@ -207,7 +214,6 @@ def worker():
                 except Exception as e:
                     print(f"Failed to move {spool_filepath} to {work_filepath}: {e}", flush=True, file=sys.stderr)
                     continue
-                filename_no_ext = os.path.splitext(os.path.basename(filename))[0]
                 [schema, job_id] = filename_no_ext.split('-')
                 try:
                     Job(schema, job_id, work_filepath)

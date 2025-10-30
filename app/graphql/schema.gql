@@ -97,6 +97,16 @@ type ScanResults {
   rawData: Data!
 }
 
+type ScanSheetJob {
+  _id: ObjectId!
+  sheetId: ObjectId!
+  timestamp: Timestamp!
+  filename: String
+  status: String!
+  message: String!
+  createdBy: String!
+}
+
 type ReportEntry {
   sheetId: ObjectId!
   sheetName: String!
@@ -135,7 +145,7 @@ type Query {
   workbookReports(workbookId: ObjectId!): [WorkbookReport!]!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
-  scanSheetJobs(sheetId: ObjectId!): [ScanJob!]!
+  scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!
 }
 
 type Mutation {

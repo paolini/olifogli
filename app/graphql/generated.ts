@@ -198,7 +198,7 @@ export type Query = {
   rows: Array<Row>;
   scanJobs: Array<ScanJob>;
   scanResults: Array<ScanResults>;
-  scanSheetJobs: Array<ScanJob>;
+  scanSheetJobs: Array<ScanSheetJob>;
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
   users?: Maybe<Array<Maybe<User>>>;
@@ -293,6 +293,17 @@ export type ScanResults = {
   image: Scalars['String']['output'];
   jobId: Scalars['ObjectId']['output'];
   rawData: Scalars['Data']['output'];
+};
+
+export type ScanSheetJob = {
+  __typename?: 'ScanSheetJob';
+  _id: Scalars['ObjectId']['output'];
+  createdBy: Scalars['String']['output'];
+  filename?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+  sheetId: Scalars['ObjectId']['output'];
+  status: Scalars['String']['output'];
+  timestamp: Scalars['Timestamp']['output'];
 };
 
 export type ScoreDistribution = {
@@ -407,7 +418,7 @@ export type ScanSheetJobsQueryVariables = Exact<{
 }>;
 
 
-export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, sheetId: ObjectId, ownerId: ObjectId, timestamp: Date, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
+export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string }> };
 
 export type AddSheetsMutationVariables = Exact<{
   sheets: Array<SheetInput> | SheetInput;
@@ -836,13 +847,10 @@ export const ScanSheetJobsDocument = gql`
   scanSheetJobs(sheetId: $sheetId) {
     _id
     sheetId
-    ownerId
+    createdBy
     timestamp
-    messages {
-      status
-      message
-      timestamp
-    }
+    status
+    message
   }
 }
     `;
@@ -2029,6 +2037,7 @@ export type ResolversTypes = {
   ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
+  ScanSheetJob: ResolverTypeWrapper<Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScoreDistribution: ResolverTypeWrapper<ScoreDistribution>;
   Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
@@ -2058,6 +2067,7 @@ export type ResolversParentTypes = {
   ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
+  ScanSheetJob: Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScoreDistribution: ScoreDistribution;
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
@@ -2126,7 +2136,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   rows?: Resolver<Array<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
   scanJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
   scanResults?: Resolver<Array<ResolversTypes['ScanResults']>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
-  scanSheetJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanSheetJobsArgs, 'sheetId'>>;
+  scanSheetJobs?: Resolver<Array<ResolversTypes['ScanSheetJob']>, ParentType, ContextType, RequireFields<QueryScanSheetJobsArgs, 'sheetId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
@@ -2179,6 +2189,17 @@ export type ScanResultsResolvers<ContextType = any, ParentType extends Resolvers
   image?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   jobId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   rawData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ScanSheetJobResolvers<ContextType = any, ParentType extends ResolversParentTypes['ScanSheetJob'] = ResolversParentTypes['ScanSheetJob']> = {
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  createdBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  filename?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2249,6 +2270,7 @@ export type Resolvers<ContextType = any> = {
   ScanJob?: ScanJobResolvers<ContextType>;
   ScanMessage?: ScanMessageResolvers<ContextType>;
   ScanResults?: ScanResultsResolvers<ContextType>;
+  ScanSheetJob?: ScanSheetJobResolvers<ContextType>;
   ScoreDistribution?: ScoreDistributionResolvers<ContextType>;
   Sheet?: SheetResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
