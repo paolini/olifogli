@@ -1,6 +1,6 @@
 import { MongoClient, WithoutId } from 'mongodb'
 
-import { Account, User, Sheet, Row, Workbook, ScanJob, ScanResults, ScanPdfJob } from './models'
+import { Account, User, Sheet, Row, Workbook, ScanJob, ScanResults, ScanSheetJob } from './models'
 
 const uri: string = process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli'
 const options: object = {};
@@ -103,7 +103,7 @@ export async function getScanResultsCollection() {
     return db.collection<WithoutId<ScanResults>>('scan_results')
 }
 
-export async function getScanPdfJobsCollection() {
+export async function getScanSheetJobsCollection() {
     const db = await getDb()
-    return db.collection<WithoutId<ScanPdfJob>>('scan_pdf_jobs')
+    return db.collection<WithoutId<ScanSheetJob>>('scan_sheet_jobs')
 }

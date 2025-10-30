@@ -16,7 +16,7 @@ import useProfile from '../lib/useProfile'
 import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 import { useBreadcrumbs } from './BreadcrumbsProvider'
 import SheetInfo from './SheetInfo'
-import ScansPdfExport from './ScansPdfExport'
+import ScansSheetExport from './ScansSheetExport'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -166,7 +166,7 @@ function SheetBody({sheet,profile}: {
             )
         }
         { tab === 'scans' && <>
-            <ScansPdfExport sheet={sheet} selectedIds={selectedIds} />
+            <ScansSheetExport sheet={sheet} selectedIds={selectedIds} />
             <ScansImport sheet={sheet} data_rows={data.rows} />
           </>
         }

@@ -103,7 +103,7 @@ export type ScanResults = {
     rawData: Data
 }
 
-export type ScanPdfJob = {
+export type ScanSheetJob = {
     _id: ObjectId
     sheetId: ObjectId
     timestamp: Date

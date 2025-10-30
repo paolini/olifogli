@@ -1,4 +1,4 @@
-import { getRowsCollection, getScanPdfJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getRowsCollection, getScanSheetJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { get_authenticated_user, check_user_is_sheet_admin, check_user_can_update_sheet } from './utils'
 import { ObjectId } from 'mongodb'
@@ -48,10 +48,10 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   
   const filePath = path.join(SPOOL_DIR, filename)
   fs.writeFileSync(filePath, payload);
-  
-    
-  const scanPdfJobsCollection = await getScanPdfJobsCollection()
-  await scanPdfJobsCollection.insertOne({
+
+
+  const scanSheetJobsCollection = await getScanSheetJobsCollection()
+  await scanSheetJobsCollection.insertOne({
       sheetId: sheet._id,
       timestamp: new Date(),
       filename: filename,
