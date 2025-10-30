@@ -19,16 +19,5 @@ export default async function scanSheetJobs(_: unknown, { sheetId }: QueryScanSh
     .sort({ timestamp: -1 })
     .toArray()
   
-  // Map to ScanJob format expected by the schema
-  return jobs.map(job => ({
-    _id: job._id,
-    sheetId: job.sheetId,
-    ownerId: sheet.ownerId, // Use sheet's owner as the job owner
-    timestamp: job.timestamp,
-    messages: [{
-      status: job.status,
-      message: job.filename,
-      timestamp: job.timestamp
-    }]
-  }))
+  return jobs
 }

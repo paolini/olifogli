@@ -39,23 +39,23 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
     fs.mkdirSync(SPOOL_DIR, { recursive: true });
   }
   
-  const timestamp = (() => {
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  })();
-  const filename = `${schema.name}-${sheet._id.toString()}@${timestamp}.jsonl`
-  
-  const filePath = path.join(SPOOL_DIR, filename)
-  fs.writeFileSync(filePath, payload);
-
+  const now = new Date();
 
   const scanSheetJobsCollection = await getScanSheetJobsCollection()
-  await scanSheetJobsCollection.insertOne({
+  const result = await scanSheetJobsCollection.insertOne({
       sheetId: sheet._id,
-      timestamp: new Date(),
-      filename: filename,
-      status: 'pending'
+      timestamp: now,
+      status: 'pending',
+      message: 'submitting job',
+      createdBy: user.email
   })
+  const job_id = result.insertedId
+
+  const filename = `${schema.name}-${job_id.toString()}.jsonl`
+  const filePath = path.join(SPOOL_DIR, filename)
+
+  console.log(`Writing scan sheet generation job to spool: ${filePath}`)
+  fs.writeFileSync(filePath, payload);
+
   return true
 }

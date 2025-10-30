@@ -4,7 +4,7 @@
 #   copia nella cartella worker:
 #      templates/archimede2/
 #
-#   export VERSION=0.2.0
+#   export VERSION=0.2.1
 # build:
 #   docker build -t paolini/sheetgen:latest .
 #   docker tag paolini/sheetgen:latest paolini/sheetgen:${VERSION}

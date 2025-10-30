@@ -107,6 +107,8 @@ export type ScanSheetJob = {
     _id: ObjectId
     sheetId: ObjectId
     timestamp: Date
-    filename: string
-    status: 'pending' | 'completed'
+    filename?: string
+    status: 'pending' | 'completed' | 'error' | 'processing'
+    message: string
+    createdBy: string
 }
