@@ -168,7 +168,7 @@ function SheetBody({sheet,profile}: {
         { tab === 'scans' && <>
             <ScansPdfExport sheet={sheet} selectedIds={selectedIds} />
             <ScansImport sheet={sheet} data_rows={data.rows} />
-        </>
+          </>
         }
         { tab === 'download' && 
             <div>

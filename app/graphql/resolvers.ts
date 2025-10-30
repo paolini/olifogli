@@ -13,6 +13,7 @@ import sheets from './resolvers/sheets'
 import sheet from './resolvers/sheet'
 import rows from './resolvers/rows'
 import scanJobs from './resolvers/scanJobs'
+import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
 import workbookReports from './resolvers/workbookReports'
 
@@ -57,6 +58,7 @@ export const resolvers: Resolvers = {
     sheet,
     rows,
     scanJobs,
+    scanSheetJobs,
     scanResults,
     workbookReports,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,

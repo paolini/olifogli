@@ -198,6 +198,7 @@ export type Query = {
   rows: Array<Row>;
   scanJobs: Array<ScanJob>;
   scanResults: Array<ScanResults>;
+  scanSheetJobs: Array<ScanJob>;
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
   users?: Maybe<Array<Maybe<User>>>;
@@ -220,6 +221,11 @@ export type QueryScanJobsArgs = {
 
 export type QueryScanResultsArgs = {
   jobId: Scalars['ObjectId']['input'];
+};
+
+
+export type QueryScanSheetJobsArgs = {
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -395,6 +401,13 @@ export type RequestScanSheetGenerationMutationVariables = Exact<{
 
 
 export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
+
+export type ScanSheetJobsQueryVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, sheetId: ObjectId, ownerId: ObjectId, timestamp: Date, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
 
 export type AddSheetsMutationVariables = Exact<{
   sheets: Array<SheetInput> | SheetInput;
@@ -818,6 +831,54 @@ export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.Mutat
 export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
+export const ScanSheetJobsDocument = gql`
+    query scanSheetJobs($sheetId: ObjectId!) {
+  scanSheetJobs(sheetId: $sheetId) {
+    _id
+    sheetId
+    ownerId
+    timestamp
+    messages {
+      status
+      message
+      timestamp
+    }
+  }
+}
+    `;
+
+/**
+ * __useScanSheetJobsQuery__
+ *
+ * To run a query within a React component, call `useScanSheetJobsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScanSheetJobsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScanSheetJobsQuery({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useScanSheetJobsQuery(baseOptions: Apollo.QueryHookOptions<ScanSheetJobsQuery, ScanSheetJobsQueryVariables> & ({ variables: ScanSheetJobsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>(ScanSheetJobsDocument, options);
+      }
+export function useScanSheetJobsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>(ScanSheetJobsDocument, options);
+        }
+export function useScanSheetJobsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>(ScanSheetJobsDocument, options);
+        }
+export type ScanSheetJobsQueryHookResult = ReturnType<typeof useScanSheetJobsQuery>;
+export type ScanSheetJobsLazyQueryHookResult = ReturnType<typeof useScanSheetJobsLazyQuery>;
+export type ScanSheetJobsSuspenseQueryHookResult = ReturnType<typeof useScanSheetJobsSuspenseQuery>;
+export type ScanSheetJobsQueryResult = Apollo.QueryResult<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>;
 export const AddSheetsDocument = gql`
     mutation AddSheets($sheets: [SheetInput!]!) {
   addSheets(sheets: $sheets)
@@ -2065,6 +2126,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   rows?: Resolver<Array<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
   scanJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
   scanResults?: Resolver<Array<ResolversTypes['ScanResults']>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
+  scanSheetJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanSheetJobsArgs, 'sheetId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
