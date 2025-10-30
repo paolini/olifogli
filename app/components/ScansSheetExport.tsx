@@ -96,7 +96,7 @@ export default function ScansPdfExport({sheet, selectedIds}:{
                 Avvia creazione fogli risposte
             </Button>
                 {selectedIds.size > 0 
-                    ? <span>Hai selezionato {selectedIds.size} righe per l'esportazione.</span>
+                    ? <span>Hai selezionato {selectedIds.size} righe per l&apos;esportazione.</span>
                     : <span>Verranno esportate tutte le righe del foglio.</span>
                 }
         </div>
