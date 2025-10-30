@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { MutationRequestScanSheetGenerationArgs } from '../generated'
 import { schemas } from '@/app/lib/schema'
 import path from 'path'
+import fs from 'fs'
 
 export default async function requestScanSheetGeneration(_: unknown, args: MutationRequestScanSheetGenerationArgs, context: Context): Promise<boolean> {
   const user = await get_authenticated_user(context)
@@ -34,7 +35,6 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 
   // create directory if not exists
-  const fs = require('fs');
   if (!fs.existsSync(SPOOL_DIR)) {
     fs.mkdirSync(SPOOL_DIR, { recursive: true });
   }

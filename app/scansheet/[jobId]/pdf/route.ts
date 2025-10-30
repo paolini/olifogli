@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb'
 import { check_user_can_view_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { getScanSheetJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { get_context } from '@/app/graphql/types'
+import fs from 'fs'
 
 const SHEETGENDATA_DIR = process.env.SHEETGENDATA_DIR || '';
 
@@ -44,7 +45,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     const jobDir = join(SHEETGENDATA_DIR, jobId);
     
     try {
-        const fs = require('fs');
         const files = fs.readdirSync(jobDir);
         const pdfFile = files.find((f: string) => f.endsWith('.pdf'));
         
