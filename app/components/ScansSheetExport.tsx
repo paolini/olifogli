@@ -5,6 +5,7 @@ import Error from "./Error"
 import { ObjectId } from "bson"
 import Loading from "./Loading"
 import { myTimestamp } from "../lib/util";
+import { useEffect, useRef, useState } from "react";
 
 const _ = gql`
     mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
@@ -37,6 +38,16 @@ export default function ScansPdfExport({sheet, selectedIds}:{
         variables: { sheetId: new ObjectId(sheet._id) },
         pollInterval: 5000, // Poll every 5 seconds to update job status
     })
+
+    // Keep the button disabled for 10 seconds after clicking
+    const [cooldown, setCooldown] = useState(false)
+    const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    useEffect(() => {
+        return () => {
+            if (cooldownTimer.current) clearTimeout(cooldownTimer.current)
+        }
+    }, [])
 
     return <div>
         <h2>PDF fogli generati</h2>
@@ -92,7 +103,7 @@ export default function ScansPdfExport({sheet, selectedIds}:{
         )}
         <div>
             <Error error={error} />
-            <Button className="mr-4 my-4" onClick={submit} disabled={loading}>
+            <Button className="mr-4 my-4" onClick={submit} disabled={loading || cooldown}>
                 Avvia creazione fogli risposte
             </Button>
                 {selectedIds.size > 0 
@@ -103,6 +114,11 @@ export default function ScansPdfExport({sheet, selectedIds}:{
     </div>
 
     function submit() {
+        // Start 10s cooldown on click
+        if (cooldownTimer.current) clearTimeout(cooldownTimer.current)
+        setCooldown(true)
+        cooldownTimer.current = setTimeout(() => setCooldown(false), 10_000)
+
         const selectedRowIds = Array.from(selectedIds).map(id => new ObjectId(id))
         requestScanSheetGeneration({
             variables: {
