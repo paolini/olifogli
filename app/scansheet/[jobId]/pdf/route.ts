@@ -8,7 +8,7 @@ import { getScanSheetJobsCollection, getSheetsCollection } from '@/app/lib/mongo
 import { get_context } from '@/app/graphql/types'
 import fs from 'fs'
 
-const SHEETGENDATA_DIR = process.env.SHEETGENDATA_DIR || '';
+const SHEETGENDATA_DIR = process.env.SHEETGENDATA_DIR || '/app/sheetgendata';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
     const { jobId } = await params
