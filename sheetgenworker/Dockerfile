@@ -2,7 +2,8 @@
 #   Devi ottenere i templates dal progetto archiomr
 #   https://github.com/fph/archiomr.git
 #   copia nella cartella worker:
-#      templates/archimede2/
+#      templates/archimede_biennio/
+#      templates/archimede_triennio/
 #
 #   export VERSION=0.2.1
 # build:

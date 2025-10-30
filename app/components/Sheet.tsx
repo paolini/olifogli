@@ -167,6 +167,7 @@ function SheetBody({sheet,profile}: {
         }
         { tab === 'scans' && <>
             <ScansSheetExport sheet={sheet} selectedIds={selectedIds} />
+            <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
           </>
         }
