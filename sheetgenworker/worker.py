@@ -68,13 +68,17 @@ class Job:
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
         now = datetime.datetime.now(datetime.timezone.utc)
+        update_data = {
+            "status": status,
+            "message": message,
+            "timestamp": now
+        }
+        # Aggiungi filename solo se è stato impostato
+        if self.filename:
+            update_data["filename"] = self.filename
         collection.update_one(
-            {"filename": self.filename},
-            {"$set": {
-                "status": status,
-                "message": message,
-                "timestamp": now
-            }},
+            {"_id": ObjectId(self.job_id)},
+            {"$set": update_data},
         )
         client.close()
 
