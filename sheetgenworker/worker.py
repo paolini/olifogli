@@ -99,11 +99,12 @@ class Job:
         if 'id' in record:
             id = record['id']
             if not(isinstance(id, str)):
-                raise TypeError(f'non-string id in line {{lineno}}')
-            if len(id) != 3:
-                raise ValueError(f'id without length 3 in line {{lineno}}')
+                raise TypeError(f'non-string id')
+            if len(id) > 3:
+                raise ValueError(f'id too long')
             if 'id1' in record or 'id2' in record or 'id3' in record:
-                raise ValueError(f'line {{lineno}} contains both "id" and separate id characters')
+                raise ValueError(f'jsonl line contains both "id" and separate id characters')
+            id = id.zfill(3)
             id1 = id[0]
             id2 = id[1]
             id3 = id[2]
@@ -112,7 +113,7 @@ class Job:
             id2 = record.get('id2', '')
             id3 = record.get('id3', '')
         if (id1 and not(id1.isdigit())) or (id2 and not(id2.isdigit())) or (id3 and not(id3.isdigit())):
-            raise ValueError(f'non-digit id in line {{lineno}}')
+            raise ValueError(f'non-digit id')
 
         return id1, id2, id3
 
@@ -132,12 +133,15 @@ class Job:
             with open(mainfile, "w", encoding="utf-8") as f:
                 f.write('\\input{header.tex}\\begin{document}\n')
                 for lineno, record in enumerate(records, start=1):
-                    name = record.get('name', '')                    
-                    surname = record.get('surname', '')
-                    if invalid_latex_chars.search(name) or invalid_latex_chars.search(surname):
-                        raise ValueError(f'invalid Latex chars in name/surname in line {{lineno}}')
-                    id1, id2, id3 = self.validate_id(record)
-                    f.write(f'\\fogliorisp{{{name}}}{{{surname}}}{{{id1}}}{{{id2}}}{{{id3}}}\n')
+                    try:
+                        name = record.get('name', '')                    
+                        surname = record.get('surname', '')
+                        if invalid_latex_chars.search(name) or invalid_latex_chars.search(surname):
+                            raise ValueError(f'invalid Latex chars in name/surname in line {{lineno}}')
+                        id1, id2, id3 = self.validate_id(record)
+                        f.write(f'\\fogliorisp{{{name}}}{{{surname}}}{{{id1}}}{{{id2}}}{{{id3}}}\n')
+                    except Exception as e:
+                        raise type(e)(f'Error parsing line {lineno}: {e}') from e
                 f.write('\\end{document}\n')
             cmd = ['latexmk', '-pdf', '-interaction=nonstopmode', '-quiet', 'main']
             env = os.environ.copy()
@@ -147,6 +151,8 @@ class Job:
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(f"latexmk failed on file {filepath} in {tmp_dir} with exit code {e.returncode}") from e
             shutil.copy(os.path.join(tmp_dir, 'main.pdf'), dest_file_path)
+        except Exception:
+            raise
         finally:
             if not(KEEP_TMP_FOLDERS):
                 shutil.rmtree(tmp_dir)
@@ -158,7 +164,6 @@ class Job:
         # Aggiorna lo stato del file come "In elaborazione"
         self.update_status("processing","Acquisizione iniziata")
         
-
         if self.template_name is None:
             print(f"Template name is not set, and no default template is provided.", flush=True, file=sys.stderr)
             self.update_status("error", "Template name is not set")
