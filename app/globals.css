@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  --nav-background: rgb(230, 230, 230);
   --background: #ffffff;
   --foreground: #171717;
   --alert: #cfd90a;
@@ -54,7 +55,6 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh; /* Fissa l'altezza alla viewport height */
-  padding: 0px;
 }
 
 .page-content {
@@ -63,8 +63,6 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: auto; /* Abilita lo scroll se il contenuto supera l'altezza */
-  padding-left: 4px;
-  padding-right: 4px;
 }
 
 .sheet-wrapper {
@@ -84,6 +82,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: auto;
+  background-color: var(--background);
 }
 
 .sheet-body-controls {
@@ -123,17 +122,18 @@ h2 {
   gap: 0;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--tabs-border);
+  background-color: var(--nav-background);
 }
 
 .tab-button {
   padding: 0.5rem 1rem;
   font-weight: 500;
   transition-property: color, background-color, border-color;
-  transition-duration: 150ms;
+  transition-duration: 200ms;
   border-bottom: 1px solid #d1d5db;
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  margin-right: 2px;
+  border-top-left-radius: 0.8rem;
+  border-top-right-radius: 0.8rem;
+  margin-left: 5px;
 }
 
 .tab-button-active {
@@ -234,6 +234,11 @@ table {
 table, th {
   border: 1px solid gray;
   box-sizing: border-box;
+  margin-left: 10pt;
+}
+
+label {
+  margin-left: 10pt;
 }
 
 th {
