@@ -5,7 +5,7 @@ import Error from "./Error"
 import { ObjectId } from "bson"
 
 const _ = gql`
-    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]!) {
+    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
         requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
     }
 `;
@@ -37,7 +37,7 @@ export default function ScansPdfExport({sheet, selectedIds}:{
         requestScanSheetGeneration({
             variables: {
                 sheetId: new ObjectId(sheet._id),
-                selectedRowIds,
+                selectedRowIds: selectedRowIds.length>0 ? selectedRowIds : undefined,
             }
         })
     }

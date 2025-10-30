@@ -140,7 +140,7 @@ export type MutationPatchRowArgs = {
 
 
 export type MutationRequestScanSheetGenerationArgs = {
-  selectedRowIds: Array<Scalars['ObjectId']['input']>;
+  selectedRowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetId: Scalars['ObjectId']['input'];
 };
 
@@ -390,7 +390,7 @@ export type ScanResultsQuery = { __typename?: 'Query', scanResults: Array<{ __ty
 
 export type RequestScanSheetGenerationMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
-  selectedRowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  selectedRowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
 }>;
 
 
@@ -787,7 +787,7 @@ export type ScanResultsLazyQueryHookResult = ReturnType<typeof useScanResultsLaz
 export type ScanResultsSuspenseQueryHookResult = ReturnType<typeof useScanResultsSuspenseQuery>;
 export type ScanResultsQueryResult = Apollo.QueryResult<ScanResultsQuery, ScanResultsQueryVariables>;
 export const RequestScanSheetGenerationDocument = gql`
-    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]!) {
+    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
   requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
 }
     `;
@@ -2037,7 +2037,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
-  requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'selectedRowIds' | 'sheetId'>>;
+  requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
   updateSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetsArgs, 'sheets'>>;
