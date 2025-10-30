@@ -1,7 +1,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     console.log('='.repeat(80))
-    console.log('🚀 Next.js Server Starting - Environment Variables')
+    console.log('🚀 Next.js Server Starting')
     console.log('='.repeat(80))
     console.log(
         "\n" +
@@ -27,7 +27,7 @@ export async function register() {
     
     // Variabili MongoDB
     console.log('\n🗄️  MongoDB:')
-    console.log(`  MONGODB_URI: ${maskSecret(process.env.MONGODB_URI)}`)
+    console.log(`  MONGODB_URI: ${process.env.MONGODB_URI}`)
     console.log(`  MONGODB_DB: ${process.env.MONGODB_DB || 'Not set'}`)
     
     // Variabili NextAuth
@@ -38,14 +38,15 @@ export async function register() {
     // Variabili Olimanager
     console.log('\n🔗 Olimanager:')
     console.log(`  OLIMANAGER_URL: ${process.env.OLIMANAGER_URL || 'Not set'}`)
-    console.log(`  OLIMANAGER_GRAPHQL: ${process.env.OLIMANAGER_GRAPHQL || 'Not set'}`)
-    console.log(`  OLIMANAGER_PUBLIC_KEY: ${maskSecret(process.env.OLIMANAGER_PUBLIC_KEY)}`)
-    
+    console.log(`  OLIMANAGER_OAUTH_CLIENT_ID: ${process.env.OLIMANAGER_OAUTH_CLIENT_ID || 'Not set'}`)
+    console.log(`  OLIMANAGER_OAUTH_CLIENT_SECRET: ${maskSecret(process.env.OLIMANAGER_OAUTH_CLIENT_SECRET)}`)
+
     // Variabili directory e storage
     console.log('\n📁 Mounted Directories:')
     console.log(`  SCANS_SPOOL_DIR: ${process.env.SCANS_SPOOL_DIR || 'Not set'}`)
     console.log(`  SCANS_DATA_DIR: ${process.env.SCANS_DATA_DIR || 'Not set'}`)
     console.log(`  SHEETGENDATA_DIR: ${process.env.SHEETGENDATA_DIR || '/app/sheetgendata (default)'}`)
+    console.log(`  SHEETGENSPOOL_DIR: ${process.env.SHEETGENSPOOL_DIR || '/app/sheetgenspool (default)'}`)
     console.log(`  LOG_DIR: ${process.env.LOG_DIR || 'Not set'}`)
     
     // Altre variabili
