@@ -7,10 +7,14 @@ services:
       - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app1
       - LOG_DIR=/app/logs
+      - SHEETGENDATA_DIR=/app/sheetgendata
+      - SHEETGENSPOOL_DIR=/app/sheetgenspool
     volumes:
       - ./logs:/app/logs
       - ./spool:/app/spool
       - ./data:/app/data
+      - ./sheetgendata:/app/sheetgendata
+      - ./sheetgenspool:/app/sheetgenspool
     networks:
       - backend
 
@@ -22,10 +26,14 @@ services:
       - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app2
       - LOG_DIR=/app/logs
+      - SHEETGENDATA_DIR=/app/sheetgendata
+      - SHEETGENSPOOL_DIR=/app/sheetgenspool
     volumes:
       - ./logs:/app/logs
       - ./spool:/app/spool
       - ./data:/app/data
+      - ./sheetgendata:/app/sheetgendata
+      - ./sheetgenspool:/app/sheetgenspool
     networks:
       - backend
 
@@ -37,10 +45,14 @@ services:
       - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app3
       - LOG_DIR=/app/logs
+      - SHEETGENDATA_DIR=/app/sheetgendata
+      - SHEETGENSPOOL_DIR=/app/sheetgenspool
     volumes:
       - ./logs:/app/logs
       - ./spool:/app/spool
       - ./data:/app/data
+      - ./sheetgendata:/app/sheetgendata
+      - ./sheetgenspool:/app/sheetgenspool
     networks:
       - backend
 

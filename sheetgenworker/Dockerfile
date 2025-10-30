@@ -5,7 +5,7 @@
 #      templates/archimede_biennio/
 #      templates/archimede_triennio/
 #
-#   export VERSION=0.2.1
+#   export VERSION=0.2.2
 # build:
 #   docker build -t paolini/sheetgen:latest .
 #   docker tag paolini/sheetgen:latest paolini/sheetgen:${VERSION}
