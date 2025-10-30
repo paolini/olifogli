@@ -44,15 +44,6 @@ export async function getDb() {
 export default clientPromise;
 
 async function main(client: MongoClient) {
-    console.log(
-        "\n" +
-        "      _ _  __           _    \n" +
-        "  ___| (_)/ _|___  __ _| (_) \n" +
-        " / _ \\ | |  _/ _ \\/ _` | | | \n" +
-        " \\___/_|_|_| \\___/\\__, |_|_| \n" +
-        "                  |___/      \n" +
-        "\n");
-    console.log(Date())
     const admin_emails = (process.env.ADMIN_EMAILS || "").split(",").map(u => u.trim()).filter(u => u.length > 0)
     const db = client.db()
     const users = db.collection("users")
