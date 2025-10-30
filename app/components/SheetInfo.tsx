@@ -68,6 +68,8 @@ function CustomPanelDisplay({sheet}: {
         return <>
             <table className="commondata">
                 <tbody>
+                    <tr><th>Codice</th>
+                        <td>{sheet.commonData["Codice_meccanografico"]}</td></tr>
                     <tr><th>Scuola</th>
                         <td>{sheet.commonData["Nome_scuola"]}</td></tr>
                     <tr><th>Città</th>
@@ -285,7 +287,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
 
     const ROLE_LABELS: Record<string, string> = {
-        'admin': 'resposabile',
+        'admin': 'responsabile',
         'editor': 'aiutante',
         'view': 'supervisore'
     }
