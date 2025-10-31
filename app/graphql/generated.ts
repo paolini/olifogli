@@ -40,6 +40,7 @@ export type Mutation = {
   closeSheet?: Maybe<Scalars['Boolean']['output']>;
   deleteAllRows?: Maybe<Scalars['Int']['output']>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
+  deleteRows?: Maybe<Scalars['Int']['output']>;
   deleteScan?: Maybe<Scalars['Boolean']['output']>;
   deleteSheet?: Maybe<Scalars['Boolean']['output']>;
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
@@ -99,6 +100,11 @@ export type MutationDeleteAllRowsArgs = {
 
 export type MutationDeleteRowArgs = {
   _id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationDeleteRowsArgs = {
+  ids: Array<Scalars['ObjectId']['input']>;
 };
 
 
@@ -2101,6 +2107,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   closeSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCloseSheetArgs, '_id'>>;
   deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
+  deleteRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteRowsArgs, 'ids'>>;
   deleteScan?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanArgs, 'jobId'>>;
   deleteSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;

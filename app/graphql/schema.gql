@@ -158,6 +158,7 @@ type Mutation {
   addRow(sheetId: ObjectId!, data: Data!): Row
   patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row
   deleteRow(_id: ObjectId!): ObjectId
+  deleteRows(ids: [ObjectId!]!): Int
   deleteAllRows(sheetId: ObjectId!): Int
   addRows(sheetId: ObjectId!, columns: [String!]!, rows: [[String!]!]!): Int
   validateRows(sheetId: ObjectId!): Int

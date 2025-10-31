@@ -11,6 +11,8 @@ import { Field } from '../lib/schema/fields'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import Button from './Button'
 import { RowInputState } from './RowInputStateActions'
+import { useDeleteRows } from './TableInputRow'
+import { ObjectId } from 'bson'
 
 
 export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: {
@@ -32,6 +34,8 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: 
   const [showAdditionalColumns, setShowAdditionalColumns] = useState<boolean>(false)
   const [showHiddenColumns, setShowHiddenColumns] = useState<boolean>(false)
   const [viewRows, setViewRows] = useState<Row[]>(rows)
+  
+  const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
 
   const schema = schemas[sheet.schema]
 
@@ -58,24 +62,32 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: 
 
   return <div className="table-container">
     <div className="table-header">
-      {selectedIds.size > 0 && <div className="selected-rows-indicator">
-        {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
-        <Button onClick={()=>alert("non ancora implementato")}>elimina righe selezionate</Button>
-      </div>}
-        {(schema instanceof ArchimedeCommon) &&
-          <label>
-            <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
-            {' '}Mostra risposte standard
-          </label>
-        }
-        <label className="ml-4">
-          <input type="checkbox" checked={showAdditionalColumns} onChange={e => setShowAdditionalColumns(e.target.checked)} />
-          {' '}Mostra colonne informative
+      {(schema instanceof ArchimedeCommon) &&
+        <label>
+          <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
+          {' '}Mostra risposte standard
         </label>
-        <label className="ml-4">
-          <input type="checkbox" checked={showHiddenColumns} onChange={e => setShowHiddenColumns(e.target.checked)} />
-          {' '}Mostra colonne nascoste
-        </label>
+      }
+      <label className="ml-4">
+        <input type="checkbox" checked={showAdditionalColumns} onChange={e => setShowAdditionalColumns(e.target.checked)} />
+        {' '}Mostra colonne informative
+      </label>
+      <label className="ml-4">
+        <input type="checkbox" checked={showHiddenColumns} onChange={e => setShowHiddenColumns(e.target.checked)} />
+        {' '}Mostra colonne nascoste
+      </label>
+      {selectedIds.size > 0 && <>
+        <span className="ml-4">
+          {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+        </span>
+        <Button 
+          className="ml-2"
+          onClick={handleDeleteSelectedRows}
+          disabled={deleteLoading}
+        >
+          {deleteLoading ? 'Eliminazione...' : 'elimina righe selezionate'}
+        </Button>
+      </>}
     </div>
     <div className="table-scroll-container">
       <LoadingWrapper>
@@ -96,6 +108,24 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: 
       </LoadingWrapper>
     </div>
   </div>
+
+  async function handleDeleteSelectedRows() {
+    if (selectedIds.size === 0) return
+    
+    const confirmed = confirm(
+      `Sei sicuro di voler eliminare ${selectedIds.size} ${selectedIds.size === 1 ? 'riga' : 'righe'}?`
+    )
+    
+    if (!confirmed) return
+    
+    try {
+      const ids = Array.from(selectedIds).map(id => new ObjectId(id))
+      await deleteRows({ variables: { ids } })
+      setSelectedIds(new Set()) // Deseleziona tutte le righe dopo l'eliminazione
+    } catch (error) {
+      alert(`Errore durante l'eliminazione: ${error}`)
+    }
+  }
 
   function setSort(field: Field|string, direction: number) {
     if (field instanceof Field) {
