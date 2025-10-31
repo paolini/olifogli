@@ -1,10 +1,10 @@
-import { useState, memo, Dispatch, SetStateAction } from 'react'
+import { memo, Dispatch, SetStateAction } from 'react'
 import { WithId } from 'mongodb'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
 
 import { Row, Sheet } from '@/app/graphql/generated'
-import { RowInputState, startEditRow, startNewRow, stopEditRow, updateNewData } from './RowInputStateActions'
+import { RowInputState, startEditRow, startNewRow, stopEditRow, updateNewData, hasUnsavedChanges, handleRowChange } from './RowInputStateActions'
 import { Criteria } from './Ordering'
 import SortIcon from './SortIcon'
 import TableInputRow from './TableInputRow'
@@ -163,8 +163,6 @@ function TableBody({
   selectedIds: Set<string>,
   toggleSelectRow: (rowId: string) => void
 }) {
-  const [focusFieldName, setFocusFieldName] = useState<string|null>(null)  
-
   // Trova la prima colonna editabile vuota
   function findFirstEmptyEditableField(row: Row): string | null {
     const editableFields = schema.fields.filter(f => (showHiddenColumns || !f.hidden) && f.editable)
@@ -182,12 +180,10 @@ function TableBody({
   function moveToNextRow(currentIndex: number) {
     if (currentIndex < rows.length - 1) {
       const nextRow = rows[currentIndex + 1]
-      startEditRow(setRowInputState, nextRow)
       const firstEmptyField = findFirstEmptyEditableField(nextRow)
-      setFocusFieldName(firstEmptyField)
+      handleRowChange(rowInputState, setRowInputState, nextRow, firstEmptyField)
     } else {
-      stopEditRow(setRowInputState)
-      setFocusFieldName(null)
+      handleRowChange(rowInputState, setRowInputState, null)
     }
   }
 
@@ -202,7 +198,6 @@ function TableBody({
           setRowInputState={setRowInputState}
           showAdditionalColumns={showAdditionalColumns}
           showHiddenColumns={showHiddenColumns}
-          focusFieldName={focusFieldName}
           onMoveToNext={() => moveToNextRow(index)}
           isSelected={selectedIds.has(row._id.toString())}
           onToggleSelect={() => toggleSelectRow(row._id.toString())}
@@ -216,8 +211,7 @@ function TableBody({
           showHiddenColumns={showHiddenColumns}
           onCellClick={fieldName => {
             if (edit) {
-              startEditRow(setRowInputState, row)
-              setFocusFieldName(fieldName)
+              handleRowChange(rowInputState, setRowInputState, row, fieldName)
             }
           }}
           isSelected={selectedIds.has(row._id.toString())}
@@ -236,15 +230,21 @@ function TableBody({
     {edit && !(rowInputState.rowIsBeingEdited && rowInputState.rowId === null) && (
       <tr key="add-row">
         <td colSpan={schema.fields.length + 2}>
-          <button className="bg-alert" onClick={() => startNewRow(setRowInputState)}>
+          <button className="bg-alert" onClick={() => {
+            if (hasUnsavedChanges(rowInputState)) {
+              const confirmed = confirm(
+                'Ci sono modifiche non salvate. Vuoi abbandonare le modifiche e creare una nuova riga?'
+              )
+              if (!confirmed) return
+            }
+            startNewRow(setRowInputState)
+          }}>
             aggiungi riga
           </button>
         </td>
       </tr>
     )}
   </tbody>
-
-  // onCellClick logic is now handled inline in MyRow above, using startEditRow and setFocusFieldName
 }
 
 const MyRow = memo(MyRowInternal)
