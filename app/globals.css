@@ -55,6 +55,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh; /* Fissa l'altezza alla viewport height */
+  background-color: var(--nav-background);
 }
 
 .page-content {
