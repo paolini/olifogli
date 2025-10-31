@@ -24,7 +24,9 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: 
     rowIsBeingEdited: false,
     rowId: null,
     oldData: null,
-    newData: null
+    newData: null,
+    focusFieldName: null,
+    updatedOn: null
   })
   const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
   const [showAdditionalColumns, setShowAdditionalColumns] = useState<boolean>(false)

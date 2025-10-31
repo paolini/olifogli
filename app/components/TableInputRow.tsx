@@ -7,7 +7,7 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
 import { TableInfoCells, TableCell } from './TableRow'
-import { RowInputState, stopEditRow, updateNewData } from './RowInputStateActions'
+import { RowInputState, stopEditRow, updateNewData, saveAndContinue, saveAndClose } from './RowInputStateActions'
 
 export default function TableInputRow({
   sheetId,
@@ -17,7 +17,6 @@ export default function TableInputRow({
   setRowInputState,
   showAdditionalColumns,
   showHiddenColumns,
-  focusFieldName,
   onMoveToNext,
   isSelected,
   onToggleSelect
@@ -29,7 +28,6 @@ export default function TableInputRow({
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   showAdditionalColumns: boolean,
   showHiddenColumns: boolean,
-  focusFieldName?: string|null,
   onMoveToNext?: () => void,
   isSelected?: boolean,
   onToggleSelect?: () => void
@@ -38,7 +36,6 @@ export default function TableInputRow({
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
   const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow()
   const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
-  const [cacheUpdatedOn] = useState(row?.updatedOn)
   const firstInputRef = useRef<HTMLInputElement>(null)
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -55,19 +52,23 @@ export default function TableInputRow({
 
   // Mette il focus sul campo cliccato quando si modifica una riga esistente
   useEffect(() => {
-    if (row && focusFieldName && fieldRefs.current[focusFieldName]) {
-      fieldRefs.current[focusFieldName]?.focus()
+    if (row && rowInputState.focusFieldName && fieldRefs.current[rowInputState.focusFieldName]) {
+      fieldRefs.current[rowInputState.focusFieldName]?.focus()
     }
-  }, [row, focusFieldName])
+  }, [row, rowInputState.focusFieldName])
 
   // Controlla se la riga è stata modificata da un altro utente
   useEffect(() => {
-    if (cacheUpdatedOn && row && row.updatedOn !== cacheUpdatedOn) {
-      if (loading) return // evita di mostrare l'alert se stiamo salvando noi stessi
-      alert("la riga che stai modificando è stata aggiornata da un altro utente. Per non creare conflitti devo annullare le tue modifiche.")
-      stopEditRow(setRowInputState)
+    if (rowInputState.updatedOn && row && row.updatedOn) {
+      const rowTime = new Date(row.updatedOn).getTime()
+      const stateTime = rowInputState.updatedOn.getTime()
+      if (rowTime !== stateTime) {
+        if (loading) return // evita di mostrare l'alert se stiamo salvando noi stessi
+        alert("la riga che stai modificando è stata aggiornata da un altro utente. Per non creare conflitti devo annullare le tue modifiche.")
+        stopEditRow(setRowInputState)
+      }
     }
-  }, [cacheUpdatedOn, row, setRowInputState, loading])
+  }, [rowInputState.updatedOn, row, setRowInputState, loading])
 
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length + 1}>Errore: {error.message}</td><td></td></tr>
@@ -131,16 +132,18 @@ export default function TableInputRow({
   async function save(continue_editing?: boolean) {
     if (row?._id) {
       // patch - modifica di una riga esistente
-      await patchRow({variables: {
+      const result = await patchRow({variables: {
         _id: row._id,
         data: rowInputState.newData,
         updatedOn: row.updatedOn || new Date(),
       }})
+      const updatedOnValue = result.data?.patchRow?.updatedOn
+      const newUpdatedOn = updatedOnValue ? new Date(updatedOnValue as string) : null
       // Se c'è una riga successiva, passa ad essa, altrimenti chiudi
       if (continue_editing && onMoveToNext) {
-        onMoveToNext()
+        saveAndContinue(setRowInputState, onMoveToNext, newUpdatedOn)
       } else {
-        stopEditRow(setRowInputState)
+        saveAndClose(setRowInputState)
       }
     } else {
       // insert - aggiunta di una nuova riga
