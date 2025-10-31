@@ -78,6 +78,11 @@ export function TableCell({field, value, showStandardAnswers, onClick}:{
       title = value === correct_value ? value : `${value} (invece di ${correct_value})`;
     }
   }
+  if (showStandardAnswers &&field.name === 'variant') {
+    if (value.length === 3) {
+      value = `›${value.charAt(0)}11‹` 
+    }
+  }
 
   const style = typeof field.css_style === 'function' 
     ? field.css_style(value) 
