@@ -1,3 +1,37 @@
+/**
+ * Row Input State Actions - Gestione dello stato dell'editor di righe
+ * 
+ * Questo modulo gestisce la logica di editing delle righe in una tabella, permettendo di:
+ * - Modificare righe esistenti o crearne di nuove
+ * - Navigare tra le righe con controllo delle modifiche non salvate
+ * - Salvare modifiche e continuare l'editing su altre righe
+ * 
+ * STATO DELL'EDITOR (RowInputState):
+ * - rowIsBeingEdited: indica se è attiva la modalità di modifica
+ * - rowId: ID della riga in modifica (null = nuova riga in creazione)
+ * - oldData: dati originali della riga (per rilevare modifiche)
+ * - newData: dati attuali in modifica
+ * - focusFieldName: campo su cui mettere il focus quando si entra in modifica
+ * - updatedOn: timestamp dell'ultimo aggiornamento (per rilevare conflitti con altri utenti)
+ * 
+ * FLUSSO DI LAVORO:
+ * 1. Click su una cella → startEditRow() / startNewRow()
+ * 2. L'utente modifica i campi → updateNewData()
+ * 3. Salvataggio:
+ *    - ENTER → save con continue (passa alla riga successiva)
+ *    - Pulsante "salva" → save senza continue (esce dalla modalità)
+ * 4. Navigazione:
+ *    - Frecce sinistra/destra → cambio campo (stessa riga)
+ *    - Frecce su/giù → cambio riga (con conferma se ci sono modifiche)
+ *    - ESC → cancelEditRow() (annulla modifiche ed esce)
+ * 5. Cambio riga → handleRowChange() (conferma se ci sono modifiche non salvate)
+ * 
+ * PROTEZIONE DATI:
+ * - hasUnsavedChanges() controlla se ci sono modifiche pendenti
+ * - Mostra conferma prima di abbandonare modifiche non salvate
+ * - updatedOn rileva se la riga è stata modificata da un altro utente
+ */
+
 import { Dispatch, SetStateAction } from 'react'
 import { ObjectId } from 'mongodb'
 import { Data } from '@/app/lib/models'
