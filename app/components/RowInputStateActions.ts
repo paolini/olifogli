@@ -74,7 +74,8 @@ export function syncAfterSave(
 
 export function saveAndContinue(
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
-  onMoveToNext: () => void,
+  nextRow: Row | null,
+  focusFieldName?: string | null,
   newUpdatedOn?: Date | null
 ) {
   // Prima sincronizziamo i dati e aggiorniamo updatedOn
@@ -83,9 +84,14 @@ export function saveAndContinue(
     oldData: state.newData,
     updatedOn: newUpdatedOn || state.updatedOn
   }))
-  // Poi passiamo alla riga successiva
-  // Usiamo setTimeout per assicurarci che lo stato sia aggiornato
-  setTimeout(() => onMoveToNext(), 0)
+  
+  // Poi passiamo direttamente alla riga successiva senza controllare modifiche
+  // (perché le abbiamo appena salvate!)
+  if (nextRow) {
+    startEditRow(setRowInputState, nextRow, focusFieldName)
+  } else {
+    stopEditRow(setRowInputState)
+  }
 }
 
 export function saveAndClose(

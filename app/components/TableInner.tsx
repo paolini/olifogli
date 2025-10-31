@@ -176,47 +176,42 @@ function TableBody({
     return editableFields.length > 0 ? editableFields[0].name : null
   }
 
-  // Gestisce il passaggio alla riga successiva
-  function moveToNextRow(currentIndex: number) {
-    if (currentIndex < rows.length - 1) {
-      const nextRow = rows[currentIndex + 1]
-      const firstEmptyField = findFirstEmptyEditableField(nextRow)
-      handleRowChange(rowInputState, setRowInputState, nextRow, firstEmptyField)
-    } else {
-      handleRowChange(rowInputState, setRowInputState, null)
-    }
-  }
-
   return <tbody>
-    {rows.map((row, index) => (edit && rowInputState.rowIsBeingEdited && row._id === rowInputState.rowId)
-      ? <TableInputRow
-          key={row._id.toString()}
-          sheetId={sheet._id.toString()}
-          schema={schema}
-          row={row}
-          rowInputState={rowInputState}
-          setRowInputState={setRowInputState}
-          showAdditionalColumns={showAdditionalColumns}
-          showHiddenColumns={showHiddenColumns}
-          onMoveToNext={() => moveToNextRow(index)}
-          isSelected={selectedIds.has(row._id.toString())}
-          onToggleSelect={() => toggleSelectRow(row._id.toString())}
-        />
-      : <MyRow
-          key={row._id.toString()}
-          schema={schema}
-          row={row}
-          showStandardAnswers={showStandardAnswers}
-          showAdditionalColumns={showAdditionalColumns}
-          showHiddenColumns={showHiddenColumns}
-          onCellClick={fieldName => {
-            if (edit) {
-              handleRowChange(rowInputState, setRowInputState, row, fieldName)
-            }
-          }}
-          isSelected={selectedIds.has(row._id.toString())}
-          onToggleSelect={() => toggleSelectRow(row._id.toString())}
-        />)}
+    {rows.map((row, index) => {
+      const nextRow = index < rows.length - 1 ? rows[index + 1] : null
+      const nextFieldName = nextRow ? findFirstEmptyEditableField(nextRow) : null
+      
+      return (edit && rowInputState.rowIsBeingEdited && row._id === rowInputState.rowId)
+        ? <TableInputRow
+            key={row._id.toString()}
+            sheetId={sheet._id.toString()}
+            schema={schema}
+            row={row}
+            rowInputState={rowInputState}
+            setRowInputState={setRowInputState}
+            showAdditionalColumns={showAdditionalColumns}
+            showHiddenColumns={showHiddenColumns}
+            nextRow={nextRow}
+            nextFieldName={nextFieldName}
+            isSelected={selectedIds.has(row._id.toString())}
+            onToggleSelect={() => toggleSelectRow(row._id.toString())}
+          />
+        : <MyRow
+            key={row._id.toString()}
+            schema={schema}
+            row={row}
+            showStandardAnswers={showStandardAnswers}
+            showAdditionalColumns={showAdditionalColumns}
+            showHiddenColumns={showHiddenColumns}
+            onCellClick={fieldName => {
+              if (edit) {
+                handleRowChange(rowInputState, setRowInputState, row, fieldName)
+              }
+            }}
+            isSelected={selectedIds.has(row._id.toString())}
+            onToggleSelect={() => toggleSelectRow(row._id.toString())}
+          />
+    })}
     {edit && rowInputState.rowIsBeingEdited && rowInputState.rowId === null && (
       <TableInputRow 
         key="new-row"

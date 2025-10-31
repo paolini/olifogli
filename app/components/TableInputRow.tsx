@@ -17,7 +17,8 @@ export default function TableInputRow({
   setRowInputState,
   showAdditionalColumns,
   showHiddenColumns,
-  onMoveToNext,
+  nextRow,
+  nextFieldName,
   isSelected,
   onToggleSelect
 }: {
@@ -28,7 +29,8 @@ export default function TableInputRow({
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   showAdditionalColumns: boolean,
   showHiddenColumns: boolean,
-  onMoveToNext?: () => void,
+  nextRow?: Row | null,
+  nextFieldName?: string | null,
   isSelected?: boolean,
   onToggleSelect?: () => void
 }) {
@@ -140,8 +142,8 @@ export default function TableInputRow({
       const updatedOnValue = result.data?.patchRow?.updatedOn
       const newUpdatedOn = updatedOnValue ? new Date(updatedOnValue as string) : null
       // Se c'è una riga successiva, passa ad essa, altrimenti chiudi
-      if (continue_editing && onMoveToNext) {
-        saveAndContinue(setRowInputState, onMoveToNext, newUpdatedOn)
+      if (continue_editing && nextRow !== undefined) {
+        saveAndContinue(setRowInputState, nextRow, nextFieldName, newUpdatedOn)
       } else {
         saveAndClose(setRowInputState)
       }
