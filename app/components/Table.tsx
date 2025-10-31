@@ -54,7 +54,7 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}:{
     <div className="table-header">
       {selectedIds.size > 0 && <div className="selected-rows-indicator">
         {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
-        <Button>genera PDF scansioni</Button>
+        <Button onClick={()=>alert("non ancora implementato")}>elimina righe selezionate</Button>
       </div>}
         {(schema instanceof ArchimedeCommon) &&
           <label>
