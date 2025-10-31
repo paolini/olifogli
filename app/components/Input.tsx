@@ -2,25 +2,26 @@
 import type { KeyboardEvent, Ref } from "react"
 import { Field } from "../lib/schema/fields"
 
-export function InputCell({field, value, setValue, onEnter, onEscape, inputRef}: {
+export function InputCell({field, value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}: {
   field: Field,
   value: string,
   setValue: ((value: string) => void),
   onEnter?: () => void,
   onEscape?: () => void,
+  onArrowNavigation?: (direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   switch(field.widget) {
-    case 'ChoiceInput': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
-    case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
-    case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
-    case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
-    case 'DateInput': return <DateInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
+    case 'ChoiceInput': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} onArrowNavigation={onArrowNavigation} inputRef={inputRef}/>
+    case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} onArrowNavigation={onArrowNavigation} inputRef={inputRef}/>
+    case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} onArrowNavigation={onArrowNavigation} inputRef={inputRef}/>
+    case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} onArrowNavigation={onArrowNavigation} inputRef={inputRef}/>
+    case 'DateInput': return <DateInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} onArrowNavigation={onArrowNavigation} inputRef={inputRef}/>
     default: return <span>[invalid widget {field.widget}]</span>
   }
 }
 
-export function Input({type, size, value, setValue, width, onEnter, onEscape, inputRef}:{
+export function Input({type, size, value, setValue, width, onEnter, onEscape, onArrowNavigation, inputRef}:{
   type?: string,
   size?: number,
   value: string,
@@ -28,6 +29,7 @@ export function Input({type, size, value, setValue, width, onEnter, onEscape, in
   setValue?: (value: string) => void,
   onEnter?: () => void,
   onEscape?: () => void,
+  onArrowNavigation?: (direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   return <input 
@@ -47,10 +49,32 @@ export function Input({type, size, value, setValue, width, onEnter, onEscape, in
       e.preventDefault()
       onEscape()
     }
+    
+    if (onArrowNavigation) {
+      const input = e.target as HTMLInputElement
+      const cursorPos = input.selectionStart || 0
+      const cursorEnd = input.selectionEnd || 0
+      const isAtStart = cursorPos === 0 && cursorEnd === 0
+      const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
+      
+      if (e.key === "ArrowLeft" && isAtStart) {
+        e.preventDefault()
+        onArrowNavigation('left', true)
+      } else if (e.key === "ArrowRight" && isAtEnd) {
+        e.preventDefault()
+        onArrowNavigation('right', true)
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        onArrowNavigation('up', true)
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        onArrowNavigation('down', true)
+      }
+    }
   }
 }
 
-export function DateInput({type, size, value, setValue, width, onEnter, onEscape, inputRef}:{
+export function DateInput({type, size, value, setValue, width, onEnter, onEscape, onArrowNavigation, inputRef}:{
   type?: string,
   size?: number,
   value: string,
@@ -58,6 +82,7 @@ export function DateInput({type, size, value, setValue, width, onEnter, onEscape
   setValue?: (value: string) => void,
   onEnter?: () => void,
   onEscape?: () => void,
+  onArrowNavigation?: (direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   return <input 
@@ -127,6 +152,33 @@ export function DateInput({type, size, value, setValue, width, onEnter, onEscape
       return
     }
 
+    // Gestione navigazione con frecce
+    if (onArrowNavigation) {
+      const input = e.target as HTMLInputElement
+      const cursorPos = input.selectionStart || 0
+      const cursorEnd = input.selectionEnd || 0
+      const isAtStart = cursorPos === 0 && cursorEnd === 0
+      const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
+      
+      if (e.key === "ArrowLeft" && isAtStart) {
+        e.preventDefault()
+        onArrowNavigation('left', true)
+        return
+      } else if (e.key === "ArrowRight" && isAtEnd) {
+        e.preventDefault()
+        onArrowNavigation('right', true)
+        return
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        onArrowNavigation('up', true)
+        return
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        onArrowNavigation('down', true)
+        return
+      }
+    }
+
     if (!setValue) return
 
     const input = e.target as HTMLInputElement
@@ -173,11 +225,12 @@ export function DateInput({type, size, value, setValue, width, onEnter, onEscape
   }
 }
 
-export function ChoiceInput({value, setValue, onEnter, onEscape, inputRef}:{
+export function ChoiceInput({value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}:{
   value: string, 
   setValue: (value: string) => void,
   onEnter?: () => void,
   onEscape?: () => void,
+  onArrowNavigation?: (direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) => void,
   inputRef?: Ref<HTMLInputElement>,
   }) {
   return <input ref={inputRef} style={{width: "2ex", textAlign:"center"}} type="text" value={value?value.charAt(0):''} size={1} onChange={onChange} onKeyDown={onKeyDown}/>
@@ -188,6 +241,12 @@ export function ChoiceInput({value, setValue, onEnter, onEscape, inputRef}:{
     } else if (onEscape && e.key === "Escape") {
       e.preventDefault()
       onEscape()
+    } else if (onArrowNavigation && (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      e.preventDefault()
+      if (e.key === "ArrowLeft") onArrowNavigation('left', true)
+      else if (e.key === "ArrowRight") onArrowNavigation('right', true)
+      else if (e.key === "ArrowUp") onArrowNavigation('up', true)
+      else if (e.key === "ArrowDown") onArrowNavigation('down', true)
     } else if (e.key === "Delete") {
       e.preventDefault()
       setValue('')
@@ -231,11 +290,12 @@ export function ChoiceInput({value, setValue, onEnter, onEscape, inputRef}:{
   }
 }
 
-export function NumericInput({value, setValue, onEnter, onEscape, inputRef}: {
+export function NumericInput({value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}: {
   value: string, 
   setValue: (value: string) => void,
   onEnter?: () => void,
   onEscape?: () => void,
+  onArrowNavigation?: (direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   return <input ref={inputRef} value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "3em"}} onKeyDown={onKeyDown}/>
@@ -246,14 +306,37 @@ export function NumericInput({value, setValue, onEnter, onEscape, inputRef}: {
       e.preventDefault()
       onEscape()
     }
+    
+    if (onArrowNavigation) {
+      const input = e.target as HTMLInputElement
+      const cursorPos = input.selectionStart || 0
+      const cursorEnd = input.selectionEnd || 0
+      const isAtStart = cursorPos === 0 && cursorEnd === 0
+      const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
+      
+      if (e.key === "ArrowLeft" && isAtStart) {
+        e.preventDefault()
+        onArrowNavigation('left', true)
+      } else if (e.key === "ArrowRight" && isAtEnd) {
+        e.preventDefault()
+        onArrowNavigation('right', true)
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        onArrowNavigation('up', true)
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        onArrowNavigation('down', true)
+      }
+    }
   }
 }
 
-export function ScoreInput({value, setValue, onEnter, onEscape, inputRef}: {
+export function ScoreInput({value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}: {
     value: string, 
     setValue: (value: string) => void,
     onEnter?: () => void,
     onEscape?: () => void,
+    onArrowNavigation?: (direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) => void,
     inputRef?: Ref<HTMLInputElement>,
   }) {
   return <input ref={inputRef} value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}} onKeyDown={onKeyDown}/>
@@ -263,6 +346,28 @@ export function ScoreInput({value, setValue, onEnter, onEscape, inputRef}: {
     if (onEscape && e.key === "Escape") {
       e.preventDefault()
       onEscape()
+    }
+    
+    if (onArrowNavigation) {
+      const input = e.target as HTMLInputElement
+      const cursorPos = input.selectionStart || 0
+      const cursorEnd = input.selectionEnd || 0
+      const isAtStart = cursorPos === 0 && cursorEnd === 0
+      const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
+      
+      if (e.key === "ArrowLeft" && isAtStart) {
+        e.preventDefault()
+        onArrowNavigation('left', true)
+      } else if (e.key === "ArrowRight" && isAtEnd) {
+        e.preventDefault()
+        onArrowNavigation('right', true)
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        onArrowNavigation('up', true)
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        onArrowNavigation('down', true)
+      }
     }
   }
 }

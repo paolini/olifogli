@@ -7,7 +7,7 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
 import { TableInfoCells, TableCell } from './TableRow'
-import { RowInputState, stopEditRow, updateNewData, saveAndContinue, saveAndClose, cancelEditRow } from './RowInputStateActions'
+import { RowInputState, stopEditRow, updateNewData, saveAndContinue, saveAndClose, cancelEditRow, handleRowChange } from './RowInputStateActions'
 
 export default function TableInputRow({
   sheetId,
@@ -17,6 +17,7 @@ export default function TableInputRow({
   setRowInputState,
   showAdditionalColumns,
   showHiddenColumns,
+  prevRow,
   nextRow,
   nextFieldName,
   isSelected,
@@ -29,6 +30,7 @@ export default function TableInputRow({
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   showAdditionalColumns: boolean,
   showHiddenColumns: boolean,
+  prevRow?: Row | null,
   nextRow?: Row | null,
   nextFieldName?: string | null,
   isSelected?: boolean,
@@ -40,9 +42,48 @@ export default function TableInputRow({
   const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
   const firstInputRef = useRef<HTMLInputElement>(null)
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const editableColumns = columns.filter(f => f.editable)
 
   function handleEscape() {
     cancelEditRow(rowInputState, setRowInputState)
+  }
+
+  function handleArrowNavigation(currentFieldName: string, direction: 'left' | 'right' | 'up' | 'down', cursorAtEdge: boolean) {
+    const currentIndex = editableColumns.findIndex(f => f.name === currentFieldName)
+    
+    if (direction === 'left' && cursorAtEdge && currentIndex > 0) {
+      // Vai al campo precedente
+      const prevField = editableColumns[currentIndex - 1]
+      fieldRefs.current[prevField.name]?.focus()
+      // Posiziona il cursore alla fine
+      setTimeout(() => {
+        const input = fieldRefs.current[prevField.name]
+        if (input) {
+          input.setSelectionRange(input.value.length, input.value.length)
+        }
+      }, 0)
+    } else if (direction === 'right' && cursorAtEdge && currentIndex < editableColumns.length - 1) {
+      // Vai al campo successivo
+      const nextField = editableColumns[currentIndex + 1]
+      fieldRefs.current[nextField.name]?.focus()
+      // Posiziona il cursore all'inizio
+      setTimeout(() => {
+        const input = fieldRefs.current[nextField.name]
+        if (input) {
+          input.setSelectionRange(0, 0)
+        }
+      }, 0)
+    } else if (direction === 'up') {
+      // Cambia riga verso l'alto
+      if (prevRow !== undefined) {
+        handleRowChange(rowInputState, setRowInputState, prevRow, currentFieldName)
+      }
+    } else if (direction === 'down') {
+      // Cambia riga verso il basso
+      if (nextRow !== undefined) {
+        handleRowChange(rowInputState, setRowInputState, nextRow, currentFieldName)
+      }
+    }
   }
 
   const loading = addLoading || patchLoading || deleteLoading
@@ -100,6 +141,7 @@ export default function TableInputRow({
             setValue={v => updateNewData(setRowInputState, { ...(rowInputState.newData || {}), [field.name]: v })}
             onEnter={() => save(true)}
             onEscape={handleEscape}
+            onArrowNavigation={(direction, cursorAtEdge) => handleArrowNavigation(field.name, direction, cursorAtEdge)}
             inputRef={(el) => {
               if (isFirstEditable) {
                 firstInputRef.current = el

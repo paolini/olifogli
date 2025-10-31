@@ -178,6 +178,7 @@ function TableBody({
 
   return <tbody>
     {rows.map((row, index) => {
+      const prevRow = index > 0 ? rows[index - 1] : null
       const nextRow = index < rows.length - 1 ? rows[index + 1] : null
       const nextFieldName = nextRow ? findFirstEmptyEditableField(nextRow) : null
       
@@ -191,6 +192,7 @@ function TableBody({
             setRowInputState={setRowInputState}
             showAdditionalColumns={showAdditionalColumns}
             showHiddenColumns={showHiddenColumns}
+            prevRow={prevRow}
             nextRow={nextRow}
             nextFieldName={nextFieldName}
             isSelected={selectedIds.has(row._id.toString())}
@@ -220,7 +222,8 @@ function TableBody({
         rowInputState={rowInputState}
         setRowInputState={setRowInputState}
         showAdditionalColumns={showAdditionalColumns} 
-        showHiddenColumns={showHiddenColumns} />
+        showHiddenColumns={showHiddenColumns}
+        prevRow={rows.length > 0 ? rows[rows.length - 1] : null} />
     )}
     {edit && !(rowInputState.rowIsBeingEdited && rowInputState.rowId === null) && (
       <tr key="add-row">
