@@ -64,6 +64,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: auto; /* Abilita lo scroll se il contenuto supera l'altezza */
+  background-color: var(--background);
 }
 
 .sheet-wrapper {
@@ -235,11 +236,6 @@ table {
 table, th {
   border: 1px solid gray;
   box-sizing: border-box;
-  margin-left: 10pt;
-}
-
-label {
-  margin-left: 10pt;
 }
 
 th {
@@ -294,6 +290,7 @@ table.my-table {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  margin-left: 10pt;
 }
 
 .table-header {
