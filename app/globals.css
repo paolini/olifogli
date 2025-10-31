@@ -54,7 +54,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh; /* Fissa l'altezza alla viewport height */
-  padding: 0px;
+  background-color: var(--background);
 }
 
 .page-content {
