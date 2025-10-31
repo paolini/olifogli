@@ -1,20 +1,35 @@
 import { useState, memo, Dispatch, SetStateAction } from 'react'
-import { WithId, ObjectId } from 'mongodb'
+import { WithId } from 'mongodb'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
 
 import { Row, Sheet } from '@/app/graphql/generated'
+import { RowInputState, startEditRow, startNewRow, stopEditRow, updateNewData } from './RowInputStateActions'
 import { Criteria } from './Ordering'
 import SortIcon from './SortIcon'
 import TableInputRow from './TableInputRow'
 import TableRow from './TableRow'
 
-export default function TableInner({rows, selectedIds, setSelectedIds, currentRowId, setCurrentRowId, sheet, schema, showStandardAnswers, showAdditionalColumns, showHiddenColumns, setSort, criteria, edit}: {
+export default function TableInner({
+  rows,
+  selectedIds,
+  setSelectedIds,
+  rowInputState,
+  setRowInputState,
+  sheet,
+  schema,
+  showStandardAnswers,
+  showAdditionalColumns,
+  showHiddenColumns,
+  setSort,
+  criteria,
+  edit
+}: {
   rows: Row[],
   selectedIds: Set<string>,
   setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
-  currentRowId: ObjectId|null,
-  setCurrentRowId: (id: ObjectId|null) => void,
+  rowInputState: RowInputState,
+  setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   sheet: Sheet,
   schema: Schema,
   showStandardAnswers: boolean,
@@ -54,8 +69,8 @@ export default function TableInner({rows, selectedIds, setSelectedIds, currentRo
     />
     <TableBody 
       rows={rows} 
-      currentRowId={currentRowId} 
-      setCurrentRowId={setCurrentRowId} 
+      rowInputState={rowInputState}
+      setRowInputState={setRowInputState}
       sheet={sheet} 
       schema={schema} 
       showStandardAnswers={showStandardAnswers} 
@@ -123,10 +138,22 @@ function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort
     </>
 }
 
-function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardAnswers,showAdditionalColumns, showHiddenColumns, edit, selectedIds, toggleSelectRow}: {
+function TableBody({
+  rows,
+  rowInputState,
+  setRowInputState,
+  sheet,
+  schema,
+  showStandardAnswers,
+  showAdditionalColumns,
+  showHiddenColumns,
+  edit,
+  selectedIds,
+  toggleSelectRow
+}: {
   rows: Row[],
-  currentRowId: ObjectId|null,
-  setCurrentRowId: (id: ObjectId|null) => void,
+  rowInputState: RowInputState,
+  setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   sheet: Sheet,
   schema: Schema,
   showStandardAnswers: boolean,
@@ -155,56 +182,63 @@ function TableBody({rows,currentRowId,setCurrentRowId,sheet,schema,showStandardA
   function moveToNextRow(currentIndex: number) {
     if (currentIndex < rows.length - 1) {
       const nextRow = rows[currentIndex + 1]
-      setCurrentRowId(nextRow._id)
+      startEditRow(setRowInputState, nextRow)
       const firstEmptyField = findFirstEmptyEditableField(nextRow)
       setFocusFieldName(firstEmptyField)
     } else {
-      // Se siamo all'ultima riga, chiudi la modalità di modifica
-      setCurrentRowId(null)
+      stopEditRow(setRowInputState)
       setFocusFieldName(null)
     }
   }
 
   return <tbody>
-      {rows.map((row, index) => (edit && row._id === currentRowId) 
-        ? <TableInputRow 
-            key={row._id.toString()}
-            sheetId={sheet._id.toString()} 
-            schema={schema} 
-            row={row} 
-            done={() => setCurrentRowId(null)} 
-            showAdditionalColumns={showAdditionalColumns} 
-            showHiddenColumns={showHiddenColumns}
-            focusFieldName={focusFieldName} 
-            onMoveToNext={() => moveToNextRow(index)}
-            isSelected={selectedIds.has(row._id.toString())}
-            onToggleSelect={() => toggleSelectRow(row._id.toString())}
-            />
-        : <MyRow 
-            key={row._id.toString()} 
-            schema={schema} 
-            row={row} 
-            showStandardAnswers={showStandardAnswers} 
-            showAdditionalColumns={showAdditionalColumns} 
-            showHiddenColumns={showHiddenColumns}
-            onCellClick={fieldName => onCellClick(row, fieldName)}
-            isSelected={selectedIds.has(row._id.toString())}
-            onToggleSelect={() => toggleSelectRow(row._id.toString())}
-            />)} 
-      {edit && (currentRowId 
-        ? <tr><td colSpan={schema.fields.length + 1}><button className="bg-alert" onClick={() => setCurrentRowId(null)}>
-          aggiungi riga
-          </button></td></tr>
-        : <TableInputRow sheetId={sheet._id.toString()} schema={schema} showAdditionalColumns={showAdditionalColumns} showHiddenColumns={showHiddenColumns} />
-      )}
+    {rows.map((row, index) => (edit && rowInputState.rowIsBeingEdited && row._id === rowInputState.rowId)
+      ? <TableInputRow
+          key={row._id.toString()}
+          sheetId={sheet._id.toString()}
+          schema={schema}
+          row={row}
+          rowInputState={rowInputState}
+          setRowInputState={setRowInputState}
+          showAdditionalColumns={showAdditionalColumns}
+          showHiddenColumns={showHiddenColumns}
+          focusFieldName={focusFieldName}
+          onMoveToNext={() => moveToNextRow(index)}
+          isSelected={selectedIds.has(row._id.toString())}
+          onToggleSelect={() => toggleSelectRow(row._id.toString())}
+        />
+      : <MyRow
+          key={row._id.toString()}
+          schema={schema}
+          row={row}
+          showStandardAnswers={showStandardAnswers}
+          showAdditionalColumns={showAdditionalColumns}
+          showHiddenColumns={showHiddenColumns}
+          onCellClick={fieldName => {
+            if (edit) {
+              startEditRow(setRowInputState, row)
+              setFocusFieldName(fieldName)
+            }
+          }}
+          isSelected={selectedIds.has(row._id.toString())}
+          onToggleSelect={() => toggleSelectRow(row._id.toString())}
+        />)}
+    {edit && (rowInputState.rowIsBeingEdited && rowInputState.rowId === null
+      ? <TableInputRow 
+          key="new-row"
+          sheetId={sheet._id.toString()} 
+          schema={schema}
+          rowInputState={rowInputState}
+          setRowInputState={setRowInputState}
+          showAdditionalColumns={showAdditionalColumns} 
+          showHiddenColumns={showHiddenColumns} />
+      : !rowInputState.rowIsBeingEdited && <tr key="add-row"><td colSpan={schema.fields.length + 1}><button className="bg-alert" onClick={() => startNewRow(setRowInputState)}>
+        aggiungi riga
+        </button></td></tr>
+    )}
   </tbody>
 
-  function onCellClick(row: WithId<Row>, fieldName: string) {
-    if (edit) {
-      setCurrentRowId(row._id)
-      setFocusFieldName(fieldName)
-    }
-  }
+  // onCellClick logic is now handled inline in MyRow above, using startEditRow and setFocusFieldName
 }
 
 const MyRow = memo(MyRowInternal)

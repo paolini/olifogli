@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react'
 import { WithId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
 import Schema from '@/app/lib/schema/Schema'
@@ -7,12 +7,26 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
 import { TableInfoCells, TableCell } from './TableRow'
+import { RowInputState, stopEditRow, updateNewData } from './RowInputStateActions'
 
-export default function TableInputRow({sheetId, schema, row, done, showAdditionalColumns, showHiddenColumns, focusFieldName, onMoveToNext, isSelected, onToggleSelect}: {
+export default function TableInputRow({
+  sheetId,
+  schema,
+  row,
+  rowInputState,
+  setRowInputState,
+  showAdditionalColumns,
+  showHiddenColumns,
+  focusFieldName,
+  onMoveToNext,
+  isSelected,
+  onToggleSelect
+}: {
   sheetId: string,
-  schema: Schema, 
+  schema: Schema,
   row?: WithId<Row>,
-  done?: () => void,
+  rowInputState: RowInputState,
+  setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   showAdditionalColumns: boolean,
   showHiddenColumns: boolean,
   focusFieldName?: string|null,
@@ -22,16 +36,17 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
-  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow() 
+  const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRow()
   const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
-  const [fields, setFields] = useState<Data>(Object.fromEntries(columns.map(f => [f.name, row?.data[f.name] || ''])))
-  const [cacheUpdatedOn] = useState(row?.updatedOn) // controllo se la riga mi cambia sotto i piedi
+  const [cacheUpdatedOn] = useState(row?.updatedOn)
   const firstInputRef = useRef<HTMLInputElement>(null)
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  
+
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
   const modified = hasBeenModified()
+  
+  const { newData, oldData } = rowInputState
 
   // Mette il focus sul primo input quando viene creata una nuova riga
   useEffect(() => {
@@ -52,9 +67,9 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
     if (cacheUpdatedOn && row && row.updatedOn !== cacheUpdatedOn) {
       if (loading) return // evita di mostrare l'alert se stiamo salvando noi stessi
       alert("la riga che stai modificando è stata aggiornata da un altro utente. Per non creare conflitti devo annullare le tue modifiche.")
-      if (done) done()
+      stopEditRow(setRowInputState)
     }
-  }, [cacheUpdatedOn, row, done, loading])
+  }, [cacheUpdatedOn, row, setRowInputState, loading])
 
   if (loading) return <tr><td>...</td></tr>
   if (error) return <tr className="error" onClick={dismissError}><td colSpan={columns.length + 1}>Errore: {error.message}</td><td></td></tr>
@@ -76,8 +91,8 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
         ? <td key={field.name} className={field.css_class + (fieldHasBeenModified(field.name) ? " modified" : "")}>
           <InputCell
             field={field}
-            value={fields[field.name]||''} 
-            setValue={v => setFields(fields => ({...fields, [field.name]: v}))}
+            value={newData ? newData[field.name] || '' : ''}
+            setValue={v => updateNewData(setRowInputState, { ...(newData || {}), [field.name]: v })}
             onEnter={() => save(true)}
             inputRef={(el) => {
               if (isFirstEditable) {
@@ -87,7 +102,7 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
             }}
           />
         </td>
-        : <TableCell key={field.name} field={field} value={fields[field.name]||''} />
+        : <TableCell key={field.name} field={field} value={newData ? newData[field.name] || '' : ''} />
     })}
     <td className="actions-cell">
       <button className="bg-green-60" disabled={loading} onClick={() => save(false)}>
@@ -100,8 +115,8 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
   </tr>
 
   function fieldHasBeenModified(fieldName: string) {
-    if (!row && fields[fieldName] !== '') return true;
-    if (row && fields[fieldName] !== row.data[fieldName]) return true;
+    if (!row && newData && newData[fieldName] !== '') return true;
+    if (row && newData && newData[fieldName] !== row.data[fieldName]) return true;
     return false;
   }
 
@@ -120,27 +135,30 @@ export default function TableInputRow({sheetId, schema, row, done, showAdditiona
       // patch
       await patchRow({variables: {
         _id: row._id,
-        data: fields,
+        data: newData,
         updatedOn: row.updatedOn || new Date(),
       }})
     } else {
       // insert
       await addRow({variables: {
         sheetId,
-        data: fields,
+        data: newData,
       }})
-      setFields(fields => Object.fromEntries(
-        Object.entries(fields)
-        .map(([key, value]) => schema.fields_to_be_copied_on_new_row.includes(key)
-            ? [key, value]
-            : [key, '']
-      )))
+      if (newData) {
+        updateNewData(setRowInputState, Object.fromEntries(
+          Object.entries(newData)
+            .map(([key, value]) => schema.fields_to_be_copied_on_new_row.includes(key)
+              ? [key, value]
+              : [key, '']
+            )
+        ))
+      }
     }
-    // Se c'è una riga successiva, passa ad essa, altrimenti chiama done
+    // Se c'è una riga successiva, passa ad essa, altrimenti chiudi
     if (continue_editing && onMoveToNext) {
       onMoveToNext()
-    } else if (done) {
-      done()
+    } else {
+      stopEditRow(setRowInputState)
     }
   }
 
