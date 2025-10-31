@@ -331,7 +331,7 @@ export function useDeleteRows() {
           rows(existingRows = [], { readField }) {
             return existingRows.filter((row:StoreObject) => {
               const rowId = readField("_id", row)
-              return !idsToDelete.some((id: any) => id.toString() === rowId?.toString())
+              return !idsToDelete.some((id: unknown) => id?.toString() === rowId?.toString())
             });
           },
         },
