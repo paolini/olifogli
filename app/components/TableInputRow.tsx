@@ -7,7 +7,7 @@ import { InputCell } from '@/app/components/Input'
 import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
 import { TableInfoCells, TableCell } from './TableRow'
-import { RowInputState, stopEditRow, updateNewData, saveAndContinue, saveAndClose } from './RowInputStateActions'
+import { RowInputState, stopEditRow, updateNewData, saveAndContinue, saveAndClose, cancelEditRow } from './RowInputStateActions'
 
 export default function TableInputRow({
   sheetId,
@@ -40,6 +40,10 @@ export default function TableInputRow({
   const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
   const firstInputRef = useRef<HTMLInputElement>(null)
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  function handleEscape() {
+    cancelEditRow(rowInputState, setRowInputState)
+  }
 
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
@@ -95,6 +99,7 @@ export default function TableInputRow({
             value={rowInputState.newData ? rowInputState.newData[field.name] || '' : ''}
             setValue={v => updateNewData(setRowInputState, { ...(rowInputState.newData || {}), [field.name]: v })}
             onEnter={() => save(true)}
+            onEscape={handleEscape}
             inputRef={(el) => {
               if (isFirstEditable) {
                 firstInputRef.current = el
