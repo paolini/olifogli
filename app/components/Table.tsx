@@ -76,18 +76,16 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: 
         <input type="checkbox" checked={showHiddenColumns} onChange={e => setShowHiddenColumns(e.target.checked)} />
         {' '}Mostra colonne nascoste
       </label>
-      {selectedIds.size > 0 && <>
-        <span className="ml-4">
-          {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
-        </span>
-        <Button 
-          className="ml-2"
-          onClick={handleDeleteSelectedRows}
-          disabled={deleteLoading}
-        >
-          {deleteLoading ? 'Eliminazione...' : 'elimina righe selezionate'}
-        </Button>
-      </>}
+      <span className="ml-4">
+        {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+      </span>
+      <Button 
+        className="ml-2"
+        onClick={handleDeleteSelectedRows}
+        disabled={deleteLoading || selectedIds.size === 0}
+      >
+        {deleteLoading ? 'Eliminazione...' : 'elimina righe selezionate'}
+      </Button>
     </div>
     <div className="table-scroll-container">
       <LoadingWrapper>
