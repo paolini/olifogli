@@ -53,6 +53,24 @@ export function stopEditRow(
   })
 }
 
+export function cancelEditRow(
+  rowInputState: RowInputState,
+  setRowInputState: Dispatch<SetStateAction<RowInputState>>
+): boolean {
+  // Verifica se ci sono modifiche non salvate
+  if (hasUnsavedChanges(rowInputState)) {
+    const confirmed = confirm(
+      'Ci sono modifiche non salvate. Vuoi abbandonare le modifiche?'
+    )
+    if (!confirmed) {
+      return false // L'utente ha annullato
+    }
+  }
+  // Annulla le modifiche e esce dalla modalità di modifica
+  stopEditRow(setRowInputState)
+  return true // Operazione completata
+}
+
 export function updateNewData(
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
   newData: Data

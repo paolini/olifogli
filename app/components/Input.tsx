@@ -2,30 +2,32 @@
 import type { KeyboardEvent, Ref } from "react"
 import { Field } from "../lib/schema/fields"
 
-export function InputCell({field, value, setValue, onEnter, inputRef}: {
+export function InputCell({field, value, setValue, onEnter, onEscape, inputRef}: {
   field: Field,
   value: string,
   setValue: ((value: string) => void),
   onEnter?: () => void,
+  onEscape?: () => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   switch(field.widget) {
-    case 'ChoiceInput': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter} inputRef={inputRef}/>
-    case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter} inputRef={inputRef}/>
-    case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter} inputRef={inputRef}/>
-    case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter} inputRef={inputRef}/>
-    case 'DateInput': return <DateInput value={value} setValue={setValue} onEnter={onEnter} inputRef={inputRef}/>
+    case 'ChoiceInput': return <ChoiceInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
+    case 'NumericInput': return <NumericInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
+    case 'ScoreInput': return <ScoreInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
+    case 'Input': return <Input value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
+    case 'DateInput': return <DateInput value={value} setValue={setValue} onEnter={onEnter} onEscape={onEscape} inputRef={inputRef}/>
     default: return <span>[invalid widget {field.widget}]</span>
   }
 }
 
-export function Input({type, size, value, setValue, width, onEnter, inputRef}:{
+export function Input({type, size, value, setValue, width, onEnter, onEscape, inputRef}:{
   type?: string,
   size?: number,
   value: string,
   width?: string,
   setValue?: (value: string) => void,
   onEnter?: () => void,
+  onEscape?: () => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   return <input 
@@ -41,16 +43,21 @@ export function Input({type, size, value, setValue, width, onEnter, inputRef}:{
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") onEnter()
+    if (onEscape && e.key === "Escape") {
+      e.preventDefault()
+      onEscape()
+    }
   }
 }
 
-export function DateInput({type, size, value, setValue, width, onEnter, inputRef}:{
+export function DateInput({type, size, value, setValue, width, onEnter, onEscape, inputRef}:{
   type?: string,
   size?: number,
   value: string,
   width?: string,
   setValue?: (value: string) => void,
   onEnter?: () => void,
+  onEscape?: () => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   return <input 
@@ -114,6 +121,12 @@ export function DateInput({type, size, value, setValue, width, onEnter, inputRef
       return
     }
 
+    if (onEscape && e.key === "Escape") {
+      e.preventDefault()
+      onEscape()
+      return
+    }
+
     if (!setValue) return
 
     const input = e.target as HTMLInputElement
@@ -160,10 +173,11 @@ export function DateInput({type, size, value, setValue, width, onEnter, inputRef
   }
 }
 
-export function ChoiceInput({value, setValue, onEnter, inputRef}:{
+export function ChoiceInput({value, setValue, onEnter, onEscape, inputRef}:{
   value: string, 
   setValue: (value: string) => void,
   onEnter?: () => void,
+  onEscape?: () => void,
   inputRef?: Ref<HTMLInputElement>,
   }) {
   return <input ref={inputRef} style={{width: "2ex", textAlign:"center"}} type="text" value={value?value.charAt(0):''} size={1} onChange={onChange} onKeyDown={onKeyDown}/>
@@ -171,6 +185,9 @@ export function ChoiceInput({value, setValue, onEnter, inputRef}:{
   function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") {
       onEnter()
+    } else if (onEscape && e.key === "Escape") {
+      e.preventDefault()
+      onEscape()
     } else if (e.key === "Delete") {
       e.preventDefault()
       setValue('')
@@ -214,28 +231,38 @@ export function ChoiceInput({value, setValue, onEnter, inputRef}:{
   }
 }
 
-export function NumericInput({value, setValue, onEnter, inputRef}: {
+export function NumericInput({value, setValue, onEnter, onEscape, inputRef}: {
   value: string, 
   setValue: (value: string) => void,
   onEnter?: () => void,
+  onEscape?: () => void,
   inputRef?: Ref<HTMLInputElement>,
 }) {
   return <input ref={inputRef} value={value} size={4} onChange={(e) => setValue(e.target.value)} style={{width: "3em"}} onKeyDown={onKeyDown}/>
 
   function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") onEnter()
+    if (onEscape && e.key === "Escape") {
+      e.preventDefault()
+      onEscape()
+    }
   }
 }
 
-export function ScoreInput({value, setValue, onEnter, inputRef}: {
+export function ScoreInput({value, setValue, onEnter, onEscape, inputRef}: {
     value: string, 
     setValue: (value: string) => void,
     onEnter?: () => void,
+    onEscape?: () => void,
     inputRef?: Ref<HTMLInputElement>,
   }) {
   return <input ref={inputRef} value={value} size={2} onChange={(e) => setValue(e.target.value)} style={{width: "2em"}} onKeyDown={onKeyDown}/>
 
   function onKeyDown(e:KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") onEnter()
+    if (onEscape && e.key === "Escape") {
+      e.preventDefault()
+      onEscape()
+    }
   }
 }
