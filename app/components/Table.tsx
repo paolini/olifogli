@@ -1,7 +1,6 @@
 "use client"
-import { useState, useEffect, SetStateAction, Dispatch } from 'react'
-import { ObjectId } from 'mongodb'
 
+import { useState, useEffect, SetStateAction, Dispatch } from 'react'
 import { Row, Sheet } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
@@ -11,25 +10,32 @@ import ErrorElement from './Error'
 import { Field } from '../lib/schema/fields'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import Button from './Button'
+import { RowInputState } from './RowInputStateActions'
 
-export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}:{
+
+export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: {
   rows: Row[],
   sheet: Sheet,
   edit?: boolean,
   selectedIds: Set<string>,
   setSelectedIds: Dispatch<SetStateAction<Set<string>>>
 }) {
-  const [ currentRowId, setCurrentRowId ] = useState<ObjectId|null>(null)
-  const [ showStandardAnswers, setShowStandardAnswers ] = useState<boolean>(false)
-  const [ showAdditionalColumns, setShowAdditionalColumns ] = useState<boolean>(false)
-  const [ showHiddenColumns, setShowHiddenColumns ] = useState<boolean>(false)
-  const [ viewRows, setViewRows ] = useState<Row[]>(rows)
+  const [rowInputState, setRowInputState] = useState<RowInputState>({
+    rowIsBeingEdited: false,
+    rowId: null,
+    oldData: null,
+    newData: null
+  })
+  const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
+  const [showAdditionalColumns, setShowAdditionalColumns] = useState<boolean>(false)
+  const [showHiddenColumns, setShowHiddenColumns] = useState<boolean>(false)
+  const [viewRows, setViewRows] = useState<Row[]>(rows)
 
   const schema = schemas[sheet.schema]
 
   useEffect(() => {
     setViewRows(prevViewRows => {
-      const map_id_to_incoming_row = Object.fromEntries(rows.map((row,i) => [row._id.toString(), {row,i}])) 
+      const map_id_to_incoming_row = Object.fromEntries(rows.map((row,i) => [row._id.toString(), {row,i}]))
       const replacedRows: Row[] = prevViewRows.map(r => {
         const row = map_id_to_incoming_row[r._id.toString()]?.row
         if (row === undefined) return undefined
@@ -38,9 +44,7 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}:{
       }).filter(r => r!==undefined)
 
       return [
-        // Mantieni solo le righe che sono ancora presenti
         ...replacedRows,
-        // Aggiungi le nuove righe
         ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
       ]
     })
@@ -74,12 +78,12 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}:{
     <div className="table-scroll-container">
       <LoadingWrapper>
         <TableInner 
-          rows={viewRows} 
+          rows={viewRows}
           selectedIds={selectedIds}
           setSelectedIds={setSelectedIds}
-          currentRowId={currentRowId} 
-          setCurrentRowId={setCurrentRowId} 
-          sheet={sheet} 
+          rowInputState={rowInputState}
+          setRowInputState={setRowInputState}
+          sheet={sheet}
           schema={schema}
           showStandardAnswers={showStandardAnswers}
           showAdditionalColumns={showAdditionalColumns}
