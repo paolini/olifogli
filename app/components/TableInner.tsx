@@ -223,18 +223,24 @@ function TableBody({
           isSelected={selectedIds.has(row._id.toString())}
           onToggleSelect={() => toggleSelectRow(row._id.toString())}
         />)}
-    {edit && (rowInputState.rowIsBeingEdited && rowInputState.rowId === null
-      ? <TableInputRow 
-          key="new-row"
-          sheetId={sheet._id.toString()} 
-          schema={schema}
-          rowInputState={rowInputState}
-          setRowInputState={setRowInputState}
-          showAdditionalColumns={showAdditionalColumns} 
-          showHiddenColumns={showHiddenColumns} />
-      : !rowInputState.rowIsBeingEdited && <tr key="add-row"><td colSpan={schema.fields.length + 1}><button className="bg-alert" onClick={() => startNewRow(setRowInputState)}>
-        aggiungi riga
-        </button></td></tr>
+    {edit && rowInputState.rowIsBeingEdited && rowInputState.rowId === null && (
+      <TableInputRow 
+        key="new-row"
+        sheetId={sheet._id.toString()} 
+        schema={schema}
+        rowInputState={rowInputState}
+        setRowInputState={setRowInputState}
+        showAdditionalColumns={showAdditionalColumns} 
+        showHiddenColumns={showHiddenColumns} />
+    )}
+    {edit && !(rowInputState.rowIsBeingEdited && rowInputState.rowId === null) && (
+      <tr key="add-row">
+        <td colSpan={schema.fields.length + 2}>
+          <button className="bg-alert" onClick={() => startNewRow(setRowInputState)}>
+            aggiungi riga
+          </button>
+        </td>
+      </tr>
     )}
   </tbody>
 
