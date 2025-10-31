@@ -45,8 +45,6 @@ export default function TableInputRow({
   const loading = addLoading || patchLoading || deleteLoading
   const error = addError || patchError || deleteError
   const modified = hasBeenModified()
-  
-  const { newData, oldData } = rowInputState
 
   // Mette il focus sul primo input quando viene creata una nuova riga
   useEffect(() => {
@@ -91,8 +89,8 @@ export default function TableInputRow({
         ? <td key={field.name} className={field.css_class + (fieldHasBeenModified(field.name) ? " modified" : "")}>
           <InputCell
             field={field}
-            value={newData ? newData[field.name] || '' : ''}
-            setValue={v => updateNewData(setRowInputState, { ...(newData || {}), [field.name]: v })}
+            value={rowInputState.newData ? rowInputState.newData[field.name] || '' : ''}
+            setValue={v => updateNewData(setRowInputState, { ...(rowInputState.newData || {}), [field.name]: v })}
             onEnter={() => save(true)}
             inputRef={(el) => {
               if (isFirstEditable) {
@@ -102,7 +100,7 @@ export default function TableInputRow({
             }}
           />
         </td>
-        : <TableCell key={field.name} field={field} value={newData ? newData[field.name] || '' : ''} />
+        : <TableCell key={field.name} field={field} value={rowInputState.newData ? rowInputState.newData[field.name] || '' : ''} />
     })}
     <td className="actions-cell">
       <button className="bg-green-60" disabled={loading} onClick={() => save(false)}>
@@ -115,8 +113,8 @@ export default function TableInputRow({
   </tr>
 
   function fieldHasBeenModified(fieldName: string) {
-    if (!row && newData && newData[fieldName] !== '') return true;
-    if (row && newData && newData[fieldName] !== row.data[fieldName]) return true;
+    if (!row && rowInputState.newData && rowInputState.newData[fieldName] !== '') return true;
+    if (row && rowInputState.newData && rowInputState.newData[fieldName] !== row.data[fieldName]) return true;
     return false;
   }
 
@@ -132,33 +130,38 @@ export default function TableInputRow({
 
   async function save(continue_editing?: boolean) {
     if (row?._id) {
-      // patch
+      // patch - modifica di una riga esistente
       await patchRow({variables: {
         _id: row._id,
-        data: newData,
+        data: rowInputState.newData,
         updatedOn: row.updatedOn || new Date(),
       }})
+      // Se c'è una riga successiva, passa ad essa, altrimenti chiudi
+      if (continue_editing && onMoveToNext) {
+        onMoveToNext()
+      } else {
+        stopEditRow(setRowInputState)
+      }
     } else {
-      // insert
+      // insert - aggiunta di una nuova riga
       await addRow({variables: {
         sheetId,
-        data: newData,
+        data: rowInputState.newData,
       }})
-      if (newData) {
+      // Dopo aver salvato una nuova riga, prepara i campi per un'altra nuova riga
+      if (rowInputState.newData) {
         updateNewData(setRowInputState, Object.fromEntries(
-          Object.entries(newData)
+          Object.entries(rowInputState.newData)
             .map(([key, value]) => schema.fields_to_be_copied_on_new_row.includes(key)
               ? [key, value]
               : [key, '']
             )
         ))
       }
-    }
-    // Se c'è una riga successiva, passa ad essa, altrimenti chiudi
-    if (continue_editing && onMoveToNext) {
-      onMoveToNext()
-    } else {
-      stopEditRow(setRowInputState)
+      // Mantieni il focus sul primo campo per continuare ad inserire
+      if (firstInputRef.current) {
+        setTimeout(() => firstInputRef.current?.focus(), 0)
+      }
     }
   }
 
