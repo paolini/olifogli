@@ -259,6 +259,12 @@ const DELETE_ROW = gql`
   }
 `
 
+const DELETE_ROWS = gql`
+  mutation deleteRows($ids: [ObjectId!]!) {
+    deleteRows(ids: $ids)
+  }
+`
+
 export function useAddRow() {
   return useMutation<{ addRow: Row }>(ADD_ROW, {
     update(cache, { data }) {
@@ -305,6 +311,28 @@ export function useDeleteRow() {
         fields: {
           rows(existingRows = [], { readField }) {
             return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
+          },
+        },
+      })
+    }
+  })
+}
+
+export function useDeleteRows() {
+  return useMutation<{ deleteRows: number }>(DELETE_ROWS, {
+    update(cache, { data }, { variables }) {
+      const deletedCount = data?.deleteRows
+      if (!deletedCount || !variables) return
+
+      const idsToDelete = variables.ids
+
+      cache.modify({
+        fields: {
+          rows(existingRows = [], { readField }) {
+            return existingRows.filter((row:StoreObject) => {
+              const rowId = readField("_id", row)
+              return !idsToDelete.some((id: any) => id.toString() === rowId?.toString())
+            });
           },
         },
       })
