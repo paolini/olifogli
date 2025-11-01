@@ -98,7 +98,6 @@ function SheetBody({sheet,profile}: {
     sheet: Sheet
     profile: User|null
 }) {
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -162,7 +161,13 @@ function SheetBody({sheet,profile}: {
         </div>
         }
         { tab === 'edit' && 
-            <Table sheet={sheet} rows={data.rows} edit={true} selectedIds={selectedIds} setSelectedIds={setSelectedIds} onRefresh={handleRefresh} refreshLoading={loading} />
+            <Table 
+                sheet={sheet} 
+                rows={data.rows} 
+                edit={true} 
+                onRefresh={handleRefresh} 
+                refreshLoading={loading}
+            />
         }
         { tab === 'csv' &&   
             ((sheet.closed || sheet.locked) 
@@ -171,7 +176,7 @@ function SheetBody({sheet,profile}: {
             )
         }
         { tab === 'scans' && <>
-            <ScansSheetExport sheet={sheet} selectedIds={selectedIds} />
+            <ScansSheetExport sheet={sheet} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
           </>

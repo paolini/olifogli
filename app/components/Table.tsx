@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, SetStateAction, Dispatch } from 'react'
-import { Row, Sheet } from '@/app/graphql/generated'
+import { Row, Sheet, useRequestScanSheetGenerationMutation } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
 import LoadingWrapper from './LoadingWrapper'
@@ -15,12 +15,10 @@ import { useDeleteRows } from './TableInputRow'
 import { ObjectId } from 'bson'
 
 
-export default function Table({rows, sheet, edit, selectedIds, setSelectedIds, onRefresh, refreshLoading}: {
+export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   rows: Row[],
   sheet: Sheet,
   edit?: boolean,
-  selectedIds: Set<string>,
-  setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
   onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
@@ -32,12 +30,17 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds, o
     focusFieldName: null,
     updatedOn: null
   })
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
   const [showAdditionalColumns, setShowAdditionalColumns] = useState<boolean>(false)
   const [showHiddenColumns, setShowHiddenColumns] = useState<boolean>(false)
   const [viewRows, setViewRows] = useState<Row[]>(rows)
   
   const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
+
+  const [requestScanSheetGeneration, { loading: scanSheetLoading }] = useRequestScanSheetGenerationMutation({
+    refetchQueries: ['ScanSheetJobs']
+  })
 
   const schema = schemas[sheet.schema]
 
@@ -82,11 +85,19 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds, o
         {selectedIds.size} {`${selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
       </span>
       <Button 
+        variant="danger"
         className="ml-2"
         onClick={handleDeleteSelectedRows}
         disabled={deleteLoading || selectedIds.size === 0}
       >
         {deleteLoading ? 'Eliminazione...' : 'elimina righe selezionate'}
+      </Button>
+      <Button 
+        className="ml-2"
+        onClick={handleGenerateScanSheet}
+        disabled={scanSheetLoading || selectedIds.size === 0}
+      >
+        {scanSheetLoading ? 'generazione...' : 'genera fogli risposte'}
       </Button>
     </div>
     <div className="table-scroll-container">
@@ -127,6 +138,20 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds, o
     } catch (error) {
       alert(`Errore durante l'eliminazione: ${error}`)
     }
+  }
+
+  function handleGenerateScanSheet() {
+    const selectedRowIds = viewRows
+      .filter(row => selectedIds.has(row._id.toString()))
+      .map(row => new ObjectId(row._id))
+    requestScanSheetGeneration({
+      variables: {
+        sheetId: new ObjectId(sheet._id),
+        selectedRowIds: selectedRowIds.length > 0 ? selectedRowIds : undefined,
+      }
+    })
+    
+    alert('Hai richiesto la generazione dei fogli risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.')
   }
 
   function setSort(field: Field|string, direction: number) {

@@ -1,19 +1,11 @@
 import { gql } from "graphql-request";
-import { Sheet, useRequestScanSheetGenerationMutation, useScanSheetJobsQuery } from "../graphql/generated"
-import Button from "./Button"
+import { Sheet, useScanSheetJobsQuery } from "../graphql/generated"
 import Error from "./Error"
 import { ObjectId } from "bson"
 import Loading from "./Loading"
 import { myTimestamp } from "../lib/util";
-import { useEffect, useRef, useState } from "react";
 
 const _ = gql`
-    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
-        requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
-    }
-`;
-
-const __ = gql`
     query scanSheetJobs($sheetId: ObjectId!) {
         scanSheetJobs(sheetId: $sheetId) {
             _id
@@ -26,28 +18,13 @@ const __ = gql`
     }
 `;
 
-export default function ScansPdfExport({sheet, selectedIds}:{
+export default function ScansPdfExport({sheet}:{
     sheet: Sheet
-    selectedIds: Set<string>
 }) {
-    const [requestScanSheetGeneration, { loading, error }] = useRequestScanSheetGenerationMutation({
-        refetchQueries: ['ScanSheetJobs']
-    })
-
     const { data: jobsData, loading: jobsLoading, error: jobsError } = useScanSheetJobsQuery({
         variables: { sheetId: new ObjectId(sheet._id) },
         pollInterval: 5000, // Poll every 5 seconds to update job status
     })
-
-    // Keep the button disabled for 10 seconds after clicking
-    const [cooldown, setCooldown] = useState(false)
-    const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-    useEffect(() => {
-        return () => {
-            if (cooldownTimer.current) clearTimeout(cooldownTimer.current)
-        }
-    }, [])
 
     return <div>
         <h2>PDF fogli generati</h2>
@@ -102,29 +79,8 @@ export default function ScansPdfExport({sheet, selectedIds}:{
             !jobsLoading && <p className="text-gray-500">Non hai generato nessun foglio PDF.</p>
         )}
         <div>
-            <Error error={error} />
-            <Button className="mr-4 my-4" onClick={submit} disabled={loading || cooldown}>
-                Avvia creazione fogli risposte
-            </Button>
-                {selectedIds.size > 0 
-                    ? <span>Hai selezionato {selectedIds.size} {selectedIds.size===1 ? 'riga' : 'righe'} per l&apos;esportazione.</span>
-                    : <span>Verranno esportate tutte le righe del foglio.</span>
-                }
+            Per generare i fogli risposte in PDF, seleziona le righe desiderate nel foglio e attiva 
+            il pulsante &quot;genera fogli risposte&quot;.
         </div>
     </div>
-
-    function submit() {
-        // Start 10s cooldown on click
-        if (cooldownTimer.current) clearTimeout(cooldownTimer.current)
-        setCooldown(true)
-        cooldownTimer.current = setTimeout(() => setCooldown(false), 10_000)
-
-        const selectedRowIds = Array.from(selectedIds).map(id => new ObjectId(id))
-        requestScanSheetGeneration({
-            variables: {
-                sheetId: new ObjectId(sheet._id),
-                selectedRowIds: selectedRowIds.length>0 ? selectedRowIds : undefined,
-            }
-        })
-    }
 }
