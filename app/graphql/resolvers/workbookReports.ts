@@ -4,6 +4,7 @@ import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
 import { QueryWorkbookReportsArgs, WorkbookReport, ReportEntry, ScoreDistribution } from '../generated'
 import { ObjectId, WithId, Document, Collection } from 'mongodb'
 import { Sheet, Row } from '@/app/lib/models'
+import { schemas } from '@/app/lib/schema'
 
 export default async function workbookReports(
     _: unknown, 
@@ -16,7 +17,7 @@ export default async function workbookReports(
     const sheetsCollection = await getSheetsCollection()
     const rowsCollection = await getRowsCollection()
 
-    // Trova tutti gli sheet del workbook con schema archimede-biennio o archimede-triennio
+    // Trova tutti gli sheet del workbook con schema archimede_biennio o archimede_triennio
     // a cui l'utente ha accesso
     const sheetFilter: Document = { workbookId }
     
@@ -29,22 +30,22 @@ export default async function workbookReports(
     }
 
     const allSheets = await sheetsCollection.find(sheetFilter).toArray()
-    
+
     // Separa per schema
-    const biennioSheets = allSheets.filter(s => s.schema === 'archimede-biennio')
-    const triennioSheets = allSheets.filter(s => s.schema === 'archimede-triennio')
+    const biennioSheets = allSheets.filter(s => s.schema === 'archimede_biennio')
+    const triennioSheets = allSheets.filter(s => s.schema === 'archimede_triennio')
 
     const reports: WorkbookReport[] = []
 
     // Genera report per biennio se ci sono fogli
     if (biennioSheets.length > 0) {
-        const report = await generateReport('archimede-biennio', biennioSheets, rowsCollection)
+        const report = await generateReport('archimede_biennio', biennioSheets, rowsCollection)
         reports.push(report)
     }
 
     // Genera report per triennio se ci sono fogli
     if (triennioSheets.length > 0) {
-        const report = await generateReport('archimede-triennio', triennioSheets, rowsCollection)
+        const report = await generateReport('archimede_triennio', triennioSheets, rowsCollection)
         reports.push(report)
     }
 

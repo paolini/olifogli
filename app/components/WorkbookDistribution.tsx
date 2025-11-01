@@ -7,6 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import Error from './Error'
 import Loading from './Loading'
 import { WorkbookReport as WorkbookReportType } from '../graphql/generated'
+import { schemas } from '../lib/schema'
+
 
 const GET_WORKBOOK_REPORTS = gql`
     query GetWorkbookReportsDistribution($workbookId: ObjectId!) {
@@ -33,7 +35,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     if (error) return <Error error={error} />
     if (!data?.workbookReports || data.workbookReports.length === 0) {
         return <div className="p-4">
-            <p>Nessun report disponibile. Sono necessari fogli con schema archimede-biennio o archimede-triennio.</p>
+            <p>Nessun report disponibile. Sono necessari fogli con schema archimede_biennio o archimede_triennio.</p>
         </div>
     }
 
@@ -56,7 +58,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
                     >
                         {data.workbookReports.map(report => (
                             <option key={report.schema} value={report.schema}>
-                                {report.schema === 'archimede-biennio' ? 'Archimede Biennio' : 'Archimede Triennio'}
+                                {schemas[report.schema].header}
                             </option>
                         ))}
                     </select>
@@ -73,7 +75,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
 }
 
 function DistributionSection({ report }: { report: WorkbookReportType }) {
-    const schemaName = report.schema === 'archimede-biennio' ? 'Archimede Biennio' : 'Archimede Triennio'
+    const schemaName = schemas[report.schema].header
 
     return (
         <div className="border rounded-lg p-4 space-y-4">
