@@ -9,6 +9,7 @@ import { Criteria } from './Ordering'
 import SortIcon from './SortIcon'
 import TableInputRow from './TableInputRow'
 import TableRow from './TableRow'
+import Button from './Button'
 
 export default function TableInner({
   rows,
@@ -23,7 +24,9 @@ export default function TableInner({
   showHiddenColumns,
   setSort,
   criteria,
-  edit
+  edit,
+  onRefresh,
+  refreshLoading
 }: {
   rows: Row[],
   selectedIds: Set<string>,
@@ -37,7 +40,9 @@ export default function TableInner({
   showHiddenColumns: boolean,
   setSort: (field: Field|string, direction: number) => void,
   criteria?: Criteria,
-  edit?: boolean
+  edit?: boolean,
+  onRefresh?: () => Promise<void>,
+  refreshLoading?: boolean
 }) {
   const toggleSelectAll = () => {
     if (selectedIds.size === rows.length) {
@@ -79,6 +84,8 @@ export default function TableInner({
       edit={edit}
       selectedIds={selectedIds}
       toggleSelectRow={toggleSelectRow}
+      onRefresh={onRefresh}
+      refreshLoading={refreshLoading}
     />
   </table>
 }
@@ -149,7 +156,9 @@ function TableBody({
   showHiddenColumns,
   edit,
   selectedIds,
-  toggleSelectRow
+  toggleSelectRow,
+  onRefresh,
+  refreshLoading
 }: {
   rows: Row[],
   rowInputState: RowInputState,
@@ -161,7 +170,9 @@ function TableBody({
   showHiddenColumns: boolean,
   edit?: boolean,
   selectedIds: Set<string>,
-  toggleSelectRow: (rowId: string) => void
+  toggleSelectRow: (rowId: string) => void,
+  onRefresh?: () => Promise<void>,
+  refreshLoading?: boolean
 }) {
   // Trova la prima colonna editabile vuota
   function findFirstEmptyEditableField(row: Row): string | null {
@@ -228,7 +239,7 @@ function TableBody({
     {edit && !(rowInputState.rowIsBeingEdited && rowInputState.rowId === null) && (
       <tr key="add-row">
         <td colSpan={schema.fields.length + 2}>
-          <button className="bg-alert" onClick={() => {
+          <Button onClick={() => {
             if (hasUnsavedChanges(rowInputState)) {
               const confirmed = confirm(
                 'Ci sono modifiche non salvate. Vuoi abbandonare le modifiche e creare una nuova riga?'
@@ -238,7 +249,17 @@ function TableBody({
             startNewRow(setRowInputState)
           }}>
             aggiungi riga
-          </button>
+          </Button>
+          {onRefresh && (
+            <Button 
+              className="ml-2"
+              onClick={onRefresh}
+              disabled={refreshLoading}
+              variant="alert"
+            >
+              {refreshLoading ? 'aggiornamento...' : 'aggiorna'}
+            </Button>
+          )}
         </td>
       </tr>
     )}

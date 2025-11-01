@@ -110,10 +110,14 @@ function SheetBody({sheet,profile}: {
     }
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
-    const { loading, error, data } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const { loading, error, data, refetch } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
         pollInterval: tab==='edit' ? undefined : 5000
     });
+    
+    const handleRefresh = async () => {
+        await refetch()
+    }
     
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
@@ -158,7 +162,7 @@ function SheetBody({sheet,profile}: {
         </div>
         }
         { tab === 'edit' && 
-            <Table sheet={sheet} rows={data.rows} edit={true} selectedIds={selectedIds} setSelectedIds={setSelectedIds} />
+            <Table sheet={sheet} rows={data.rows} edit={true} selectedIds={selectedIds} setSelectedIds={setSelectedIds} onRefresh={handleRefresh} refreshLoading={loading} />
         }
         { tab === 'csv' &&   
             ((sheet.closed || sheet.locked) 
