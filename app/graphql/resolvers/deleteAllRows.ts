@@ -1,4 +1,4 @@
-import { getSheetsCollection, getRowsCollection, getDb } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, getDb, withTransaction } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
@@ -14,18 +14,34 @@ export default async function deleteAllRows (_: unknown, { sheetId }: { sheetId:
     const rowsCollection = await getRowsCollection()
     const rows = await rowsCollection.find({ sheetId }).toArray()
     
-    // Sposta tutte le righe in deleted_rows con deletedAt e deletedBy
-    if (rows.length > 0) {
+    if (rows.length === 0) {
+        return 0
+    }
+    
+    // Usa una transazione per garantire la consistenza
+    await withTransaction(async (session) => {
         const db = await getDb()
         const deletedRows = db.collection('deleted_rows')
+        
+        // Sposta tutte le righe in deleted_rows con deletedOn e deletedBy
         const rowsToDelete = rows.map(row => ({ 
             ...row, 
             deletedOn: new Date(), 
             deletedBy: user.email 
         }))
-        await deletedRows.insertMany(rowsToDelete)
-        await rowsCollection.deleteMany({ sheetId })
-    }
+        await deletedRows.insertMany(rowsToDelete, { session })
+        await rowsCollection.deleteMany({ sheetId }, { session })
+        
+        // Conta le righe valide eliminate
+        const nValidRows = rows.filter(r => r.error === '' || !r.error).length
+        
+        // Azzera i contatori dello sheet
+        await sheetsCollection.updateOne(
+            { _id: sheetId },
+            { $set: { nRows: 0, nValidRows: 0 } },
+            { session }
+        )
+    })
     
     return rows.length
 }

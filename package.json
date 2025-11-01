@@ -9,10 +9,11 @@
     "lint": "next lint",
     "codegen": "graphql-codegen",
     "migrate": "npx migrate-mongo status",
-    "migrate:status": "npx migrate-mongo status",
+        "migrate:status": "npx migrate-mongo status",
     "migrate:up": "npx migrate-mongo up",
     "migrate:down": "npx migrate-mongo down",
-    "migrate:create": "npx migrate-mongo create"
+    "migrate:create": "npx migrate-mongo create",
+    "consistency-check": "node scripts/consistency-check.js"
   },
   "dependencies": {
     "@apollo/client": "^3.13.9",

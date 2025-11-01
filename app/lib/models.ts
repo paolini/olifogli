@@ -46,6 +46,8 @@ export type Sheet = {
     workbookId: ObjectId
     commonData: Record<string, string>
     createdAt: Date
+    nRows: number // Numero di righe collegate (denormalizzato, gestito con transazioni)
+    nValidRows: number // Numero di righe valide con error='' (denormalizzato, gestito con transazioni)
     closed?: boolean
     closedBy?: string
     closedOn?: Date

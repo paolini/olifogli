@@ -98,3 +98,34 @@ export async function getScanSheetJobsCollection() {
     const db = await getDb()
     return db.collection<WithoutId<ScanSheetJob>>('scan_sheet_jobs')
 }
+
+/**
+ * Ottiene il client MongoDB per iniziare una sessione di transazione
+ */
+export async function getClient(): Promise<MongoClient> {
+    return await clientPromise
+}
+
+/**
+ * Esegue una funzione in una transazione MongoDB
+ * Garantisce atomicità delle operazioni su più documenti/collezioni
+ * 
+ * @param fn Funzione asincrona che riceve la session e viene eseguita nella transazione
+ * @returns Il risultato della funzione
+ */
+export async function withTransaction<T>(
+    fn: (session: any) => Promise<T>
+): Promise<T> {
+    const client = await getClient()
+    const session = client.startSession()
+    
+    try {
+        let result: T
+        await session.withTransaction(async () => {
+            result = await fn(session)
+        })
+        return result!
+    } finally {
+        await session.endSession()
+    }
+}
