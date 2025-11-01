@@ -5,7 +5,7 @@ import { gql, useQuery } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import { WorkbookReport as WorkbookReportType } from '../graphql/generated'
+import { Report as WorkbookReportType } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 
 const GET_WORKBOOK_REPORTS = gql`

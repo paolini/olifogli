@@ -1,7 +1,7 @@
 import { Context } from '../types'
 import { get_authenticated_user } from './utils'
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
-import { QueryWorkbookReportsArgs, WorkbookReport, ReportEntry, ScoreDistribution } from '../generated'
+import { QueryWorkbookReportsArgs, Report, ReportEntry, ScoreDistribution } from '../generated'
 import { ObjectId, WithId, Document } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 
@@ -9,7 +9,7 @@ export default async function workbookReports(
     _: unknown, 
     { workbookId }: QueryWorkbookReportsArgs, 
     context: Context
-): Promise<WorkbookReport[]> {
+): Promise<Report[]> {
     const user = await get_authenticated_user(context)
     if (!user) throw new Error("Not authenticated")
 
@@ -33,33 +33,34 @@ export default async function workbookReports(
     const biennioSheets = allSheets.filter(s => s.schema === 'archimede_biennio')
     const triennioSheets = allSheets.filter(s => s.schema === 'archimede_triennio')
 
-    const reports: WorkbookReport[] = []
+    const reports: Report[] = []
 
     // Genera report per biennio se ci sono fogli
     if (biennioSheets.length > 0) {
-        const report = await generateReport('archimede_biennio', biennioSheets)
+        const report = await generateReportArchimede('archimede_biennio', biennioSheets)
         reports.push(report)
     }
 
     // Genera report per triennio se ci sono fogli
     if (triennioSheets.length > 0) {
-        const report = await generateReport('archimede_triennio', triennioSheets)
+        const report = await generateReportArchimede('archimede_triennio', triennioSheets)
         reports.push(report)
     }
 
     return reports
 }
 
-async function generateReport(
+async function generateReportArchimede(
     schema: string, 
     sheets: WithId<Sheet>[],
-): Promise<WorkbookReport> {
+): Promise<Report> {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
     
     // Recupera tutte le righe dai fogli
     const rows = await rowsCollection.find({
-        sheetId: { $in: sheetIds }
+        sheetId: { $in: sheetIds },
+        error: ""
     }).toArray()
 
     // Mappa con info dei fogli per riferimento veloce
@@ -110,7 +111,8 @@ async function generateReport(
     // Prendi i primi 100 e aggiungi il rank
     const top100: ReportEntry[] = entries.slice(0, 100).map((entry, index) => ({
         ...entry,
-        rank: index + 1
+        rank: index + 1,
+        sheet: sheetMap.get(entry.sheetId.toString())!
     }))
 
     // Calcola la distribuzione dei punteggi
