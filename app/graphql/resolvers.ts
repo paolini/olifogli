@@ -15,7 +15,8 @@ import rows from './resolvers/rows'
 import scanJobs from './resolvers/scanJobs'
 import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
-import workbookReports from './resolvers/workbookReports'
+import workbookRankingReport from './resolvers/workbookRankingReports'
+import workbookDistributionReport from './resolvers/workbookDistributionReport'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -61,7 +62,8 @@ export const resolvers: Resolvers = {
     scanJobs,
     scanSheetJobs,
     scanResults,
-    workbookReports,
+    workbookRankingReport,
+    workbookDistributionReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
   },
 

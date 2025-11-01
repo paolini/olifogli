@@ -124,16 +124,21 @@ type ReportEntry {
   rank: Int!
 }
 
-type ScoreDistribution {
+type ScoreDistributionItem {
   score: Float!
   count: Int!
 }
 
-type Report {
+type DistributionReport {
   schema: String!
   totalStudents: Int!
-  top100: [ReportEntry!]!
-  scoreDistribution: [ScoreDistribution!]!
+  scoreDistribution: [ScoreDistributionItem!]!
+}
+
+type RankingReport {
+  schema: String!
+  totalStudents: Int!
+  ranking: [ReportEntry!]!
 }
 
 type Query {
@@ -148,7 +153,8 @@ type Query {
   rows(sheetId: ObjectId!): [Row!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
-  workbookReports(workbookId: ObjectId!, schema: String, commonData: Data): [Report!]!
+  workbookDistributionReport(workbookId: ObjectId!, schema: String!, commonData: Data): DistributionReport!
+  workbookRankingReport(workbookId: ObjectId!, schema: String!, commonData: Data): RankingReport!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!
