@@ -29,6 +29,7 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
                 role
             }
             nRows
+            nValidRows
             closed
             locked
             ownerId
@@ -153,6 +154,8 @@ function SheetsTable({ workbookId, profile }: {
             .map(s => s.commonData!.Distretto as string)
     )).sort()
 
+    const columns = commonDataHeaders.filter(field => field !== 'info')
+
     return <>
         {allSheets.length === 0 ? (
             <div className="bg-alert">Nessun foglio disponibile</div>
@@ -191,8 +194,9 @@ function SheetsTable({ workbookId, profile }: {
                         </th>
                         <th>Nome</th>
                         <th>Schema</th>
-                        {commonDataHeaders.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
+                        {columns.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
                         <th>righe</th>
+                        <th>valide</th>
                         <th>stato</th>
                     </tr>
                 </thead>
@@ -203,7 +207,7 @@ function SheetsTable({ workbookId, profile }: {
                             key={sheet._id?.toString()} 
                             sheet={sheet} 
                             profile={profile}
-                            commonDataHeaders={commonDataHeaders}
+                            commonDataHeaders={columns}
                             creationDisabled={creationId !== null} 
                             startCreation={sheetId => setCreationId(sheetId)} 
                             selected={selectedIds.includes(sheet._id.toString())}
@@ -326,6 +330,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
             </td>
         )}
         <td>{sheet.nRows}</td>
+        <td>{sheet.nValidRows}</td>
         <td className=""><span className="flex">
             {sheet.locked 
                 ? <><Lock size={16} className="text-red-600" />&nbsp;chiuso</> 
