@@ -520,23 +520,6 @@ export type UnlockSheetMutationVariables = Exact<{
 
 export type UnlockSheetMutation = { __typename?: 'Mutation', unlockSheet?: boolean | null };
 
-export type GetSheetsQueryVariables = Exact<{
-  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
-}>;
-
-
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, nValidRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
-
-export type AddSheetMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  schema: Scalars['String']['input'];
-  workbookId: Scalars['ObjectId']['input'];
-  permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
-}>;
-
-
-export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: ObjectId | null };
-
 export type DeleteSheetsMutationVariables = Exact<{
   ids: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
 }>;
@@ -557,6 +540,14 @@ export type ValidateRowsMutationVariables = Exact<{
 
 
 export type ValidateRowsMutation = { __typename?: 'Mutation', validateRows?: number | null };
+
+export type RequestScanSheetGenerationMutationVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+  selectedRowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+}>;
+
+
+export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -619,6 +610,23 @@ export type GetWorkbookRankingReportQueryVariables = Exact<{
 
 
 export type GetWorkbookRankingReportQuery = { __typename?: 'Query', workbookRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+
+export type GetSheetsQueryVariables = Exact<{
+  workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
+}>;
+
+
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, nValidRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+
+export type AddSheetMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  schema: Scalars['String']['input'];
+  workbookId: Scalars['ObjectId']['input'];
+  permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
+}>;
+
+
+export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: ObjectId | null };
 
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1274,98 +1282,6 @@ export function useUnlockSheetMutation(baseOptions?: Apollo.MutationHookOptions<
 export type UnlockSheetMutationHookResult = ReturnType<typeof useUnlockSheetMutation>;
 export type UnlockSheetMutationResult = Apollo.MutationResult<UnlockSheetMutation>;
 export type UnlockSheetMutationOptions = Apollo.BaseMutationOptions<UnlockSheetMutation, UnlockSheetMutationVariables>;
-export const GetSheetsDocument = gql`
-    query GetSheets($workbookId: ObjectId) {
-  sheets(workbookId: $workbookId) {
-    _id
-    name
-    schema
-    commonData
-    permissions {
-      email
-      userId
-      role
-    }
-    nRows
-    nValidRows
-    closed
-    locked
-    ownerId
-  }
-}
-    `;
-
-/**
- * __useGetSheetsQuery__
- *
- * To run a query within a React component, call `useGetSheetsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetSheetsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetSheetsQuery({
- *   variables: {
- *      workbookId: // value for 'workbookId'
- *   },
- * });
- */
-export function useGetSheetsQuery(baseOptions?: Apollo.QueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
-      }
-export function useGetSheetsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
-        }
-export function useGetSheetsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
-        }
-export type GetSheetsQueryHookResult = ReturnType<typeof useGetSheetsQuery>;
-export type GetSheetsLazyQueryHookResult = ReturnType<typeof useGetSheetsLazyQuery>;
-export type GetSheetsSuspenseQueryHookResult = ReturnType<typeof useGetSheetsSuspenseQuery>;
-export type GetSheetsQueryResult = Apollo.QueryResult<GetSheetsQuery, GetSheetsQueryVariables>;
-export const AddSheetDocument = gql`
-    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
-  addSheet(
-    name: $name
-    schema: $schema
-    workbookId: $workbookId
-    permissions: $permissions
-  )
-}
-    `;
-export type AddSheetMutationFn = Apollo.MutationFunction<AddSheetMutation, AddSheetMutationVariables>;
-
-/**
- * __useAddSheetMutation__
- *
- * To run a mutation, you first call `useAddSheetMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAddSheetMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [addSheetMutation, { data, loading, error }] = useAddSheetMutation({
- *   variables: {
- *      name: // value for 'name'
- *      schema: // value for 'schema'
- *      workbookId: // value for 'workbookId'
- *      permissions: // value for 'permissions'
- *   },
- * });
- */
-export function useAddSheetMutation(baseOptions?: Apollo.MutationHookOptions<AddSheetMutation, AddSheetMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<AddSheetMutation, AddSheetMutationVariables>(AddSheetDocument, options);
-      }
-export type AddSheetMutationHookResult = ReturnType<typeof useAddSheetMutation>;
-export type AddSheetMutationResult = Apollo.MutationResult<AddSheetMutation>;
-export type AddSheetMutationOptions = Apollo.BaseMutationOptions<AddSheetMutation, AddSheetMutationVariables>;
 export const DeleteSheetsDocument = gql`
     mutation DeleteSheets($ids: [ObjectId!]!) {
   deleteSheets(ids: $ids)
@@ -1459,6 +1375,38 @@ export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions
 export type ValidateRowsMutationHookResult = ReturnType<typeof useValidateRowsMutation>;
 export type ValidateRowsMutationResult = Apollo.MutationResult<ValidateRowsMutation>;
 export type ValidateRowsMutationOptions = Apollo.BaseMutationOptions<ValidateRowsMutation, ValidateRowsMutationVariables>;
+export const RequestScanSheetGenerationDocument = gql`
+    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
+  requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
+}
+    `;
+export type RequestScanSheetGenerationMutationFn = Apollo.MutationFunction<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
+
+/**
+ * __useRequestScanSheetGenerationMutation__
+ *
+ * To run a mutation, you first call `useRequestScanSheetGenerationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestScanSheetGenerationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestScanSheetGenerationMutation, { data, loading, error }] = useRequestScanSheetGenerationMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *      selectedRowIds: // value for 'selectedRowIds'
+ *   },
+ * });
+ */
+export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.MutationHookOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>(RequestScanSheetGenerationDocument, options);
+      }
+export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
+export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
+export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
 export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
@@ -1789,6 +1737,98 @@ export type GetWorkbookRankingReportQueryHookResult = ReturnType<typeof useGetWo
 export type GetWorkbookRankingReportLazyQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportLazyQuery>;
 export type GetWorkbookRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportSuspenseQuery>;
 export type GetWorkbookRankingReportQueryResult = Apollo.QueryResult<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>;
+export const GetSheetsDocument = gql`
+    query GetSheets($workbookId: ObjectId) {
+  sheets(workbookId: $workbookId) {
+    _id
+    name
+    schema
+    commonData
+    permissions {
+      email
+      userId
+      role
+    }
+    nRows
+    nValidRows
+    closed
+    locked
+    ownerId
+  }
+}
+    `;
+
+/**
+ * __useGetSheetsQuery__
+ *
+ * To run a query within a React component, call `useGetSheetsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSheetsQuery({
+ *   variables: {
+ *      workbookId: // value for 'workbookId'
+ *   },
+ * });
+ */
+export function useGetSheetsQuery(baseOptions?: Apollo.QueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
+      }
+export function useGetSheetsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
+        }
+export function useGetSheetsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsQuery, GetSheetsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSheetsQuery, GetSheetsQueryVariables>(GetSheetsDocument, options);
+        }
+export type GetSheetsQueryHookResult = ReturnType<typeof useGetSheetsQuery>;
+export type GetSheetsLazyQueryHookResult = ReturnType<typeof useGetSheetsLazyQuery>;
+export type GetSheetsSuspenseQueryHookResult = ReturnType<typeof useGetSheetsSuspenseQuery>;
+export type GetSheetsQueryResult = Apollo.QueryResult<GetSheetsQuery, GetSheetsQueryVariables>;
+export const AddSheetDocument = gql`
+    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
+  addSheet(
+    name: $name
+    schema: $schema
+    workbookId: $workbookId
+    permissions: $permissions
+  )
+}
+    `;
+export type AddSheetMutationFn = Apollo.MutationFunction<AddSheetMutation, AddSheetMutationVariables>;
+
+/**
+ * __useAddSheetMutation__
+ *
+ * To run a mutation, you first call `useAddSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addSheetMutation, { data, loading, error }] = useAddSheetMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      schema: // value for 'schema'
+ *      workbookId: // value for 'workbookId'
+ *      permissions: // value for 'permissions'
+ *   },
+ * });
+ */
+export function useAddSheetMutation(baseOptions?: Apollo.MutationHookOptions<AddSheetMutation, AddSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddSheetMutation, AddSheetMutationVariables>(AddSheetDocument, options);
+      }
+export type AddSheetMutationHookResult = ReturnType<typeof useAddSheetMutation>;
+export type AddSheetMutationResult = Apollo.MutationResult<AddSheetMutation>;
+export type AddSheetMutationOptions = Apollo.BaseMutationOptions<AddSheetMutation, AddSheetMutationVariables>;
 export const GetWorkbooksDocument = gql`
     query GetWorkbooks {
   workbooks {

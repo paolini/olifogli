@@ -1,14 +1,11 @@
-import { Dispatch, SetStateAction, useState } from 'react';
+import { useState } from 'react';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
-import Loading from '@/app/components/Loading'
 import Error from '@/app/components/Error'
-import { Input } from '@/app/components/Input'
-import useProfile from '../lib/useProfile'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteSheetsMutation, Maybe, GetSheetsQuery } from '../graphql/generated';
+import { Sheet, useDeleteSheetsMutation, GetSheetsQuery } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
@@ -17,32 +14,6 @@ import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
-
-const _ = gql`query GetSheets($workbookId: ObjectId) {
-        sheets(workbookId: $workbookId) {
-            _id
-            name
-            schema
-            commonData
-            permissions {
-                email
-                userId
-                role
-            }
-            nRows
-            nValidRows
-            closed
-            locked
-            ownerId
-        }
-    }
-`
-
-const __ = gql`
-    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
-        addSheet(name: $name, schema: $schema, workbookId: $workbookId, permissions: $permissions) 
-    }
-`
 
 const ___ = gql`
     mutation DeleteSheets($ids: [ObjectId!]!) {
@@ -68,24 +39,14 @@ const UPDATE_SHEETS = gql`
     }
 `
 
-export default function Sheets({ workbookId }: { workbookId?: ObjectId }) {
-    const profile = useProfile()
-    return <div className="p-4">
-        {profile && <SheetsTable workbookId={workbookId} profile={profile}/>}
-        {workbookId && profile?.isAdmin && <SheetForm workbookId={workbookId} />}
-    </div>;
-}
-
-function SheetsTable({ workbookId, profile }: { 
-    workbookId?: ObjectId
-    profile?: { isAdmin: boolean }
+export default function Sheets({ sheets, profile, workbookId, refetch }: { 
+    sheets: GetSheetsQuery['sheets'], 
+    profile?: { isAdmin?: boolean|null } | null,
+    workbookId: ObjectId,
+    refetch: () => void
 }) {
-    const router = useRouter()
     const [creationId, setCreationId] = useState<ObjectId|null>(null)
-    const { loading, error, data, refetch } = useGetSheetsQuery({
-        variables: { workbookId },
-        pollInterval: 10000 // millisecondi
-    })
+    const router = useRouter()
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
@@ -96,15 +57,12 @@ function SheetsTable({ workbookId, profile }: {
     const [displayLimit, setDisplayLimit] = useState(20)
     const filterState = useSheetsFilterState()
 
-    if (loading) return <Loading />;
-    if (error) return <Error error={error.message} />;
-    if (!data) return <div>No data</div>;
-    const allSheets: GetSheetsQuery['sheets'] = data.sheets;
-    let sheets = filterSheets(filterState, allSheets);
-    const displayedSheets = sheets.slice(0, displayLimit);
-    const hasMore = sheets.length > displayLimit;
+    const allSheets: GetSheetsQuery['sheets'] = sheets;
+    let filteredSheets = filterSheets(filterState, allSheets);
+    const displayedSheets = filteredSheets.slice(0, displayLimit);
+    const hasMore = filteredSheets.length > displayLimit;
 
-    const emptySheetIds = sheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
+    const emptySheetIds = filteredSheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
     const commonDataHeaders = displayedSheets.reduce((acc, sheet) => {
         if (sheet.commonData) {
             Object.keys(sheet.commonData).forEach(key => {
@@ -115,10 +73,10 @@ function SheetsTable({ workbookId, profile }: {
     }, [] as string[])
 
     // Gestione selezione
-    const allSelected = selectedIds.length === sheets.length && sheets.length > 0;
+    const allSelected = selectedIds.length === filteredSheets.length && filteredSheets.length > 0;
     const toggleAll = () => {
         if (allSelected) setSelectedIds([])
-        else setSelectedIds(sheets.map(s => s._id.toString()))
+        else setSelectedIds(filteredSheets.map(s => s._id.toString()))
     }
     const toggleOne = (id: ObjectId) => {
         const idStr = id.toString();
@@ -132,7 +90,7 @@ function SheetsTable({ workbookId, profile }: {
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
-            <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={sheets}/>
+            <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={filteredSheets}/>
             <table>
                 <thead>
                     <tr>
@@ -167,7 +125,7 @@ function SheetsTable({ workbookId, profile }: {
         )}
         {hasMore && (
             <div className="my-2">
-                {displayLimit} / {sheets.length} fogli mostrati
+                {displayLimit} / {filteredSheets.length} fogli mostrati
                 <Button className="ml-2" onClick={() => setDisplayLimit(limit => limit*2)}>
                     Mostra più
                 </Button>
@@ -190,7 +148,7 @@ function SheetsTable({ workbookId, profile }: {
                 <Button disabled={selectedIds.length === 0 || validatingRows} onClick={validateSelectedSheets}>
                     Rivalida {selectedIds.length} {selectedIds.length === 1 ? 'foglio selezionato' : 'fogli selezionati'}
                 </Button>
-                <Button variant="danger" disabled={sheets.length > 0 || deletingWorkbook} onClick={onDelete}>
+                <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     Elimina raccolta
                 </Button>
             </div>
@@ -198,9 +156,9 @@ function SheetsTable({ workbookId, profile }: {
         <Error error={updateSheetsError} />
         { 
             selectedIds.length > 0 && profile?.isAdmin &&
-            <BulkCommonDataSetter sheets={sheets.filter(sheet => selectedIds.includes(sheet._id.toString()))} onApply={applyBulkCommonData} />
+            <BulkCommonDataSetter sheets={filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))} onApply={applyBulkCommonData} />
         }
-        {creationId && workbookId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
+        {creationId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
     </>
 
     async function deleteEmptySheets() {
@@ -241,7 +199,7 @@ function SheetsTable({ workbookId, profile }: {
 
     async function applyBulkCommonData(field: string, value: string) {
         if (!profile?.isAdmin) return
-        const selectedSheets = sheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
+        const selectedSheets = filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
         const updates = selectedSheets.map(sheet => ({
             _id: sheet._id,
             commonData: { ...sheet.commonData, [field]: value }
@@ -254,7 +212,7 @@ function SheetsTable({ workbookId, profile }: {
 
 function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders, selected, onSelect}: {
     sheet: Partial<Sheet> & {_id: ObjectId}, 
-    profile?: {isAdmin: boolean},
+    profile?: {isAdmin?: boolean|null}|null,
     creationDisabled: boolean, 
     startCreation: (id: ObjectId) => void,
     commonDataHeaders: string[],
@@ -294,40 +252,6 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
             </td>
         }
     </tr>
-}
-
-function SheetForm({ workbookId }: { workbookId: ObjectId }) {
-    const [addSheet, {loading, error }] = useAddSheetMutation({
-        refetchQueries: ['GetSheets']
-    });
-    const [name, setName] = useState('')
-    const [schema, setSchema] = useState('')
-
-    if (error) return <Error error={error.message} />;
-
-    return <div>
-        <select name="schema" value={schema} onChange={e => setSchema(e.target.value)}>
-            <option value="">Scegli uno schema</option>
-            { Object.entries(schemas).map(([key, schema]) =>
-                <option key={key} value={key}>{schema.header}</option>
-            )}
-        </select> {}
-        <Input value={name} setValue={setName}/> {}
-        <Button disabled={loading||schema==""||name==""} onClick={create}>
-            Nuovo foglio
-        </Button>
-    </div>
-
-    async function create() {
-        await addSheet({variables: {
-            name,
-            schema: schema,
-            workbookId,
-            permissions: []
-        }})
-        setName('')
-        setSchema('')
-    }
 }
 
 function BulkCommonDataSetter({sheets, onApply}:{
