@@ -77,6 +77,9 @@ async function main() {
   console.log(`Trovati ${sheetMap.size} sheet nel workbook ${workbookId} con schema ${schema}.`);
 
   const now = new Date();
+  
+  // Contatori per gli aggiornamenti
+  const sheetCounters = new Map(); // sheetId -> { nRows, nValidRows }
 
   for (const row of parsed.data) {
     const sheetName = row.school;
@@ -95,6 +98,8 @@ async function main() {
         },
         createdAt: now,
         permissions: [],
+        nRows: 0,
+        nValidRows: 0,
       };
       const res = await sheetsCol.insertOne(sheetDoc);
       sheet = { ...sheetDoc, _id: res.insertedId };
@@ -133,7 +138,28 @@ async function main() {
     };
     await rowsCol.insertOne(rowDoc);
     console.log(`Aggiunta riga a sheet ${sheetName}`);
+    
+    // Aggiorna i contatori locali
+    const sheetIdStr = sheet._id.toString();
+    if (!sheetCounters.has(sheetIdStr)) {
+      sheetCounters.set(sheetIdStr, { nRows: 0, nValidRows: 0 });
+    }
+    const counters = sheetCounters.get(sheetIdStr);
+    counters.nRows++;
+    if (rowDoc.error === '' || !rowDoc.error) {
+      counters.nValidRows++;
+    }
   }
+  
+  // Aggiorna i contatori di tutti gli sheet modificati
+  console.log(`\nAggiornamento contatori per ${sheetCounters.size} sheet...`);
+  for (const [sheetIdStr, counters] of sheetCounters.entries()) {
+    await sheetsCol.updateOne(
+      { _id: new ObjectId(sheetIdStr) },
+      { $inc: { nRows: counters.nRows, nValidRows: counters.nValidRows } }
+    );
+  }
+  
   await client.close();
   console.log('Import completato.');
 }

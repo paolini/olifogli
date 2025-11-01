@@ -19,6 +19,8 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
         
         return {
             commonData: {},
+            nRows: 0,
+            nValidRows: 0,
             ...sheet,
             ownerId: user._id,
             permissions,

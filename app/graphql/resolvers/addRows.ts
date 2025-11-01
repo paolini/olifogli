@@ -1,4 +1,4 @@
-import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, withTransaction } from '@/app/lib/mongodb'
 import { WithoutId } from 'mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
@@ -32,7 +32,24 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
             updatedBy,
             updatedOn,
         }))
-    const collection = await getRowsCollection()
-    const res = await collection.insertMany(validatedRows)
-    return res.insertedCount
+    
+    // Usa una transazione per garantire la consistenza
+    const insertedCount = await withTransaction(async (session) => {
+        const collection = await getRowsCollection()
+        const res = await collection.insertMany(validatedRows, { session })
+        
+        // Calcola quante righe valide sono state inserite
+        const nValidRows = validatedRows.filter(r => r.error === '' || !r.error).length
+        
+        // Aggiorna i contatori dello sheet
+        await sheetsCollection.updateOne(
+            { _id: sheetId },
+            { $inc: { nRows: res.insertedCount, nValidRows } },
+            { session }
+        )
+        
+        return res.insertedCount
+    })
+    
+    return insertedCount
 }

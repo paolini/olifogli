@@ -94,6 +94,9 @@ async function main() {
   const now = new Date();
   let importedCount = 0;
   let createdSheetsCount = 0;
+  
+  // Contatori per gli aggiornamenti
+  const sheetCounters = new Map(); // sheetId -> { nRows, nValidRows }
 
   for (const record of jsonLines) {
     // Estrai participationId
@@ -126,6 +129,8 @@ async function main() {
         },
         createdAt: now,
         permissions: [],
+        nRows: 0,
+        nValidRows: 0,
       };
       const res = await sheetsCol.insertOne(sheetDoc);
       sheet = { ...sheetDoc, _id: res.insertedId };
@@ -183,9 +188,29 @@ async function main() {
     await rowsCol.insertOne(rowDoc);
     importedCount++;
     
+    // Aggiorna i contatori locali
+    const sheetIdStr = sheet._id.toString();
+    if (!sheetCounters.has(sheetIdStr)) {
+      sheetCounters.set(sheetIdStr, { nRows: 0, nValidRows: 0 });
+    }
+    const counters = sheetCounters.get(sheetIdStr);
+    counters.nRows++;
+    if (rowDoc.error === '' || !rowDoc.error) {
+      counters.nValidRows++;
+    }
+    
     if (importedCount % 100 === 0) {
       console.log(`Importate ${importedCount} righe...`);
     }
+  }
+  
+  // Aggiorna i contatori di tutti gli sheet modificati
+  console.log(`\nAggiornamento contatori per ${sheetCounters.size} sheet...`);
+  for (const [sheetIdStr, counters] of sheetCounters.entries()) {
+    await sheetsCol.updateOne(
+      { _id: new ObjectId(sheetIdStr) },
+      { $inc: { nRows: counters.nRows, nValidRows: counters.nValidRows } }
+    );
   }
   
   await client.close();

@@ -1,4 +1,4 @@
-import { getSheetsCollection, getRowsCollection, getWorkbooksCollection } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, getWorkbooksCollection, withTransaction } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 
 import { Context } from '../types'
@@ -26,14 +26,42 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
     data = schema.clean(data)
     const derived_data = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
-    const $set = {
-        ...derived_data,
-        updatedOn: new Date(),
-        updatedBy: user.email,
-    }
-    await rowsCollection.updateOne({ _id }, { $set })
-    const updatedRow = await rowsCollection.findOne({ _id })
-    if (!updatedRow) throw new Error('Row not found after update')
+    
+    // Determina se la validità è cambiata
+    const wasValid = row.error === '' || !row.error
+    const isValid = derived_data.error === '' || !derived_data.error
+    
+    // Usa una transazione per garantire la consistenza
+    const updatedRow = await withTransaction(async (session) => {
+        const $set = {
+            ...derived_data,
+            updatedOn: new Date(),
+            updatedBy: user.email,
+        }
+        await rowsCollection.updateOne({ _id }, { $set }, { session })
+        
+        // Aggiorna nValidRows dello sheet se la validità è cambiata
+        if (wasValid && !isValid) {
+            // La riga è diventata invalida
+            await sheetsCollection.updateOne(
+                { _id: row.sheetId },
+                { $inc: { nValidRows: -1 } },
+                { session }
+            )
+        } else if (!wasValid && isValid) {
+            // La riga è diventata valida
+            await sheetsCollection.updateOne(
+                { _id: row.sheetId },
+                { $inc: { nValidRows: 1 } },
+                { session }
+            )
+        }
+        
+        const updatedRow = await rowsCollection.findOne({ _id }, { session })
+        if (!updatedRow) throw new Error('Row not found after update')
+        return updatedRow
+    })
+    
     return updatedRow
 }
 
