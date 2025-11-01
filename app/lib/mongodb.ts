@@ -1,4 +1,4 @@
-import { MongoClient, WithoutId } from 'mongodb'
+import { MongoClient, WithoutId, ClientSession } from 'mongodb'
 
 import { Account, User, Sheet, Row, Workbook, ScanJob, ScanResults, ScanSheetJob } from './models'
 
@@ -114,7 +114,7 @@ export async function getClient(): Promise<MongoClient> {
  * @returns Il risultato della funzione
  */
 export async function withTransaction<T>(
-    fn: (session: any) => Promise<T>
+    fn: (session: ClientSession) => Promise<T>
 ): Promise<T> {
     const client = await getClient()
     const session = client.startSession()

@@ -29,7 +29,7 @@ export default async function deleteRow(_: unknown, {_id}: {
         await rowsCollection.deleteOne({ _id }, { session });
         
         // Decrementa nRows e, se la riga era valida, nValidRows
-        const updateFields: any = { nRows: -1 }
+        const updateFields: { nRows: number; nValidRows?: number } = { nRows: -1 }
         if (row.error === '' || !row.error) {
             updateFields.nValidRows = -1
         }

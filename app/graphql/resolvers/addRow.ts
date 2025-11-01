@@ -41,7 +41,7 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
         }, { session })
         
         // Incrementa nRows e, se la riga è valida, nValidRows
-        const updateFields: any = { nRows: 1 }
+        const updateFields: { nRows: number; nValidRows?: number } = { nRows: 1 }
         if (error === '') {
             updateFields.nValidRows = 1
         }
