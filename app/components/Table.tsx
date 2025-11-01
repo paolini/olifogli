@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, SetStateAction, Dispatch } from 'react'
+import { useState, useEffect } from 'react'
 import { Row, Sheet, useRequestScanSheetGenerationMutation } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
@@ -13,7 +13,13 @@ import Button from './Button'
 import { RowInputState } from './RowInputStateActions'
 import { useDeleteRows, usePatchRow } from './TableInputRow'
 import { ObjectId } from 'bson'
+import { gql } from 'graphql-request'
 
+const _ = gql`
+    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
+        requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
+    }
+`;
 
 export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   rows: Row[],
