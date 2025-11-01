@@ -15,12 +15,14 @@ import { useDeleteRows } from './TableInputRow'
 import { ObjectId } from 'bson'
 
 
-export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: {
+export default function Table({rows, sheet, edit, selectedIds, setSelectedIds, onRefresh, refreshLoading}: {
   rows: Row[],
   sheet: Sheet,
   edit?: boolean,
   selectedIds: Set<string>,
-  setSelectedIds: Dispatch<SetStateAction<Set<string>>>
+  setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
+  onRefresh?: () => Promise<void>,
+  refreshLoading?: boolean
 }) {
   const [rowInputState, setRowInputState] = useState<RowInputState>({
     rowIsBeingEdited: false,
@@ -102,6 +104,8 @@ export default function Table({rows, sheet, edit, selectedIds, setSelectedIds}: 
           showHiddenColumns={showHiddenColumns}
           edit={edit}
           setSort={setSort}
+          onRefresh={onRefresh}
+          refreshLoading={refreshLoading}
         />
       </LoadingWrapper>
     </div>
