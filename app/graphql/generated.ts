@@ -329,6 +329,7 @@ export type Sheet = {
   lockedBy?: Maybe<Scalars['String']['output']>;
   lockedOn?: Maybe<Scalars['Timestamp']['output']>;
   nRows: Scalars['Int']['output'];
+  nValidRows: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   ownerId: Scalars['ObjectId']['output'];
   permissions: Array<Permission>;
@@ -510,7 +511,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, nValidRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -566,6 +567,13 @@ export type DeleteRowMutationVariables = Exact<{
 
 
 export type DeleteRowMutation = { __typename?: 'Mutation', deleteRow?: ObjectId | null };
+
+export type DeleteRowsMutationVariables = Exact<{
+  ids: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+}>;
+
+
+export type DeleteRowsMutation = { __typename?: 'Mutation', deleteRows?: number | null };
 
 export type GetWorkbookQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -1294,6 +1302,7 @@ export const GetSheetsDocument = gql`
       role
     }
     nRows
+    nValidRows
     closed
     locked
     ownerId
@@ -1578,6 +1587,37 @@ export function useDeleteRowMutation(baseOptions?: Apollo.MutationHookOptions<De
 export type DeleteRowMutationHookResult = ReturnType<typeof useDeleteRowMutation>;
 export type DeleteRowMutationResult = Apollo.MutationResult<DeleteRowMutation>;
 export type DeleteRowMutationOptions = Apollo.BaseMutationOptions<DeleteRowMutation, DeleteRowMutationVariables>;
+export const DeleteRowsDocument = gql`
+    mutation deleteRows($ids: [ObjectId!]!) {
+  deleteRows(ids: $ids)
+}
+    `;
+export type DeleteRowsMutationFn = Apollo.MutationFunction<DeleteRowsMutation, DeleteRowsMutationVariables>;
+
+/**
+ * __useDeleteRowsMutation__
+ *
+ * To run a mutation, you first call `useDeleteRowsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteRowsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteRowsMutation, { data, loading, error }] = useDeleteRowsMutation({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function useDeleteRowsMutation(baseOptions?: Apollo.MutationHookOptions<DeleteRowsMutation, DeleteRowsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteRowsMutation, DeleteRowsMutationVariables>(DeleteRowsDocument, options);
+      }
+export type DeleteRowsMutationHookResult = ReturnType<typeof useDeleteRowsMutation>;
+export type DeleteRowsMutationResult = Apollo.MutationResult<DeleteRowsMutation>;
+export type DeleteRowsMutationOptions = Apollo.BaseMutationOptions<DeleteRowsMutation, DeleteRowsMutationVariables>;
 export const GetWorkbookDocument = gql`
     query GetWorkbook($workbookId: ObjectId!) {
   workbook(workbookId: $workbookId) {
@@ -2226,6 +2266,7 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   lockedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lockedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   nRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  nValidRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;

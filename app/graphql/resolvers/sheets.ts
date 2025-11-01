@@ -27,7 +27,6 @@ export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs
     const collection = await getSheetsCollection()
 
     const needWorkbook = selectionHasField(info.fieldNodes[0]?.selectionSet, 'workbook', info)
-    const needNRows = selectionHasField(info.fieldNodes[0]?.selectionSet, 'nRows', info)
 
     const pipeline: object[] = []
     
@@ -41,61 +40,6 @@ export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs
             { 'permissions.email': user.email },
             { 'permissions.userId': user._id },
         ] } })
-    }
-
-    if (needNRows) {
-        // Batch compute counts for all matched sheets with a single lookup
-        pipeline.push(
-            {
-                $group: {
-                    _id: null,
-                    sheetIds: { $addToSet: '$_id' },
-                    sheets: { $push: '$$ROOT' },
-                },
-            },
-            {
-                $lookup: {
-                    from: 'rows',
-                    let: { sheetIds: '$sheetIds' },
-                    pipeline: [
-                        { $match: { $expr: { $in: ['$sheetId', '$$sheetIds'] } } },
-                        { $group: { _id: '$sheetId', count: { $sum: 1 } } },
-                    ],
-                    as: 'counts',
-                },
-            },
-            { $unwind: '$sheets' },
-            {
-                $addFields: {
-                    'sheets.nRows': {
-                        $ifNull: [
-                            {
-                                $let: {
-                                    vars: { id: '$sheets._id' },
-                                    in: {
-                                        $first: {
-                                            $map: {
-                                                input: {
-                                                    $filter: {
-                                                        input: '$counts',
-                                                        as: 'c',
-                                                        cond: { $eq: ['$$c._id', '$$id'] },
-                                                    },
-                                                },
-                                                as: 'c',
-                                                in: '$$c.count',
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                            0,
-                        ],
-                    },
-                },
-            },
-            { $replaceRoot: { newRoot: '$sheets' } },
-        )
     }
 
     if (needWorkbook) {

@@ -32,6 +32,7 @@ type Sheet {
   workbook: Workbook!
   commonData: Data!
   nRows: Int!
+  nValidRows: Int!
   closed: Boolean
   closedBy: String
   closedOn: Timestamp
