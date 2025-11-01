@@ -113,7 +113,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
             }
         </div>
 
-        {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} />}
+        {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} profile={profile}/>}
         {activeTab === 'list' && <WorkbookRanking workbookId={workbookId} />}
         {activeTab === 'distribuzione' && <WorkbookDistribution workbookId={workbookId} />}
         {activeTab === 'configura' && workbook && <WorkbookConfigure workbook={workbook} profile={profile || null} sheetsCount={sheetsCount} />}
