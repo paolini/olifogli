@@ -6,13 +6,12 @@ import { ObjectId } from 'bson'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import Error from './Error'
 import Loading from './Loading'
-import { Report as WorkbookReportType } from '../graphql/generated'
+import { DistributionReport as DistributionReport, useGetWorkbookDistributionReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 
-
-const GET_WORKBOOK_REPORTS = gql`
-    query GetWorkbookReportsDistribution($workbookId: ObjectId!) {
-        workbookReports(workbookId: $workbookId) {
+const _ = gql`
+    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String!) {
+        workbookDistributionReport(workbookId: $workbookId, schema: $schema) {
             schema
             totalStudents
             scoreDistribution {
@@ -24,57 +23,48 @@ const GET_WORKBOOK_REPORTS = gql`
 `
 
 export default function WorkbookDistribution({ workbookId }: { workbookId: ObjectId }) {
-    const { loading, error, data } = useQuery<{ workbookReports: WorkbookReportType[] }>(GET_WORKBOOK_REPORTS, {
-        variables: { workbookId }
+    // Stato per il filtro dello schema - default al primo schema disponibile
+    const [schemaFilter, setSchemaFilter] = useState<string>('archimede_biennio')
+
+    const { loading, error, data } = useGetWorkbookDistributionReportQuery({
+        variables: { workbookId, schema: schemaFilter }
     })
     
-    // Stato per il filtro dello schema - default al primo schema disponibile
-    const [schemaFilter, setSchemaFilter] = useState<string>('')
 
     if (loading) return <Loading />
     if (error) return <Error error={error} />
-    if (!data?.workbookReports || data.workbookReports.length === 0) {
-        return <div className="p-4">
-            <p>Nessun report disponibile. Sono necessari fogli con schema archimede_biennio o archimede_triennio.</p>
-        </div>
-    }
-
-    // Imposta il filtro al primo schema se non è ancora impostato
-    if (!schemaFilter && data.workbookReports.length > 0) {
-        setSchemaFilter(data.workbookReports[0].schema)
-    }
 
     // Filtra i report in base alla selezione
-    const filteredReports = data.workbookReports.filter(r => r.schema === schemaFilter)
+    const report = data?.workbookDistributionReport
 
     return (
         <div className="p-4 space-y-6">
-            {data.workbookReports.length > 1 && (
+            {report && (
                 <div className="flex items-center gap-3">
                     <select 
                         value={schemaFilter} 
                         onChange={e => setSchemaFilter(e.target.value)} 
                         className="border rounded px-3 py-2"
                     >
-                        {data.workbookReports.map(report => (
-                            <option key={report.schema} value={report.schema}>
-                                {schemas[report.schema].header}
+                        {["archimede_biennio", "archimede_triennio"].map(schema => (
+                            <option key={schema} value={schema}>
+                                {schemas[schema].header}
                             </option>
                         ))}
                     </select>
                     <span className="text-gray-600">
-                        {filteredReports.length > 0 && `${filteredReports[0].totalStudents} studenti`}
+                        {report && `${report.totalStudents} studenti`}
                     </span>
                 </div>
             )}
-            {filteredReports.map(report => (
+            {report && (
                 <DistributionSection key={report.schema} report={report} />
-            ))}
+            )}
         </div>
     )
 }
 
-function DistributionSection({ report }: { report: WorkbookReportType }) {
+function DistributionSection({ report }: { report: DistributionReport }) {
     const schemaName = schemas[report.schema].header
 
     return (
@@ -89,7 +79,7 @@ function DistributionSection({ report }: { report: WorkbookReportType }) {
     )
 }
 
-function ScoreDistributionChart({ distribution }: { distribution: WorkbookReportType['scoreDistribution'] }) {
+function ScoreDistributionChart({ distribution }: { distribution: DistributionReport['scoreDistribution'] }) {
     if (distribution.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
