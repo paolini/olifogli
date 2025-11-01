@@ -59,6 +59,7 @@ services:
   db:
     image: mongo
     restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     environment:
       - PUID=1000
       - PGID=1000
@@ -66,6 +67,13 @@ services:
       - ./database:/data/db
     networks:
       - backend
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'db:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
 
   nginx:
     image: nginx:latest
