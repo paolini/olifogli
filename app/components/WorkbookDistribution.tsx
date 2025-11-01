@@ -6,7 +6,7 @@ import { ObjectId } from 'bson'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import Error from './Error'
 import Loading from './Loading'
-import { WorkbookReport as WorkbookReportType } from '../graphql/generated'
+import { Report as WorkbookReportType } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 
 

@@ -108,6 +108,10 @@ type ScanSheetJob {
   createdBy: String!
 }
 
+type ReportEntrySheet {
+  commonData: Data!
+}
+
 type ReportEntry {
   sheetId: ObjectId!
   sheetName: String!
@@ -115,6 +119,7 @@ type ReportEntry {
   studentSurname: String!
   classYear: String
   classSection: String
+  sheet: ReportEntrySheet!
   score: Float!
   rank: Int!
 }
@@ -124,7 +129,7 @@ type ScoreDistribution {
   count: Int!
 }
 
-type WorkbookReport {
+type Report {
   schema: String!
   totalStudents: Int!
   top100: [ReportEntry!]!
@@ -143,7 +148,7 @@ type Query {
   rows(sheetId: ObjectId!): [Row!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
-  workbookReports(workbookId: ObjectId!): [WorkbookReport!]!
+  workbookReports(workbookId: ObjectId!, schema: String, commonData: Data): [Report!]!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!

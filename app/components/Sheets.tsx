@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
@@ -8,7 +8,7 @@ import { Input } from '@/app/components/Input'
 import useProfile from '../lib/useProfile'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteSheetsMutation } from '../graphql/generated';
+import { useGetSheetsQuery, useAddSheetMutation, Sheet, useDeleteSheetsMutation, Maybe, GetSheetsQuery } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
+import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
 
 const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
@@ -93,32 +94,13 @@ function SheetsTable({ workbookId, profile }: {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     // Stato per la paginazione
     const [displayLimit, setDisplayLimit] = useState(20)
-    // Stato per il filtro schema
-    const [schemaFilter, setSchemaFilter] = useState<string>('')
-    // Stato per il filtro distretto
-    const [distrettoFilter, setDistrettoFilter] = useState<string>('')
-    // Stato per il filtro stato (aperto/chiuso/bloccato)
-    const [statoFilter, setStatoFilter] = useState<string>('')
+    const filterState = useSheetsFilterState()
 
     if (loading) return <Loading />;
     if (error) return <Error error={error.message} />;
     if (!data) return <div>No data</div>;
-    const allSheets = data.sheets ?? [];
-    let sheets = allSheets;
-    if (schemaFilter) {
-        sheets = sheets.filter(s => s.schema === schemaFilter);
-    }
-    if (distrettoFilter) {
-        sheets = sheets.filter(s => s.commonData?.Distretto === distrettoFilter);
-    }
-    if (statoFilter) {
-        sheets = sheets.filter(s => {
-            if (statoFilter === 'aperto') return !s.closed && !s.locked;
-            if (statoFilter === 'chiuso_o_bloccato') return s.closed || s.locked;
-            if (statoFilter === 'chiuso_non_bloccato') return s.closed && !s.locked;
-            return true;
-        });
-    }
+    const allSheets: GetSheetsQuery['sheets'] = data.sheets;
+    let sheets = filterSheets(filterState, allSheets);
     const displayedSheets = sheets.slice(0, displayLimit);
     const hasMore = sheets.length > displayLimit;
 
@@ -143,17 +125,6 @@ function SheetsTable({ workbookId, profile }: {
         setSelectedIds(ids => ids.includes(idStr) ? ids.filter(i => i !== idStr) : [...ids, idStr])
     }
 
-    // Calcola gli schemi unici presenti nei fogli
-    const availableSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
-        .sort()
-    
-    // Calcola i distretti unici presenti nei fogli
-    const availableDistretti = Array.from(new Set(
-        allSheets
-            .filter(s => s.commonData?.Distretto)
-            .map(s => s.commonData!.Distretto as string)
-    )).sort()
-
     const columns = commonDataHeaders.filter(field => field !== 'info')
 
     return <>
@@ -161,31 +132,7 @@ function SheetsTable({ workbookId, profile }: {
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
-            <div className="mb-2 flex items-center gap-3">
-                <select value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)} className="border rounded px-2 py-1">
-                    <option value="">Tutti i fogli</option>
-                    {availableSchemas.map(schemaKey => (
-                        <option key={schemaKey} value={schemaKey}>
-                            {schemas[schemaKey]?.header || schemaKey}
-                        </option>
-                    ))}
-                </select>
-                <select value={distrettoFilter} onChange={e => setDistrettoFilter(e.target.value)} className="border rounded px-2 py-1">
-                    <option value="">Tutti i distretti</option>
-                    {availableDistretti.map(distretto => (
-                        <option key={distretto} value={distretto}>
-                            {distretto}
-                        </option>
-                    ))}
-                </select>
-                <select value={statoFilter} onChange={e => setStatoFilter(e.target.value)} className="border rounded px-2 py-1">
-                    <option value="">Tutti gli stati</option>
-                    <option value="aperto">Aperti</option>
-                    <option value="chiuso_o_bloccato">Chiusi o bloccati</option>
-                    <option value="chiuso_non_bloccato">Chiusi ma non bloccati</option>
-                </select>
-                <span>{sheets.length} {sheets.length === 1 ? "foglio" : "fogli"} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${allSheets.length})`}</span>
-            </div>
+            <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={sheets}/>
             <table>
                 <thead>
                     <tr>

@@ -106,7 +106,7 @@ olifogli/
 - `User`: Utente del sistema
 - `ScanJob`: Job di acquisizione OMR
 - `ScanResults`: Risultati dell'acquisizione
-- `WorkbookReport`: Report aggregato con classifica e distribuzione punteggi
+- `Report`: Report aggregato con classifica e distribuzione punteggi
 - `ReportEntry`: Singola entry nella classifica con dati studente e punteggio
 - `ScoreDistribution`: Distribuzione dei punteggi per grafico
 

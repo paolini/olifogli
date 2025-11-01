@@ -207,9 +207,10 @@ export type Query = {
   scanSheetJobs: Array<ScanSheetJob>;
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
+  sheetsReports: Array<Report>;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
-  workbookReports: Array<WorkbookReport>;
+  workbookReports: Array<Report>;
   workbooks?: Maybe<Array<Maybe<Workbook>>>;
 };
 
@@ -245,13 +246,28 @@ export type QuerySheetsArgs = {
 };
 
 
+export type QuerySheetsReportsArgs = {
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
 export type QueryWorkbookArgs = {
   workbookId: Scalars['ObjectId']['input'];
 };
 
 
 export type QueryWorkbookReportsArgs = {
+  commonData?: InputMaybe<Scalars['Data']['input']>;
+  schema?: InputMaybe<Scalars['String']['input']>;
   workbookId: Scalars['ObjectId']['input'];
+};
+
+export type Report = {
+  __typename?: 'Report';
+  schema: Scalars['String']['output'];
+  scoreDistribution: Array<ScoreDistribution>;
+  top100: Array<ReportEntry>;
+  totalStudents: Scalars['Int']['output'];
 };
 
 export type ReportEntry = {
@@ -260,10 +276,16 @@ export type ReportEntry = {
   classYear?: Maybe<Scalars['String']['output']>;
   rank: Scalars['Int']['output'];
   score: Scalars['Float']['output'];
+  sheet: ReportEntrySheet;
   sheetId: Scalars['ObjectId']['output'];
   sheetName: Scalars['String']['output'];
   studentName: Scalars['String']['output'];
   studentSurname: Scalars['String']['output'];
+};
+
+export type ReportEntrySheet = {
+  __typename?: 'ReportEntrySheet';
+  commonData: Scalars['Data']['output'];
 };
 
 export type Row = {
@@ -369,14 +391,6 @@ export type Workbook = {
   sheetsCount?: Maybe<Scalars['Int']['output']>;
 };
 
-export type WorkbookReport = {
-  __typename?: 'WorkbookReport';
-  schema: Scalars['String']['output'];
-  scoreDistribution: Array<ScoreDistribution>;
-  top100: Array<ReportEntry>;
-  totalStudents: Scalars['Int']['output'];
-};
-
 export type AddRowsMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
   columns: Array<Scalars['String']['input']> | Scalars['String']['input'];
@@ -411,14 +425,6 @@ export type ScanResultsQueryVariables = Exact<{
 
 
 export type ScanResultsQuery = { __typename?: 'Query', scanResults: Array<{ __typename?: 'ScanResults', _id: ObjectId, jobId: ObjectId, image: string, rawData: any }> };
-
-export type RequestScanSheetGenerationMutationVariables = Exact<{
-  sheetId: Scalars['ObjectId']['input'];
-  selectedRowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
-}>;
-
-
-export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
 
 export type ScanSheetJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -595,14 +601,14 @@ export type GetWorkbookReportsDistributionQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookReportsDistributionQuery = { __typename?: 'Query', workbookReports: Array<{ __typename?: 'WorkbookReport', schema: string, totalStudents: number, scoreDistribution: Array<{ __typename?: 'ScoreDistribution', score: number, count: number }> }> };
+export type GetWorkbookReportsDistributionQuery = { __typename?: 'Query', workbookReports: Array<{ __typename?: 'Report', schema: string, totalStudents: number, scoreDistribution: Array<{ __typename?: 'ScoreDistribution', score: number, count: number }> }> };
 
 export type GetWorkbookReportsRankingQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetWorkbookReportsRankingQuery = { __typename?: 'Query', workbookReports: Array<{ __typename?: 'WorkbookReport', schema: string, totalStudents: number, top100: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number }> }> };
+export type GetWorkbookReportsRankingQuery = { __typename?: 'Query', workbookReports: Array<{ __typename?: 'Report', schema: string, totalStudents: number, top100: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number }> }> };
 
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -824,38 +830,6 @@ export type ScanResultsQueryHookResult = ReturnType<typeof useScanResultsQuery>;
 export type ScanResultsLazyQueryHookResult = ReturnType<typeof useScanResultsLazyQuery>;
 export type ScanResultsSuspenseQueryHookResult = ReturnType<typeof useScanResultsSuspenseQuery>;
 export type ScanResultsQueryResult = Apollo.QueryResult<ScanResultsQuery, ScanResultsQueryVariables>;
-export const RequestScanSheetGenerationDocument = gql`
-    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
-  requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
-}
-    `;
-export type RequestScanSheetGenerationMutationFn = Apollo.MutationFunction<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
-
-/**
- * __useRequestScanSheetGenerationMutation__
- *
- * To run a mutation, you first call `useRequestScanSheetGenerationMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useRequestScanSheetGenerationMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [requestScanSheetGenerationMutation, { data, loading, error }] = useRequestScanSheetGenerationMutation({
- *   variables: {
- *      sheetId: // value for 'sheetId'
- *      selectedRowIds: // value for 'selectedRowIds'
- *   },
- * });
- */
-export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.MutationHookOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>(RequestScanSheetGenerationDocument, options);
-      }
-export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
-export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
-export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
 export const ScanSheetJobsDocument = gql`
     query scanSheetJobs($sheetId: ObjectId!) {
   scanSheetJobs(sheetId: $sheetId) {
@@ -2079,7 +2053,9 @@ export type ResolversTypes = {
   Permission: ResolverTypeWrapper<Omit<Permission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
+  Report: ResolverTypeWrapper<Report>;
   ReportEntry: ResolverTypeWrapper<Omit<ReportEntry, 'sheetId'> & { sheetId: ResolversTypes['ObjectId'] }>;
+  ReportEntrySheet: ResolverTypeWrapper<ReportEntrySheet>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
@@ -2093,7 +2069,6 @@ export type ResolversTypes = {
   UpdateSheetInput: UpdateSheetInput;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
-  WorkbookReport: ResolverTypeWrapper<WorkbookReport>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -2109,7 +2084,9 @@ export type ResolversParentTypes = {
   Permission: Omit<Permission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
   PermissionInput: PermissionInput;
   Query: {};
+  Report: Report;
   ReportEntry: Omit<ReportEntry, 'sheetId'> & { sheetId: ResolversParentTypes['ObjectId'] };
+  ReportEntrySheet: ReportEntrySheet;
   Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
@@ -2123,7 +2100,6 @@ export type ResolversParentTypes = {
   UpdateSheetInput: UpdateSheetInput;
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
-  WorkbookReport: WorkbookReport;
 };
 
 export type ConfigResolvers<ContextType = any, ParentType extends ResolversParentTypes['Config'] = ResolversParentTypes['Config']> = {
@@ -2187,10 +2163,19 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   scanSheetJobs?: Resolver<Array<ResolversTypes['ScanSheetJob']>, ParentType, ContextType, RequireFields<QueryScanSheetJobsArgs, 'sheetId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
+  sheetsReports?: Resolver<Array<ResolversTypes['Report']>, ParentType, ContextType, RequireFields<QuerySheetsReportsArgs, 'sheetIds'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
-  workbookReports?: Resolver<Array<ResolversTypes['WorkbookReport']>, ParentType, ContextType, RequireFields<QueryWorkbookReportsArgs, 'workbookId'>>;
+  workbookReports?: Resolver<Array<ResolversTypes['Report']>, ParentType, ContextType, RequireFields<QueryWorkbookReportsArgs, 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
+};
+
+export type ReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['Report'] = ResolversParentTypes['Report']> = {
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  scoreDistribution?: Resolver<Array<ResolversTypes['ScoreDistribution']>, ParentType, ContextType>;
+  top100?: Resolver<Array<ResolversTypes['ReportEntry']>, ParentType, ContextType>;
+  totalStudents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ReportEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ReportEntry'] = ResolversParentTypes['ReportEntry']> = {
@@ -2198,10 +2183,16 @@ export type ReportEntryResolvers<ContextType = any, ParentType extends Resolvers
   classYear?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rank?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  sheet?: Resolver<ResolversTypes['ReportEntrySheet'], ParentType, ContextType>;
   sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   sheetName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   studentName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   studentSurname?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ReportEntrySheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['ReportEntrySheet'] = ResolversParentTypes['ReportEntrySheet']> = {
+  commonData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2298,14 +2289,6 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type WorkbookReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkbookReport'] = ResolversParentTypes['WorkbookReport']> = {
-  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  scoreDistribution?: Resolver<Array<ResolversTypes['ScoreDistribution']>, ParentType, ContextType>;
-  top100?: Resolver<Array<ResolversTypes['ReportEntry']>, ParentType, ContextType>;
-  totalStudents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type Resolvers<ContextType = any> = {
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
@@ -2314,7 +2297,9 @@ export type Resolvers<ContextType = any> = {
   ObjectId?: GraphQLScalarType;
   Permission?: PermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  Report?: ReportResolvers<ContextType>;
   ReportEntry?: ReportEntryResolvers<ContextType>;
+  ReportEntrySheet?: ReportEntrySheetResolvers<ContextType>;
   Row?: RowResolvers<ContextType>;
   ScanJob?: ScanJobResolvers<ContextType>;
   ScanMessage?: ScanMessageResolvers<ContextType>;
@@ -2325,6 +2310,5 @@ export type Resolvers<ContextType = any> = {
   Timestamp?: GraphQLScalarType;
   User?: UserResolvers<ContextType>;
   Workbook?: WorkbookResolvers<ContextType>;
-  WorkbookReport?: WorkbookReportResolvers<ContextType>;
 };
 
