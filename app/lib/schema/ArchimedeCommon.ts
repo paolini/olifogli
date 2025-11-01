@@ -1,4 +1,4 @@
-import { Data } from '../models'
+import { Data, Row, ScanResults } from '../models'
 import { Field, ChoiceAnswerField, DateField, OptionsField } from './fields'
 import {decodePermutations, buildPermutationsObject} from './PERMUTATIONS'
 import Schema, { DerivedData } from './Schema'
@@ -66,6 +66,47 @@ export default class ArchimedeCommon extends Schema {
             }
         }
     }
+
+    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
+        const existing_data_dict = Object.fromEntries(rows
+            .map(row => [parseInt(row.data.id) % 1000, row] as [number,Row])
+            .filter(([short_id,_]) => !isNaN(short_id))
+            .map(([short_id, data]) => [short_id.toString().padStart(3, '0'), data] as [string,Row])
+        )
+
+        return Object.fromEntries(scan.map(scan => {
+            const raw = scan.rawData || {}
+            const id_short = raw?.StudentCode || ''
+            const row = existing_data_dict[id_short]
+            const data: Data = {...(row?.data || {})}
+            data.id_short = id_short
+            data.variante = raw?.TestCode || ''
+            this.fields.filter(field => field instanceof ChoiceAnswerField)
+                .forEach((field,i) => {
+                    data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
+                })
+            return [scan._id,{row, data: this.clean(data)}]
+        }))
+
+        function convert_answer(s: string) {
+            return {
+                '': '-',
+                'X': '-',
+                'A': 'A',
+                'B': 'B',
+                'C': 'C',
+                'D': 'D',
+                'E': 'E',
+                'BCDE': 'A',
+                'ACDE': 'B',
+                'ABDE': 'C',
+                'ABCE': 'D',
+                'ABCD': 'E',
+                'ABCDE': '-',
+            }[s] ?? s
+        }
+    }
+    
 }
 
 function score_to_color_style(value: string): React.CSSProperties {
