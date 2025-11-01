@@ -2,9 +2,8 @@ import { Context } from '../types'
 import { get_authenticated_user } from './utils'
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
 import { QueryWorkbookReportsArgs, WorkbookReport, ReportEntry, ScoreDistribution } from '../generated'
-import { ObjectId, WithId, Document, Collection } from 'mongodb'
-import { Sheet, Row } from '@/app/lib/models'
-import { schemas } from '@/app/lib/schema'
+import { ObjectId, WithId, Document } from 'mongodb'
+import { Sheet } from '@/app/lib/models'
 
 export default async function workbookReports(
     _: unknown, 
@@ -15,7 +14,6 @@ export default async function workbookReports(
     if (!user) throw new Error("Not authenticated")
 
     const sheetsCollection = await getSheetsCollection()
-    const rowsCollection = await getRowsCollection()
 
     // Trova tutti gli sheet del workbook con schema archimede_biennio o archimede_triennio
     // a cui l'utente ha accesso
@@ -39,13 +37,13 @@ export default async function workbookReports(
 
     // Genera report per biennio se ci sono fogli
     if (biennioSheets.length > 0) {
-        const report = await generateReport('archimede_biennio', biennioSheets, rowsCollection)
+        const report = await generateReport('archimede_biennio', biennioSheets)
         reports.push(report)
     }
 
     // Genera report per triennio se ci sono fogli
     if (triennioSheets.length > 0) {
-        const report = await generateReport('archimede_triennio', triennioSheets, rowsCollection)
+        const report = await generateReport('archimede_triennio', triennioSheets)
         reports.push(report)
     }
 
@@ -54,10 +52,9 @@ export default async function workbookReports(
 
 async function generateReport(
     schema: string, 
-    sheets: WithId<Sheet>[], 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rowsCollection: any
+    sheets: WithId<Sheet>[],
 ): Promise<WorkbookReport> {
+    const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
     
     // Recupera tutte le righe dai fogli
