@@ -37,6 +37,7 @@ const _ = gql`
             commonData
             ownerId
             nRows
+            nValidRows
             closed
             closedBy
             closedOn
