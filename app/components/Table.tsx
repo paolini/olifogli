@@ -11,7 +11,7 @@ import { Field } from '../lib/schema/fields'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import Button from './Button'
 import { RowInputState } from './RowInputStateActions'
-import { useDeleteRows } from './TableInputRow'
+import { useDeleteRows, usePatchRow } from './TableInputRow'
 import { ObjectId } from 'bson'
 
 
@@ -37,6 +37,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   const [viewRows, setViewRows] = useState<Row[]>(rows)
   
   const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
+  const [patchRow, { loading: patchLoading }] = usePatchRow()
 
   const [requestScanSheetGeneration, { loading: scanSheetLoading }] = useRequestScanSheetGenerationMutation({
     refetchQueries: ['ScanSheetJobs']
@@ -99,6 +100,15 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
       >
         {scanSheetLoading ? 'generazione...' : 'genera fogli risposte'}
       </Button>
+      {schema.fields.some(field => field.name === 'id') && (
+        <Button 
+          className="ml-2"
+          onClick={handleGenerateStudentIds}
+          disabled={!showHiddenColumns}
+        >
+          genera id studenti
+        </Button>
+      )}
     </div>
     <div className="table-scroll-container">
       <LoadingWrapper>
@@ -152,6 +162,51 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
     })
     
     alert('Hai richiesto la generazione dei fogli risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.')
+  }
+
+  async function handleGenerateStudentIds() {
+    // Trova il massimo valore del campo id
+    const maxId = viewRows.reduce((max, row) => {
+      const idValue = parseInt(row.data.id || '0', 10)
+      return isNaN(idValue) ? max : Math.max(max, idValue)
+    }, 0)
+
+    // Trova le righe con id vuoto
+    const rowsWithEmptyId = viewRows.filter(row => !row.data.id || row.data.id === '')
+    
+    if (rowsWithEmptyId.length === 0) {
+      alert('Non ci sono righe con id vuoto')
+      return
+    }
+
+    const confirmed = confirm(
+      `Vuoi generare ${rowsWithEmptyId.length} ID studenti a partire da ${maxId + 1}?`
+    )
+    
+    if (!confirmed) return
+
+    // Aggiorna le righe con id vuoto
+    let nextId = maxId + 1
+    try {
+      await Promise.all(
+        rowsWithEmptyId.map(row => {
+          const id = nextId++
+          return patchRow({
+            variables: {
+              _id: new ObjectId(row._id),
+              updatedOn: row.updatedOn,
+              data: {
+                ...row.data,
+                id: id.toString()
+              }
+            }
+          })
+        })
+      )
+      alert(`Generati ${rowsWithEmptyId.length} ID studenti`)
+    } catch (error) {
+      alert(`Errore durante la generazione degli ID: ${error}`)
+    }
   }
 
   function setSort(field: Field|string, direction: number) {
