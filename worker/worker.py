@@ -134,7 +134,7 @@ class Job:
             output_results.append({
                 "jobId": ObjectId(self.job_id) if self.job_id else None,
                 "image": basename,
-                "raw_data": result,
+                "rawData": result,
             })
         return output_results
     

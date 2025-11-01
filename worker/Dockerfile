@@ -2,12 +2,14 @@
 #   Devi ottenere i templates dal progetto archiomr
 #   https://github.com/fph/archiomr.git
 #   copia i seguenti files nella cartella worker:
-#      templates/archimede/template.json
-#      templates/archimede/omr_marker.jpg
+#      templates/archimede_biennio/template.json
+#      templates/archimede_biennio/omr_marker.jpg
+#      templates/archimede_triennio/template.json
+#      templates/archimede_triennio/omr_marker.jpg
 #      templates/ammissione_senior/template.json
 #      templates/ammissione_senior/omr_marker.jpg
 #
-#   export VERSION=0.2.0
+#   export VERSION=0.2.3
 # build:
 #   docker build -t paolini/oliscan:latest .
 #   docker tag paolini/oliscan:latest paolini/oliscan:${VERSION}
