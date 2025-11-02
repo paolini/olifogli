@@ -106,7 +106,37 @@ export default class ArchimedeCommon extends Schema {
             }[s] ?? s
         }
     }
-    
+
+    customized_common_data(data: Data) {
+        const tabular: [string,string][] = []
+        const cards: [string,string][] = []
+        let fields = new Set(Object.keys(data))
+     
+        if (fields.has('info')) {
+            cards.push(['informazioni', data['info']])
+            fields.delete('info')
+        }
+
+        const field_mapping: Record<string, string> = {
+            "Codice_meccanografico": "Codice",
+            "Nome_scuola": "Scuola",
+            "Città_scuola": "Città",
+            "Distretto": "Distretto"
+        }
+
+        for (const key in field_mapping) {
+            if (fields.has(key)) {
+                tabular.push([field_mapping[key], data[key]])
+                fields.delete(key)
+            }
+        }
+
+        for (const field of fields) {
+            tabular.push([field, data[field]])
+        }
+
+        return { tabular, cards }
+    }    
 }
 
 function score_to_color_style(value: string): React.CSSProperties {

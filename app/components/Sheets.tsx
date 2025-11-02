@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
+import SheetsSortIcon from './SheetsSortIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
@@ -46,6 +47,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     refetch: () => void
 }) {
     const [creationId, setCreationId] = useState<ObjectId|null>(null)
+    // Stato ordinamento colonne
+    const [sort, setSort] = useState<{ field: string, direction: number } | null>(null)
     const router = useRouter()
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
@@ -59,18 +62,28 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
 
     const allSheets: GetSheetsQuery['sheets'] = sheets;
     const filteredSheets = filterSheets(filterState, allSheets);
-    const displayedSheets = filteredSheets.slice(0, displayLimit);
+    let sortedSheets = filteredSheets;
+    if (sort) {
+        sortedSheets = [...filteredSheets].sort((a, b) => {
+            const av = a.commonData[sort.field] ?? '';
+            const bv = b.commonData[sort.field] ?? '';
+            return av.localeCompare(bv, 'it', { sensitivity: 'base' }) * sort.direction
+        });
+    }
+    const displayedSheets = sortedSheets.slice(0, displayLimit);
     const hasMore = filteredSheets.length > displayLimit;
 
     const emptySheetIds = filteredSheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
-    const commonDataHeaders = displayedSheets.reduce((acc, sheet) => {
-        if (sheet.commonData) {
-            Object.keys(sheet.commonData).forEach(key => {
-                if (!acc.includes(key)) acc.push(key)
-            })
-        }
-        return acc;
-    }, [] as string[])
+
+    const columnsSet = new Set<string>()
+    filteredSheets.forEach(sheet => {
+        if (!sheet.commonData) return
+        Object.keys(sheet.commonData).forEach(key => {
+            if (key === 'info') return
+            columnsSet.add(key)
+        })
+    })
+    const columns = Array.from(columnsSet)
 
     // Gestione selezione
     const allSelected = selectedIds.length === filteredSheets.length && filteredSheets.length > 0;
@@ -83,13 +96,15 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         setSelectedIds(ids => ids.includes(idStr) ? ids.filter(i => i !== idStr) : [...ids, idStr])
     }
 
-    const columns = commonDataHeaders.filter(field => field !== 'info')
+    // Escludi colonne non desiderate/duplicate nella tabella dei fogli
+    // colonne già calcolate sopra (columns)
 
     return <>
         {allSheets.length === 0 ? (
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
+            <div>sort field: {sort?.field} direction: {sort?.direction} columns: {columns.join(', ')}</div>
             <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={filteredSheets}/>
             <table>
                 <thead>
@@ -99,7 +114,20 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         </th>
                         <th>Nome</th>
                         <th>Schema</th>
-                        {columns.map(header => <th key={header}>{header.replace('_', ' ')}</th>)}
+                        {columns.map(header => (
+                            <th key={header} style={{ cursor: 'pointer' }} onClick={() => {
+                                setSort(s => {
+                                    if (!s || s.field !== header) return { field: header, direction: 1 };
+                                    if (s.direction === 1) return { field: header, direction: -1 };
+                                    return null;
+                                });
+                            }}>
+                                <span className="flex items-center gap-1">
+                                    {header.replace('_', ' ')}
+                                    <SheetsSortIcon direction={sort?.field === header ? sort.direction : undefined} />
+                                </span>
+                            </th>
+                        ))}
                         <th>righe</th>
                         <th>valide</th>
                         <th>stato</th>
@@ -231,7 +259,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         </td>
         {commonDataHeaders.map(header => 
             <td key={header}>
-                {sheet.commonData ? sheet.commonData[header] : ''}
+                {sheet.commonData[header] ?? ''}
             </td>
         )}
         <td>{sheet.nRows}</td>
