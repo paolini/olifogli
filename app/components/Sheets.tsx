@@ -15,6 +15,7 @@ import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
+import { Be_Vietnam_Pro } from 'next/font/google';
 
 const ___ = gql`
     mutation DeleteSheets($ids: [ObjectId!]!) {
@@ -64,10 +65,26 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const filteredSheets = filterSheets(filterState, allSheets);
     let sortedSheets = filteredSheets;
     if (sort) {
+        type Sheet = GetSheetsQuery['sheets'][number]
+
+        // sort.field può avere tre varianti:
+        // "__field": è un attributo di sheet
+        // "##field": è un attributo numerico di sheet
+        // "field": è un valore di sheet.commonData
+
+        const [prefix, field] = sort.field.match(/^(__)|(##)/) 
+            ? [sort.field.slice(0,2), sort.field.slice(2)]
+            : ['', sort.field]
+        const get_field = prefix === ''
+            ? (sheet: Sheet) => (sheet?.commonData?.[field] ?? '')
+            : (sheet: Sheet) => ((sheet as Record<string, unknown>)[field] ?? '');
+        const compare_function = prefix === '##'
+            ? ((av:unknown, bv:unknown) => ((bv as number) - (av as number)) * sort.direction)
+            : ((av:unknown, bv:unknown) => (av as string).localeCompare((bv as string), 'it', { sensitivity: 'base' }) * sort.direction);
         sortedSheets = [...filteredSheets].sort((a, b) => {
-            const av = a.commonData[sort.field] ?? '';
-            const bv = b.commonData[sort.field] ?? '';
-            return av.localeCompare(bv, 'it', { sensitivity: 'base' }) * sort.direction
+            const av = get_field(a);
+            const bv = get_field(b);
+            return compare_function(av, bv);
         });
     }
     const displayedSheets = sortedSheets.slice(0, displayLimit);
@@ -104,7 +121,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
-            <div>sort field: {sort?.field} direction: {sort?.direction} columns: {columns.join(', ')}</div>
             <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={filteredSheets}/>
             <table>
                 <thead>
@@ -112,24 +128,13 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         <th>
                             <input type="checkbox" checked={allSelected} onChange={toggleAll} />
                         </th>
-                        <th>Nome</th>
-                        <th>Schema</th>
-                        {columns.map(header => (
-                            <th key={header} style={{ cursor: 'pointer' }} onClick={() => {
-                                setSort(s => {
-                                    if (!s || s.field !== header) return { field: header, direction: 1 };
-                                    if (s.direction === 1) return { field: header, direction: -1 };
-                                    return null;
-                                });
-                            }}>
-                                <span className="flex items-center gap-1">
-                                    {header.replace('_', ' ')}
-                                    <SheetsSortIcon direction={sort?.field === header ? sort.direction : undefined} />
-                                </span>
-                            </th>
-                        ))}
-                        <th>righe</th>
-                        <th>valide</th>
+                        <Th field="__name" header="Nome" />
+                        <Th field="__schema" header="Schema" />
+                        {columns.map(header => 
+                            <Th key={header} field={header} header={header} />
+                        )}
+                        <Th field="##nRows" header="righe" />
+                        <Th field="##validRows" header="valide" />
                         <th>stato</th>
                     </tr>
                 </thead>
@@ -188,6 +193,22 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         }
         {creationId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
     </>
+
+    function Th({field,header}:{field:string,header:string}) {
+        return <th key={field} style={{ cursor: 'pointer' }} onClick={() => {
+            setSort(s => {
+                if (!s || s.field !== field) return { field: field, direction: 1 };
+                if (s.direction === 1) return { field: field, direction: -1 };
+                return null;
+            });
+        }}>
+            <span className="flex items-center gap-1">
+                {header.replace('_', ' ')}
+                <SheetsSortIcon direction={sort?.field === header ? sort.direction : undefined} />
+            </span>
+        </th>
+
+    }
 
     async function deleteEmptySheets() {
       if (!confirm(`Sei sicuro di voler eliminare ${emptySheetIds.length} fogli vuoti?`)) return
