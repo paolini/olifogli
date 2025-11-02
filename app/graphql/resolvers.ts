@@ -15,8 +15,8 @@ import rows from './resolvers/rows'
 import scanJobs from './resolvers/scanJobs'
 import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
-import workbookRankingReport from './resolvers/workbookRankingReports'
-import workbookDistributionReport from './resolvers/workbookDistributionReport'
+import sheetsDistributionReport from './resolvers/sheetsDistributionReport'
+import sheetsRankingReport from './resolvers/sheetsRankingReport'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -62,8 +62,8 @@ export const resolvers: Resolvers = {
     scanJobs,
     scanSheetJobs,
     scanResults,
-    workbookRankingReport,
-    workbookDistributionReport,
+    sheetsDistributionReport,
+    sheetsRankingReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
   },
 

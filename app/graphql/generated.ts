@@ -214,10 +214,10 @@ export type Query = {
   scanSheetJobs: Array<ScanSheetJob>;
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
+  sheetsDistributionReport: DistributionReport;
+  sheetsRankingReport: RankingReport;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
-  workbookDistributionReport: DistributionReport;
-  workbookRankingReport: RankingReport;
   workbooks?: Maybe<Array<Maybe<Workbook>>>;
 };
 
@@ -253,21 +253,21 @@ export type QuerySheetsArgs = {
 };
 
 
+export type QuerySheetsDistributionReportArgs = {
+  commonData?: InputMaybe<Scalars['Data']['input']>;
+  schema: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
+export type QuerySheetsRankingReportArgs = {
+  commonData?: InputMaybe<Scalars['Data']['input']>;
+  schema: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
 export type QueryWorkbookArgs = {
-  workbookId: Scalars['ObjectId']['input'];
-};
-
-
-export type QueryWorkbookDistributionReportArgs = {
-  commonData?: InputMaybe<Scalars['Data']['input']>;
-  schema: Scalars['String']['input'];
-  workbookId: Scalars['ObjectId']['input'];
-};
-
-
-export type QueryWorkbookRankingReportArgs = {
-  commonData?: InputMaybe<Scalars['Data']['input']>;
-  schema: Scalars['String']['input'];
   workbookId: Scalars['ObjectId']['input'];
 };
 
@@ -595,21 +595,21 @@ export type UpdateWorkbookMutationVariables = Exact<{
 
 export type UpdateWorkbookMutation = { __typename?: 'Mutation', updateWorkbook?: boolean | null };
 
-export type GetWorkbookDistributionReportQueryVariables = Exact<{
-  workbookId: Scalars['ObjectId']['input'];
+export type GetSheetsDistributionReportQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
   schema: Scalars['String']['input'];
 }>;
 
 
-export type GetWorkbookDistributionReportQuery = { __typename?: 'Query', workbookDistributionReport: { __typename?: 'DistributionReport', schema: string, totalStudents: number, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> } };
+export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDistributionReport: { __typename?: 'DistributionReport', schema: string, totalStudents: number, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> } };
 
-export type GetWorkbookRankingReportQueryVariables = Exact<{
-  workbookId: Scalars['ObjectId']['input'];
+export type GetSheetsRankingReportQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
   schema: Scalars['String']['input'];
 }>;
 
 
-export type GetWorkbookRankingReportQuery = { __typename?: 'Query', workbookRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
@@ -1636,9 +1636,9 @@ export function useUpdateWorkbookMutation(baseOptions?: Apollo.MutationHookOptio
 export type UpdateWorkbookMutationHookResult = ReturnType<typeof useUpdateWorkbookMutation>;
 export type UpdateWorkbookMutationResult = Apollo.MutationResult<UpdateWorkbookMutation>;
 export type UpdateWorkbookMutationOptions = Apollo.BaseMutationOptions<UpdateWorkbookMutation, UpdateWorkbookMutationVariables>;
-export const GetWorkbookDistributionReportDocument = gql`
-    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String!) {
-  workbookDistributionReport(workbookId: $workbookId, schema: $schema) {
+export const GetSheetsDistributionReportDocument = gql`
+    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
+  sheetsDistributionReport(sheetIds: $sheetIds, schema: $schema) {
     schema
     totalStudents
     scoreDistribution {
@@ -1650,41 +1650,41 @@ export const GetWorkbookDistributionReportDocument = gql`
     `;
 
 /**
- * __useGetWorkbookDistributionReportQuery__
+ * __useGetSheetsDistributionReportQuery__
  *
- * To run a query within a React component, call `useGetWorkbookDistributionReportQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetWorkbookDistributionReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetSheetsDistributionReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsDistributionReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetWorkbookDistributionReportQuery({
+ * const { data, loading, error } = useGetSheetsDistributionReportQuery({
  *   variables: {
- *      workbookId: // value for 'workbookId'
+ *      sheetIds: // value for 'sheetIds'
  *      schema: // value for 'schema'
  *   },
  * });
  */
-export function useGetWorkbookDistributionReportQuery(baseOptions: Apollo.QueryHookOptions<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables> & ({ variables: GetWorkbookDistributionReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+export function useGetSheetsDistributionReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables> & ({ variables: GetSheetsDistributionReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>(GetWorkbookDistributionReportDocument, options);
+        return Apollo.useQuery<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>(GetSheetsDistributionReportDocument, options);
       }
-export function useGetWorkbookDistributionReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>) {
+export function useGetSheetsDistributionReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>(GetWorkbookDistributionReportDocument, options);
+          return Apollo.useLazyQuery<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>(GetSheetsDistributionReportDocument, options);
         }
-export function useGetWorkbookDistributionReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>) {
+export function useGetSheetsDistributionReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>) {
           const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>(GetWorkbookDistributionReportDocument, options);
+          return Apollo.useSuspenseQuery<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>(GetSheetsDistributionReportDocument, options);
         }
-export type GetWorkbookDistributionReportQueryHookResult = ReturnType<typeof useGetWorkbookDistributionReportQuery>;
-export type GetWorkbookDistributionReportLazyQueryHookResult = ReturnType<typeof useGetWorkbookDistributionReportLazyQuery>;
-export type GetWorkbookDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookDistributionReportSuspenseQuery>;
-export type GetWorkbookDistributionReportQueryResult = Apollo.QueryResult<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>;
-export const GetWorkbookRankingReportDocument = gql`
-    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String!) {
-  workbookRankingReport(workbookId: $workbookId, schema: $schema) {
+export type GetSheetsDistributionReportQueryHookResult = ReturnType<typeof useGetSheetsDistributionReportQuery>;
+export type GetSheetsDistributionReportLazyQueryHookResult = ReturnType<typeof useGetSheetsDistributionReportLazyQuery>;
+export type GetSheetsDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsDistributionReportSuspenseQuery>;
+export type GetSheetsDistributionReportQueryResult = Apollo.QueryResult<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>;
+export const GetSheetsRankingReportDocument = gql`
+    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!) {
+  sheetsRankingReport(sheetIds: $sheetIds, schema: $schema) {
     schema
     totalStudents
     ranking {
@@ -1705,38 +1705,38 @@ export const GetWorkbookRankingReportDocument = gql`
     `;
 
 /**
- * __useGetWorkbookRankingReportQuery__
+ * __useGetSheetsRankingReportQuery__
  *
- * To run a query within a React component, call `useGetWorkbookRankingReportQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetWorkbookRankingReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetSheetsRankingReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsRankingReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetWorkbookRankingReportQuery({
+ * const { data, loading, error } = useGetSheetsRankingReportQuery({
  *   variables: {
- *      workbookId: // value for 'workbookId'
+ *      sheetIds: // value for 'sheetIds'
  *      schema: // value for 'schema'
  *   },
  * });
  */
-export function useGetWorkbookRankingReportQuery(baseOptions: Apollo.QueryHookOptions<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables> & ({ variables: GetWorkbookRankingReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+export function useGetSheetsRankingReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables> & ({ variables: GetSheetsRankingReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>(GetWorkbookRankingReportDocument, options);
+        return Apollo.useQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
       }
-export function useGetWorkbookRankingReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>) {
+export function useGetSheetsRankingReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>(GetWorkbookRankingReportDocument, options);
+          return Apollo.useLazyQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
         }
-export function useGetWorkbookRankingReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>) {
+export function useGetSheetsRankingReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
           const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>(GetWorkbookRankingReportDocument, options);
+          return Apollo.useSuspenseQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
         }
-export type GetWorkbookRankingReportQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportQuery>;
-export type GetWorkbookRankingReportLazyQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportLazyQuery>;
-export type GetWorkbookRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportSuspenseQuery>;
-export type GetWorkbookRankingReportQueryResult = Apollo.QueryResult<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>;
+export type GetSheetsRankingReportQueryHookResult = ReturnType<typeof useGetSheetsRankingReportQuery>;
+export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportLazyQuery>;
+export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
+export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
@@ -2227,10 +2227,10 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   scanSheetJobs?: Resolver<Array<ResolversTypes['ScanSheetJob']>, ParentType, ContextType, RequireFields<QueryScanSheetJobsArgs, 'sheetId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
+  sheetsDistributionReport?: Resolver<ResolversTypes['DistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsDistributionReportArgs, 'schema' | 'sheetIds'>>;
+  sheetsRankingReport?: Resolver<ResolversTypes['RankingReport'], ParentType, ContextType, RequireFields<QuerySheetsRankingReportArgs, 'schema' | 'sheetIds'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
-  workbookDistributionReport?: Resolver<ResolversTypes['DistributionReport'], ParentType, ContextType, RequireFields<QueryWorkbookDistributionReportArgs, 'schema' | 'workbookId'>>;
-  workbookRankingReport?: Resolver<ResolversTypes['RankingReport'], ParentType, ContextType, RequireFields<QueryWorkbookRankingReportArgs, 'schema' | 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
 };
 

@@ -153,8 +153,8 @@ type Query {
   rows(sheetId: ObjectId!): [Row!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
-  workbookDistributionReport(workbookId: ObjectId!, schema: String!, commonData: Data): DistributionReport!
-  workbookRankingReport(workbookId: ObjectId!, schema: String!, commonData: Data): RankingReport!
+  sheetsDistributionReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data): DistributionReport!
+  sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data): RankingReport!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!

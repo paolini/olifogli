@@ -1,16 +1,16 @@
 import { Context } from '../types'
 import { get_authenticated_user } from './utils'
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
-import { QueryWorkbookDistributionReportArgs, DistributionReport, ReportEntry, ScoreDistributionItem } from '../generated'
+import { QuerySheetsDistributionReportArgs, DistributionReport, ScoreDistributionItem } from '../generated'
 import { ObjectId, WithId, Document } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 
-export default async function workbookDistributionReport(
+export default async function sheetsDistributionReport(
     _: unknown, 
-    { workbookId, schema }: QueryWorkbookDistributionReportArgs, 
+    { sheetIds, schema }: QuerySheetsDistributionReportArgs, 
     context: Context
 ): Promise<DistributionReport> {
-    const allSheets = await workbookReportHelper(workbookId, context)
+    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
 
     // Separa per schema
     const sheets = allSheets.filter(s => s.schema === schema)
@@ -21,8 +21,8 @@ export default async function workbookDistributionReport(
     }
 }
 
-export async function workbookReportHelper(
-    workbookId: ObjectId, 
+export async function sheetsReportHelper(
+    sheetIds: ObjectId[], 
     context: Context
 ): Promise<Sheet[]> {
     const user = await get_authenticated_user(context)
@@ -30,9 +30,9 @@ export async function workbookReportHelper(
 
     const sheetsCollection = await getSheetsCollection()
 
-    // Trova tutti gli sheet del workbook con schema archimede_biennio o archimede_triennio
+    // restringe gli sheetcon schema archimede_biennio o archimede_triennio
     // a cui l'utente ha accesso
-    const sheetFilter: Document = { workbookId }
+    const sheetFilter: Document = { _id: { $in: sheetIds} }
     
     if (!user.isAdmin) {
         sheetFilter.$or = [

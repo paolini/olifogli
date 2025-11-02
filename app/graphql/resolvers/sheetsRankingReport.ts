@@ -1,21 +1,21 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QueryWorkbookRankingReportArgs, RankingReport, ReportEntry } from '../generated'
+import { QuerySheetsRankingReportArgs, RankingReport, ReportEntry } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
-import { workbookReportHelper } from './workbookDistributionReport'
+import { sheetsReportHelper } from './sheetsDistributionReport'
 
-export default async function workbookReports(
+export default async function sheetsRankingReport(
     _: unknown, 
-    { workbookId, schema }: QueryWorkbookRankingReportArgs, 
+    { sheetIds, schema }: QuerySheetsRankingReportArgs, 
     context: Context
 ): Promise<RankingReport> {
-    const allSheets = await workbookReportHelper(workbookId, context)
+    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
 
     // Separa per schema
     const sheets = allSheets.filter(s => s.schema === schema)
 
-    const report = await generateRankingReport(schema, sheets)
+    const report = await generateRankingReport(sheets)
 
     return {
         schema,
@@ -24,7 +24,6 @@ export default async function workbookReports(
 }
 
 async function generateRankingReport(
-    schema: string, 
     sheets: WithId<Sheet>[],
 ) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
