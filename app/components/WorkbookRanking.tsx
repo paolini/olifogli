@@ -5,12 +5,13 @@ import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import { RankingReport, useGetWorkbookRankingReportQuery } from '../graphql/generated'
+import { RankingReport, useGetSheetsQuery, useGetSheetsRankingReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
+import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter'
 
 const _ = gql`
-    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String!) {
-        workbookRankingReport(workbookId: $workbookId, schema: $schema) {
+    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!) {
+        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema) {
             schema
             totalStudents
             ranking {
@@ -31,38 +32,32 @@ const _ = gql`
 `
 
 export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }) {
-    // Stato per il filtro dello schema - default al primo schema disponibile
-    const [schemaFilter, setSchemaFilter] = useState<string>('archimede_biennio')
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch } = useGetSheetsQuery({
+        variables: { workbookId },
+        pollInterval: 10000, // millisecondi
+    })
+    const filterState = useSheetsFilterState({ schema: 'archimede_biennio' })
+    const sheets = (sheetsData?.sheets || [])
+        .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
+    const filteredSheets = filterSheets(filterState, sheets)
 
-    const { loading, error, data } = useGetWorkbookRankingReportQuery({
-        variables: { workbookId, schema: schemaFilter },
+    const { loading, error, data } = useGetSheetsRankingReportQuery({
+        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
+        pollInterval: 10000, // millisecondi
     })
     
     if (loading) return <Loading />
     if (error) return <Error error={error} />
+    if (sheetsError) return <Error error={sheetsError} />
 
-    // Filtra i report in base alla selezione
-    const report = data?.workbookRankingReport
+    const report = data?.sheetsRankingReport
 
     if (!report) return null
 
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-6 max-w-6xl">
             <div className="flex items-center gap-3">
-                <select 
-                    value={schemaFilter} 
-                    onChange={e => setSchemaFilter(e.target.value)} 
-                    className="border rounded px-3 py-2"
-                >
-                    {["archimede_biennio", "archimede_triennio"].map(schema => (
-                        <option key={schema} value={schema}>
-                            {schemas[schema].header}
-                        </option>
-                    ))}
-                </select>
-                <span className="text-gray-600">
-                    {report.totalStudents} studenti
-                </span>
+                <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
             </div>
             <RankingSection key={report.schema} report={report} />
         </div>
@@ -91,16 +86,16 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
 
     return (
         <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
+            <table className="w-full border-collapse">
                 <thead>
                     <tr className="bg-gray-100">
-                        <th className="border p-2 text-left">Pos.</th>
+                        <th className="border p-2 text-left w-16">Pos.</th>
                         <th className="border p-2 text-left">Cognome</th>
                         <th className="border p-2 text-left">Nome</th>
-                        <th className="border p-2 text-left">Classe</th>
-                        <th className="border p-2 text-left">Sezione</th>
+                        <th className="border p-2 text-left w-20">Classe</th>
+                        <th className="border p-2 text-left w-20">Sez.</th>
                         <th className="border p-2 text-left">Foglio</th>
-                        <th className="border p-2 text-right">Punteggio</th>
+                        <th className="border p-2 text-right w-24">Punti</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -111,7 +106,7 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
                             <td className="border p-2">{entry.studentName}</td>
                             <td className="border p-2">{entry.classYear}</td>
                             <td className="border p-2">{entry.classSection}</td>
-                            <td className="border p-2 text-sm text-gray-600">{entry.sheetName}</td>
+                            <td className="border p-2 text-sm text-gray-600 truncate max-w-xs" title={entry.sheetName}>{entry.sheetName}</td>
                             <td className="border p-2 text-right font-semibold">{entry.score.toFixed(1)}</td>
                         </tr>
                     ))}
@@ -120,3 +115,4 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
         </div>
     )
 }
+

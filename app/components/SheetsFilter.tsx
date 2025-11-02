@@ -3,6 +3,7 @@ import { GetSheetsQuery, Maybe } from "../graphql/generated"
 import { schemas } from "../lib/schema"
 
 export type SheetsFilterState = {
+    schema: string, // initial value
     schemaFilter: string,
     setSchemaFilter: Dispatch<SetStateAction<string>>,
     distrettoFilter: string,
@@ -11,14 +12,14 @@ export type SheetsFilterState = {
     setStatoFilter: Dispatch<SetStateAction<string>>,
 }
 
-export function useSheetsFilterState(): SheetsFilterState {
+export function useSheetsFilterState({schema=''}: { schema?: string } = {}): SheetsFilterState {
     // Stato per il filtro schema
-    const [schemaFilter, setSchemaFilter] = useState<string>('')
+    const [schemaFilter, setSchemaFilter] = useState<string>(schema)
     // Stato per il filtro distretto
     const [distrettoFilter, setDistrettoFilter] = useState<string>('')
     // Stato per il filtro stato (aperto/chiuso/bloccato)
     const [statoFilter, setStatoFilter] = useState<string>('')
-    return { schemaFilter, setSchemaFilter, distrettoFilter, setDistrettoFilter, statoFilter, setStatoFilter }
+    return { schema, schemaFilter, setSchemaFilter, distrettoFilter, setDistrettoFilter, statoFilter, setStatoFilter }
 }
 
 export interface FilterSheetsSheet {
@@ -49,7 +50,7 @@ export function filterSheets<Sheet extends FilterSheetsSheet>(filterState: Sheet
 }
 
 export default function SheetsFilter({ filterState, sheets, filteredSheets }: { filterState: SheetsFilterState, sheets: GetSheetsQuery['sheets'], filteredSheets: GetSheetsQuery['sheets'] }) {
-    const { schemaFilter, setSchemaFilter, distrettoFilter, setDistrettoFilter, statoFilter, setStatoFilter } = filterState
+    const { schema, schemaFilter, setSchemaFilter, distrettoFilter, setDistrettoFilter, statoFilter, setStatoFilter } = filterState
 
     // Calcola gli schemi unici presenti nei fogli
     const availableSchemas = Array.from(new Set(sheets.map(s => s.schema)))
@@ -65,7 +66,7 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
 
     return <div className="mb-2 flex items-center gap-3">
         <select value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)} className="border rounded px-2 py-1">
-            <option value="">Tutti gli schemi</option>
+            { schema===undefined && <option value="">Tutti gli schemi</option>}
             {availableSchemas.map(schemaKey => (
                 <option key={schemaKey} value={schemaKey}>
                     {schemas[schemaKey]?.header || schemaKey}
