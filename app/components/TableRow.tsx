@@ -13,7 +13,7 @@ export default function TableRow({schema, row, onCellClick, showStandardAnswers,
   showAdditionalColumns: boolean,
   showHiddenColumns: boolean,
   isSelected?: boolean,
-  onToggleSelect?: () => void
+  onToggleSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) {
   // Calcola quanto tempo è passato dall'ultimo aggiornamento
   const timeSinceUpdate = row.updatedOn ? Date.now() - new Date(row.updatedOn).getTime() : Infinity

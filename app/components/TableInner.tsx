@@ -1,4 +1,4 @@
-import { memo, Dispatch, SetStateAction } from 'react'
+import { memo, Dispatch, SetStateAction, useState, type SyntheticEvent } from 'react'
 import { WithId } from 'mongodb'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
@@ -44,6 +44,8 @@ export default function TableInner({
   onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
+  // Usa l'ID come ancora per la selezione a intervallo per resistere ai riordinamenti
+  const [lastClickedId, setLastClickedId] = useState<string|null>(null)
   const toggleSelectAll = () => {
     if (selectedIds.size === rows.length) {
       setSelectedIds(new Set())
@@ -52,14 +54,29 @@ export default function TableInner({
     }
   }
 
-  const toggleSelectRow = (rowId: string) => {
-    const newSelected = new Set(selectedIds)
-    if (newSelected.has(rowId)) {
-      newSelected.delete(rowId)
-    } else {
-      newSelected.add(rowId)
-    }
-    setSelectedIds(newSelected)
+  const toggleSelectRow = (rowId: string, e: SyntheticEvent<HTMLInputElement>) => {
+    const shift = (e.nativeEvent as any)?.shiftKey === true
+    const checked = (e.currentTarget as HTMLInputElement).checked
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (shift && lastClickedId) {
+        const anchorIndex = rows.findIndex(r => r._id.toString() === lastClickedId)
+        const currentIndex = rows.findIndex(r => r._id.toString() === rowId)
+        if (anchorIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(anchorIndex, currentIndex)
+          const end = Math.max(anchorIndex, currentIndex)
+          const idsInRange = rows.slice(start, end + 1).map(r => r._id.toString())
+          if (checked) idsInRange.forEach(id => next.add(id))
+          else idsInRange.forEach(id => next.delete(id))
+          return next
+        }
+        // se l'ancora non è trovata, ricadi al toggle singolo
+      }
+      if (checked) next.add(rowId)
+      else next.delete(rowId)
+      return next
+    })
+    setLastClickedId(rowId)
   }
 
   return <table className="my-table">
@@ -83,7 +100,7 @@ export default function TableInner({
       showHiddenColumns={showHiddenColumns}
       edit={edit}
       selectedIds={selectedIds}
-      toggleSelectRow={toggleSelectRow}
+  toggleSelectRow={toggleSelectRow}
       onRefresh={onRefresh}
       refreshLoading={refreshLoading}
     />
@@ -170,7 +187,7 @@ function TableBody({
   showHiddenColumns: boolean,
   edit?: boolean,
   selectedIds: Set<string>,
-  toggleSelectRow: (rowId: string) => void,
+  toggleSelectRow: (rowId: string, e: SyntheticEvent<HTMLInputElement>) => void,
   onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
@@ -207,7 +224,7 @@ function TableBody({
             nextRow={nextRow}
             nextFieldName={nextFieldName}
             isSelected={selectedIds.has(row._id.toString())}
-            onToggleSelect={() => toggleSelectRow(row._id.toString())}
+            onToggleSelect={(e) => toggleSelectRow(row._id.toString(), e)}
           />
         : <MyRow
             key={row._id.toString()}
@@ -222,7 +239,7 @@ function TableBody({
               }
             }}
             isSelected={selectedIds.has(row._id.toString())}
-            onToggleSelect={() => toggleSelectRow(row._id.toString())}
+            onToggleSelect={(e) => toggleSelectRow(row._id.toString(), e)}
           />
     })}
     {edit && rowInputState.rowIsBeingEdited && rowInputState.rowId === null && (
@@ -276,7 +293,7 @@ function MyRowInternal({schema, row, showStandardAnswers, showAdditionalColumns,
   showHiddenColumns: boolean,
   onCellClick: (fieldName: string) => void,
   isSelected: boolean,
-  onToggleSelect: () => void
+  onToggleSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) {
   return <TableRow 
     schema={schema} 
