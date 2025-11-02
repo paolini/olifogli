@@ -45,7 +45,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     const report = data?.sheetsDistributionReport
 
     return (
-        <div className="p-4 space-y-6 max-w-4xl">
+        <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
             <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
             {report && (
                 <DistributionSection key={report.schema} report={report} />
@@ -82,9 +82,14 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
 
     const totalStudents = distribution.reduce((sum, d) => sum + d.count, 0)
 
+    // Calcola la larghezza in base al numero di barre
+    // Minimo 400px, massimo 1200px, circa 30px per barra
+    const numBars = distribution.length
+    const chartWidth = Math.min(Math.max(numBars * 30 + 100, 400), 1200)
+
     return (
         <div className="space-y-4">
-            <BarChart width={600} height={400} data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart width={chartWidth} height={400} data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                     dataKey="punteggio" 
@@ -105,9 +110,6 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
                     radius={[8, 8, 0, 0]}
                 />
             </BarChart>
-            <div className="text-sm text-gray-600 text-center">
-                Distribuzione dei punteggi ({totalStudents} studenti totali)
-            </div>
         </div>
     )
 }
