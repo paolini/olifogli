@@ -24,7 +24,7 @@ export function useSheetsFilterState({schema=''}: { schema?: string } = {}): She
 
 export interface FilterSheetsSheet {
     schema: string;
-    commonData?: Maybe<{ [key: string]: any }>;
+    commonData?: Maybe<Record<string, unknown>>;
     closed?: boolean|null;
     locked?: boolean|null;
 }
