@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
@@ -15,13 +15,7 @@ import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
-import { Be_Vietnam_Pro } from 'next/font/google';
-
-const ___ = gql`
-    mutation DeleteSheets($ids: [ObjectId!]!) {
-        deleteSheets(ids: $ids)
-    }
-`
+// removed unused font import
 
 const DELETE_WORKBOOK = gql`
     mutation DeleteWorkbook($_id: ObjectId!) {
@@ -41,6 +35,12 @@ const UPDATE_SHEETS = gql`
     }
 `
 
+const UPDATE_SHEET = gql`
+    mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!]) {
+        updateSheet(_id: $_id, permissions: $permissions)
+    }
+`
+
 export default function Sheets({ sheets, profile, workbookId, refetch }: { 
     sheets: GetSheetsQuery['sheets'], 
     profile?: { isAdmin?: boolean|null } | null,
@@ -55,8 +55,11 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
     const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
+    const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET)
     // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
+    // Ultimo indice cliccato per supportare la selezione con Shift
+    const [lastClickedIndex, setLastClickedIndex] = useState<number|null>(null)
     // Stato per la paginazione
     const [displayLimit, setDisplayLimit] = useState(20)
     const filterState = useSheetsFilterState()
@@ -108,10 +111,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         if (allSelected) setSelectedIds([])
         else setSelectedIds(filteredSheets.map(s => s._id.toString()))
     }
-    const toggleOne = (id: ObjectId) => {
-        const idStr = id.toString();
-        setSelectedIds(ids => ids.includes(idStr) ? ids.filter(i => i !== idStr) : [...ids, idStr])
-    }
+    // removed old single-toggle helper (now handled in handleCheckboxClick)
 
     // Escludi colonne non desiderate/duplicate nella tabella dei fogli
     // colonne già calcolate sopra (columns)
@@ -139,7 +139,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     </tr>
                 </thead>
                 <tbody>
-                    {displayedSheets.map(sheet => (
+                    {displayedSheets.map((sheet, idx) => (
                         sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
                         <SheetRow 
                             key={sheet._id?.toString()} 
@@ -149,7 +149,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                             creationDisabled={creationId !== null} 
                             startCreation={sheetId => setCreationId(sheetId)} 
                             selected={selectedIds.includes(sheet._id.toString())}
-                            onSelect={() => toggleOne(sheet._id)}
+                            onCheckboxClick={(e) => handleCheckboxClick(sheet._id, idx, e)}
                         />
                     ))}
                 </tbody>
@@ -170,6 +170,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={deleteWorkbookError} />
         <Error error={deleteSheetsError} />
         <Error error={validateRowsError} />
+    <Error error={updateSheetError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={deleteEmptySheets}>
@@ -190,6 +191,13 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         { 
             selectedIds.length > 0 && profile?.isAdmin &&
             <BulkCommonDataSetter sheets={filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))} onApply={applyBulkCommonData} />
+        }
+        { 
+            selectedIds.length > 0 && profile?.isAdmin &&
+            <BulkPermissionSetter 
+                sheets={filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))}
+                onApply={applyBulkPermission}
+            />
         }
         {creationId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
     </>
@@ -257,20 +265,76 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
+    async function applyBulkPermission(email: string, role: 'admin' | 'editor' | 'view') {
+        if (!profile?.isAdmin) return
+        const emailTrimmed = (email || '').trim()
+        if (!emailTrimmed || !emailTrimmed.includes('@')) return
+        const selectedSheets = filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
+        // Aggiorna i permessi su ciascun foglio: sostituisce eventuale entry per la stessa email
+        await Promise.all(selectedSheets.map(async (sheet) => {
+            const existing = (sheet.permissions || [])
+            type PermInput = { email?: string; userId?: ObjectId; role: 'admin'|'editor'|'view' }
+            // Rimuovi l'eventuale permesso per la stessa email e pulisci i campi per l'input GraphQL (niente __typename)
+            const kept: PermInput[] = existing
+                .filter(p => p.email !== emailTrimmed)
+                .map(p => ({ email: p.email || undefined, userId: p.userId || undefined, role: p.role as 'admin'|'editor'|'view' }))
+            const nextPermissions: PermInput[] = [
+                ...kept,
+                { email: emailTrimmed, role }
+            ]
+            // Assicurati che gli oggetti rispettino PermissionInput (solo email/userId/role)
+            const cleanPermissions = nextPermissions.map(p => ({
+                email: p.email,
+                userId: p.userId,
+                role: p.role
+            }))
+            await updateSheetSingle({ variables: { _id: sheet._id, permissions: cleanPermissions } })
+        }))
+        refetch()
+    }
+
+    function handleCheckboxClick(id: ObjectId, index: number, e: SyntheticEvent<HTMLInputElement>) {
+        const shift = (e.nativeEvent as any)?.shiftKey === true
+        const checked = (e.currentTarget as HTMLInputElement).checked
+        setSelectedIds(prev => {
+            const idStr = id.toString()
+            if (shift && lastClickedIndex !== null) {
+                const start = Math.min(lastClickedIndex, index)
+                const end = Math.max(lastClickedIndex, index)
+                const idsInRange = displayedSheets.slice(start, end + 1).map(s => s._id.toString())
+                if (checked) {
+                    const set = new Set(prev)
+                    idsInRange.forEach(i => set.add(i))
+                    return Array.from(set)
+                } else {
+                    return prev.filter(i => !idsInRange.includes(i))
+                }
+            } else {
+                if (checked) {
+                    if (prev.includes(idStr)) return prev
+                    return [...prev, idStr]
+                } else {
+                    return prev.filter(i => i !== idStr)
+                }
+            }
+        })
+        setLastClickedIndex(index)
+    }
+
 }
 
-function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders, selected, onSelect}: {
+function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders, selected, onCheckboxClick}: {
     sheet: Partial<Sheet> & {_id: ObjectId}, 
     profile?: {isAdmin?: boolean|null}|null,
     creationDisabled: boolean, 
     startCreation: (id: ObjectId) => void,
     commonDataHeaders: string[],
     selected: boolean,
-    onSelect: () => void
+    onCheckboxClick: (e: SyntheticEvent<HTMLInputElement>) => void
 }) {
     return <tr key={sheet._id?.toString()}>
         <td>
-            <input type="checkbox" checked={selected} onChange={onSelect} />
+            <input type="checkbox" checked={selected} onChange={onCheckboxClick} />
         </td>
         <td>
             <Link href={`/sheet/${sheet._id}`}>{sheet.name}</Link>
@@ -317,6 +381,7 @@ function BulkCommonDataSetter({sheets, onApply}:{
         setLoading(true)
         try {
             await onApply(field, value)
+            alert(`Campo "${field}" impostato su ${sheets.length} fogli`)
         } finally {
             setLoading(false)
         }
@@ -358,6 +423,64 @@ function BulkCommonDataSetter({sheets, onApply}:{
         </table>
         <Button disabled={loading || !field.trim()} onClick={handleApply}>
             {loading ? 'Applicazione...' : 'Applica'}
+        </Button> su {sheets.length} fogli
+    </div>
+}
+
+function BulkPermissionSetter({sheets, onApply}:{
+    sheets: Partial<Sheet>[],
+    onApply: (email: string, role: 'admin'|'editor'|'view') => Promise<void>
+}) {
+    const [email, setEmail] = useState('')
+    const [role, setRole] = useState<'admin'|'editor'|'view'>('editor')
+    const [loading, setLoading] = useState(false)
+
+    const ROLE_LABELS: Record<'admin'|'editor'|'view', string> = {
+        admin: 'responsabile',
+        editor: 'aiutante',
+        view: 'supervisore'
+    }
+
+    const handleApply = async () => {
+        const e = email.trim()
+        if (!e || !e.includes('@')) return
+        setLoading(true)
+        try {
+            await onApply(e, role)
+            alert(`Permesso "${ROLE_LABELS[role]}" assegnato a ${e} su ${sheets.length} fogli`)
+            setEmail('')
+            setRole('editor')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return <div className="p-4 border rounded bg-gray-50 mt-3">
+        <h2 className="font-bold mb-2">Concedi permesso in blocco</h2>
+        <table className="commondata">
+            <tbody>
+            <tr>
+                <th>
+                    <input 
+                        className="p-1" 
+                        type="email"
+                        placeholder="email utente"
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)}
+                    />
+                </th>
+                <td>
+                    <select className="p-1" value={role} onChange={e => setRole(e.target.value as 'admin'|'editor'|'view')}>
+                        {(['admin','editor','view'] as const).map(r => (
+                            <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                        ))}
+                    </select>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <Button disabled={loading || !email.trim()} onClick={handleApply}>
+            {loading ? 'Applicazione...' : 'Concedi'}
         </Button> su {sheets.length} fogli
     </div>
 }
