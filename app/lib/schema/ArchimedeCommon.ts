@@ -110,7 +110,7 @@ export default class ArchimedeCommon extends Schema {
     customized_common_data(data: Data) {
         const tabular: [string,string][] = []
         const cards: [string,string][] = []
-        let fields = new Set(Object.keys(data))
+        const fields = new Set(Object.keys(data))
      
         if (fields.has('info')) {
             cards.push(['informazioni', data['info']])
