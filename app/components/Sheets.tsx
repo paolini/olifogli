@@ -293,10 +293,12 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
-    function handleCheckboxClick(id: ObjectId, e: SyntheticEvent<HTMLInputElement>) {
-        const shift = (e.nativeEvent as any)?.shiftKey === true
-        const checked = (e.currentTarget as HTMLInputElement).checked
-        const idStr = id.toString()
+        function handleCheckboxClick(id: ObjectId, e: React.ChangeEvent<HTMLInputElement>) {
+            // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
+            const native = e.nativeEvent
+            const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
+            const checked = e.currentTarget.checked
+            const idStr = id.toString()
         setSelectedIds(prev => {
             if (shift && lastClickedId) {
                 const anchorIndex = displayedSheets.findIndex(s => s._id.toString() === lastClickedId)
@@ -334,7 +336,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
     startCreation: (id: ObjectId) => void,
     commonDataHeaders: string[],
     selected: boolean,
-    onCheckboxClick: (e: SyntheticEvent<HTMLInputElement>) => void
+    onCheckboxClick: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) {
     return <tr key={sheet._id?.toString()}>
         <td>

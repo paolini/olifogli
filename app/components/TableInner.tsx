@@ -1,4 +1,4 @@
-import { memo, Dispatch, SetStateAction, useState, type SyntheticEvent } from 'react'
+import { memo, Dispatch, SetStateAction, useState } from 'react'
 import { WithId } from 'mongodb'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
@@ -54,12 +54,14 @@ export default function TableInner({
     }
   }
 
-  const toggleSelectRow = (rowId: string, e: SyntheticEvent<HTMLInputElement>) => {
-    const shift = (e.nativeEvent as any)?.shiftKey === true
-    const checked = (e.currentTarget as HTMLInputElement).checked
+  const toggleSelectRow = (rowId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
+    const native = e.nativeEvent
+    const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
+    const checked = e.currentTarget.checked
     setSelectedIds(prev => {
       const next = new Set(prev)
-      if (shift && lastClickedId) {
+  if (shift && lastClickedId) {
         const anchorIndex = rows.findIndex(r => r._id.toString() === lastClickedId)
         const currentIndex = rows.findIndex(r => r._id.toString() === rowId)
         if (anchorIndex !== -1 && currentIndex !== -1) {
@@ -187,7 +189,7 @@ function TableBody({
   showHiddenColumns: boolean,
   edit?: boolean,
   selectedIds: Set<string>,
-  toggleSelectRow: (rowId: string, e: SyntheticEvent<HTMLInputElement>) => void,
+  toggleSelectRow: (rowId: string, e: React.ChangeEvent<HTMLInputElement>) => void,
   onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
