@@ -18,13 +18,4 @@ export default function Splash() {
   return <div>
     <Workbooks />
   </div>
-
-  if (profile?.isAdmin) {
-    return <div>
-      <Workbooks />
-    </div>
-  } 
-  return <div>
-    <Sheets />
-  </div>
 }

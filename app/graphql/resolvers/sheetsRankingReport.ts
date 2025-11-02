@@ -55,7 +55,7 @@ async function generateRankingReport(
 
         // Estrai il punteggio dal campo 'score'
         const scoreValue = row.data?.score
-        let score: number = parseFloat(scoreValue)
+        const score: number = parseFloat(scoreValue)
 
         entries.push({
             sheetId: row.sheetId,

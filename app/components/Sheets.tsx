@@ -58,7 +58,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const filterState = useSheetsFilterState()
 
     const allSheets: GetSheetsQuery['sheets'] = sheets;
-    let filteredSheets = filterSheets(filterState, allSheets);
+    const filteredSheets = filterSheets(filterState, allSheets);
     const displayedSheets = filteredSheets.slice(0, displayLimit);
     const hasMore = filteredSheets.length > displayLimit;
 
