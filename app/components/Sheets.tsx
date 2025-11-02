@@ -58,8 +58,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET)
     // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
-    // Ultimo indice cliccato per supportare la selezione con Shift
-    const [lastClickedIndex, setLastClickedIndex] = useState<number|null>(null)
+    // Ultimo id cliccato per supportare la selezione con Shift in modo robusto a riordinamenti
+    const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     // Stato per la paginazione
     const [displayLimit, setDisplayLimit] = useState(20)
     const filterState = useSheetsFilterState()
@@ -139,7 +139,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     </tr>
                 </thead>
                 <tbody>
-                    {displayedSheets.map((sheet, idx) => (
+                    {displayedSheets.map((sheet) => (
                         sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
                         <SheetRow 
                             key={sheet._id?.toString()} 
@@ -149,7 +149,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                             creationDisabled={creationId !== null} 
                             startCreation={sheetId => setCreationId(sheetId)} 
                             selected={selectedIds.includes(sheet._id.toString())}
-                            onCheckboxClick={(e) => handleCheckboxClick(sheet._id, idx, e)}
+                            onCheckboxClick={(e) => handleCheckboxClick(sheet._id, e)}
                         />
                     ))}
                 </tbody>
@@ -293,32 +293,36 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
-    function handleCheckboxClick(id: ObjectId, index: number, e: SyntheticEvent<HTMLInputElement>) {
+    function handleCheckboxClick(id: ObjectId, e: SyntheticEvent<HTMLInputElement>) {
         const shift = (e.nativeEvent as any)?.shiftKey === true
         const checked = (e.currentTarget as HTMLInputElement).checked
+        const idStr = id.toString()
         setSelectedIds(prev => {
-            const idStr = id.toString()
-            if (shift && lastClickedIndex !== null) {
-                const start = Math.min(lastClickedIndex, index)
-                const end = Math.max(lastClickedIndex, index)
-                const idsInRange = displayedSheets.slice(start, end + 1).map(s => s._id.toString())
-                if (checked) {
-                    const set = new Set(prev)
-                    idsInRange.forEach(i => set.add(i))
-                    return Array.from(set)
-                } else {
-                    return prev.filter(i => !idsInRange.includes(i))
+            if (shift && lastClickedId) {
+                const anchorIndex = displayedSheets.findIndex(s => s._id.toString() === lastClickedId)
+                const currentIndex = displayedSheets.findIndex(s => s._id.toString() === idStr)
+                if (anchorIndex !== -1 && currentIndex !== -1) {
+                    const start = Math.min(anchorIndex, currentIndex)
+                    const end = Math.max(anchorIndex, currentIndex)
+                    const idsInRange = displayedSheets.slice(start, end + 1).map(s => s._id.toString())
+                    if (checked) {
+                        const set = new Set(prev)
+                        idsInRange.forEach(i => set.add(i))
+                        return Array.from(set)
+                    } else {
+                        return prev.filter(i => !idsInRange.includes(i))
+                    }
                 }
+                // se l'ancora non è visibile/valida, ricadi su toggle singolo
+            }
+            if (checked) {
+                if (prev.includes(idStr)) return prev
+                return [...prev, idStr]
             } else {
-                if (checked) {
-                    if (prev.includes(idStr)) return prev
-                    return [...prev, idStr]
-                } else {
-                    return prev.filter(i => i !== idStr)
-                }
+                return prev.filter(i => i !== idStr)
             }
         })
-        setLastClickedIndex(index)
+        setLastClickedId(idStr)
     }
 
 }

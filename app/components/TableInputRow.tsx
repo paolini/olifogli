@@ -34,7 +34,7 @@ export default function TableInputRow({
   nextRow?: Row | null,
   nextFieldName?: string | null,
   isSelected?: boolean,
-  onToggleSelect?: () => void
+  onToggleSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) {
   const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRow()
   const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRow()
