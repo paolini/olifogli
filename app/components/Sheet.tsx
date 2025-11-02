@@ -152,11 +152,10 @@ function SheetBody({sheet,profile}: {
                 onClick={() => setTab('download')}>
                 SCARICA CSV
             </button>
-
         </div>
         <div className="flex-1 flex flex-col min-h-0 overflow-auto">
         { tab === 'info' && 
-        <div>
+        <div className="mx-2">
             <SheetInfo sheet={sheet} data={data} profile={profile} />
         </div>
         }
@@ -169,17 +168,17 @@ function SheetBody({sheet,profile}: {
                 refreshLoading={loading}
             />
         }
-        { tab === 'csv' &&   
+        { tab === 'csv' &&  
             ((sheet.closed || sheet.locked) 
                 ? <Error error="Il foglio è chiuso. Non è possibile importare dati." />
                 : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
             )
         }
-        { tab === 'scans' && <>
+        { tab === 'scans' && <div className="mx-2">
             <ScansSheetExport sheet={sheet} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
-          </>
+          </div>
         }
         { tab === 'download' && 
             <div>

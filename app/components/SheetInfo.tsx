@@ -49,7 +49,7 @@ function SheetInfoPanel({sheet,profile}:{
 
     if (!edit) {
         return <>
-            <CustomPanelDisplay sheet={sheet} />
+            <PanelDisplay sheet={sheet} />
             {canModifySensibleData && <Button className="mb-4" onClick={() => setEdit(true)}>modifica</Button>}
         </>
     } else {
@@ -60,44 +60,31 @@ function SheetInfoPanel({sheet,profile}:{
     }
 }
 
-function CustomPanelDisplay({sheet}: {
+function PanelDisplay({sheet}: {
     sheet: Sheet
 }) {
     const schema = schemas[sheet.schema]
-    if (schema instanceof ArchimedeCommon) {
-        return <>
-            <table className="commondata">
-                <tbody>
-                    <tr><th>Codice</th>
-                        <td>{sheet.commonData["Codice_meccanografico"]}</td></tr>
-                    <tr><th>Scuola</th>
-                        <td>{sheet.commonData["Nome_scuola"]}</td></tr>
-                    <tr><th>Città</th>
-                        <td>{sheet.commonData["Città_scuola"]}</td></tr>
-                    <tr><th>Distretto</th>
-                        <td>{sheet.commonData["Distretto"]?.replace("Distretto di ","")}</td></tr>
-                </tbody>
-            </table>
-            {sheet.commonData["info"] && 
-                <div className="border border-gray-600 rounded-lg my-4 p-4 max-w-2xl bg-gray-50 shadow-md">
-                    <ReactMarkdown>{sheet.commonData["info"]}</ReactMarkdown>
+
+    const { tabular, cards } = schema.customized_common_data(sheet.commonData)
+
+    return <>
+        <table className="commondata">
+            <tbody>
+                { tabular.map(([Key,value]) => 
+                    <tr key={Key}>
+                        <th>{Key}</th>
+                        <td>{value}</td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+        { cards.map(([key,value]) => 
+                <div key={key} className="relative border border-gray-600 rounded-lg my-4 p-4 max-w-2xl bg-gray-50 shadow-md">
+                    {key && <div className="absolute -top-3 left-4 px-2 py-0.5 bg-white text-sm font-semibold text-gray-700">{key}</div>}
+                    <ReactMarkdown>{value}</ReactMarkdown>
                 </div>
-            }
-        </>
-    } else {
-        return <>
-            <table className="my-2 commondata">
-                <tbody>
-                    {Object.entries(sheet.commonData || {}).map(([key, value]) => (
-                        <tr key={key}>
-                            <th>{key}</th>
-                            <td>{value as string || ''}</td>
-                        </tr>))
-                    }
-                </tbody>
-            </table>
-        </>
-    }
+        )}
+    </>
 }
 
 const DELETE_SHEET = gql`
