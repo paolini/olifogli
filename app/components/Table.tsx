@@ -14,6 +14,8 @@ import { RowInputState } from './RowInputStateActions'
 import { useDeleteRows, usePatchRow } from './TableInputRow'
 import { ObjectId } from 'bson'
 import { gql } from 'graphql-request'
+import Error from './Error'
+import useProfile from '../lib/useProfile'
 
 const _ = gql`
     mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
@@ -28,6 +30,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
+  const profile = useProfile()
   const [rowInputState, setRowInputState] = useState<RowInputState>({
     rowIsBeingEdited: false,
     rowId: null,
@@ -45,11 +48,12 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
   const [patchRow, { loading: patchLoading }] = usePatchRow()
 
-  const [requestScanSheetGeneration, { loading: scanSheetLoading }] = useRequestScanSheetGenerationMutation({
+  const [requestScanSheetGeneration, { loading: scanSheetLoading, error: scanSheetError }] = useRequestScanSheetGenerationMutation({
     refetchQueries: ['ScanSheetJobs']
   })
 
   const schema = schemas[sheet.schema]
+  const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
 
   useEffect(() => {
     setViewRows(prevViewRows => {
@@ -74,6 +78,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
   return <div className="table-container">
     <div className="table-header">
+      <Error error={scanSheetError} />
       {(schema instanceof ArchimedeCommon) &&
         <label>
           <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
@@ -102,9 +107,9 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
       <Button 
         className="ml-2"
         onClick={handleGenerateScanSheet}
-        disabled={scanSheetLoading || selectedIds.size === 0}
+        disabled={scanSheetLoading || selectedIds.size === 0 || !userHasSheetAdminPrivileges}
       >
-        {scanSheetLoading ? 'generazione...' : 'genera fogli risposte'}
+        genera fogli risposte
       </Button>
       {schema.fields.some(field => field.name === 'id') && (
         <Button 
