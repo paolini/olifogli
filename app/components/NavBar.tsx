@@ -7,7 +7,7 @@ import useProfile from '@/app/lib/useProfile'
 import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
 
 const version = packageJson.version
-const APP_INSTANCE_QUERY = gql`
+const _ = gql`
   query AppInstance {
     appInstance
   }

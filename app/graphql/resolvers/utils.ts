@@ -88,7 +88,7 @@ export function check_user_can_edit_rows(user: User, sheet: Partial<Sheet>|null)
   
   // Check if sheet is closed (nobody can edit rows when closed)
   if (sheet.closed) {
-    throw new ForbiddenError('il foglio è chiuso e non è possibile modificare le righe')
+    throw new ForbiddenError('il foglio è chiuso non può essere modificato')
   }
 }
 
