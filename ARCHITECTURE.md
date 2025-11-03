@@ -12,7 +12,6 @@ olifogli/
 │   ├── graphql/                 # GraphQL Schema e Resolvers
 │   ├── lib/                     # Utilities e Models
 │   └── [routes]/                # Pages dinamiche
-├── worker/                      # Python OMR Worker
 ├── migrations/                  # Database migrations
 └── types/                       # TypeScript definitions
 ```
@@ -179,81 +178,19 @@ I fogli possono trovarsi in tre stati:
 - Admin override capabilities
 
 ## Sistema di Processing OMR
-Sta nella directory `worker`.
 
-### Worker Architecture
-Il worker Python gira in un **container Docker separato** (`paolini/oliscan:latest`) e monitora continuamente la directory spool condivisa per nuovi file PDF da processare.
+Il sistema di processing OMR è stato spostato nel progetto separato **archiomr** che gestisce:
+- Worker Python con OMRChecker per elaborazione PDF
+- Worker Python per generazione fogli personalizzati
+- Template per diversi tipi di questionari
 
-#### Workflow di Processing
-1. **File Detection**: Monitoring della spool directory condivisa
-2. **PDF Conversion**: PDF → PNG tramite pdf2image
-3. **OMR Processing**: Utilizzo di OMRChecker per riconoscimento
-4. **Results Storage**: Salvataggio in MongoDB + file system condiviso
-5. **Status Updates**: Log real-time in scan_jobs
+### Integrazione con Olifogli
+Olifogli si integra con archiomr tramite:
+- **Directory condivise**: `spool/` e `data/` per scambio file
+- **MongoDB condiviso**: Database comune per coordinamento
+- **Collections**: `scan_jobs` e `scan_results` per tracking elaborazioni
 
-#### Directory Structure (Condivisa tra Containers)
-```
-/app/spool/          # Directory condivisa via Docker volumes
-├── processing/      # File PDF in elaborazione
-├── completed/       # File PDF processati con successo
-├── aborted/         # File PDF con errori di processing
-└── tmp/            # Directory temporanee worker
-
-/app/data/           # Directory risultati condivisa
-└── {jobId}/         # Directory per ogni job (nome = ObjectId MongoDB)
-    └── *.png        # Immagini risultanti dall'elaborazione
-```
-
-#### Formato dei file
-I file PDF con le scansioni devono seguire il pattern `{schema}-{jobId}.pdf`
-- `schema`: Tipo di questionario (es. "archimede", "distrettuale")
-- `jobId`: ObjectId del scan_job MongoDB
-
-#### Storage dei Risultati
-- **PDF Originali**: Spostati in `spool/completed/` o `spool/aborted/`
-- **Immagini Elaborate**: Salvate in `data/{jobId}/` 
-- **Metadati**: Memorizzati in MongoDB (`scan_results` collection)
-- **Directory Names**: Corrispondono agli ObjectId MongoDB per linking diretto
-
-## Sistema di generazione fogli personalizzati
-Sta nella directory `sheetgenwoker`.
-
-### Worker Architecture
-L'architettura è la stessa del sistema OMR. Il worker Python gira in un **container Docker separato** (`paolini/sheetgen:latest`) e monitora continuamente la directory sheetgenspool condivisa per nuovi file PDF da processare.
-
-#### Directory Structure (Condivisa tra Containers)
-```
-/app/sheetgenspool/          # Directory condivisa via Docker volumes
-├── processing/      # File PDF in elaborazione
-├── completed/       # File PDF processati con successo
-├── aborted/         # File PDF con errori di processing
-└── tmp/            # Directory temporanee worker
-
-/app/sheetgendata/           # Directory risultati condivisa
-└── {jobId}/         # Directory per ogni job (nome = ObjectId MongoDB)
-    └── *.pdf        # Fogli personalizzati generati
-```
-
-#### Formato dei file
-I nomi dei file di input devono seguire il pattern: `{schema}-{jobId}.tex`
-- `schema`: Tipo di questionario (es. "archimede", "distrettuale")
-- `jobId`: ObjectId del scan_job MongoDB
-
-Ogni file contiene una sequenza di righe con questo formato (UTF-8):
-```
-% questo è un commento
-\fogliorisp{Leonard}{Euler}{3}{1}{4}
-\fogliorisp{Johann Carl Friedrich}{Gauß}{0123456789}{}{0123456789}
-\fogliorisp{Cesare}{Arzelà}{8}{0123456789}{7}
-\fogliorisp{Leonard}{Euler}{3}{1}{4}
-```
-
-#### Storage dei Risultati
-- **tex Originali**: Spostati in `spool/completed/` o `spool/aborted/`
-- **PDF generati**: Salvate in `data/{jobId}/` 
-- **Metadati**: TODO: ancora da memorizzare in MongoDB in qualche modo (`scan_results` collection)
-- **Directory Names**: Corrispondono agli ObjectId MongoDB per linking diretto
-
+Per dettagli sul sistema OMR e generazione fogli, consultare la documentazione del progetto **archiomr**.
 
 ## Componenti Frontend
 
@@ -321,23 +258,9 @@ OLIMANAGER_URL=https://olimpiadi-scientifiche.it
 # Admin
 ADMIN_EMAILS=emanuele.paolini@unipi.it
 
-# Worker Integration
+# Worker Integration (directory condivise con archiomr)
 SCANS_SPOOL_DIR=/app/spool
 SCANS_DATA_DIR=/app/data
-```
-
-#### Worker Container
-```bash
-# Worker Configuration
-SPOOL_DIR=/app/spool
-DATA_DIR=/app/data
-MONGO_URI=mongodb://db:27017/olifogli
-
-# Processing Settings
-CHECK_INTERVAL=10
-DB_NAME=olifogli
-COLLECTION_NAME=scan_jobs
-RESULTS_COLLECTION_NAME=scan_results
 ```
 
 ### Docker Deployment
@@ -351,18 +274,17 @@ services:
     image: paolini/olifogli:latest
     ports: ["8000:3000"]
     
-  worker:                 # Worker Python OMR
-    image: paolini/oliscan:latest
-    
   db:                     # Database MongoDB
     image: mongo:6
 ```
 
+**Nota**: I worker OMR (`oliscan`) e di generazione fogli (`sheetgen`) sono gestiti nel progetto separato **archiomr**.
+
 #### Volumi Condivisi
 ```bash
-# Directory condivise tra app e worker
-./spool:/app/spool      # Queue file PDF
-./data:/app/data        # Risultati elaborazione
+# Directory locali
+./spool:/app/spool      # Queue file PDF per worker OMR (condivisa con archiomr)
+./data:/app/data        # Risultati elaborazione (condivisa con archiomr)
 ./database:/data/db     # Dati MongoDB
 ```
 
@@ -486,12 +408,12 @@ volumes:
 
 #### Altri Log
 - **Database Logging**: Stato processing in scan_jobs (collection MongoDB)
-- **Worker Logging**: Log del worker Python in `oliscan` container
+- **Worker Logging**: Log dei worker nel progetto **archiomr**
 
 ### Health Checks
 - **MongoDB Connection**: Verifica connessione database
 - **GraphQL Health**: Endpoint di health check
-- **Worker Status**: Monitoring tramite scan_jobs
+- **Worker Status**: Monitoring tramite scan_jobs (gestito da archiomr)
 
 ## Repository e Deployment
 
@@ -504,10 +426,11 @@ Il sistema Olifogli è composto da **due repository separati**:
    - Database models e migrations
    - Dockerfile per container `paolini/olifogli`
 
-2. **oliscan** (repository separato): Worker Python OMR
-   - Worker Python con OMRChecker
+2. **archiomr** (repository separato): Worker Python per OMR e generazione fogli
+   - Worker Python con OMRChecker per elaborazione PDF
+   - Worker Python per generazione fogli personalizzati LaTeX→PDF
    - Template per diversi tipi di questionari
-   - Dockerfile per container `paolini/oliscan`
+   - Dockerfile per container `paolini/oliscan` e `paolini/sheetgen`
    - Logica di elaborazione PDF→PNG→OMR
 
 ### Deployment di Produzione
@@ -523,7 +446,7 @@ Il sistema Olifogli è composto da **due repository separati**:
 ### Nuovi Schema Types
 1. Creare classe in `app/lib/schema/`
 2. Registrare in `app/lib/schema.ts`
-3. Aggiungere template OMR nel repository **oliscan**
+3. Aggiungere template OMR nel repository **archiomr**
 
 ### Nuovi Component
 - Seguire pattern esistenti in `app/components/`
@@ -540,16 +463,13 @@ Il sistema Olifogli è composto da **due repository separati**:
 ### Problemi Comuni
 1. **MongoDB Connection**: Verificare `MONGODB_URI`
 2. **OAuth Errors**: Controllare credenziali Olimanager
-3. **OMR Processing**: Verificare worker Python e dipendenze
-4. **File Upload**: Controllare permessi directory
+3. **OMR Processing**: Verificare worker Python nel progetto **archiomr**
+4. **File Upload**: Controllare permessi directory condivise
 
 ### Debug Mode
 ```bash
 # Development con debug
 npm run dev
-
-# Worker con logging verbose
-cd worker && python worker.py
 ```
 
 Questa documentazione fornisce una panoramica completa del sistema Olifogli per permettere a una AI di comprendere rapidamente la struttura e implementare modifiche o estensioni al sistema.
