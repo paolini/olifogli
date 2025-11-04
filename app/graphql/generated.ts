@@ -53,6 +53,7 @@ export type Mutation = {
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
+  olimanagerCreateParticipant: Array<Scalars['Boolean']['output']>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
@@ -140,6 +141,12 @@ export type MutationLockSheetArgs = {
 };
 
 
+export type MutationOlimanagerCreateParticipantArgs = {
+  password: Scalars['String']['input'];
+  rowIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
 export type MutationOpenSheetArgs = {
   _id: Scalars['ObjectId']['input'];
 };
@@ -186,6 +193,14 @@ export type MutationUpdateWorkbookArgs = {
 
 export type MutationValidateRowsArgs = {
   sheetId: Scalars['ObjectId']['input'];
+};
+
+export type OlimanagerRowData = {
+  __typename?: 'OlimanagerRowData';
+  error?: Maybe<Scalars['String']['output']>;
+  participantId?: Maybe<Scalars['Int']['output']>;
+  result?: Maybe<Scalars['JSON']['output']>;
+  updatedOn?: Maybe<Scalars['Timestamp']['output']>;
 };
 
 export type Permission = {
@@ -303,6 +318,7 @@ export type Row = {
   createdOn?: Maybe<Scalars['Timestamp']['output']>;
   data: Scalars['Data']['output'];
   error?: Maybe<Scalars['String']['output']>;
+  olimanager?: Maybe<OlimanagerRowData>;
   updatedBy: Scalars['String']['output'];
   updatedOn: Scalars['Timestamp']['output'];
 };
@@ -534,6 +550,13 @@ export type ValidateRowsMutationVariables = Exact<{
 
 export type ValidateRowsMutation = { __typename?: 'Mutation', validateRows?: number | null };
 
+export type DeleteSheetsMutationVariables = Exact<{
+  ids: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+}>;
+
+
+export type DeleteSheetsMutation = { __typename?: 'Mutation', deleteSheets?: boolean | null };
+
 export type UpdateSheetPermissionsMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
   permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
@@ -549,6 +572,14 @@ export type RequestScanSheetGenerationMutationVariables = Exact<{
 
 
 export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
+
+export type OlimanagerCreateParticipantMutationVariables = Exact<{
+  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+
+export type OlimanagerCreateParticipantMutation = { __typename?: 'Mutation', olimanagerCreateParticipant: Array<boolean> };
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1280,6 +1311,26 @@ export function useUnlockSheetMutation(baseOptions?: Apollo.MutationHookOptions<
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useMutation<UnlockSheetMutation, UnlockSheetMutationVariables>(UnlockSheetDocument, options);
       }
+export type UnlockSheetMutationHookResult = ReturnType<typeof useUnlockSheetMutation>;
+export type UnlockSheetMutationResult = Apollo.MutationResult<UnlockSheetMutation>;
+export type UnlockSheetMutationOptions = Apollo.BaseMutationOptions<UnlockSheetMutation, UnlockSheetMutationVariables>;
+export const DeleteWorkbookDocument = gql`
+    mutation DeleteWorkbook($_id: ObjectId!) {
+  deleteWorkbook(_id: $_id)
+}
+    `;
+export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
+
+/**
+ * __useDeleteWorkbookMutation__
+ *
+ * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
  * @example
  * const [deleteWorkbookMutation, { data, loading, error }] = useDeleteWorkbookMutation({
  *   variables: {
@@ -1317,26 +1368,6 @@ export type ValidateRowsMutationFn = Apollo.MutationFunction<ValidateRowsMutatio
  *      sheetId: // value for 'sheetId'
  *   },
  * });
-export type UnlockSheetMutationHookResult = ReturnType<typeof useUnlockSheetMutation>;
-export type UnlockSheetMutationResult = Apollo.MutationResult<UnlockSheetMutation>;
-export type UnlockSheetMutationOptions = Apollo.BaseMutationOptions<UnlockSheetMutation, UnlockSheetMutationVariables>;
-export const DeleteWorkbookDocument = gql`
-    mutation DeleteWorkbook($_id: ObjectId!) {
-  deleteWorkbook(_id: $_id)
-}
-    `;
-export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
-
-/**
- * __useDeleteWorkbookMutation__
- *
- * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
  */
 export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions<ValidateRowsMutation, ValidateRowsMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
@@ -1345,6 +1376,37 @@ export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions
 export type ValidateRowsMutationHookResult = ReturnType<typeof useValidateRowsMutation>;
 export type ValidateRowsMutationResult = Apollo.MutationResult<ValidateRowsMutation>;
 export type ValidateRowsMutationOptions = Apollo.BaseMutationOptions<ValidateRowsMutation, ValidateRowsMutationVariables>;
+export const DeleteSheetsDocument = gql`
+    mutation DeleteSheets($ids: [ObjectId!]!) {
+  deleteSheets(ids: $ids)
+}
+    `;
+export type DeleteSheetsMutationFn = Apollo.MutationFunction<DeleteSheetsMutation, DeleteSheetsMutationVariables>;
+
+/**
+ * __useDeleteSheetsMutation__
+ *
+ * To run a mutation, you first call `useDeleteSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteSheetsMutation, { data, loading, error }] = useDeleteSheetsMutation({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function useDeleteSheetsMutation(baseOptions?: Apollo.MutationHookOptions<DeleteSheetsMutation, DeleteSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteSheetsMutation, DeleteSheetsMutationVariables>(DeleteSheetsDocument, options);
+      }
+export type DeleteSheetsMutationHookResult = ReturnType<typeof useDeleteSheetsMutation>;
+export type DeleteSheetsMutationResult = Apollo.MutationResult<DeleteSheetsMutation>;
+export type DeleteSheetsMutationOptions = Apollo.BaseMutationOptions<DeleteSheetsMutation, DeleteSheetsMutationVariables>;
 export const UpdateSheetPermissionsDocument = gql`
     mutation UpdateSheetPermissions($_id: ObjectId!, $permissions: [PermissionInput!]) {
   updateSheet(_id: $_id, permissions: $permissions)
@@ -1409,6 +1471,38 @@ export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.Mutat
 export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
+export const OlimanagerCreateParticipantDocument = gql`
+    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $password: String!) {
+  olimanagerCreateParticipant(rowIds: $rowIds, password: $password)
+}
+    `;
+export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
+
+/**
+ * __useOlimanagerCreateParticipantMutation__
+ *
+ * To run a mutation, you first call `useOlimanagerCreateParticipantMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerCreateParticipantMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [olimanagerCreateParticipantMutation, { data, loading, error }] = useOlimanagerCreateParticipantMutation({
+ *   variables: {
+ *      rowIds: // value for 'rowIds'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useOlimanagerCreateParticipantMutation(baseOptions?: Apollo.MutationHookOptions<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>(OlimanagerCreateParticipantDocument, options);
+      }
+export type OlimanagerCreateParticipantMutationHookResult = ReturnType<typeof useOlimanagerCreateParticipantMutation>;
+export type OlimanagerCreateParticipantMutationResult = Apollo.MutationResult<OlimanagerCreateParticipantMutation>;
+export type OlimanagerCreateParticipantMutationOptions = Apollo.BaseMutationOptions<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
 export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
@@ -2108,6 +2202,7 @@ export type ResolversTypes = {
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectId: ResolverTypeWrapper<ObjectId>;
+  OlimanagerRowData: ResolverTypeWrapper<OlimanagerRowData>;
   Permission: ResolverTypeWrapper<Omit<Permission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
@@ -2140,6 +2235,7 @@ export type ResolversParentTypes = {
   JSON: Scalars['JSON']['output'];
   Mutation: {};
   ObjectId: ObjectId;
+  OlimanagerRowData: OlimanagerRowData;
   Permission: Omit<Permission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
   PermissionInput: PermissionInput;
   Query: {};
@@ -2196,6 +2292,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
+  olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password' | 'rowIds'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
@@ -2209,6 +2306,14 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['ObjectId'], any> {
   name: 'ObjectId';
 }
+
+export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerRowData'] = ResolversParentTypes['OlimanagerRowData']> = {
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  participantId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  result?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  updatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export type PermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission']> = {
   email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2267,6 +2372,7 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
   createdOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  olimanager?: Resolver<Maybe<ResolversTypes['OlimanagerRowData']>, ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2361,6 +2467,7 @@ export type Resolvers<ContextType = any> = {
   JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   ObjectId?: GraphQLScalarType;
+  OlimanagerRowData?: OlimanagerRowDataResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RankingReport?: RankingReportResolvers<ContextType>;

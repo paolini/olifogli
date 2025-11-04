@@ -71,6 +71,12 @@ export type Row = {
     createdBy: string
     updatedOn: Date
     updatedBy: string
+    olimanager: {
+        participantId?: string
+        createdParticipantOn: Date 
+        updatedResultsOn: Date
+        error: string
+    }
 }
 
 export type Workbook = {

@@ -71,4 +71,14 @@ export default class Schema {
         const cards: [string,string][] = [] 
         return { tabular, cards }
     }
+
+    get_school_external_id(data: Data): string {
+        throw new Error(`lo schema "${this.name}" non ha associata una scuola`)
+    }
+
+    get_contest_id(data: Data): number {
+        const contestId = parseInt(data["olimanager_contest_id"], 10)
+        if (!contestId || isNaN(contestId)) throw new Error(`campo "olimanager_contest_id" mancante nei dati della gara`)
+        return contestId
+    }
 }

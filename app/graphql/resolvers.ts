@@ -40,6 +40,7 @@ import openSheet from './resolvers/openSheet'
 import lockSheet from './resolvers/lockSheet'
 import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
+import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -116,6 +117,7 @@ export const resolvers: Resolvers = {
     lockSheet,
     unlockSheet,
     validateRows,
+    olimanagerCreateParticipant: olimanagerCreateParticipant as any,
   },
 
   Timestamp,

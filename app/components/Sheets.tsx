@@ -35,6 +35,12 @@ const UPDATE_SHEETS = gql`
     }
 `
 
+const DELETE_SHEETS = gql`
+    mutation DeleteSheets($ids: [ObjectId!]!) {
+        deleteSheets(ids: $ids)
+    }
+`
+
 const UPDATE_SHEET_PERMISSIONS = gql`
     mutation UpdateSheetPermissions($_id: ObjectId!, $permissions: [PermissionInput!]) {
         updateSheet(_id: $_id, permissions: $permissions)
