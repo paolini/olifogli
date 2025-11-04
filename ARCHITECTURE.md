@@ -140,8 +140,9 @@ I fogli possono trovarsi in tre stati:
 ### Controlli di Accesso per Stato
 
 #### Foglio Aperto (closed=false, locked=false)
-- Gli utenti con permesso `editor` o superiore possono modificare le righe
+- Gli utenti con permesso `editor` o 'admin' superiore possono modificare le righe
 - Gli utenti con permesso `admin` o owner possono modificare i metadati
+- Gli utenti con permesso `view` possono solo visualizzare i dati
 - Gli admin del foglio possono chiudere il foglio
 
 #### Foglio Chiuso (closed=true, locked=false)
@@ -173,7 +174,7 @@ I fogli possono trovarsi in tre stati:
 - **Admin Rights**: Basato su `ADMIN_EMAILS` environment variable
 
 ### Security Features
-- Structured permissions system per sheet with roles (admin/editor)
+- Structured permissions system per sheet with roles (admin/editor/view)
 - Owner-based permissions
 - Admin override capabilities
 
