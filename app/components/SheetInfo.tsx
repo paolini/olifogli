@@ -1,5 +1,4 @@
 import Loading from '@/app/components/Loading'
-import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import ReactMarkdown from 'react-markdown'
 import { gql, useMutation } from '@apollo/client'
 import { useState } from 'react'
@@ -9,9 +8,7 @@ import Error from './Error'
 import {Row, Sheet, User, useDeleteSheetMutation } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
 import { myTimestamp } from '../lib/util'
-import ArchimedeBiennio from '../lib/schema/ArchimedeBiennio'
 import { schemas } from '../lib/schema'
-import ArchimedeTriennio from '../lib/schema/ArchimedeTriennio'
 
 
 export default function SheetInfo({sheet,data,profile}:{

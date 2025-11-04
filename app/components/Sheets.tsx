@@ -35,8 +35,8 @@ const UPDATE_SHEETS = gql`
     }
 `
 
-const UPDATE_SHEET = gql`
-    mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!]) {
+const UPDATE_SHEET_PERMISSIONS = gql`
+    mutation UpdateSheetPermissions($_id: ObjectId!, $permissions: [PermissionInput!]) {
         updateSheet(_id: $_id, permissions: $permissions)
     }
 `
@@ -55,7 +55,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
     const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
-    const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET)
+    const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET_PERMISSIONS)
     // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     // Ultimo id cliccato per supportare la selezione con Shift in modo robusto a riordinamenti
