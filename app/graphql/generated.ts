@@ -520,13 +520,6 @@ export type UnlockSheetMutationVariables = Exact<{
 
 export type UnlockSheetMutation = { __typename?: 'Mutation', unlockSheet?: boolean | null };
 
-export type DeleteSheetsMutationVariables = Exact<{
-  ids: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
-}>;
-
-
-export type DeleteSheetsMutation = { __typename?: 'Mutation', deleteSheets?: boolean | null };
-
 export type DeleteWorkbookMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
 }>;
@@ -540,6 +533,14 @@ export type ValidateRowsMutationVariables = Exact<{
 
 
 export type ValidateRowsMutation = { __typename?: 'Mutation', validateRows?: number | null };
+
+export type UpdateSheetPermissionsMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+  permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
+}>;
+
+
+export type UpdateSheetPermissionsMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
 
 export type RequestScanSheetGenerationMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1279,57 +1280,6 @@ export function useUnlockSheetMutation(baseOptions?: Apollo.MutationHookOptions<
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useMutation<UnlockSheetMutation, UnlockSheetMutationVariables>(UnlockSheetDocument, options);
       }
-export type UnlockSheetMutationHookResult = ReturnType<typeof useUnlockSheetMutation>;
-export type UnlockSheetMutationResult = Apollo.MutationResult<UnlockSheetMutation>;
-export type UnlockSheetMutationOptions = Apollo.BaseMutationOptions<UnlockSheetMutation, UnlockSheetMutationVariables>;
-export const DeleteSheetsDocument = gql`
-    mutation DeleteSheets($ids: [ObjectId!]!) {
-  deleteSheets(ids: $ids)
-}
-    `;
-export type DeleteSheetsMutationFn = Apollo.MutationFunction<DeleteSheetsMutation, DeleteSheetsMutationVariables>;
-
-/**
- * __useDeleteSheetsMutation__
- *
- * To run a mutation, you first call `useDeleteSheetsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteSheetsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteSheetsMutation, { data, loading, error }] = useDeleteSheetsMutation({
- *   variables: {
- *      ids: // value for 'ids'
- *   },
- * });
- */
-export function useDeleteSheetsMutation(baseOptions?: Apollo.MutationHookOptions<DeleteSheetsMutation, DeleteSheetsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<DeleteSheetsMutation, DeleteSheetsMutationVariables>(DeleteSheetsDocument, options);
-      }
-export type DeleteSheetsMutationHookResult = ReturnType<typeof useDeleteSheetsMutation>;
-export type DeleteSheetsMutationResult = Apollo.MutationResult<DeleteSheetsMutation>;
-export type DeleteSheetsMutationOptions = Apollo.BaseMutationOptions<DeleteSheetsMutation, DeleteSheetsMutationVariables>;
-export const DeleteWorkbookDocument = gql`
-    mutation DeleteWorkbook($_id: ObjectId!) {
-  deleteWorkbook(_id: $_id)
-}
-    `;
-export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
-
-/**
- * __useDeleteWorkbookMutation__
- *
- * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
  * @example
  * const [deleteWorkbookMutation, { data, loading, error }] = useDeleteWorkbookMutation({
  *   variables: {
@@ -1367,6 +1317,26 @@ export type ValidateRowsMutationFn = Apollo.MutationFunction<ValidateRowsMutatio
  *      sheetId: // value for 'sheetId'
  *   },
  * });
+export type UnlockSheetMutationHookResult = ReturnType<typeof useUnlockSheetMutation>;
+export type UnlockSheetMutationResult = Apollo.MutationResult<UnlockSheetMutation>;
+export type UnlockSheetMutationOptions = Apollo.BaseMutationOptions<UnlockSheetMutation, UnlockSheetMutationVariables>;
+export const DeleteWorkbookDocument = gql`
+    mutation DeleteWorkbook($_id: ObjectId!) {
+  deleteWorkbook(_id: $_id)
+}
+    `;
+export type DeleteWorkbookMutationFn = Apollo.MutationFunction<DeleteWorkbookMutation, DeleteWorkbookMutationVariables>;
+
+/**
+ * __useDeleteWorkbookMutation__
+ *
+ * To run a mutation, you first call `useDeleteWorkbookMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWorkbookMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
  */
 export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions<ValidateRowsMutation, ValidateRowsMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
@@ -1375,6 +1345,38 @@ export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions
 export type ValidateRowsMutationHookResult = ReturnType<typeof useValidateRowsMutation>;
 export type ValidateRowsMutationResult = Apollo.MutationResult<ValidateRowsMutation>;
 export type ValidateRowsMutationOptions = Apollo.BaseMutationOptions<ValidateRowsMutation, ValidateRowsMutationVariables>;
+export const UpdateSheetPermissionsDocument = gql`
+    mutation UpdateSheetPermissions($_id: ObjectId!, $permissions: [PermissionInput!]) {
+  updateSheet(_id: $_id, permissions: $permissions)
+}
+    `;
+export type UpdateSheetPermissionsMutationFn = Apollo.MutationFunction<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>;
+
+/**
+ * __useUpdateSheetPermissionsMutation__
+ *
+ * To run a mutation, you first call `useUpdateSheetPermissionsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSheetPermissionsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSheetPermissionsMutation, { data, loading, error }] = useUpdateSheetPermissionsMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *      permissions: // value for 'permissions'
+ *   },
+ * });
+ */
+export function useUpdateSheetPermissionsMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>(UpdateSheetPermissionsDocument, options);
+      }
+export type UpdateSheetPermissionsMutationHookResult = ReturnType<typeof useUpdateSheetPermissionsMutation>;
+export type UpdateSheetPermissionsMutationResult = Apollo.MutationResult<UpdateSheetPermissionsMutation>;
+export type UpdateSheetPermissionsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>;
 export const RequestScanSheetGenerationDocument = gql`
     mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
   requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
