@@ -171,7 +171,7 @@ function SheetBody({sheet,profile}: {
         { tab === 'csv' &&  
             ((sheet.closed || sheet.locked) 
                 ? <Error error="Il foglio è chiuso. Non è possibile importare dati." />
-                : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
+                : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('edit')}/>
             )
         }
         { tab === 'scans' && <div className="mx-2">
