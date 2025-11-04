@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { schemas } from "@/app/lib/schema";
 import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
 import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
@@ -8,7 +9,7 @@ import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "
 
 export default async function olimanagerCreateParticipant(
   _: unknown,
-  { rowIds, password }: { rowIds: any[]; password: string },
+  { rowIds, username, password }: { rowIds: any[]; password: string },
   context: Context
 ): Promise<boolean[]> {
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
@@ -20,7 +21,7 @@ export default async function olimanagerCreateParticipant(
   const sheets = await getSheetsCollection()
   const workbooks = await getWorkbooksCollection()
 
-  const api = new Api(user.email, password)
+  const api = new Api(username || user.email, password)
   await api.login()
 
   const results: boolean[] = []
@@ -45,10 +46,13 @@ export default async function olimanagerCreateParticipant(
       const surname = row.data.surname
       const classYearStr = row.data.classYear
       const section = row.data.classSection
-      const birthDate = row.data.birthDate
+      const birthDate = row.data.birthDate.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, '$3-$2-$1');
 
       const classYear = parseInt(classYearStr || '0', 10) + 8 // Converto da anno di corso (1-5) a anno scolastico (9-13)
 
+
+      console.log(`Creazione/abbinamento partecipante per riga ${rowId} (${surname} ${name})`)
+      console.log(`  schoolExternalId: ${schoolExternalId}, contestId: ${contestId}, classYear: ${classYear}, section: ${section}, birthDate: ${birthDate}`)
       const result = await matchOrCreateParticipant(api, contestId, {
         schoolExternalId,
         name,
@@ -59,6 +63,8 @@ export default async function olimanagerCreateParticipant(
       })
 
       if (result?.success) {
+        console.log(`  OK, participantId: ${result.participant.id}`)
+        console.log(JSON.stringify(result))
         const participantId = result?.participant?.id ?? undefined
         await rows.updateOne(
           { _id: rowId },
@@ -73,6 +79,8 @@ export default async function olimanagerCreateParticipant(
         )
         results.push(true)
       } else {
+        console.log(`  KO`)
+        console.log(JSON.stringify(result))
         const errorMsg = typeof result?.error === 'string' ? result?.error : JSON.stringify(result?.error || result?.messages || 'unknown error')
         await rows.updateOne(
           { _id: rowId },
@@ -86,6 +94,8 @@ export default async function olimanagerCreateParticipant(
         results.push(false)
       }
     } catch (e) {
+      console.log(`  EXCEPTION`)
+      console.log(e)
       await rows.updateOne(
         { _id: rowId },
         {
@@ -207,10 +217,10 @@ class Api {
   async login() {
     process.stderr.write('Logging in\n');
     if (!this.EMAIL) {
-      throw new Error('Email non specificata!\nPer risolvere:\nesportare OLI_EMAIL=my-email');
+      throw new Error('Email non specificata!');
     }
     if (!this.PASSWORD) {
-      throw new Error('Password non specificata!\nPer risolvere:\nesportare OLI_PASSWORD=my-secret-password');
+      throw new Error('Password non specificata!');
     }
     const r = await this.query(
       `mutation ($EMAIL: String!, $PASSWORD: String!) {\n        users{\n          login(email: $EMAIL, password: $PASSWORD){\n            __typename\n            ...on OperationInfo{\n              messages{\n                message\n                kind\n              }\n            }\n            ...on LoginSuccess{\n              user{\n                email\n              }\n            }\n          }\n        }\n      }`,

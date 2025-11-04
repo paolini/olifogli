@@ -212,6 +212,7 @@ type Mutation {
 
   olimanagerCreateParticipant(
     rowIds: [ObjectId!]!
+    username: String
     password: String!
   ): [Boolean!]!
 }
