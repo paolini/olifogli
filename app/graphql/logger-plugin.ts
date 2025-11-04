@@ -64,6 +64,17 @@ export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
         // Recupera email utente dal context (già presente nel token NextAuth)
         const userEmail = context.email
         
+        const stripped_variables = Object.fromEntries(
+          Object.entries(requestContext.request.variables || {})
+            .map(([key, value]) => {
+              // Rimuovi dati sensibili dalle variabili (es. password)
+              if (key.match(/password|secret/i)) {
+                return [key, '[REDACTED]']
+              }
+              return [key, value]
+            })
+        )
+
         // Prepara l'entry di log
         const logEntry: LogEntry = {
           timestamp: new Date().toISOString(),
@@ -71,7 +82,7 @@ export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
           operation,
           userId: context.user_id?.toString(),
           email: userEmail,
-          variables: requestContext.request.variables,
+          variables: stripped_variables,
           duration,
           status: errors ? 'error' : 'success',
           error: errors?.[0]?.message,

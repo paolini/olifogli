@@ -37,7 +37,8 @@ export default function TableRow({schema, row, onCellClick, showStandardAnswers,
     </td>
     { showAdditionalColumns && <TableInfoCells row={row} />}
     {columns.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick && onCellClick(field.name)} />)}
-    {row.error && <td className="alert">{row.error}</td>}
+    {(row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
+    {(row?.olimanager?.participantId) && <td className="olimanager-participant-id">oli={row.olimanager.participantId}</td>}
   </tr>
 }
 

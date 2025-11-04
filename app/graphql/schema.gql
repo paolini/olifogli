@@ -55,6 +55,13 @@ input UpdateSheetInput {
   commonData: Data
 }
 
+type OlimanagerRowData {
+  participantId: Int
+  error: String
+  updatedOn: Timestamp
+  result: JSON
+}
+
 type Row {
   _id: ObjectId!
   error: String
@@ -63,6 +70,7 @@ type Row {
   updatedOn: Timestamp!
   updatedBy: String!
   data: Data!
+  olimanager: OlimanagerRowData
 }
 
 type User {
@@ -201,4 +209,9 @@ type Mutation {
   openSheet(_id: ObjectId!): Boolean
   lockSheet(_id: ObjectId!): Boolean
   unlockSheet(_id: ObjectId!): Boolean
+
+  olimanagerCreateParticipant(
+    rowIds: [ObjectId!]!
+    password: String!
+  ): [Boolean!]!
 }

@@ -1,3 +1,4 @@
+import { FILE } from 'dns'
 import { Data, Row, ScanResults } from '../models'
 import { Field, ChoiceAnswerField, DateField, OptionsField } from './fields'
 import {decodePermutations, buildPermutationsObject} from './PERMUTATIONS'
@@ -137,6 +138,13 @@ export default class ArchimedeCommon extends Schema {
 
         return { tabular, cards }
     }    
+
+    get_school_external_id(data: Data): string {
+        const FIELD_NAME = "Codice_meccanografico"
+        const schoolExternalId = data[FIELD_NAME]
+        if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
+        return schoolExternalId
+    }
 }
 
 function score_to_color_style(value: string): React.CSSProperties {

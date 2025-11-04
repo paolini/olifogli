@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Row, Sheet, useRequestScanSheetGenerationMutation } from '@/app/graphql/generated'
+import { Row, Sheet, useRequestScanSheetGenerationMutation, useOlimanagerCreateParticipantMutation } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
 import LoadingWrapper from './LoadingWrapper'
@@ -21,6 +21,12 @@ const _ = gql`
     mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
         requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
     }
+`;
+
+const __ = gql`
+  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $password: String!) {
+    olimanagerCreateParticipant(rowIds: $rowIds, password: $password)
+  }
 `;
 
 export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
@@ -51,6 +57,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   const [requestScanSheetGeneration, { loading: scanSheetLoading, error: scanSheetError }] = useRequestScanSheetGenerationMutation({
     refetchQueries: ['ScanSheetJobs']
   })
+  const [olimanagerCreateParticipant, { loading: olimanagerLoading, error: olimanagerError }] = useOlimanagerCreateParticipantMutation()
 
   const schema = schemas[sheet.schema]
   const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
@@ -78,7 +85,8 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
   return <div className="table-container">
     <div className="table-header">
-      <Error error={scanSheetError} />
+  <Error error={scanSheetError} />
+  <Error error={olimanagerError} />
       {(schema instanceof ArchimedeCommon) &&
         <label>
           <input type="checkbox" checked={showStandardAnswers} onChange={e => setShowStandardAnswers(e.target.checked)} />
@@ -111,6 +119,15 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
       >
         genera fogli risposte
       </Button>
+      {userHasSheetAdminPrivileges && (
+        <Button
+          className="ml-2"
+          onClick={handleOlimanagerCreateParticipants}
+          disabled={olimanagerLoading || selectedIds.size === 0}
+        >
+          {olimanagerLoading ? 'creazione partecipanti…' : 'crea/abbina partecipanti (Olimanager)'}
+        </Button>
+      )}
       {schema.fields.some(field => field.name === 'id') && (
         <Button 
           className="ml-2"
@@ -218,6 +235,20 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
     } catch (error) {
       alert(`Errore durante la generazione degli ID: ${error}`)
     }
+  }
+
+  async function handleOlimanagerCreateParticipants() {
+    if (selectedIds.size === 0) return
+    const ids = Array.from(selectedIds).map(id => new ObjectId(id))
+    const confirmed = confirm(`Inviare ${ids.length} righe a Olimanager per creazione/abbinamento partecipanti?`)
+    if (!confirmed) return
+    const password = prompt('Password (opzionale, premere OK per continuare)') ?? ''
+    const res = await olimanagerCreateParticipant({ variables: { rowIds: ids, password } })
+    const arr = res.data?.olimanagerCreateParticipant || []
+    const ok = arr.filter(Boolean).length
+    const ko = arr.length - ok
+    alert(`Esito Olimanager: ${ok} ok, ${ko} errori`)
+    if (onRefresh) await onRefresh()
   }
 
   function setSort(field: Field|string, direction: number) {
