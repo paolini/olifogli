@@ -24,8 +24,8 @@ const _ = gql`
 `;
 
 const __ = gql`
-  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $password: String!) {
-    olimanagerCreateParticipant(rowIds: $rowIds, password: $password)
+  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    olimanagerCreateParticipant(rowIds: $rowIds, username: $username, password: $password)
   }
 `;
 
@@ -242,8 +242,9 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
     const ids = Array.from(selectedIds).map(id => new ObjectId(id))
     const confirmed = confirm(`Inviare ${ids.length} righe a Olimanager per creazione/abbinamento partecipanti?`)
     if (!confirmed) return
-    const password = prompt('Password (opzionale, premere OK per continuare)') ?? ''
-    const res = await olimanagerCreateParticipant({ variables: { rowIds: ids, password } })
+    const username = prompt('Username olimanager (email)') ?? ''
+    const password = prompt('Password') ?? ''
+    const res = await olimanagerCreateParticipant({ variables: { rowIds: ids, username, password } })
     const arr = res.data?.olimanagerCreateParticipant || []
     const ok = arr.filter(Boolean).length
     const ko = arr.length - ok

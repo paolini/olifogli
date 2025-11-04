@@ -144,6 +144,7 @@ export type MutationLockSheetArgs = {
 export type MutationOlimanagerCreateParticipantArgs = {
   password: Scalars['String']['input'];
   rowIds: Array<Scalars['ObjectId']['input']>;
+  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -575,6 +576,7 @@ export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requ
 
 export type OlimanagerCreateParticipantMutationVariables = Exact<{
   rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
   password: Scalars['String']['input'];
 }>;
 
@@ -1472,8 +1474,12 @@ export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof use
 export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
 export const OlimanagerCreateParticipantDocument = gql`
-    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $password: String!) {
-  olimanagerCreateParticipant(rowIds: $rowIds, password: $password)
+    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+  olimanagerCreateParticipant(
+    rowIds: $rowIds
+    username: $username
+    password: $password
+  )
 }
     `;
 export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
@@ -1492,6 +1498,7 @@ export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<Olim
  * const [olimanagerCreateParticipantMutation, { data, loading, error }] = useOlimanagerCreateParticipantMutation({
  *   variables: {
  *      rowIds: // value for 'rowIds'
+ *      username: // value for 'username'
  *      password: // value for 'password'
  *   },
  * });

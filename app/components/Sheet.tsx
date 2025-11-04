@@ -90,6 +90,11 @@ const GET_ROWS = gql`
       createdBy
       updatedOn
       updatedBy
+        olimanager {
+        participantId
+        updatedOn
+        error
+        }
     }
   }
 `
