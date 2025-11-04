@@ -119,7 +119,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
             const rawCoordinatori = row.data?.Email_coordinatori || '';
             coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim());
             const permissions: Permission[] = [];
-            if (email) permissions.push({ email, role: 'editor' });
+            if (email) permissions.push({ email, role: 'admin' });
             for (const coord of coordinatori) {
                 if (coord && coord !== email) {
                     permissions.push({ email: coord, role: 'view' });
