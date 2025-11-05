@@ -1,15 +1,15 @@
-// @ts-nocheck
 import { schemas } from "@/app/lib/schema";
 import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
 import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 // Nota: in fondo al file esistono classi/funzioni di supporto (Api, matchOrCreateParticipant)
 // riutilizzate qui per chiamare l'endpoint GraphQL di Olimanager.
 
 export default async function olimanagerCreateParticipant(
   _: unknown,
-  { rowIds, username, password }: { rowIds: any[]; password: string },
+  { rowIds, username, password }: { rowIds: ObjectId[]; username?: string; password: string },
   context: Context
 ): Promise<boolean[]> {
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
@@ -65,7 +65,7 @@ export default async function olimanagerCreateParticipant(
       if (result?.success) {
         console.log(`  OK, participantId: ${result.participant.id}`)
         console.log(JSON.stringify(result))
-        const participantId = result?.participant?.id ?? undefined
+        const participantId = result?.participant?.id ? String(result.participant.id) : undefined
         await rows.updateOne(
           { _id: rowId },
           {
@@ -93,22 +93,20 @@ export default async function olimanagerCreateParticipant(
         )
         results.push(false)
       }
-    } catch (e) {
-      console.log(`  EXCEPTION`)
-      console.log(e)
-      await rows.updateOne(
-        { _id: rowId },
-        {
-          $set: {
-            'olimanager.error': String(e?.message || e)
-          },
-        }
-      )
-      results.push(false)
-    }
-  }
-
-  return results
+      } catch (e) {
+        console.log(`  EXCEPTION`)
+        console.log(e)
+        await rows.updateOne(
+          { _id: rowId },
+          {
+            $set: {
+              'olimanager.error': String((e as Error)?.message || e)
+            },
+          }
+        )
+        results.push(false)
+      }
+    }  return results
 }
 
 /**
@@ -128,11 +126,19 @@ export default async function olimanagerCreateParticipant(
  */
 
 // Usa la fetch built-in di Node 18+ (undici)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fetch = global.fetch || require('node-fetch');
 
 class Api {
+  endpoint: string;
+  EMAIL: string;
+  PASSWORD: string;
+  cookies: Record<string, string>;
+  headers: Record<string, string>;
+  EDITION?: string;
+
   constructor(email: string, password:string) {
-    this.endpoint = process.env.OLI_GRAPHQL_ENDPOINT // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
+    this.endpoint = process.env.OLI_GRAPHQL_ENDPOINT || '' // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
     this.EMAIL = email;
     this.PASSWORD = password;
 
@@ -143,9 +149,9 @@ class Api {
   }
 
   // Estrae i cookie da un array di header Set-Cookie
-  static parseSetCookie(setCookieArray) {
-    const jar = {};
-    (setCookieArray || []).forEach((c) => {
+  static parseSetCookie(setCookieArray: (string | null)[]) {
+    const jar: Record<string, string> = {};
+    (setCookieArray || []).forEach((c: string | null) => {
       if (!c) return;
       const parts = c.split(';');
       if (parts.length > 0) {
@@ -164,7 +170,7 @@ class Api {
   }
 
   // Effettua una richiesta grezza, mantenendo il jar dei cookie e il token CSRF
-  async rawRequest(body) {
+  async rawRequest(body: unknown) {
     // Se non abbiamo ancora un csrftoken, effettuiamo una primissima chiamata per riceverlo
     if (!this.cookies.csrftoken) {
       process.stderr.write('Creating session\n');
@@ -200,7 +206,7 @@ class Api {
 
     const text = await resp.text();
     let json;
-    try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { parseError: e.message, raw: text }; }
+    try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { parseError: (e as Error).message, raw: text }; }
 
     if (resp.status !== 200) {
       process.stderr.write(JSON.stringify(json, null, 2) + '\n');
@@ -209,7 +215,7 @@ class Api {
     return json;
   }
 
-  async query(query, vars = {}) {
+  async query(query: string, vars: Record<string, unknown> = {}) {
     const variables = this.EDITION ? { ...vars, EDITION: this.EDITION } : vars;
     return this.rawRequest({ query, variables });
   }
@@ -229,7 +235,7 @@ class Api {
     const login = r?.data?.users?.login;
     const typename = login?.__typename;
     if (typename === 'OperationInfo') {
-      const msg = (login.messages || []).map((x) => x.message).join(', ');
+      const msg = (login.messages || []).map((x: {message: string}) => x.message).join(', ');
       throw new Error('OperationInfo: ' + msg);
     }
     return r;
@@ -280,9 +286,26 @@ mutation MatchOrCreateParticipant(
 }
 `;
 
-async function matchOrCreateParticipant(api, contestId, participantData) {
+interface ParticipantData {
+  schoolExternalId: string;
+  name: string;
+  surname: string;
+  classYear: number;
+  section: string;
+  birthDate?: string;
+}
+
+async function matchOrCreateParticipant(api: Api, contestId: number, participantData: ParticipantData) {
   try {
-    const variables = {
+    const variables: {
+      contestId: number;
+      schoolExternalId: string;
+      name: string;
+      surname: string;
+      classYear: number;
+      section: string;
+      birthDate?: string;
+    } = {
       contestId: Number(contestId),
       schoolExternalId: participantData.schoolExternalId,
       name: participantData.name,
@@ -318,6 +341,6 @@ async function matchOrCreateParticipant(api, contestId, participantData) {
 
     return { success: false, error: `Unknown typename: ${typename}` , input: participantData };
   } catch (e) {
-    return { success: false, error: String(e && e.message ? e.message : e), input: participantData };
+    return { success: false, error: String((e as Error)?.message || e), input: participantData };
   }
 }

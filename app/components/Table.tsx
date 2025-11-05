@@ -49,7 +49,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
   // aggrega tutto lo stato che può essere utilizzato
   // dal menu a tendina delle azioni
-  const ctx = tableContext(rows, sheet, onRefresh)
+  const ctx = useTableContext(rows, sheet, onRefresh)
 
   useEffect(() => {
     setViewRows(prevViewRows => {
@@ -124,20 +124,20 @@ export type TableContext = {
   setShowAdditionalColumns: (show: boolean) => void,
   showHiddenColumns: boolean,
   setShowHiddenColumns: (show: boolean) => void,
-  deleteRows: (args: { variables: { ids: ObjectId[] } }) => Promise<any>,
+  deleteRows: (args: { variables: { ids: ObjectId[] } }) => Promise<unknown>,
   deleteLoading: boolean,
-  patchRow: (args: { variables: { _id: ObjectId, updatedOn: Date, data: any } }) => Promise<any>,
+  patchRow: (args: { variables: { _id: ObjectId, updatedOn: Date, data: Record<string, unknown> } }) => Promise<unknown>,
   patchLoading: boolean,
-  requestScanSheetGeneration: (args: { variables: { sheetId: ObjectId, selectedRowIds?: ObjectId[] } }) => Promise<any>,
+  requestScanSheetGeneration: (args: { variables: { sheetId: ObjectId, selectedRowIds?: ObjectId[] } }) => Promise<unknown>,
   scanSheetLoading: boolean,
   scanSheetError: Error | undefined,
-  olimanagerCreateParticipant: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<any>,
+  olimanagerCreateParticipant: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
   olimanagerLoading: boolean,
   olimanagerError: Error | undefined,
   userHasSheetAdminPrivileges: boolean
 }
 
-function tableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
+function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
   const profile = useProfile()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
@@ -346,7 +346,7 @@ async function handleOlimanagerCreateParticipants(ctx: TableContext) {
   if (!confirmed) return
   const username = prompt('Username olimanager (email)') ?? ''
   const password = prompt('Password') ?? ''
-  const res = await ctx.olimanagerCreateParticipant({ variables: { rowIds: ids, username, password } })
+  const res = await ctx.olimanagerCreateParticipant({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerCreateParticipant?: boolean[]}}
   const arr = res.data?.olimanagerCreateParticipant || []
   const ok = arr.filter(Boolean).length
   const ko = arr.length - ok

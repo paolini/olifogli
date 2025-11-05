@@ -117,6 +117,7 @@ export const resolvers: Resolvers = {
     lockSheet,
     unlockSheet,
     validateRows,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerCreateParticipant: olimanagerCreateParticipant as any,
   },
 
