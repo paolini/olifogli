@@ -1,15 +1,17 @@
 import { Data } from '../models'
 
+export type Points = {
+    correct: number,
+    wrong: number,
+    empty: number,
+    invalid: number,
+};
+
 export type PermutationsObject = {
     correct: {[key: string]: string},
     questions: {[key: string]: number[]},
     answers: {[key: string]: string},
-    points: {
-        correct: number,
-        wrong: number,
-        empty: number,
-        invalid: number,
-    }
+    points: Points  
 };
 /*******
  * esempio: !!! QUESTI NON SONO I DATI REALI, SONO SOLO DI ESEMPIO
@@ -165,6 +167,11 @@ export function decodePermutations(variantCode: string, answers: string[], permu
 
     const n_questions = correct_answers.length;
     const remapped_answers = questions_inverse_permutation.map(j => answers_mapping[answers[j].charAt(0)]);
+
+    const extended_answers = questions_permutation.map(
+        (j,i) => 
+            `${answers[i].charAt(0) || '?'} [${answers_inverse_mapping[correct_answers[j]] || '?'}${remapped_answers[i] || '?'}${correct_answers[i] || '?'}]`);
+
     let correct_answer_count = 0;
     let wrong_answer_count = 0;
     let empty_answer_count = 0;
@@ -181,10 +188,17 @@ export function decodePermutations(variantCode: string, answers: string[], permu
             invalid_answer_count++;
         }
     }
-    const score = correct_answer_count*permutations_data.points.correct + empty_answer_count*permutations_data.points.empty + invalid_answer_count*permutations_data.points.invalid + wrong_answer_count*permutations_data.points.wrong;
-    const extended_answers = questions_permutation.map(
-        (j,i) => 
-            `${answers[i].charAt(0) || '?'} [${answers_inverse_mapping[correct_answers[j]] || '?'}${remapped_answers[i] || '?'}${correct_answers[i] || '?'}]`);
+
+    const score = correct_answer_count*permutations_data.points.correct 
+        + empty_answer_count*permutations_data.points.empty 
+        + invalid_answer_count*permutations_data.points.invalid 
+        + wrong_answer_count*permutations_data.points.wrong;
+
+    // consistency check
+    if (score !== computeScores(extended_answers, permutations_data).reduce((a,b) => a+b, 0)) {
+        throw new Error(`Inconsistency in score computation for variant ${variantCode} answers ${answers}`);
+    }
+
     return {
         error: '',
         score,
@@ -192,3 +206,16 @@ export function decodePermutations(variantCode: string, answers: string[], permu
     }
 }
 
+export function computeScores(extended_answers: string[], permutations_data: PermutationsObject) {
+    return extended_answers.map(s => {
+        if (!s.match(/^[A-EX\-] \[[A-EX\-][A-EX\-][A-EX\-]\]$/)) {
+            throw new Error(`Formato di risposta estesa non valido: "${s}"`);
+        }
+        let answer = s.charAt(3);
+        const correct_answer = s.charAt(4);
+        if (answer === '-') return permutations_data.points.empty;
+        if (answer === 'X') return permutations_data.points.invalid;
+        if (answer === correct_answer) return permutations_data.points.correct;
+        else return permutations_data.points.wrong;
+    })
+}
