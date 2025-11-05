@@ -1,4 +1,4 @@
-"""
+/*
 Script per aggiornare in batch i risultati dei partecipanti a un contest.
 
 Il file CSV deve avere le colonne:
@@ -206,3 +206,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+*/

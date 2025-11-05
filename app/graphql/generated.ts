@@ -199,7 +199,7 @@ export type MutationValidateRowsArgs = {
 export type OlimanagerRowData = {
   __typename?: 'OlimanagerRowData';
   error?: Maybe<Scalars['String']['output']>;
-  participantId?: Maybe<Scalars['Int']['output']>;
+  participantId?: Maybe<Scalars['String']['output']>;
   result?: Maybe<Scalars['JSON']['output']>;
   updatedOn?: Maybe<Scalars['Timestamp']['output']>;
 };
@@ -484,7 +484,7 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, updatedOn?: Date | null, error?: string | null } | null }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -1061,6 +1061,11 @@ export const GetRowsDocument = gql`
     createdBy
     updatedOn
     updatedBy
+    olimanager {
+      participantId
+      updatedOn
+      error
+    }
   }
 }
     `;
@@ -2316,7 +2321,7 @@ export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversT
 
 export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerRowData'] = ResolversParentTypes['OlimanagerRowData']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  participantId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   result?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   updatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

@@ -56,7 +56,7 @@ input UpdateSheetInput {
 }
 
 type OlimanagerRowData {
-  participantId: Int
+  participantId: String
   error: String
   updatedOn: Timestamp
   result: JSON
