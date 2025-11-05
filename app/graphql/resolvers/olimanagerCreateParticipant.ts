@@ -1,14 +1,15 @@
-// @ts-nocheck
+import { schemas } from "@/app/lib/schema";
 import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
 import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 // Nota: in fondo al file esistono classi/funzioni di supporto (Api, matchOrCreateParticipant)
 // riutilizzate qui per chiamare l'endpoint GraphQL di Olimanager.
 
 export default async function olimanagerCreateParticipant(
   _: unknown,
-  { rowIds, password }: { rowIds: any[]; password: string },
+  { rowIds, username, password }: { rowIds: ObjectId[]; username?: string; password: string },
   context: Context
 ): Promise<boolean[]> {
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
@@ -20,7 +21,7 @@ export default async function olimanagerCreateParticipant(
   const sheets = await getSheetsCollection()
   const workbooks = await getWorkbooksCollection()
 
-  const api = new Api(user.email, password)
+  const api = new Api(username || user.email, password)
   await api.login()
 
   const results: boolean[] = []
@@ -45,10 +46,13 @@ export default async function olimanagerCreateParticipant(
       const surname = row.data.surname
       const classYearStr = row.data.classYear
       const section = row.data.classSection
-      const birthDate = row.data.birthDate
+      const birthDate = row.data.birthDate.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, '$3-$2-$1');
 
       const classYear = parseInt(classYearStr || '0', 10) + 8 // Converto da anno di corso (1-5) a anno scolastico (9-13)
 
+
+      console.log(`Creazione/abbinamento partecipante per riga ${rowId} (${surname} ${name})`)
+      console.log(`  schoolExternalId: ${schoolExternalId}, contestId: ${contestId}, classYear: ${classYear}, section: ${section}, birthDate: ${birthDate}`)
       const result = await matchOrCreateParticipant(api, contestId, {
         schoolExternalId,
         name,
@@ -59,7 +63,9 @@ export default async function olimanagerCreateParticipant(
       })
 
       if (result?.success) {
-        const participantId = result?.participant?.id ?? undefined
+        console.log(`  OK, participantId: ${result.participant.id}`)
+        console.log(JSON.stringify(result))
+        const participantId = result?.participant?.id ? String(result.participant.id) : undefined
         await rows.updateOne(
           { _id: rowId },
           {
@@ -73,6 +79,8 @@ export default async function olimanagerCreateParticipant(
         )
         results.push(true)
       } else {
+        console.log(`  KO`)
+        console.log(JSON.stringify(result))
         const errorMsg = typeof result?.error === 'string' ? result?.error : JSON.stringify(result?.error || result?.messages || 'unknown error')
         await rows.updateOne(
           { _id: rowId },
@@ -85,20 +93,20 @@ export default async function olimanagerCreateParticipant(
         )
         results.push(false)
       }
-    } catch (e) {
-      await rows.updateOne(
-        { _id: rowId },
-        {
-          $set: {
-            'olimanager.error': String(e?.message || e)
-          },
-        }
-      )
-      results.push(false)
-    }
-  }
-
-  return results
+      } catch (e) {
+        console.log(`  EXCEPTION`)
+        console.log(e)
+        await rows.updateOne(
+          { _id: rowId },
+          {
+            $set: {
+              'olimanager.error': String((e as Error)?.message || e)
+            },
+          }
+        )
+        results.push(false)
+      }
+    }  return results
 }
 
 /**
@@ -118,11 +126,19 @@ export default async function olimanagerCreateParticipant(
  */
 
 // Usa la fetch built-in di Node 18+ (undici)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fetch = global.fetch || require('node-fetch');
 
 class Api {
+  endpoint: string;
+  EMAIL: string;
+  PASSWORD: string;
+  cookies: Record<string, string>;
+  headers: Record<string, string>;
+  EDITION?: string;
+
   constructor(email: string, password:string) {
-    this.endpoint = process.env.OLI_GRAPHQL_ENDPOINT // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
+    this.endpoint = process.env.OLI_GRAPHQL_ENDPOINT || '' // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
     this.EMAIL = email;
     this.PASSWORD = password;
 
@@ -133,9 +149,9 @@ class Api {
   }
 
   // Estrae i cookie da un array di header Set-Cookie
-  static parseSetCookie(setCookieArray) {
-    const jar = {};
-    (setCookieArray || []).forEach((c) => {
+  static parseSetCookie(setCookieArray: (string | null)[]) {
+    const jar: Record<string, string> = {};
+    (setCookieArray || []).forEach((c: string | null) => {
       if (!c) return;
       const parts = c.split(';');
       if (parts.length > 0) {
@@ -154,7 +170,7 @@ class Api {
   }
 
   // Effettua una richiesta grezza, mantenendo il jar dei cookie e il token CSRF
-  async rawRequest(body) {
+  async rawRequest(body: unknown) {
     // Se non abbiamo ancora un csrftoken, effettuiamo una primissima chiamata per riceverlo
     if (!this.cookies.csrftoken) {
       process.stderr.write('Creating session\n');
@@ -190,7 +206,7 @@ class Api {
 
     const text = await resp.text();
     let json;
-    try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { parseError: e.message, raw: text }; }
+    try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { parseError: (e as Error).message, raw: text }; }
 
     if (resp.status !== 200) {
       process.stderr.write(JSON.stringify(json, null, 2) + '\n');
@@ -199,7 +215,7 @@ class Api {
     return json;
   }
 
-  async query(query, vars = {}) {
+  async query(query: string, vars: Record<string, unknown> = {}) {
     const variables = this.EDITION ? { ...vars, EDITION: this.EDITION } : vars;
     return this.rawRequest({ query, variables });
   }
@@ -207,10 +223,10 @@ class Api {
   async login() {
     process.stderr.write('Logging in\n');
     if (!this.EMAIL) {
-      throw new Error('Email non specificata!\nPer risolvere:\nesportare OLI_EMAIL=my-email');
+      throw new Error('Email non specificata!');
     }
     if (!this.PASSWORD) {
-      throw new Error('Password non specificata!\nPer risolvere:\nesportare OLI_PASSWORD=my-secret-password');
+      throw new Error('Password non specificata!');
     }
     const r = await this.query(
       `mutation ($EMAIL: String!, $PASSWORD: String!) {\n        users{\n          login(email: $EMAIL, password: $PASSWORD){\n            __typename\n            ...on OperationInfo{\n              messages{\n                message\n                kind\n              }\n            }\n            ...on LoginSuccess{\n              user{\n                email\n              }\n            }\n          }\n        }\n      }`,
@@ -219,7 +235,7 @@ class Api {
     const login = r?.data?.users?.login;
     const typename = login?.__typename;
     if (typename === 'OperationInfo') {
-      const msg = (login.messages || []).map((x) => x.message).join(', ');
+      const msg = (login.messages || []).map((x: {message: string}) => x.message).join(', ');
       throw new Error('OperationInfo: ' + msg);
     }
     return r;
@@ -270,9 +286,26 @@ mutation MatchOrCreateParticipant(
 }
 `;
 
-async function matchOrCreateParticipant(api, contestId, participantData) {
+interface ParticipantData {
+  schoolExternalId: string;
+  name: string;
+  surname: string;
+  classYear: number;
+  section: string;
+  birthDate?: string;
+}
+
+async function matchOrCreateParticipant(api: Api, contestId: number, participantData: ParticipantData) {
   try {
-    const variables = {
+    const variables: {
+      contestId: number;
+      schoolExternalId: string;
+      name: string;
+      surname: string;
+      classYear: number;
+      section: string;
+      birthDate?: string;
+    } = {
       contestId: Number(contestId),
       schoolExternalId: participantData.schoolExternalId,
       name: participantData.name,
@@ -308,6 +341,6 @@ async function matchOrCreateParticipant(api, contestId, participantData) {
 
     return { success: false, error: `Unknown typename: ${typename}` , input: participantData };
   } catch (e) {
-    return { success: false, error: String(e && e.message ? e.message : e), input: participantData };
+    return { success: false, error: String((e as Error)?.message || e), input: participantData };
   }
 }
