@@ -4,53 +4,38 @@ import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
 
 import { Row, Sheet } from '@/app/graphql/generated'
-import { RowInputState, startEditRow, startNewRow, stopEditRow, updateNewData, hasUnsavedChanges, handleRowChange } from './RowInputStateActions'
+import { RowInputState, startNewRow, hasUnsavedChanges, handleRowChange } from './RowInputStateActions'
 import { Criteria } from './Ordering'
 import SortIcon from './SortIcon'
 import TableInputRow from './TableInputRow'
 import TableRow from './TableRow'
 import Button from './Button'
+import { TableContext } from './Table'
 
 export default function TableInner({
-  rows,
-  selectedIds,
-  setSelectedIds,
+  ctx,
   rowInputState,
   setRowInputState,
-  sheet,
-  schema,
-  showStandardAnswers,
-  showAdditionalColumns,
-  showHiddenColumns,
   setSort,
   criteria,
   edit,
-  onRefresh,
   refreshLoading
 }: {
-  rows: Row[],
-  selectedIds: Set<string>,
-  setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
+  ctx: TableContext,
   rowInputState: RowInputState,
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
-  sheet: Sheet,
-  schema: Schema,
-  showStandardAnswers: boolean,
-  showAdditionalColumns: boolean,
-  showHiddenColumns: boolean,
   setSort: (field: Field|string, direction: number) => void,
   criteria?: Criteria,
   edit?: boolean,
-  onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
   // Usa l'ID come ancora per la selezione a intervallo per resistere ai riordinamenti
   const [lastClickedId, setLastClickedId] = useState<string|null>(null)
   const toggleSelectAll = () => {
-    if (selectedIds.size === rows.length) {
-      setSelectedIds(new Set())
+    if (ctx.selectedIds.size === ctx.rows.length) {
+      ctx.setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(rows.map(row => row._id.toString())))
+      ctx.setSelectedIds(new Set(ctx.rows.map(row => row._id.toString())))
     }
   }
 
@@ -59,15 +44,15 @@ export default function TableInner({
     const native = e.nativeEvent
     const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
     const checked = e.currentTarget.checked
-    setSelectedIds(prev => {
+    ctx.setSelectedIds(prev => {
       const next = new Set(prev)
   if (shift && lastClickedId) {
-        const anchorIndex = rows.findIndex(r => r._id.toString() === lastClickedId)
-        const currentIndex = rows.findIndex(r => r._id.toString() === rowId)
+        const anchorIndex = ctx.rows.findIndex(r => r._id.toString() === lastClickedId)
+        const currentIndex = ctx.rows.findIndex(r => r._id.toString() === rowId)
         if (anchorIndex !== -1 && currentIndex !== -1) {
           const start = Math.min(anchorIndex, currentIndex)
           const end = Math.max(anchorIndex, currentIndex)
-          const idsInRange = rows.slice(start, end + 1).map(r => r._id.toString())
+          const idsInRange = ctx.rows.slice(start, end + 1).map(r => r._id.toString())
           if (checked) idsInRange.forEach(id => next.add(id))
           else idsInRange.forEach(id => next.delete(id))
           return next
@@ -83,42 +68,31 @@ export default function TableInner({
 
   return <table className="my-table">
     <TableHeaders 
-      schema={schema} 
-      showAdditionalColumns={showAdditionalColumns} 
-      showHiddenColumns={showHiddenColumns}
+      ctx={ctx}
       setSort={setSort}
       criteria={criteria}
-      allSelected={selectedIds.size === rows.length && rows.length > 0}
+      allSelected={ctx.selectedIds.size === ctx.rows.length && ctx.rows.length > 0}
       toggleSelectAll={toggleSelectAll}
     />
     <TableBody 
-      rows={rows} 
+      ctx={ctx}
       rowInputState={rowInputState}
       setRowInputState={setRowInputState}
-      sheet={sheet} 
-      schema={schema} 
-      showStandardAnswers={showStandardAnswers} 
-      showAdditionalColumns={showAdditionalColumns} 
-      showHiddenColumns={showHiddenColumns}
       edit={edit}
-      selectedIds={selectedIds}
-  toggleSelectRow={toggleSelectRow}
-      onRefresh={onRefresh}
+      toggleSelectRow={toggleSelectRow}
       refreshLoading={refreshLoading}
     />
   </table>
 }
 
-function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort, criteria, allSelected, toggleSelectAll}: {
-  schema: Schema,
-  showAdditionalColumns: boolean,
-  showHiddenColumns: boolean,
+function TableHeaders({ctx, setSort, criteria, allSelected, toggleSelectAll}: {
+  ctx: TableContext,
   setSort: (field: Field|string, direction: number) => void,
   criteria?: Criteria,
   allSelected: boolean,
   toggleSelectAll: () => void
 }) {
-  const columns = schema.fields.filter(f => showHiddenColumns || !f.hidden);
+  const columns = ctx.schema.fields.filter(f => ctx.showHiddenColumns || !f.hidden);
 
   const additional_columns = [
     {name: 'createdOn', label: 'istante creazione'},
@@ -130,7 +104,7 @@ function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort
   return <>
       <colgroup>
         <col className="checkbox-cell" />
-        { showAdditionalColumns && 
+        { ctx.showAdditionalColumns && 
           additional_columns.map(col => <col key={col.name} className={col.name} />)
         }
         {columns.map(field => <col key={field.name} className={field.css_class} />)}
@@ -145,7 +119,7 @@ function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort
               onChange={toggleSelectAll}
             />
           </th>
-          { showAdditionalColumns && 
+          { ctx.showAdditionalColumns && 
             additional_columns.map(col => (
               <th scope="col" key={col.name} className={col.name}>
                 {col.label}
@@ -165,37 +139,23 @@ function TableHeaders({schema, showAdditionalColumns, showHiddenColumns, setSort
 }
 
 function TableBody({
-  rows,
+  ctx,
   rowInputState,
   setRowInputState,
-  sheet,
-  schema,
-  showStandardAnswers,
-  showAdditionalColumns,
-  showHiddenColumns,
   edit,
-  selectedIds,
   toggleSelectRow,
-  onRefresh,
   refreshLoading
 }: {
-  rows: Row[],
+  ctx: TableContext,
   rowInputState: RowInputState,
   setRowInputState: Dispatch<SetStateAction<RowInputState>>,
-  sheet: Sheet,
-  schema: Schema,
-  showStandardAnswers: boolean,
-  showAdditionalColumns: boolean,
-  showHiddenColumns: boolean,
   edit?: boolean,
-  selectedIds: Set<string>,
   toggleSelectRow: (rowId: string, e: React.ChangeEvent<HTMLInputElement>) => void,
-  onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
   // Trova la prima colonna editabile vuota
   function findFirstEmptyEditableField(row: Row): string | null {
-    const editableFields = schema.fields.filter(f => (showHiddenColumns || !f.hidden) && f.editable)
+    const editableFields = ctx.schema.fields.filter(f => (ctx.showHiddenColumns || !f.hidden) && f.editable)
     for (const field of editableFields) {
       const value = row.data[field.name]
       if (!value || value === '') {
@@ -207,57 +167,57 @@ function TableBody({
   }
 
   return <tbody>
-    {rows.map((row, index) => {
-      const prevRow = index > 0 ? rows[index - 1] : null
-      const nextRow = index < rows.length - 1 ? rows[index + 1] : null
+    {ctx.rows.map((row, index) => {
+      const prevRow = index > 0 ? ctx.rows[index - 1] : null
+      const nextRow = index < ctx.rows.length - 1 ? ctx.rows[index + 1] : null
       const nextFieldName = nextRow ? findFirstEmptyEditableField(nextRow) : null
       
       return (edit && rowInputState.rowIsBeingEdited && row._id === rowInputState.rowId)
         ? <TableInputRow
             key={row._id.toString()}
-            sheetId={sheet._id.toString()}
-            schema={schema}
+            sheetId={ctx.sheet._id.toString()}
+            schema={ctx.schema}
             row={row}
             rowInputState={rowInputState}
             setRowInputState={setRowInputState}
-            showAdditionalColumns={showAdditionalColumns}
-            showHiddenColumns={showHiddenColumns}
+            showAdditionalColumns={ctx.showAdditionalColumns}
+            showHiddenColumns={ctx.showHiddenColumns}
             prevRow={prevRow}
             nextRow={nextRow}
             nextFieldName={nextFieldName}
-            isSelected={selectedIds.has(row._id.toString())}
+            isSelected={ctx.selectedIds.has(row._id.toString())}
             onToggleSelect={(e) => toggleSelectRow(row._id.toString(), e)}
           />
         : <MyRow
             key={row._id.toString()}
-            schema={schema}
+            schema={ctx.schema}
             row={row}
-            showStandardAnswers={showStandardAnswers}
-            showAdditionalColumns={showAdditionalColumns}
-            showHiddenColumns={showHiddenColumns}
+            showStandardAnswers={ctx.showStandardAnswers}
+            showAdditionalColumns={ctx.showAdditionalColumns}
+            showHiddenColumns={ctx.showHiddenColumns}
             onCellClick={fieldName => {
               if (edit) {
                 handleRowChange(rowInputState, setRowInputState, row, fieldName)
               }
             }}
-            isSelected={selectedIds.has(row._id.toString())}
+            isSelected={ctx.selectedIds.has(row._id.toString())}
             onToggleSelect={(e) => toggleSelectRow(row._id.toString(), e)}
           />
     })}
     {edit && rowInputState.rowIsBeingEdited && rowInputState.rowId === null && (
       <TableInputRow 
         key="new-row"
-        sheetId={sheet._id.toString()} 
-        schema={schema}
+        sheetId={ctx.sheet._id.toString()} 
+        schema={ctx.schema}
         rowInputState={rowInputState}
         setRowInputState={setRowInputState}
-        showAdditionalColumns={showAdditionalColumns} 
-        showHiddenColumns={showHiddenColumns}
-        prevRow={rows.length > 0 ? rows[rows.length - 1] : null} />
+        showAdditionalColumns={ctx.showAdditionalColumns} 
+        showHiddenColumns={ctx.showHiddenColumns}
+        prevRow={ctx.rows.length > 0 ? ctx.rows[ctx.rows.length - 1] : null} />
     )}
     {edit && !(rowInputState.rowIsBeingEdited && rowInputState.rowId === null) && (
       <tr key="add-row">
-        <td colSpan={schema.fields.length + 2}>
+        <td colSpan={ctx.schema.fields.length + 2}>
           <Button onClick={() => {
             if (hasUnsavedChanges(rowInputState)) {
               const confirmed = confirm(
@@ -269,10 +229,10 @@ function TableBody({
           }}>
             aggiungi riga
           </Button>
-          {onRefresh && (
+          {ctx.onRefresh && (
             <Button 
               className="ml-2"
-              onClick={onRefresh}
+              onClick={ctx.onRefresh}
               disabled={refreshLoading}
               variant="alert"
             >
