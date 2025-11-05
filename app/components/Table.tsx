@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, SetStateAction, Dispatch } from 'react'
-import { Row, Sheet, useRequestScanSheetGenerationMutation, useOlimanagerCreateParticipantMutation } from '@/app/graphql/generated'
+import { useState, useEffect, SetStateAction, Dispatch, ReactElement } from 'react'
+import { Row, Sheet, useRequestScanSheetGenerationMutation, useOlimanagerCreateParticipantMutation, useOlimanagerBulkUpdateResultsMutation } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
 import TableInner from './TableInner'
 import LoadingWrapper from './LoadingWrapper'
@@ -26,6 +26,12 @@ const _ = gql`
 const __ = gql`
   mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
     olimanagerCreateParticipant(rowIds: $rowIds, username: $username, password: $password)
+  }
+`;
+
+const ___ = gql`
+  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    olimanagerBulkUpdateResults(rowIds: $rowIds, username: $username, password: $password)
   }
 `;
 
@@ -73,8 +79,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
   return <div className="table-container">
     <div className="table-header">
-      <ErrorElement error={ctx.scanSheetError} />
-      <ErrorElement error={ctx.olimanagerError} />
+      <ctx.Errors />
       <Checkboxes ctx={ctx} />
       <ActionSelector ctx={ctx}/>
     </div>
@@ -124,16 +129,13 @@ export type TableContext = {
   showHiddenColumns: boolean,
   setShowHiddenColumns: (show: boolean) => void,
   deleteRows: (args: { variables: { ids: ObjectId[] } }) => Promise<unknown>,
-  deleteLoading: boolean,
   patchRow: (args: { variables: { _id: ObjectId, updatedOn: Date, data: Record<string, unknown> } }) => Promise<unknown>,
-  patchLoading: boolean,
   requestScanSheetGeneration: (args: { variables: { sheetId: ObjectId, selectedRowIds?: ObjectId[] } }) => Promise<unknown>,
-  scanSheetLoading: boolean,
-  scanSheetError: Error | undefined,
   olimanagerCreateParticipant: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
-  olimanagerLoading: boolean,
-  olimanagerError: Error | undefined,
+  olimanagerBulkUpdateResults: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
   userHasSheetAdminPrivileges: boolean
+  loading: boolean,
+  Errors: () => ReactElement
 }
 
 function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
@@ -149,10 +151,19 @@ function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<vo
   const [requestScanSheetGeneration, { loading: scanSheetLoading, error: scanSheetError }] = useRequestScanSheetGenerationMutation({
     refetchQueries: ['ScanSheetJobs']
   })
-  const [olimanagerCreateParticipant, { loading: olimanagerLoading, error: olimanagerError }] = useOlimanagerCreateParticipantMutation()
+  const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
+  const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
 
   const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
   const schema = schemas[sheet.schema]
+  const loading = deleteLoading || olimanagerCreateParticipantLoading || olimanagerBulkUpdateLoading || scanSheetLoading || patchLoading
+  function Errors() {
+    return <>
+      <ErrorElement error={olimanagerCreateParticipantError} />
+      <ErrorElement error={olimanagerBulkUpdateError} />
+      <ErrorElement error={scanSheetError} />
+    </>
+  }
 
   return {
     rows,
@@ -169,15 +180,12 @@ function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<vo
     showHiddenColumns,
     setShowHiddenColumns,
     deleteRows,
-    deleteLoading,
     patchRow,
-    patchLoading,
     requestScanSheetGeneration,
-    scanSheetLoading,
-    scanSheetError,
     olimanagerCreateParticipant,
-    olimanagerLoading,
-    olimanagerError,
+    olimanagerBulkUpdateResults,
+    Errors,
+    loading,
     userHasSheetAdminPrivileges
   }
 }
@@ -203,7 +211,7 @@ function Checkboxes({ctx}: {ctx: TableContext}) {
 
 function ActionSelector({ctx}: {ctx: TableContext}) {
   return <>
-        { (ctx.deleteLoading || ctx.scanSheetLoading || ctx.olimanagerLoading || ctx.patchLoading)
+        { ctx.loading
       ? <Loading />
       : <select
         className="ml-2 border rounded px-2 py-1"
@@ -365,7 +373,11 @@ async function handleOlimanagerUpdateScores(ctx: TableContext) {
   const username = prompt('Username olimanager (email)') ?? ''
   const password = prompt('Password') ?? ''
 
-  throw new Error('Not implemented yet')
+  const res = await ctx.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
+  const arr = res.data?.olimanagerBulkUpdateResults || []
+  const ok = arr.filter(r => r.success).length
+  const ko = arr.length - ok
+  alert(`Esito aggiornamento risultati Olimanager: ${ok} ok, ${ko} errori`)
   
   if (ctx.onRefresh) await ctx.onRefresh()
 }
