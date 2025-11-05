@@ -3,9 +3,10 @@ import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
 import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { OlimanagerApi } from "./olimanagerApi";
 
-// Nota: in fondo al file esistono classi/funzioni di supporto (Api, matchOrCreateParticipant)
-// riutilizzate qui per chiamare l'endpoint GraphQL di Olimanager.
+// Nota: in fondo al file esiste la funzione di supporto matchOrCreateParticipant
+// riutilizzata qui per chiamare l'endpoint GraphQL di Olimanager.
 
 export default async function olimanagerCreateParticipant(
   _: unknown,
@@ -21,7 +22,7 @@ export default async function olimanagerCreateParticipant(
   const sheets = await getSheetsCollection()
   const workbooks = await getWorkbooksCollection()
 
-  const api = new Api(username || user.email, password)
+  const api = new OlimanagerApi(username || user.email, password)
   await api.login()
 
   const results: boolean[] = []
@@ -125,123 +126,6 @@ export default async function olimanagerCreateParticipant(
  *   - OLI_CONTEST_ID (alternativa all'argomento da riga di comando)
  */
 
-// Usa la fetch built-in di Node 18+ (undici)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fetch = global.fetch || require('node-fetch');
-
-class Api {
-  endpoint: string;
-  EMAIL: string;
-  PASSWORD: string;
-  cookies: Record<string, string>;
-  headers: Record<string, string>;
-  EDITION?: string;
-
-  constructor(email: string, password:string) {
-    this.endpoint = process.env.OLI_GRAPHQL_ENDPOINT || '' // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
-    this.EMAIL = email;
-    this.PASSWORD = password;
-
-    this.cookies = {}; // cookieName -> value
-    this.headers = { 'Content-Type': 'application/json' };
-
-    process.stderr.write(`Using endpoint: ${this.endpoint}\n`);
-  }
-
-  // Estrae i cookie da un array di header Set-Cookie
-  static parseSetCookie(setCookieArray: (string | null)[]) {
-    const jar: Record<string, string> = {};
-    (setCookieArray || []).forEach((c: string | null) => {
-      if (!c) return;
-      const parts = c.split(';');
-      if (parts.length > 0) {
-        const [name, ...rest] = parts[0].split('=');
-        const value = rest.join('=');
-        if (name && value) jar[name.trim()] = value.trim();
-      }
-    });
-    return jar;
-  }
-
-  // Converte i cookie in header "Cookie"
-  cookieHeader() {
-    const entries = Object.entries(this.cookies).filter(([k, v]) => k && v);
-    return entries.map(([k, v]) => `${k}=${v}`).join('; ');
-  }
-
-  // Effettua una richiesta grezza, mantenendo il jar dei cookie e il token CSRF
-  async rawRequest(body: unknown) {
-    // Se non abbiamo ancora un csrftoken, effettuiamo una primissima chiamata per riceverlo
-    if (!this.cookies.csrftoken) {
-      process.stderr.write('Creating session\n');
-      const r0 = await fetch(this.endpoint, { method: 'POST' });
-      const setCookies = typeof r0.headers.getSetCookie === 'function'
-        ? r0.headers.getSetCookie()
-        : (r0.headers.get('set-cookie') ? [r0.headers.get('set-cookie')] : []);
-      Object.assign(this.cookies, Api.parseSetCookie(setCookies));
-      if (this.cookies.csrftoken) {
-        this.headers['X-CsrfToken'] = this.cookies.csrftoken;
-      }
-    }
-
-    const headers = { ...this.headers };
-    const cookieStr = this.cookieHeader();
-    if (cookieStr) headers['Cookie'] = cookieStr;
-
-    const resp = await fetch(this.endpoint, {
-      method: 'POST',
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    // Aggiorna eventuali cookie e csrf
-    const setCookies = typeof resp.headers.getSetCookie === 'function'
-      ? resp.headers.getSetCookie()
-      : (resp.headers.get('set-cookie') ? [resp.headers.get('set-cookie')] : []);
-    const parsed = Api.parseSetCookie(setCookies);
-    Object.assign(this.cookies, parsed);
-    if (this.cookies.csrftoken) {
-      this.headers['X-CsrfToken'] = this.cookies.csrftoken;
-    }
-
-    const text = await resp.text();
-    let json;
-    try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { parseError: (e as Error).message, raw: text }; }
-
-    if (resp.status !== 200) {
-      process.stderr.write(JSON.stringify(json, null, 2) + '\n');
-      throw new Error(`Query failed to run with a ${resp.status}.`);
-    }
-    return json;
-  }
-
-  async query(query: string, vars: Record<string, unknown> = {}) {
-    const variables = this.EDITION ? { ...vars, EDITION: this.EDITION } : vars;
-    return this.rawRequest({ query, variables });
-  }
-
-  async login() {
-    process.stderr.write('Logging in\n');
-    if (!this.EMAIL) {
-      throw new Error('Email non specificata!');
-    }
-    if (!this.PASSWORD) {
-      throw new Error('Password non specificata!');
-    }
-    const r = await this.query(
-      `mutation ($EMAIL: String!, $PASSWORD: String!) {\n        users{\n          login(email: $EMAIL, password: $PASSWORD){\n            __typename\n            ...on OperationInfo{\n              messages{\n                message\n                kind\n              }\n            }\n            ...on LoginSuccess{\n              user{\n                email\n              }\n            }\n          }\n        }\n      }`,
-      { EMAIL: this.EMAIL, PASSWORD: this.PASSWORD }
-    );
-    const login = r?.data?.users?.login;
-    const typename = login?.__typename;
-    if (typename === 'OperationInfo') {
-      const msg = (login.messages || []).map((x: {message: string}) => x.message).join(', ');
-      throw new Error('OperationInfo: ' + msg);
-    }
-    return r;
-  }
-}
-
 const mutation_match_or_create = `
 mutation MatchOrCreateParticipant(
   $contestId: Int!
@@ -295,7 +179,7 @@ interface ParticipantData {
   birthDate?: string;
 }
 
-async function matchOrCreateParticipant(api: Api, contestId: number, participantData: ParticipantData) {
+async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, participantData: ParticipantData) {
   try {
     const variables: {
       contestId: number;

@@ -41,6 +41,7 @@ import lockSheet from './resolvers/lockSheet'
 import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
+import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -119,6 +120,8 @@ export const resolvers: Resolvers = {
     validateRows,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerCreateParticipant: olimanagerCreateParticipant as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
   },
 
   Timestamp,

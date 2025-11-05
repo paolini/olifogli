@@ -53,6 +53,7 @@ export type Mutation = {
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
+  olimanagerBulkUpdateResults: Scalars['JSON']['output'];
   olimanagerCreateParticipant: Array<Scalars['Boolean']['output']>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
@@ -138,6 +139,13 @@ export type MutationDeleteWorkbookArgs = {
 
 export type MutationLockSheetArgs = {
   _id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationOlimanagerBulkUpdateResultsArgs = {
+  password: Scalars['String']['input'];
+  rowIds: Array<Scalars['ObjectId']['input']>;
+  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -2304,6 +2312,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
+  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['JSON'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password' | 'rowIds'>>;
   olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password' | 'rowIds'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
