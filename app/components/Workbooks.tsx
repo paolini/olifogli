@@ -59,7 +59,7 @@ export default function Workbooks() {
     }
   }
 
-  if (workbooks.length === 0 && !profile.isAdmin) {
+  if (workbooks.length === 0 && !profile?.isAdmin) {
     return <div className="p-4">
       <p>Non hai accesso a nessun foglio.</p>
     </div>

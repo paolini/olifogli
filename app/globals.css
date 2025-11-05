@@ -4,6 +4,7 @@
 
 :root {
   --nav-background: rgb(230, 230, 230);
+  --tr-background: rgb(174, 233, 241);
   --background: #ffffff;
   --foreground: #171717;
   --alert: #cfd90a;
@@ -323,7 +324,7 @@ table.my-table {
 }
 
 .my-table thead tr {
-  background-color: rgb(174, 233, 241);
+  background-color: var(--tr-background);
 }
 
 .my-table td {
