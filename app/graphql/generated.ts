@@ -591,6 +591,15 @@ export type OlimanagerCreateParticipantMutationVariables = Exact<{
 
 export type OlimanagerCreateParticipantMutation = { __typename?: 'Mutation', olimanagerCreateParticipant: Array<boolean> };
 
+export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
+  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
+  password: Scalars['String']['input'];
+}>;
+
+
+export type OlimanagerBulkUpdateResultsMutation = { __typename?: 'Mutation', olimanagerBulkUpdateResults: JSON };
+
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
@@ -1523,6 +1532,43 @@ export function useOlimanagerCreateParticipantMutation(baseOptions?: Apollo.Muta
 export type OlimanagerCreateParticipantMutationHookResult = ReturnType<typeof useOlimanagerCreateParticipantMutation>;
 export type OlimanagerCreateParticipantMutationResult = Apollo.MutationResult<OlimanagerCreateParticipantMutation>;
 export type OlimanagerCreateParticipantMutationOptions = Apollo.BaseMutationOptions<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
+export const OlimanagerBulkUpdateResultsDocument = gql`
+    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+  olimanagerBulkUpdateResults(
+    rowIds: $rowIds
+    username: $username
+    password: $password
+  )
+}
+    `;
+export type OlimanagerBulkUpdateResultsMutationFn = Apollo.MutationFunction<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
+
+/**
+ * __useOlimanagerBulkUpdateResultsMutation__
+ *
+ * To run a mutation, you first call `useOlimanagerBulkUpdateResultsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerBulkUpdateResultsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [olimanagerBulkUpdateResultsMutation, { data, loading, error }] = useOlimanagerBulkUpdateResultsMutation({
+ *   variables: {
+ *      rowIds: // value for 'rowIds'
+ *      username: // value for 'username'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useOlimanagerBulkUpdateResultsMutation(baseOptions?: Apollo.MutationHookOptions<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>(OlimanagerBulkUpdateResultsDocument, options);
+      }
+export type OlimanagerBulkUpdateResultsMutationHookResult = ReturnType<typeof useOlimanagerBulkUpdateResultsMutation>;
+export type OlimanagerBulkUpdateResultsMutationResult = Apollo.MutationResult<OlimanagerBulkUpdateResultsMutation>;
+export type OlimanagerBulkUpdateResultsMutationOptions = Apollo.BaseMutationOptions<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
 export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
