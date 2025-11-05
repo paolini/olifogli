@@ -89,7 +89,7 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
         <div className="overflow-x-auto">
             <table className="w-full border-collapse">
                 <thead>
-                    <tr className="my-table" height="60">
+                    <tr className="my-table">
                         <th className="border p-2 text-center w-16">Pos.</th>
                         <th className="border p-2 text-center w-24">Punti</th>
                         <th className="border p-2 text-center w-40">Cognome</th>
