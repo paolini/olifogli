@@ -40,6 +40,7 @@ export async function register() {
     console.log(`  OLIMANAGER_URL: ${process.env.OLIMANAGER_URL || 'Not set'}`)
     console.log(`  OLIMANAGER_OAUTH_CLIENT_ID: ${process.env.OLIMANAGER_OAUTH_CLIENT_ID || 'Not set'}`)
     console.log(`  OLIMANAGER_OAUTH_CLIENT_SECRET: ${maskSecret(process.env.OLIMANAGER_OAUTH_CLIENT_SECRET)}`)
+    console.log(`  OLI_GRAPHQL_ENDPOINT: ${process.env.OLI_GRAPHQL_ENDPOINT || 'Not set'}`)
 
     // Variabili directory e storage
     console.log('\n📁 Mounted Directories:')
