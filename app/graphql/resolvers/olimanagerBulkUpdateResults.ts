@@ -4,6 +4,8 @@ import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "
 import { ObjectId } from "mongodb";
 import { schemas } from "@/app/lib/schema";
 import { OlimanagerApi } from "./olimanagerApi";
+import { OlimanagerProblemResult } from "@/app/lib/schema/Competition";
+import Competition from "@/app/lib/schema/Competition";
 
 /**
  * Resolver GraphQL per aggiornare in batch i risultati dei partecipanti a un contest.
@@ -22,6 +24,19 @@ import { OlimanagerApi } from "./olimanagerApi";
  * }
  * ```
  */
+
+interface Message {
+  message: string;
+  kind: string;
+}
+
+interface BulkUpdateResultsResponse {
+  success: boolean;
+  typename?: string;
+  messages?: Message[];
+  error?: string;
+  data: unknown;
+}
 
 export default async function olimanagerBulkUpdateResults(
   _: unknown,
@@ -53,7 +68,7 @@ export default async function olimanagerBulkUpdateResults(
 
   try {
     // 4) Converto le righe in problemResults
-    const allProblemResults: ProblemResult[] = [];
+    const allProblemResults: OlimanagerProblemResult[] = [];
     let contestId: number | null = null;
 
     for (const rowId of rowIds) {
@@ -71,8 +86,10 @@ export default async function olimanagerBulkUpdateResults(
 
       const schema = schemas[sheet.schema];
       if (!schema) {
-        console.warn(`Schema non trovato per il foglio: ${sheet.schema}`);
-        continue;
+        throw new Error(`Schema non trovato per il foglio: ${sheet.schema}`);
+      }
+      if (!(schema instanceof Competition)) {
+        throw new Error(`Non è una Competition: ${sheet.schema}`);
       }
 
       const workbook = await workbooks.findOne({ _id: sheet.workbookId });
@@ -90,7 +107,14 @@ export default async function olimanagerBulkUpdateResults(
       }
 
       // Converte la riga in problemResults (16 problemi)
-      const problemResults = convertRowToProblemResults(row, sheet, workbook, schema);
+      const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results(row, sheet.commonData, workbook.commonData);
+
+      // Sanity check...
+      const score = problemResults.reduce((sum, pr) => sum + (pr.score || 0), 0);
+      if (score !== parseInt(row.data.totalScore || '0', 10)) {
+        throw new Error(`Incoerenza nel punteggio totale per la riga ${rowId}: somma dei punteggi problemi = ${score}, ma totalScore = ${row.data.totalScore}`);
+      }
+
       allProblemResults.push(...problemResults);
     }
 
@@ -146,88 +170,6 @@ export default async function olimanagerBulkUpdateResults(
   }
 }
 
-// ============================================================================
-// FUNZIONE DI CONVERSIONE DA ROW A PROBLEM RESULTS
-// ============================================================================
-
-/**
- * Converte una riga in un array di ProblemResult (uno per ogni problema, tipicamente 16).
- * 
- * TODO: Implementare la logica per estrarre i dati dalla riga e creare i problemResults.
- * La riga dovrebbe contenere:
- * - participantId (da row.olimanager.participantId)
- * - punteggi per 16 problemi (da row.data.problem_0, problem_1, ..., problem_15 o simile)
- * - eventualmente un flag disqualified
- * 
- * @param row - La riga dal database
- * @param sheet - Il foglio associato
- * @param workbook - Il workbook associato
- * @param schema - Lo schema del foglio
- * @returns Array di ProblemResult (uno per ogni problema)
- */
-function convertRowToProblemResults(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  row: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  sheet: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  workbook: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  schema: any
-): ProblemResult[] {
-  // TODO: Implementare la conversione
-  
-  // Esempio di struttura attesa:
-  // const participantId = row.olimanager?.participantId;
-  // if (!participantId) {
-  //   console.warn(`participantId mancante per la riga ${row._id}`);
-  //   return [];
-  // }
-  
-  // const problemResults: ProblemResult[] = [];
-  // for (let i = 0; i < 16; i++) {
-  //   const score = row.data[`problem_${i}`]; // o la chiave corretta
-  //   problemResults.push({
-  //     participantId: Number(participantId),
-  //     problemIndex: i,
-  //     score: score !== null && score !== undefined ? Number(score) : null,
-  //     disqualified: Boolean(row.data.disqualified || false)
-  //   });
-  // }
-  // return problemResults;
-  
-  console.warn(`TODO: Implementare convertRowToProblemResults per la riga ${row._id}`);
-  return [];
-}
-
-// ============================================================================
-// TIPI E INTERFACCE
-// ============================================================================
-
-interface ProblemResult {
-  participantId: number;
-  problemIndex: number;
-  score: number | null;
-  disqualified: boolean;
-}
-
-interface Message {
-  message: string;
-  kind: string;
-}
-
-interface BulkUpdateResultsResponse {
-  success: boolean;
-  typename?: string;
-  messages?: Message[];
-  error?: string;
-  data: unknown;
-}
-
-// ============================================================================
-// MUTATION PER AGGIORNARE I RISULTATI IN BATCH
-// ============================================================================
-
 const BULK_UPDATE_RESULTS_MUTATION = `
 mutation BulkUpdateResults($contestId: Int!, $problemResults: [ParticipantProblemResultInput!]!) {
   participants {
@@ -250,7 +192,7 @@ mutation BulkUpdateResults($contestId: Int!, $problemResults: [ParticipantProble
 async function bulkUpdateResults(
   api: OlimanagerApi,
   contestId: number,
-  problemResults: ProblemResult[]
+  problemResults: OlimanagerProblemResult[]
 ) {
   try {
     const variables = {

@@ -1,10 +1,10 @@
-import { FILE } from 'dns'
 import { Data, Row, ScanResults } from '../models'
+import Competition, { OlimanagerProblemResult } from './Competition'
 import { Field, ChoiceAnswerField, DateField, OptionsField } from './fields'
-import {decodePermutations, buildPermutationsObject} from './PERMUTATIONS'
+import {decodePermutations, buildPermutationsObject, computeScores} from './PERMUTATIONS'
 import Schema, { DerivedData } from './Schema'
 
-export default class ArchimedeCommon extends Schema {
+export default class ArchimedeCommon extends Competition {
     constructor(name: string, description: string) {
         super(name, description, [
             new Field('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
@@ -37,6 +37,14 @@ export default class ArchimedeCommon extends Schema {
 
     }
 
+    extractAnswerItems(data: Data) {
+        const choice_fields = this.fields.filter(f => f instanceof ChoiceAnswerField)
+        return choice_fields.map(f => ({
+            name: f.name,
+            answer: data[f.name] || ''
+        }))
+    }
+
     computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
         data = validated.data
@@ -47,14 +55,13 @@ export default class ArchimedeCommon extends Schema {
             error: 'variante mancante',
             data,
         }
-        const choice_fields = this.fields.filter(f => f instanceof ChoiceAnswerField)
-        const answers = choice_fields.map(f => data[f.name] || '')
+        const answer_items = this.extractAnswerItems(data)
         try {
             const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
-            const {score, error, extended_answers} = decodePermutations(variant, answers, permutations);
+            const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
             data.score = `${score}`
-            choice_fields.forEach((f, i) => {
-                data[f.name] = extended_answers[i] || ''
+            answer_items.forEach((item, i) => {
+                data[item.name] = extended_answers[i] || ''
             })
             return {
                 error,
@@ -144,6 +151,40 @@ export default class ArchimedeCommon extends Schema {
         const schoolExternalId = data[FIELD_NAME]
         if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
         return schoolExternalId
+    }
+
+    extract_olimanager_results(
+      row: Row, sheetData: Data, workbookData: Data
+    ): OlimanagerProblemResult[] {
+        const contestId = this.get_contest_id(workbookData);
+
+        if (!row.olimanager || !row.olimanager.participantId) {
+            throw new Error(`participantId mancante per la riga ${row._id}`);
+        }
+
+        const participantId = parseInt(row.olimanager.participantId);
+
+        if (isNaN(participantId)) {
+            throw new Error(`participantId non valido per la riga ${row._id}: ${row.olimanager.participantId}`);
+        }
+
+        const answer_items = this.extractAnswerItems(row.data);
+        const permutation_data = buildPermutationsObject(sheetData, workbookData);
+
+        const scores = computeScores(answer_items.map(item => item.answer), permutation_data);
+
+        const problemResults = scores.map((score, index) => ({
+            participantId: participantId,
+            problemIndex: index+1,
+            score: score,
+            disqualified: false
+        }));
+
+        if (problemResults.length !== answer_items.length) {
+            throw new Error(`Numero di risultati problema non valido per la riga ${row._id}: attesi ${answer_items.length}, trovati ${problemResults.length}`);
+        }
+
+        return problemResults;
     }
 }
 
