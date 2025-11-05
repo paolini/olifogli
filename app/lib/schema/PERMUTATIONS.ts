@@ -195,8 +195,10 @@ export function decodePermutations(variantCode: string, answers: string[], permu
         + wrong_answer_count*permutations_data.points.wrong;
 
     // consistency check
-    if (score !== computeScores(extended_answers, permutations_data).reduce((a,b) => a+b, 0)) {
-        throw new Error(`Inconsistency in score computation for variant ${variantCode} answers ${answers}`);
+    const scores = computeScores(extended_answers, permutations_data);
+    if (score !== scores.reduce((a,b) => a+b, 0)) {
+        console.log(JSON.stringify({permutations_data, variantCode, answers, extended_answers, score, scores}));
+        throw new Error(`Incoerenza nel punteggio per la variante ${variantCode} risposte ${answers}`);
     }
 
     return {
@@ -211,8 +213,8 @@ export function computeScores(extended_answers: string[], permutations_data: Per
         if (!s.match(/^[A-EX\-] \[[A-EX\-][A-EX\-][A-EX\-]\]$/)) {
             throw new Error(`Formato di risposta estesa non valido: "${s}"`);
         }
-        let answer = s.charAt(3);
-        const correct_answer = s.charAt(4);
+        let answer = s.charAt(4);
+        const correct_answer = s.charAt(5);
         if (answer === '-') return permutations_data.points.empty;
         if (answer === 'X') return permutations_data.points.invalid;
         if (answer === correct_answer) return permutations_data.points.correct;

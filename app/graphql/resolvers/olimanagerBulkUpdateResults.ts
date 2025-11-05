@@ -111,8 +111,8 @@ export default async function olimanagerBulkUpdateResults(
 
       // Sanity check...
       const score = problemResults.reduce((sum, pr) => sum + (pr.score || 0), 0);
-      if (score !== parseInt(row.data.totalScore || '0', 10)) {
-        throw new Error(`Incoerenza nel punteggio totale per la riga ${rowId}: somma dei punteggi problemi = ${score}, ma totalScore = ${row.data.totalScore}`);
+      if (score !== parseInt(row.data.score || '0', 10)) {
+        throw new Error(`Incoerenza nel punteggio totale per la riga ${rowId}: somma dei punteggi problemi = ${score}, ma row.score = ${row.data.score}`);
       }
 
       allProblemResults.push(...problemResults);
@@ -162,11 +162,7 @@ export default async function olimanagerBulkUpdateResults(
     }
   } catch (e) {
     console.error("❌ Errore durante l'aggiornamento bulk:", e);
-    return {
-      success: false,
-      error: String((e as Error)?.message || e),
-      data: null
-    };
+    throw new Error(`Errore durante l'aggiornamento bulk: ${(e as Error)?.message || e}`);
   }
 }
 

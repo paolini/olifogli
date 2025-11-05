@@ -135,7 +135,11 @@ export type TableContext = {
   olimanagerBulkUpdateResults: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
   userHasSheetAdminPrivileges: boolean
   loading: boolean,
-  Errors: () => ReactElement
+  Errors: () => ReactElement,
+  olimanagerEmail: string,
+  setOlimanagerEmail: Dispatch<SetStateAction<string>>,
+  olimanagerPassword: string,
+  setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
 function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
@@ -153,6 +157,8 @@ function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<vo
   })
   const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
   const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
+  const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
+  const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
 
   const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
   const schema = schemas[sheet.schema]
@@ -171,14 +177,12 @@ function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<vo
     onRefresh,
     profile,
     schema,
-    selectedIds,
-    setSelectedIds,
-    showStandardAnswers,
-    setShowStandardAnswers,
-    showAdditionalColumns,
-    setShowAdditionalColumns,
-    showHiddenColumns,
-    setShowHiddenColumns,
+    selectedIds, setSelectedIds,
+    showStandardAnswers, setShowStandardAnswers,
+    showAdditionalColumns, setShowAdditionalColumns,
+    showHiddenColumns, setShowHiddenColumns,
+    olimanagerEmail, setOlimanagerEmail,
+    olimanagerPassword, setOlimanagerPassword,
     deleteRows,
     patchRow,
     requestScanSheetGeneration,
@@ -186,7 +190,7 @@ function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<vo
     olimanagerBulkUpdateResults,
     Errors,
     loading,
-    userHasSheetAdminPrivileges
+    userHasSheetAdminPrivileges,
   }
 }
 
@@ -352,13 +356,35 @@ async function handleGenerateStudentIds(ctx: TableContext) {
   }
 }
 
+function askOlimanagerCredentials(ctx: TableContext): {username: string, password: string} {
+  const username = prompt('Username olimanager (email)', ctx.olimanagerEmail) ?? ''
+  const password = prompt('Password', ctx.olimanagerPassword) ?? ''
+  ctx.setOlimanagerEmail(username)
+  ctx.setOlimanagerPassword(password)
+  return {username, password}
+}
+
+function filterValidRowsAndConfirm(ctx: TableContext): Row[] | null  {
+  const valid_rows = ctx.rows
+    .filter(row => ctx.selectedIds.has(row._id.toString()))
+    .filter(row => !row.error)
+  
+  if (valid_rows.length !== ctx.selectedIds.size 
+    && !confirm(`Solo ${valid_rows.length} righe su ${ctx.selectedIds.size} selezionate sono valide. Procedo con le righe valide?`)) {
+      return null
+    }
+
+  return valid_rows
+}
+
 async function handleOlimanagerCreateParticipants(ctx: TableContext) {
-  const ids = Array.from(ctx.selectedIds).map(id => new ObjectId(id))
-  const confirmed = confirm(`Inviare ${ids.length} righe a Olimanager per creazione/abbinamento partecipanti?`)
-  if (!confirmed) return
-  const username = prompt('Username olimanager (email)') ?? ''
-  const password = prompt('Password') ?? ''
-  const res = await ctx.olimanagerCreateParticipant({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerCreateParticipant?: boolean[]}}
+  const valid_rows = filterValidRowsAndConfirm(ctx)
+  if (!valid_rows || !confirm(`Inviare ${valid_rows.length} righe a Olimanager per creazione/abbinamento partecipanti?`)) {
+    return
+  }
+
+  const {username, password} = askOlimanagerCredentials(ctx)
+  const res = await ctx.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: boolean[]}}
   const arr = res.data?.olimanagerCreateParticipant || []
   const ok = arr.filter(Boolean).length
   const ko = arr.length - ok
@@ -367,13 +393,15 @@ async function handleOlimanagerCreateParticipants(ctx: TableContext) {
 }
 
 async function handleOlimanagerUpdateScores(ctx: TableContext) {
-  const ids = Array.from(ctx.selectedIds).map(id => new ObjectId(id))
-  const confirmed = confirm(`Aggiornare i risultati su Olimanager per ${ids.length} righe selezionate?`)
-  if (!confirmed) return
-  const username = prompt('Username olimanager (email)') ?? ''
-  const password = prompt('Password') ?? ''
+  const valid_rows = filterValidRowsAndConfirm(ctx)
+  if (!valid_rows || !confirm(`Aggiornare i risultati su Olimanager per ${valid_rows.length} righe selezionate?`)) {
+    return
+  }
+  const ids = valid_rows.map(row => new ObjectId(row._id))
+  const {username, password} = askOlimanagerCredentials(ctx)
 
   const res = await ctx.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
+  alert(JSON.stringify(res.data))
   const arr = res.data?.olimanagerBulkUpdateResults || []
   const ok = arr.filter(r => r.success).length
   const ko = arr.length - ok
