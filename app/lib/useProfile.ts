@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+import { ObjectId } from 'bson';
 import { useSession } from 'next-auth/react'
 
 const GET_PROFILE = gql`
@@ -12,7 +13,12 @@ const GET_PROFILE = gql`
     }
 `;
 
-export default function useProfile() {
+export default function useProfile(): {
+    _id: ObjectId
+    email: string
+    name: string
+    isAdmin: boolean
+} | null | undefined {
     const { data: session } = useSession()
     const { data, loading, error } = useQuery(GET_PROFILE, {
         skip: !session?.user,
