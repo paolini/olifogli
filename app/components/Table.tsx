@@ -9,7 +9,6 @@ import { schemas } from '../lib/schema'
 import ErrorElement from './Error'
 import { Field } from '../lib/schema/fields'
 import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
-import Button from './Button'
 import { RowInputState } from './RowInputStateActions'
 import { useDeleteRows, usePatchRow } from './TableInputRow'
 import { ObjectId } from 'bson'
@@ -17,6 +16,7 @@ import { gql } from 'graphql-request'
 import Error from './Error'
 import useProfile from '../lib/useProfile'
 import Loading from './Loading'
+import Schema from '../lib/schema/Schema'
 
 const _ = gql`
     mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
@@ -37,7 +37,6 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   onRefresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
-  const profile = useProfile()
   const [rowInputState, setRowInputState] = useState<RowInputState>({
     rowIsBeingEdited: false,
     rowId: null,
@@ -51,9 +50,6 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   // aggrega tutto lo stato che può essere utilizzato
   // dal menu a tendina delle azioni
   const ctx = tableContext(rows, sheet, onRefresh)
-
-  const schema = schemas[sheet.schema]
-  const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
 
   useEffect(() => {
     setViewRows(prevViewRows => {
@@ -72,93 +68,31 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
     })
   }, [rows])
 
-  if (!schema) {
+  if (!ctx.schema) {
     return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
   }
 
   return <div className="table-container">
     <div className="table-header">
-  <Error error={ctx.scanSheetError} />
-  <Error error={ctx.olimanagerError} />
-      {(schema instanceof ArchimedeCommon) &&
-        <label>
-          <input type="checkbox" checked={ctx.showStandardAnswers} onChange={e => ctx.setShowStandardAnswers(e.target.checked)} />
-          {' '}Mostra risposte standard
-        </label>
-      }
-      <label className="ml-4">
-        <input type="checkbox" checked={ctx.showAdditionalColumns} onChange={e => ctx.setShowAdditionalColumns(e.target.checked)} />
-        {' '}Mostra colonne informative
-      </label>
-      <label className="ml-4">
-        <input type="checkbox" checked={ctx.showHiddenColumns} onChange={e => ctx.setShowHiddenColumns(e.target.checked)} />
-        {' '}Mostra colonne nascoste
-      </label>
-
-      {/* SELECT Azioni */}
-      { (ctx.deleteLoading || ctx.scanSheetLoading || ctx.olimanagerLoading || ctx.patchLoading)
-      ? <Loading />
-      : <select
-        className="ml-2 border rounded px-2 py-1"
-        onChange={(e) => execAction(e.target.value)}
-      >
-        <option value="none" disabled>
-          {ctx.selectedIds.size} {`${ctx.selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
-        </option>
-        <option value="delete" disabled={ctx.selectedIds.size === 0}>
-          Elimina righe selezionate
-        </option>
-        <option value="scan" disabled={ctx.selectedIds.size === 0 || !userHasSheetAdminPrivileges}>
-          Genera fogli risposte
-        </option>
-        {profile.isAdmin && (
-          <option value="olimanager" disabled={ctx.selectedIds.size === 0}>
-            Crea/abbina partecipanti (Olimanager)
-          </option>
-        )}
-        {schema.fields.some(field => field.name === 'id') && (
-          <option value="gen_ids" disabled={!schema.fields.some(field => field.name === 'id') || !ctx.showHiddenColumns}>
-            Genera ID studenti
-          </option>
-        )}
-      </select>}
+      <Error error={ctx.scanSheetError} />
+      <Error error={ctx.olimanagerError} />
+      <Checkboxes ctx={ctx} />
+      <ActionSelector ctx={ctx}/>
     </div>
+
     <div className="table-scroll-container">
       <LoadingWrapper>
-        <TableInner 
-          rows={viewRows}
-          selectedIds={ctx.selectedIds}
-          setSelectedIds={ctx.setSelectedIds}
+        <TableInner
+          ctx={ctx}
           rowInputState={rowInputState}
           setRowInputState={setRowInputState}
-          sheet={sheet}
-          schema={schema}
-          showStandardAnswers={ctx.showStandardAnswers}
-          showAdditionalColumns={ctx.showAdditionalColumns}
-          showHiddenColumns={ctx.showHiddenColumns}
           edit={edit}
           setSort={setSort}
-          onRefresh={onRefresh}
           refreshLoading={refreshLoading}
         />
       </LoadingWrapper>
     </div>
   </div>
-
-  async function execAction(selectedAction: string) {
-    switch (selectedAction) {
-      case 'none':
-        return
-      case 'delete':
-        return handleDeleteSelectedRows(ctx)
-      case 'scan':
-        return handleGenerateScanSheet(ctx)
-      case 'olimanager':
-        return handleOlimanagerCreateParticipants(ctx)
-      case 'gen_ids':
-        return handleGenerateStudentIds(ctx)
-    }
-  }
 
   function setSort(field: Field|string, direction: number) {
     if (field instanceof Field) {
@@ -176,9 +110,11 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
   }
 }
 
-type TableContext = {
+export type TableContext = {
+  profile: ReturnType<typeof useProfile>,
   rows: Row[],
   sheet: Sheet,
+  schema: Schema,
   onRefresh?: () => Promise<void>,
   selectedIds: Set<string>,
   setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
@@ -198,9 +134,11 @@ type TableContext = {
   olimanagerCreateParticipant: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<any>,
   olimanagerLoading: boolean,
   olimanagerError: Error | undefined,
+  userHasSheetAdminPrivileges: boolean
 }
 
 function tableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
+  const profile = useProfile()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
   const [showAdditionalColumns, setShowAdditionalColumns] = useState<boolean>(false)
@@ -214,9 +152,15 @@ function tableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>
   })
   const [olimanagerCreateParticipant, { loading: olimanagerLoading, error: olimanagerError }] = useOlimanagerCreateParticipantMutation()
 
+  const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
+  const schema = schemas[sheet.schema]
+
   return {
     rows,
     sheet,
+    onRefresh,
+    profile,
+    schema,
     selectedIds,
     setSelectedIds,
     showStandardAnswers,
@@ -234,7 +178,87 @@ function tableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>
     scanSheetError,
     olimanagerCreateParticipant,
     olimanagerLoading,
-    olimanagerError
+    olimanagerError,
+    userHasSheetAdminPrivileges
+  }
+}
+
+function Checkboxes({ctx}: {ctx: TableContext}) {
+  return <>
+        {(ctx.schema instanceof ArchimedeCommon) &&
+        <label>
+          <input type="checkbox" checked={ctx.showStandardAnswers} onChange={e => ctx.setShowStandardAnswers(e.target.checked)} />
+          {' '}Mostra risposte standard
+        </label>
+      }
+      <label className="ml-4">
+        <input type="checkbox" checked={ctx.showAdditionalColumns} onChange={e => ctx.setShowAdditionalColumns(e.target.checked)} />
+        {' '}Mostra colonne informative
+      </label>
+      <label className="ml-4">
+        <input type="checkbox" checked={ctx.showHiddenColumns} onChange={e => ctx.setShowHiddenColumns(e.target.checked)} />
+        {' '}Mostra colonne nascoste
+      </label>
+  </>
+}
+
+function ActionSelector({ctx}: {ctx: TableContext}) {
+  return <>
+        { (ctx.deleteLoading || ctx.scanSheetLoading || ctx.olimanagerLoading || ctx.patchLoading)
+      ? <Loading />
+      : <select
+        className="ml-2 border rounded px-2 py-1"
+        onChange={(e) => actions[e.target.value].handler(ctx)}
+        value="none"
+      >
+        <option value="none" disabled>
+          {ctx.selectedIds.size} {`${ctx.selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+        </option>
+        {Object.entries(actions).map(([key, action]) => {
+          if (action.hidden(ctx)) return null
+          return <option 
+            key={key} 
+            value={key} 
+            disabled={action.disabled(ctx)}
+          >
+            {action.label}
+          </option>
+        })}
+      </select>}
+  </>
+}
+
+type Action = {
+  label: string,
+  hidden: (ctx: TableContext) => boolean,
+  disabled: (ctx: TableContext) => boolean,
+  handler: (ctx: TableContext) => Promise<void> | void
+}
+
+const actions: Record<string, Action> = {
+  'delete': {
+    label: 'Elimina righe selezionate',
+    hidden: ctx => false,
+    disabled: ctx => ctx.selectedIds.size === 0,
+    handler: handleDeleteSelectedRows
+  },
+  'scan': {
+    label: 'Genera fogli risposte',
+    hidden: ctx => false,
+    disabled: ctx => ctx.selectedIds.size === 0 || !ctx.userHasSheetAdminPrivileges,
+    handler: handleGenerateScanSheet
+  },
+  'olimanager': {
+    hidden: ctx => !ctx.profile?.isAdmin,
+    label: 'Crea/abbina partecipanti (Olimanager)',
+    disabled: ctx => ctx.selectedIds.size === 0,
+    handler: handleOlimanagerCreateParticipants
+  },
+  'gen_ids': {
+    label: 'Genera ID studenti',
+    hidden: ctx => !ctx.schema.fields.some(field => field.name === 'id'),
+    disabled: ctx => !ctx.showHiddenColumns,
+    handler: handleGenerateStudentIds
   }
 }
 
