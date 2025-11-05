@@ -8,6 +8,7 @@ import Loading from './Loading'
 import { RankingReport, useGetSheetsQuery, useGetSheetsRankingReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter'
+import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 
 const _ = gql`
     query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!) {
@@ -88,26 +89,26 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
         <div className="overflow-x-auto">
             <table className="w-full border-collapse">
                 <thead>
-                    <tr className="bg-gray-100">
-                        <th className="border p-2 text-left w-16">Pos.</th>
-                        <th className="border p-2 text-left">Cognome</th>
-                        <th className="border p-2 text-left">Nome</th>
-                        <th className="border p-2 text-left w-20">Classe</th>
-                        <th className="border p-2 text-left w-20">Sez.</th>
-                        <th className="border p-2 text-left">Foglio</th>
-                        <th className="border p-2 text-right w-24">Punti</th>
+                    <tr className="my-table" height="60">
+                        <th className="border p-2 text-center w-16">Pos.</th>
+                        <th className="border p-2 text-center w-24">Punti</th>
+                        <th className="border p-2 text-center w-40">Cognome</th>
+                        <th className="border p-2 text-center w-40">Nome</th>
+                        <th className="border p-2 text-center w-48">Scuola</th>
+                        <th className="border p-2 text-center w-20">Anno</th>
+                        <th className="border p-2 text-center w-20">Sezione</th>
                     </tr>
                 </thead>
                 <tbody>
                     {ranking.map((entry) => (
                         <tr key={`${entry.sheetId}-${entry.rank}`} className="hover:bg-gray-50">
-                            <td className="border p-2 font-semibold">{entry.rank}</td>
-                            <td className="border p-2">{entry.studentSurname}</td>
-                            <td className="border p-2">{entry.studentName}</td>
-                            <td className="border p-2">{entry.classYear}</td>
-                            <td className="border p-2">{entry.classSection}</td>
-                            <td className="border p-2 text-sm text-gray-600 truncate max-w-xs" title={entry.sheetName}>{entry.sheetName}</td>
-                            <td className="border p-2 text-right font-semibold">{entry.score.toFixed(1)}</td>
+                            <td className="border p-2 text-center">{entry.rank}</td>
+                            <td className="border p-2 text-center font-semibold" style={score_to_color_style(entry.score.toString())}>{Math.round(entry.score)}</td>
+                            <td className="border p-2 text-left w-40 truncate" title={entry.studentSurname}>{entry.studentSurname}</td>
+                            <td className="border p-2 text-left w-40 truncate" title={entry.studentName}>{entry.studentName}</td>
+                            <td className="border p-2 text-center w-48 truncate" title={entry.sheetName}>{entry.sheetName}</td>
+                            <td className="border p-2 text-center">{entry.classYear}</td>
+                            <td className="border p-2 text-center">{entry.classSection}</td>
                         </tr>
                     ))}
                 </tbody>
