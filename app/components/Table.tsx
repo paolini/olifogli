@@ -13,7 +13,6 @@ import { RowInputState } from './RowInputStateActions'
 import { useDeleteRows, usePatchRow } from './TableInputRow'
 import { ObjectId } from 'bson'
 import { gql } from 'graphql-request'
-import Error from './Error'
 import useProfile from '../lib/useProfile'
 import Loading from './Loading'
 import Schema from '../lib/schema/Schema'
@@ -74,8 +73,8 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
   return <div className="table-container">
     <div className="table-header">
-      <Error error={ctx.scanSheetError} />
-      <Error error={ctx.olimanagerError} />
+      <ErrorElement error={ctx.scanSheetError} />
+      <ErrorElement error={ctx.olimanagerError} />
       <Checkboxes ctx={ctx} />
       <ActionSelector ctx={ctx}/>
     </div>
@@ -248,17 +247,23 @@ const actions: Record<string, Action> = {
     disabled: ctx => ctx.selectedIds.size === 0 || !ctx.userHasSheetAdminPrivileges,
     handler: handleGenerateScanSheet
   },
+  'gen_ids': {
+    label: 'Genera ID studenti',
+    hidden: ctx => !ctx.schema.fields.some(field => field.name === 'id'),
+    disabled: ctx => !ctx.showHiddenColumns,
+    handler: handleGenerateStudentIds
+  },
   'olimanager': {
     hidden: ctx => !ctx.profile?.isAdmin,
     label: 'Crea/abbina partecipanti (Olimanager)',
     disabled: ctx => ctx.selectedIds.size === 0,
     handler: handleOlimanagerCreateParticipants
   },
-  'gen_ids': {
-    label: 'Genera ID studenti',
-    hidden: ctx => !ctx.schema.fields.some(field => field.name === 'id'),
-    disabled: ctx => !ctx.showHiddenColumns,
-    handler: handleGenerateStudentIds
+  'update_scores': {
+    hidden: ctx => !ctx.profile?.isAdmin,
+    label: 'Aggiorna risultati (Olimanager)',
+    disabled: ctx => ctx.selectedIds.size === 0,
+    handler: handleOlimanagerUpdateScores
   }
 }
 
@@ -340,7 +345,6 @@ async function handleGenerateStudentIds(ctx: TableContext) {
 }
 
 async function handleOlimanagerCreateParticipants(ctx: TableContext) {
-  if (ctx.selectedIds.size === 0) return
   const ids = Array.from(ctx.selectedIds).map(id => new ObjectId(id))
   const confirmed = confirm(`Inviare ${ids.length} righe a Olimanager per creazione/abbinamento partecipanti?`)
   if (!confirmed) return
@@ -354,3 +358,14 @@ async function handleOlimanagerCreateParticipants(ctx: TableContext) {
   if (ctx.onRefresh) await ctx.onRefresh()
 }
 
+async function handleOlimanagerUpdateScores(ctx: TableContext) {
+  const ids = Array.from(ctx.selectedIds).map(id => new ObjectId(id))
+  const confirmed = confirm(`Aggiornare i risultati su Olimanager per ${ids.length} righe selezionate?`)
+  if (!confirmed) return
+  const username = prompt('Username olimanager (email)') ?? ''
+  const password = prompt('Password') ?? ''
+
+  throw new Error('Not implemented yet')
+  
+  if (ctx.onRefresh) await ctx.onRefresh()
+}

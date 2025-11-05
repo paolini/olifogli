@@ -1,209 +1,278 @@
-/*
-Script per aggiornare in batch i risultati dei partecipanti a un contest.
+import { Context } from "../types";
+import { check_admin, get_authenticated_user } from "./utils";
+import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
+import { ObjectId } from "mongodb";
+import { schemas } from "@/app/lib/schema";
+import { OlimanagerApi } from "./olimanagerApi";
 
-Il file CSV deve avere le colonne:
-- participant_id: ID del partecipante
-- problem_index: Indice del problema (0, 1, 2, ...)
-- score: Punteggio (può essere vuoto per null)
-- disqualified: 0 o 1 (opzionale, default 0)
+/**
+ * Resolver GraphQL per aggiornare in batch i risultati dei partecipanti a un contest.
+ * 
+ * Questo resolver prende una lista di rowIds, estrae i dati dalle righe e li invia
+ * al server Olimanager per aggiornare i risultati di 16 problemi per ogni partecipante.
+ * 
+ * Esempio di utilizzo nella mutation GraphQL:
+ * ```
+ * mutation {
+ *   olimanagerBulkUpdateResults(
+ *     rowIds: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
+ *     username: "admin@example.com"
+ *     password: "password"
+ *   )
+ * }
+ * ```
+ */
 
-Esempio CSV:
-```
-participant_id,problem_index,score,disqualified
-1,0,10,0
-1,1,15,0
-2,0,8,0
-2,1,,0
-```
+export default async function olimanagerBulkUpdateResults(
+  _: unknown,
+  { 
+    rowIds, 
+    username, 
+    password 
+  }: { 
+    rowIds: ObjectId[]; 
+    username?: string; 
+    password: string 
+  },
+  context: Context
+): Promise<BulkUpdateResultsResponse> {
+  // 1) Autenticazione e autorizzazione (solo admin di sistema)
+  const user = await get_authenticated_user(context);
+  check_admin(user);
 
-Esempio JSONL:
-```
-{"participant_id": 1, "problem_index": 0, "score": 10, "disqualified": false}
-{"participant_id": 1, "problem_index": 1, "score": 15, "disqualified": false}
-{"participant_id": 2, "problem_index": 0, "score": 8, "disqualified": false}
-{"participant_id": 2, "problem_index": 1, "score": null, "disqualified": false}
-```
+  // 2) Preparo collezioni MongoDB
+  const rows = await getRowsCollection();
+  const sheets = await getSheetsCollection();
+  const workbooks = await getWorkbooksCollection();
 
-Usage:
-    # Da CSV
-    python bulk_update_results.py --contest-id 1 --input results.csv
-    
-    # Da JSONL
-    python bulk_update_results.py --contest-id 1 --input results.jsonl --input-format jsonl
-    
-    # Segna tutti come disqualified
-    python bulk_update_results.py --contest-id 1 --input results.csv --disqualified
-"""
+  // 3) Preparo il client Olimanager
+  const api = new OlimanagerApi(username || user.email, password);
+  await api.login();
 
-import argparse
-import csv
-import sys
-import json
-from typing import List, Dict, Any
-from api import Api
+  console.log(`Aggiornamento bulk risultati per ${rowIds.length} righe`);
 
+  try {
+    // 4) Converto le righe in problemResults
+    const allProblemResults: ProblemResult[] = [];
+    let contestId: number | null = null;
 
-def bulk_update_results(
-    contest_id: int,
-    input_file: str,
-    input_format: str = "csv",
-    force_disqualified: bool = False
-) -> Dict[str, Any]:
-    """
-    Aggiorna in batch i risultati dei partecipanti.
-    
-    Args:
-        contest_id: ID del contest
-        input_file: Path del file di input (CSV o JSONL)
-        input_format: Formato del file di input (csv o jsonl)
-        force_disqualified: Se True, imposta tutti come disqualified=True
-    
-    Returns:
-        dict: Risposta della mutation
-    """
-    api = Api()
-    
-    # Login
-    print("Login in corso...", file=sys.stderr)
-    api.login()
-    
-    # Lettura input
-    problem_results = []
-    
-    if input_format == "csv":
-        with open(input_file, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                disqualified = force_disqualified if force_disqualified else (row.get("disqualified", "0") == "1")
-                problem_results.append({
-                    "participantId": int(row["participant_id"]),
-                    "problemIndex": int(row["problem_index"]),
-                    "score": int(row["score"]) if row.get("score") and row["score"].strip() else None,
-                    "disqualified": disqualified
-                })
-    elif input_format == "jsonl":
-        with open(input_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    data = json.loads(line)
-                    disqualified = force_disqualified if force_disqualified else data.get("disqualified", False)
-                    problem_results.append({
-                        "participantId": int(data["participant_id"]),
-                        "problemIndex": int(data["problem_index"]),
-                        "score": int(data["score"]) if data.get("score") is not None else None,
-                        "disqualified": disqualified
-                    })
-    else:
-        print(f"Formato input non supportato: {input_format}", file=sys.stderr)
-        sys.exit(1)
-    
-    total = len(problem_results)
-    print(f"Trovati {total} risultati da aggiornare", file=sys.stderr)
-    
-    # Costruisci la mutation
-    mutation = """
-    mutation BulkUpdateResults($contestId: Int!, $problemResults: [ParticipantProblemResultInput!]!) {
-        participants {
-            bulkUpdateResults(contestId: $contestId, problemResults: $problemResults) {
-                __typename
-                ... on BulkUpdateResultsSuccess {
-                    nothing
-                }
-                ... on OperationInfo {
-                    messages {
-                        message
-                        kind
-                    }
-                }
-            }
+    for (const rowId of rowIds) {
+      const row = await rows.findOne({ _id: rowId });
+      if (!row) {
+        console.warn(`Riga non trovata: ${rowId}`);
+        continue;
+      }
+
+      const sheet = await sheets.findOne({ _id: row.sheetId });
+      if (!sheet) {
+        console.warn(`Foglio non trovato per la riga: ${row.sheetId}`);
+        continue;
+      }
+
+      const schema = schemas[sheet.schema];
+      if (!schema) {
+        console.warn(`Schema non trovato per il foglio: ${sheet.schema}`);
+        continue;
+      }
+
+      const workbook = await workbooks.findOne({ _id: sheet.workbookId });
+      if (!workbook) {
+        console.warn(`Workbook non trovato: ${sheet.workbookId}`);
+        continue;
+      }
+
+      // Estrae il contestId dal workbook
+      const rowContestId = schema.get_contest_id(workbook.commonData);
+      if (contestId === null) {
+        contestId = rowContestId;
+      } else if (contestId !== rowContestId) {
+        throw new Error(`Le righe appartengono a contest diversi: ${contestId} vs ${rowContestId}`);
+      }
+
+      // Converte la riga in problemResults (16 problemi)
+      const problemResults = convertRowToProblemResults(row, sheet, workbook, schema);
+      allProblemResults.push(...problemResults);
+    }
+
+    if (contestId === null) {
+      throw new Error("Nessun contestId trovato nelle righe");
+    }
+
+    console.log(`Contest ID: ${contestId}`);
+    console.log(`Numero totale di risultati da aggiornare: ${allProblemResults.length}`);
+
+    // 5) Eseguo la mutation su Olimanager
+    const result = await bulkUpdateResults(api, contestId, allProblemResults);
+
+    // 6) Analizzo il risultato
+    const data = result?.data?.participants?.bulkUpdateResults;
+    const typename = data?.__typename;
+
+    if (typename === "BulkUpdateResultsSuccess") {
+      console.log("✅ Aggiornamento completato con successo!");
+      return {
+        success: true,
+        typename,
+        data: result
+      };
+    } else if (typename === "OperationInfo") {
+      const messages = data?.messages || [];
+      console.log("❌ Operazione fallita:");
+      messages.forEach((msg: Message) => {
+        console.log(`  [${msg.kind}] ${msg.message}`);
+      });
+      return {
+        success: false,
+        typename,
+        messages,
+        data: result
+      };
+    } else {
+      console.log(`⚠️  Risposta inattesa: ${typename}`);
+      return {
+        success: false,
+        typename: typename || "Unknown",
+        error: `Risposta inattesa: ${typename}`,
+        data: result
+      };
+    }
+  } catch (e) {
+    console.error("❌ Errore durante l'aggiornamento bulk:", e);
+    return {
+      success: false,
+      error: String((e as Error)?.message || e),
+      data: null
+    };
+  }
+}
+
+// ============================================================================
+// FUNZIONE DI CONVERSIONE DA ROW A PROBLEM RESULTS
+// ============================================================================
+
+/**
+ * Converte una riga in un array di ProblemResult (uno per ogni problema, tipicamente 16).
+ * 
+ * TODO: Implementare la logica per estrarre i dati dalla riga e creare i problemResults.
+ * La riga dovrebbe contenere:
+ * - participantId (da row.olimanager.participantId)
+ * - punteggi per 16 problemi (da row.data.problem_0, problem_1, ..., problem_15 o simile)
+ * - eventualmente un flag disqualified
+ * 
+ * @param row - La riga dal database
+ * @param sheet - Il foglio associato
+ * @param workbook - Il workbook associato
+ * @param schema - Lo schema del foglio
+ * @returns Array di ProblemResult (uno per ogni problema)
+ */
+function convertRowToProblemResults(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  row: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+  sheet: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+  workbook: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+  schema: any
+): ProblemResult[] {
+  // TODO: Implementare la conversione
+  
+  // Esempio di struttura attesa:
+  // const participantId = row.olimanager?.participantId;
+  // if (!participantId) {
+  //   console.warn(`participantId mancante per la riga ${row._id}`);
+  //   return [];
+  // }
+  
+  // const problemResults: ProblemResult[] = [];
+  // for (let i = 0; i < 16; i++) {
+  //   const score = row.data[`problem_${i}`]; // o la chiave corretta
+  //   problemResults.push({
+  //     participantId: Number(participantId),
+  //     problemIndex: i,
+  //     score: score !== null && score !== undefined ? Number(score) : null,
+  //     disqualified: Boolean(row.data.disqualified || false)
+  //   });
+  // }
+  // return problemResults;
+  
+  console.warn(`TODO: Implementare convertRowToProblemResults per la riga ${row._id}`);
+  return [];
+}
+
+// ============================================================================
+// TIPI E INTERFACCE
+// ============================================================================
+
+interface ProblemResult {
+  participantId: number;
+  problemIndex: number;
+  score: number | null;
+  disqualified: boolean;
+}
+
+interface Message {
+  message: string;
+  kind: string;
+}
+
+interface BulkUpdateResultsResponse {
+  success: boolean;
+  typename?: string;
+  messages?: Message[];
+  error?: string;
+  data: unknown;
+}
+
+// ============================================================================
+// MUTATION PER AGGIORNARE I RISULTATI IN BATCH
+// ============================================================================
+
+const BULK_UPDATE_RESULTS_MUTATION = `
+mutation BulkUpdateResults($contestId: Int!, $problemResults: [ParticipantProblemResultInput!]!) {
+  participants {
+    bulkUpdateResults(contestId: $contestId, problemResults: $problemResults) {
+      __typename
+      ... on BulkUpdateResultsSuccess {
+        nothing
+      }
+      ... on OperationInfo {
+        messages {
+          message
+          kind
         }
+      }
     }
-    """
-    
-    variables = {
-        "contestId": contest_id,
-        "problemResults": problem_results
+  }
+}
+`;
+
+async function bulkUpdateResults(
+  api: OlimanagerApi,
+  contestId: number,
+  problemResults: ProblemResult[]
+) {
+  try {
+    const variables = {
+      contestId: Number(contestId),
+      problemResults: problemResults.map(pr => ({
+        participantId: Number(pr.participantId),
+        problemIndex: Number(pr.problemIndex),
+        score: pr.score !== null ? Number(pr.score) : null,
+        disqualified: Boolean(pr.disqualified)
+      }))
+    };
+
+    const response = await api.query(BULK_UPDATE_RESULTS_MUTATION, variables);
+
+    if (response.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(response.errors)}`);
     }
-    
-    print("Esecuzione mutation bulk_update_results...", file=sys.stderr)
-    result = api.query(mutation, variables)
-    
-    return result
+
+    return response;
+  } catch (e) {
+    throw new Error(`Errore durante bulkUpdateResults: ${(e as Error)?.message || e}`);
+  }
+}
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Aggiorna in batch i risultati dei partecipanti a un contest"
-    )
-    
-    parser.add_argument(
-        "--contest-id",
-        type=int,
-        required=True,
-        help="ID del contest"
-    )
-    
-    parser.add_argument(
-        "--input",
-        required=True,
-        help="Path del file di input (CSV o JSONL)"
-    )
-    
-    parser.add_argument(
-        "--input-format",
-        choices=["csv", "jsonl"],
-        default="csv",
-        help="Formato del file di input (csv o jsonl)"
-    )
-    
-    parser.add_argument(
-        "--disqualified",
-        action="store_true",
-        help="Imposta tutti i risultati come disqualified=True (ignora la colonna disqualified del file)"
-    )
-    
-    args = parser.parse_args()
-    
-    try:
-        result = bulk_update_results(
-            contest_id=args.contest_id,
-            input_file=args.input,
-            input_format=args.input_format,
-            force_disqualified=args.disqualified
-        )
-        
-        # Analizza il risultato
-        data = result.get("data", {}).get("participants", {}).get("bulkUpdateResults", {})
-        typename = data.get("__typename")
-        
-        if typename == "BulkUpdateResultsSuccess":
-            print("\n✅ Aggiornamento completato con successo!", file=sys.stderr)
-            
-            # Output JSON completo
-            print(json.dumps(result, indent=2))
-            
-        elif typename == "OperationInfo":
-            messages = data.get("messages", [])
-            print("\n❌ Operazione fallita:", file=sys.stderr)
-            for msg in messages:
-                kind = msg.get("kind", "ERROR")
-                message = msg.get("message", "")
-                print(f"  [{kind}] {message}", file=sys.stderr)
-            
-            print(json.dumps(result, indent=2))
-            sys.exit(1)
-        else:
-            print(f"\n⚠️  Risposta inattesa: {typename}", file=sys.stderr)
-            print(json.dumps(result, indent=2))
-            sys.exit(1)
-            
-    except Exception as e:
-        print(f"\n❌ Errore: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-*/

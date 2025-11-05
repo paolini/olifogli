@@ -215,4 +215,10 @@ type Mutation {
     username: String
     password: String!
   ): [Boolean!]!
+
+  olimanagerBulkUpdateResults(
+    rowIds: [ObjectId!]!
+    username: String
+    password: String!
+  ): JSON!
 }
