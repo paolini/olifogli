@@ -72,7 +72,7 @@ export default async function olimanagerCreateParticipant(
           {
             $set: {
               'olimanager.participantId': participantId,
-              'olimanager.createdParticipantOn': new Date(),
+              'olimanager.participantCreatedOn': new Date(),
               'olimanager.error': '',
               'olimanager.result': result,
             },

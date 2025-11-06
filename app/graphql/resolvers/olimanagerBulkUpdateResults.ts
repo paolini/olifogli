@@ -30,14 +30,6 @@ interface Message {
   kind: string;
 }
 
-interface BulkUpdateResultsResponse {
-  success: boolean;
-  typename?: string;
-  messages?: Message[];
-  error?: string;
-  data: unknown;
-}
-
 export default async function olimanagerBulkUpdateResults(
   _: unknown,
   { 
@@ -50,80 +42,71 @@ export default async function olimanagerBulkUpdateResults(
     password: string 
   },
   context: Context
-): Promise<BulkUpdateResultsResponse> {
-  // 1) Autenticazione e autorizzazione (solo admin di sistema)
-  const user = await get_authenticated_user(context);
-  check_admin(user);
+): Promise<boolean> {
+    // 1) Autenticazione e autorizzazione (solo admin di sistema)
+    const user = await get_authenticated_user(context);
+    check_admin(user);
 
-  // 2) Preparo collezioni MongoDB
-  const rows = await getRowsCollection();
-  const sheets = await getSheetsCollection();
-  const workbooks = await getWorkbooksCollection();
+    // 2) Preparo collezioni MongoDB
+    const rows = await getRowsCollection();
+    const sheets = await getSheetsCollection();
+    const workbooks = await getWorkbooksCollection();
 
-  // 3) Preparo il client Olimanager
-  const api = new OlimanagerApi(username || user.email, password);
-  await api.login();
+    // 3) Preparo il client Olimanager
+    const api = new OlimanagerApi(username || user.email, password);
+    await api.login();
 
-  console.log(`Aggiornamento bulk risultati per ${rowIds.length} righe`);
-
-  try {
     // 4) Converto le righe in problemResults
     const allProblemResults: OlimanagerProblemResult[] = [];
     let contestId: number | null = null;
 
     for (const rowId of rowIds) {
-      const row = await rows.findOne({ _id: rowId });
-      if (!row) {
-        console.warn(`Riga non trovata: ${rowId}`);
-        continue;
-      }
+        const row = await rows.findOne({ _id: rowId });
+        if (!row) {
+            throw new Error(`Riga non trovata: ${rowId}`);
+        }
 
-      const sheet = await sheets.findOne({ _id: row.sheetId });
-      if (!sheet) {
-        console.warn(`Foglio non trovato per la riga: ${row.sheetId}`);
-        continue;
-      }
+        const sheet = await sheets.findOne({ _id: row.sheetId });
+        if (!sheet) {
+            throw new Error(`Foglio non trovato per la riga: ${row.sheetId}`);
+        }
 
-      const schema = schemas[sheet.schema];
-      if (!schema) {
-        throw new Error(`Schema non trovato per il foglio: ${sheet.schema}`);
-      }
-      if (!(schema instanceof Competition)) {
-        throw new Error(`Non è una Competition: ${sheet.schema}`);
-      }
+        const schema = schemas[sheet.schema];
+        if (!schema) {
+            throw new Error(`Schema non trovato per il foglio: ${sheet.schema}`);
+        }
+        if (!(schema instanceof Competition)) {
+            throw new Error(`Non è una Competition: ${sheet.schema}`);
+        }
 
-      const workbook = await workbooks.findOne({ _id: sheet.workbookId });
-      if (!workbook) {
-        console.warn(`Workbook non trovato: ${sheet.workbookId}`);
-        continue;
-      }
+        const workbook = await workbooks.findOne({ _id: sheet.workbookId });
+        if (!workbook) {
+            throw new Error(`Workbook non trovato: ${sheet.workbookId}`);
+        }
 
-      // Estrae il contestId dal workbook
-      const rowContestId = schema.get_contest_id(workbook.commonData);
-      if (contestId === null) {
-        contestId = rowContestId;
-      } else if (contestId !== rowContestId) {
-        throw new Error(`Le righe appartengono a contest diversi: ${contestId} vs ${rowContestId}`);
-      }
+        // Estrae il contestId dal workbook
+        const rowContestId = schema.get_contest_id(workbook.commonData);
+        if (contestId === null) {
+            contestId = rowContestId;
+        } else if (contestId !== rowContestId) {
+            throw new Error(`Le righe appartengono a contest diversi: ${contestId} vs ${rowContestId}`);
+        }
 
-      // Converte la riga in problemResults (16 problemi)
-      const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results(row, sheet.commonData, workbook.commonData);
+        // Converte la riga in problemResults (16 problemi)
+        const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results(row, sheet.commonData, workbook.commonData);
 
-      // Sanity check...
-      const score = problemResults.reduce((sum, pr) => sum + (pr.score || 0), 0);
-      if (score !== parseInt(row.data.score || '0', 10)) {
-        throw new Error(`Incoerenza nel punteggio totale per la riga ${rowId}: somma dei punteggi problemi = ${score}, ma row.score = ${row.data.score}`);
-      }
+        // Sanity check...
+        const score = problemResults.reduce((sum, pr) => sum + (pr.score || 0), 0);
+        if (score !== parseInt(row.data.score || '-1', 10)) {
+            throw new Error(`Incoerenza nel punteggio totale per la riga ${rowId}: somma dei punteggi problemi = ${score}, ma row.score = ${row.data.score}`);
+        }
 
-      allProblemResults.push(...problemResults);
+        allProblemResults.push(...problemResults);
     }
 
     if (contestId === null) {
-      throw new Error("Nessun contestId trovato nelle righe");
+        throw new Error("Nessun contestId trovato nelle righe");
     }
-
-    console.log(`Contest ID: ${contestId}`);
-    console.log(`Numero totale di risultati da aggiornare: ${allProblemResults.length}`);
 
     // 5) Eseguo la mutation su Olimanager
     const result = await bulkUpdateResults(api, contestId, allProblemResults);
@@ -133,37 +116,21 @@ export default async function olimanagerBulkUpdateResults(
     const typename = data?.__typename;
 
     if (typename === "BulkUpdateResultsSuccess") {
-      console.log("✅ Aggiornamento completato con successo!");
-      return {
-        success: true,
-        typename,
-        data: result
-      };
+        rows.updateMany(
+            { _id: { $in: rowIds } },
+            { $set: { 'olimanager.resultsUpdatedOn': new Date() } })
+        return true;
     } else if (typename === "OperationInfo") {
-      const messages = data?.messages || [];
-      console.log("❌ Operazione fallita:");
-      messages.forEach((msg: Message) => {
-        console.log(`  [${msg.kind}] ${msg.message}`);
-      });
-      return {
-        success: false,
-        typename,
-        messages,
-        data: result
-      };
+        const messages = data?.messages || [];
+        console.log("❌ Operazione fallita:");
+        messages.forEach((msg: Message) => {
+            console.log(`  [${msg.kind}] ${msg.message}`);
+        });
+        throw new Error(`Operazione fallita con ${messages.length} messaggi di errore (vedi log di sistema).`);
     } else {
-      console.log(`⚠️  Risposta inattesa: ${typename}`);
-      return {
-        success: false,
-        typename: typename || "Unknown",
-        error: `Risposta inattesa: ${typename}`,
-        data: result
-      };
+        console.log(`⚠️  Risposta inattesa: ${typename}`);
+        throw new Error(`Operazione fallita: risposta inattesa (${typename})`);
     }
-  } catch (e) {
-    console.error("❌ Errore durante l'aggiornamento bulk:", e);
-    throw new Error(`Errore durante l'aggiornamento bulk: ${(e as Error)?.message || e}`);
-  }
 }
 
 const BULK_UPDATE_RESULTS_MUTATION = `

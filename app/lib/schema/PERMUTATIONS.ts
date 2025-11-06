@@ -213,7 +213,7 @@ export function computeScores(extended_answers: string[], permutations_data: Per
         if (!s.match(/^[A-EX\-] \[[A-EX\-][A-EX\-][A-EX\-]\]$/)) {
             throw new Error(`Formato di risposta estesa non valido: "${s}"`);
         }
-        let answer = s.charAt(4);
+        const answer = s.charAt(4);
         const correct_answer = s.charAt(5);
         if (answer === '-') return permutations_data.points.empty;
         if (answer === 'X') return permutations_data.points.invalid;
