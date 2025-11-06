@@ -59,6 +59,7 @@ export type Mutation = {
   patchRow?: Maybe<Row>;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
+  updateSetting: Setting;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheets?: Maybe<Scalars['Boolean']['output']>;
   updateWorkbook?: Maybe<Scalars['Boolean']['output']>;
@@ -179,6 +180,12 @@ export type MutationUnlockSheetArgs = {
 };
 
 
+export type MutationUpdateSettingArgs = {
+  key: Scalars['String']['input'];
+  value: Scalars['String']['input'];
+};
+
+
 export type MutationUpdateSheetArgs = {
   _id: Scalars['ObjectId']['input'];
   commonData?: InputMaybe<Scalars['Data']['input']>;
@@ -230,6 +237,7 @@ export type Query = {
   __typename?: 'Query';
   appInstance?: Maybe<Scalars['String']['output']>;
   config?: Maybe<Config>;
+  getSetting?: Maybe<Setting>;
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
   olimanager?: Maybe<Scalars['String']['output']>;
@@ -244,6 +252,11 @@ export type Query = {
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
   workbooks?: Maybe<Array<Maybe<Workbook>>>;
+};
+
+
+export type QueryGetSettingArgs = {
+  key: Scalars['String']['input'];
 };
 
 
@@ -372,6 +385,15 @@ export type ScoreDistributionItem = {
   __typename?: 'ScoreDistributionItem';
   count: Scalars['Int']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type Setting = {
+  __typename?: 'Setting';
+  _id: Scalars['ObjectId']['output'];
+  key: Scalars['String']['output'];
+  updatedBy: Scalars['String']['output'];
+  updatedOn: Scalars['Timestamp']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type Sheet = {
@@ -2282,6 +2304,7 @@ export type ResolversTypes = {
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
   ScanSheetJob: ResolverTypeWrapper<Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScoreDistributionItem: ResolverTypeWrapper<ScoreDistributionItem>;
+  Setting: ResolverTypeWrapper<Omit<Setting, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -2315,6 +2338,7 @@ export type ResolversParentTypes = {
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
   ScanSheetJob: Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScoreDistributionItem: ScoreDistributionItem;
+  Setting: Omit<Setting, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
   String: Scalars['String']['output'];
@@ -2365,6 +2389,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
+  updateSetting?: Resolver<ResolversTypes['Setting'], ParentType, ContextType, RequireFields<MutationUpdateSettingArgs, 'key' | 'value'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
   updateSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetsArgs, 'sheets'>>;
   updateWorkbook?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateWorkbookArgs, '_id'>>;
@@ -2394,6 +2419,7 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   appInstance?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   config?: Resolver<Maybe<ResolversTypes['Config']>, ParentType, ContextType>;
+  getSetting?: Resolver<Maybe<ResolversTypes['Setting']>, ParentType, ContextType, RequireFields<QueryGetSettingArgs, 'key'>>;
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2488,6 +2514,15 @@ export type ScoreDistributionItemResolvers<ContextType = any, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type SettingResolvers<ContextType = any, ParentType extends ResolversParentTypes['Setting'] = ResolversParentTypes['Setting']> = {
+  _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
+  value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type SheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Sheet'] = ResolversParentTypes['Sheet']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   closed?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
@@ -2548,6 +2583,7 @@ export type Resolvers<ContextType = any> = {
   ScanResults?: ScanResultsResolvers<ContextType>;
   ScanSheetJob?: ScanSheetJobResolvers<ContextType>;
   ScoreDistributionItem?: ScoreDistributionItemResolvers<ContextType>;
+  Setting?: SettingResolvers<ContextType>;
   Sheet?: SheetResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
   User?: UserResolvers<ContextType>;

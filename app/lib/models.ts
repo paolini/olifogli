@@ -120,3 +120,11 @@ export type ScanSheetJob = {
     message: string
     createdBy: string
 }
+
+export type Setting = {
+    _id: ObjectId
+    key: string
+    value: string
+    updatedBy: string
+    updatedOn: Date
+}
