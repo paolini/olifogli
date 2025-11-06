@@ -92,7 +92,7 @@ const GET_ROWS = gql`
       updatedBy
         olimanager {
         participantId
-        updatedOn
+        resultsUpdatedOn
         error
         }
     }

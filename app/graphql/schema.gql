@@ -58,7 +58,8 @@ input UpdateSheetInput {
 type OlimanagerRowData {
   participantId: String
   error: String
-  updatedOn: Timestamp
+  participantCreatedOn: Timestamp
+  resultsUpdatedOn: Timestamp
   result: JSON
 }
 
@@ -220,5 +221,5 @@ type Mutation {
     rowIds: [ObjectId!]!
     username: String
     password: String!
-  ): JSON!
+  ): Boolean!
 }

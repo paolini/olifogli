@@ -401,11 +401,7 @@ async function handleOlimanagerUpdateScores(ctx: TableContext) {
   const {username, password} = askOlimanagerCredentials(ctx)
 
   const res = await ctx.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
-  alert(JSON.stringify(res.data))
-  const arr = res.data?.olimanagerBulkUpdateResults || []
-  const ok = arr.filter(r => r.success).length
-  const ko = arr.length - ok
-  alert(`Esito aggiornamento risultati Olimanager: ${ok} ok, ${ko} errori`)
+  alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
   
   if (ctx.onRefresh) await ctx.onRefresh()
 }

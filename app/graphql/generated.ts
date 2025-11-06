@@ -53,7 +53,7 @@ export type Mutation = {
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
-  olimanagerBulkUpdateResults: Scalars['JSON']['output'];
+  olimanagerBulkUpdateResults: Scalars['Boolean']['output'];
   olimanagerCreateParticipant: Array<Scalars['Boolean']['output']>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
@@ -207,9 +207,10 @@ export type MutationValidateRowsArgs = {
 export type OlimanagerRowData = {
   __typename?: 'OlimanagerRowData';
   error?: Maybe<Scalars['String']['output']>;
+  participantCreatedOn?: Maybe<Scalars['Timestamp']['output']>;
   participantId?: Maybe<Scalars['String']['output']>;
   result?: Maybe<Scalars['JSON']['output']>;
-  updatedOn?: Maybe<Scalars['Timestamp']['output']>;
+  resultsUpdatedOn?: Maybe<Scalars['Timestamp']['output']>;
 };
 
 export type Permission = {
@@ -492,7 +493,7 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, updatedOn?: Date | null, error?: string | null } | null }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -598,7 +599,7 @@ export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
 }>;
 
 
-export type OlimanagerBulkUpdateResultsMutation = { __typename?: 'Mutation', olimanagerBulkUpdateResults: JSON };
+export type OlimanagerBulkUpdateResultsMutation = { __typename?: 'Mutation', olimanagerBulkUpdateResults: boolean };
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1080,7 +1081,7 @@ export const GetRowsDocument = gql`
     updatedBy
     olimanager {
       participantId
-      updatedOn
+      resultsUpdatedOn
       error
     }
   }
@@ -2358,7 +2359,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
-  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['JSON'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password' | 'rowIds'>>;
+  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password' | 'rowIds'>>;
   olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password' | 'rowIds'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
@@ -2376,9 +2377,10 @@ export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversT
 
 export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerRowData'] = ResolversParentTypes['OlimanagerRowData']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  participantCreatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   result?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
-  updatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  resultsUpdatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
