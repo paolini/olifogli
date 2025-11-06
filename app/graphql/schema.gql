@@ -3,6 +3,14 @@ scalar ObjectId
 scalar JSON
 scalar Data
 
+type Setting {
+  _id: ObjectId!
+  key: String!
+  value: String!
+  updatedBy: String!
+  updatedOn: Timestamp!
+}
+
 type Workbook {
   _id: ObjectId
   name: String
@@ -167,6 +175,7 @@ type Query {
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!
+  getSetting(key: String!): Setting
 }
 
 type Mutation {
@@ -222,4 +231,6 @@ type Mutation {
     username: String
     password: String!
   ): Boolean!
+
+  updateSetting(key: String!, value: String!): Setting!
 }

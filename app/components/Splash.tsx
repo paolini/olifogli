@@ -4,6 +4,7 @@ import Workbooks from './Workbooks'
 import Button from './Button'
 import Sheets from './Sheets'
 import useProfile from "../lib/useProfile"
+import HomeMessage from './HomeMessage'
 
 export default function Splash() {
   const { data: session } = useSession()
@@ -16,6 +17,7 @@ export default function Splash() {
   </div>
 
   return <div>
+    <HomeMessage />
     <Workbooks />
   </div>
 }

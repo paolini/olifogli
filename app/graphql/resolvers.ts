@@ -17,6 +17,7 @@ import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
 import sheetsDistributionReport from './resolvers/sheetsDistributionReport'
 import sheetsRankingReport from './resolvers/sheetsRankingReport'
+import settingsResolvers from './resolvers/settings'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -67,6 +68,7 @@ export const resolvers: Resolvers = {
     sheetsDistributionReport,
     sheetsRankingReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
+    getSetting: settingsResolvers.Query.getSetting,
   },
 
   Workbook: {
@@ -122,6 +124,7 @@ export const resolvers: Resolvers = {
     olimanagerCreateParticipant: olimanagerCreateParticipant as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
+    updateSetting: settingsResolvers.Mutation.updateSetting,
   },
 
   Timestamp,
