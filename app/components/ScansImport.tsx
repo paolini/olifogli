@@ -10,7 +10,7 @@ import ErrorElement from "./Error"
 import Loading from "./Loading"
 import { myTimestamp } from "../lib/util"
 import { schemas } from "../lib/schema"
-import { useAddRow, usePatchRow } from './TableInputRow'
+import { useAddRow, usePatchRow } from './TableInputRowOld'
 
 export default function ScansImport({sheet, data_rows}:{
     sheet: Sheet,

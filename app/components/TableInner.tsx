@@ -7,136 +7,12 @@ import { Row, Sheet } from '@/app/graphql/generated'
 import { RowInputState, startNewRow, hasUnsavedChanges, handleRowChange } from './RowInputStateActions'
 import { Criteria } from './Ordering'
 import SortIcon from './SortIcon'
-import TableInputRow from './TableInputRow'
-import TableRow from './TableRow'
+import TableInputRow from './TableInputRowOld'
+import TableRowOld from './TableRowOld'
 import Button from './Button'
 import { TableContext } from './Table'
 
-export default function TableInner({
-  ctx,
-  rowInputState,
-  setRowInputState,
-  setSort,
-  criteria,
-  edit,
-  refreshLoading
-}: {
-  ctx: TableContext,
-  rowInputState: RowInputState,
-  setRowInputState: Dispatch<SetStateAction<RowInputState>>,
-  setSort: (field: Field|string, direction: number) => void,
-  criteria?: Criteria,
-  edit?: boolean,
-  refreshLoading?: boolean
-}) {
-  // Usa l'ID come ancora per la selezione a intervallo per resistere ai riordinamenti
-  const [lastClickedId, setLastClickedId] = useState<string|null>(null)
-  const toggleSelectAll = () => {
-    if (ctx.selectedIds.size === ctx.rows.length) {
-      ctx.setSelectedIds(new Set())
-    } else {
-      ctx.setSelectedIds(new Set(ctx.rows.map(row => row._id.toString())))
-    }
-  }
 
-  const toggleSelectRow = (rowId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
-    const native = e.nativeEvent
-    const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
-    const checked = e.currentTarget.checked
-    ctx.setSelectedIds(prev => {
-      const next = new Set(prev)
-  if (shift && lastClickedId) {
-        const anchorIndex = ctx.rows.findIndex(r => r._id.toString() === lastClickedId)
-        const currentIndex = ctx.rows.findIndex(r => r._id.toString() === rowId)
-        if (anchorIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(anchorIndex, currentIndex)
-          const end = Math.max(anchorIndex, currentIndex)
-          const idsInRange = ctx.rows.slice(start, end + 1).map(r => r._id.toString())
-          if (checked) idsInRange.forEach(id => next.add(id))
-          else idsInRange.forEach(id => next.delete(id))
-          return next
-        }
-        // se l'ancora non è trovata, ricadi al toggle singolo
-      }
-      if (checked) next.add(rowId)
-      else next.delete(rowId)
-      return next
-    })
-    setLastClickedId(rowId)
-  }
-
-  return <table className="my-table">
-    <TableHeaders 
-      ctx={ctx}
-      setSort={setSort}
-      criteria={criteria}
-      allSelected={ctx.selectedIds.size === ctx.rows.length && ctx.rows.length > 0}
-      toggleSelectAll={toggleSelectAll}
-    />
-    <TableBody 
-      ctx={ctx}
-      rowInputState={rowInputState}
-      setRowInputState={setRowInputState}
-      edit={edit}
-      toggleSelectRow={toggleSelectRow}
-      refreshLoading={refreshLoading}
-    />
-  </table>
-}
-
-function TableHeaders({ctx, setSort, criteria, allSelected, toggleSelectAll}: {
-  ctx: TableContext,
-  setSort: (field: Field|string, direction: number) => void,
-  criteria?: Criteria,
-  allSelected: boolean,
-  toggleSelectAll: () => void
-}) {
-  const columns = ctx.schema.fields.filter(f => ctx.showHiddenColumns || !f.hidden);
-
-  const additional_columns = [
-    {name: 'createdOn', label: 'istante creazione'},
-    {name: 'createdBy', label: 'creato da'},
-    {name: 'updatedOn', label: 'istante modifica'},
-    {name: 'updatedBy', label: 'aggiornato da'},
-  ]
-
-  return <>
-      <colgroup>
-        <col className="checkbox-cell" />
-        { ctx.showAdditionalColumns && 
-          additional_columns.map(col => <col key={col.name} className={col.name} />)
-        }
-        {columns.map(field => <col key={field.name} className={field.css_class} />)}
-        <col className="actions-cell" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th scope="col" className="checkbox-cell">
-            <input 
-              type="checkbox" 
-              checked={allSelected}
-              onChange={toggleSelectAll}
-            />
-          </th>
-          { ctx.showAdditionalColumns && 
-            additional_columns.map(col => (
-              <th scope="col" key={col.name} className={col.name}>
-                {col.label}
-                <SortIcon field={col.name} criteria={criteria} setSort={setSort} />
-              </th>
-            ))
-          }
-          {columns.map(field => 
-            <th scope="col" key={field.name} className={field.css_class} style={{ position: 'relative' }}>
-              {field.header}
-              <SortIcon field={field} criteria={criteria} setSort={setSort} />
-            </th>)}
-          <th scope="col" className="actions-cell"></th>
-        </tr>
-      </thead>
-    </>
-}
 
 function TableBody({
   ctx,
@@ -257,7 +133,7 @@ function MyRowInternal({schema, row, showStandardAnswers, showAdditionalColumns,
   isSelected: boolean,
   onToggleSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) {
-  return <TableRow 
+  return <TableRowOld 
     schema={schema} 
     row={row} 
     onCellClick={onCellClick} 

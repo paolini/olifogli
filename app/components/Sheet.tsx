@@ -119,7 +119,7 @@ function SheetBody({sheet,profile}: {
         pollInterval: tab==='edit' ? undefined : 5000
     });
     
-    const handleRefresh = async () => {
+    const refresh = async () => {
         await refetch()
     }
     
@@ -169,7 +169,7 @@ function SheetBody({sheet,profile}: {
                 sheet={sheet} 
                 rows={data.rows} 
                 edit={true} 
-                onRefresh={handleRefresh} 
+                refresh={refresh} 
                 refreshLoading={loading}
             />
         }
