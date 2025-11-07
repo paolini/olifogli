@@ -63,7 +63,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const profile = useProfile();
     const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
     const [checkboxesState, setCheckboxesState] = useCheckboxesState();
-    const tableBodyContext = useTableBodyContext({schema, rows, showStandardAnswers: checkboxesState.showStandardAnswers});
+    const tableBodyContext = useTableBodyContext({schema, sheet, rows, showStandardAnswers: checkboxesState.showStandardAnswers});
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
 
     const tableActionContext = useTableActionsContext({

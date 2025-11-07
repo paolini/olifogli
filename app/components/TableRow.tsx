@@ -4,7 +4,7 @@ import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
 import { Column, RowField } from "./Table"
 import TableRowInput from "./TableRowInput"
-import { RowModifiedData } from "./TableBody"
+import { Data } from "../lib/models"
 
 export type RowSelectionState = {
     isSelected: boolean,
@@ -12,13 +12,14 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({edit, schema, row, columns, focusColumnName, modifiedData, selectionState, showStandardAnswers, onCellClick}:{
+export default function TableRow({edit, schema, row, columns, focusColumnName, modifiedData, setModifiedData, selectionState, showStandardAnswers, onCellClick}:{
     edit: boolean,
     schema: Schema,
     row: Row,
     columns: Column[],
     focusColumnName: string,
-    modifiedData?: RowModifiedData,
+    modifiedData: Data,
+    setModifiedData: (field: string, value: string) => void,
     selectionState: RowSelectionState,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void
@@ -37,7 +38,13 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
     return <tr className={`${className} clickable`} style={style} onKeyDown={onKeyDown}>
         <CheckboxCell selectionState={selectionState} />
         {columns.map(column => (column instanceof Field) 
-        ? <DataCell edit={edit} hasFocus={focusColumnName === column.name} rowModifiedData={rowModifiedData} key={column.name} field={column} value={row.data[column.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick(column)} inputRef={inputRef}/>
+        ? <DataCell 
+            key={column.name} field={column} 
+            edit={edit} hasFocus={focusColumnName === column.name} 
+            value={row.data[column.name]} newValue={modifiedData[column.name]}
+            setNewValue={new_value => setModifiedData(column.name, new_value)} 
+            showStandardAnswers={showStandardAnswers} 
+            onClick={() => onCellClick(column)} inputRef={inputRef}/>
         : <InfoCell key={column.name} row={row} column={column}/>
         )}
         {(row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
@@ -113,12 +120,13 @@ function InfoCell({row, column}:{
     </td>
 }
 
-function DataCell({edit, hasFocus, rowModifiedData, field, value, showStandardAnswers, onClick, inputRef}:{
+function DataCell({edit, hasFocus, field, value, newValue, setNewValue, showStandardAnswers, onClick, inputRef}:{
   edit: boolean,
   hasFocus: boolean,
-  rowModifiedData?: RowModifiedData,
   field: Field,
   value: string,
+  newValue: string,
+  setNewValue: (newValue: string) => void,
   showStandardAnswers: boolean,
   onClick: () => void,
   inputRef: React.RefObject<HTMLInputElement|null>
@@ -156,14 +164,6 @@ function DataCell({edit, hasFocus, rowModifiedData, field, value, showStandardAn
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''}`;
 
   return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus ? <TableRowInput inputRef={inputRef} value={value} setValue={setValue}/> : value}
+      {hasFocus ? <TableRowInput inputRef={inputRef} value={newValue} setValue={setNewValue}/> : value}
   </td>
-
-  function setValue(newValue: string) {
-    if (!rowModifiedData) return;
-    const old
-    if (field.name in rowModifiedData || newValue !== value) {
-        rowModifiedData[field.name] = newValue;
-    }
-  }
 }
