@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import "./fedetest.css";
 
 // Definisce il tipo Position per gestire la posizione della cella selezionata
 type Position = { row: number; col: number };
@@ -15,6 +16,7 @@ export default function App() {
     { title: "Nome", width: 180, singleChar: false },
     { title: "Anno di corso", width: 80, singleChar: true },
     { title: "Sezione", width: 120, singleChar: false },
+    { title: "Codice compito", width: 90, isCodiceCompito: true },
     { title: "1", width: 40, singleChar: true },
     { title: "2", width: 40, singleChar: true },
     { title: "3", width: 40, singleChar: true },
@@ -78,13 +80,36 @@ export default function App() {
     setTimeout(() => setShowError(false), 2000); // Nasconde dopo 2 secondi
   };
 
+  // Funzione per validare il codice compito: solo numeri di esattamente 3 cifre, prima 2, seconda 1-5, terza 1-8
+  const isValidCodiceCompito = (value: string) => {
+    if (!value) return true;
+    // Accetta solo stringhe composte ESATTAMENTE da 3 cifre
+    if (!/^\d{3}$/.test(value)) return false;
+    if (value.length !== 3) return false;
+    if (value[0] !== "2") return false;
+    if (value[1] < "1" || value[1] > "5") return false;
+    if (value[2] < "1" || value[2] > "8") return false;
+    return true;
+  };
+
   // Funzione per aggiornare il valore di una cella
-  const updateCell = (r: number, c: number, value: string) => {
+  const updateCell = (r: number, c: number, value: string, validateCodiceCompito = true) => {
     const column = columns[c];
-    
+
     // Validazione Anno di corso
     if (column.title === "Anno di corso" && !isValidYear(value)) {
       if (value) setErrorMessage("Inserire 1 o 2");
+      showTemporaryError();
+      return;
+    }
+
+    // Validazione Codice compito SOLO se richiesto (invio/tab/freccia)
+    if (
+      column.title === "Codice compito" &&
+      validateCodiceCompito &&
+      !isValidCodiceCompito(value)
+    ) {
+      setErrorMessage("Inserire un codice corretto");
       showTemporaryError();
       return;
     }
@@ -157,7 +182,7 @@ export default function App() {
         setEditing(selected);
     // Gestione input diretto di caratteri
     else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      if (col === 7) return;  // ultima colonna "Punti" 
+      if (col === cols - 1) return;  // ultima colonna "Punti"
       const colConfig = columns[col];
       if (colConfig.singleChar) {
         const isAnnoField = colConfig.title === "Anno di corso";
@@ -190,18 +215,32 @@ export default function App() {
   };
 
   // Gestione degli eventi tastiera durante la modifica di una cella
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { // Gestisce tasti in input
-    const { row, col } = editing!; // Prende riga e colonna in editing
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const { row, col } = editing!;
+    const column = columns[col];
     // Se premo Delete mentre sono in editing, svuota il valore della cella mantenendo l'editing
     if (e.key === "Delete") {
       e.preventDefault();
       updateCell(row, col, "");
-      // mantieni l'editing attivo sull'input (non chiudere)
       return;
     }
-    if (e.key === "Enter") { // Invio
-      setEditing(null); // Chiude editing
-      setTimeout(() => containerRef.current?.focus(), 0); // Rimette focus sul contenitore
+    // Validazione codice compito SOLO su invio/tab/freccia
+    if (
+      column.title === "Codice compito" &&
+      (e.key === "Enter" || e.key === "Tab" || e.key.startsWith("Arrow"))
+    ) {
+      if (
+        !isValidCodiceCompito(data[row][col])
+      ) {
+        setErrorMessage("Inserire un codice corretto");
+        showTemporaryError();
+        e.preventDefault();
+        return;
+      }
+    }
+    if (e.key === "Enter") {
+      setEditing(null);
+      setTimeout(() => containerRef.current?.focus(), 0);
     } else if (e.key === "ArrowUp" && row > 0) {
       setEditing(null);
       moveSelection(row - 1, col);
@@ -255,164 +294,87 @@ export default function App() {
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        width: "100vw",
-        background: "#f3f4f6",
-        fontFamily: "sans-serif",
-        outline: "none",
-      }}
+      className="fedetest-root"
     >
       {showError && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#f44336',
-          color: 'white',
-          padding: '15px 30px',
-          borderRadius: '4px',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-          zIndex: 1000,
-        }}>
+        <div className="fedetest-error-popup">
           {errorMessage}
         </div>
       )}
-      <table
-        style={{
-          borderCollapse: "collapse",
-          background: "white",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-        }}
-      >
-        <thead>
-          <tr>
-            {columns.map((col, i) => (
-              <th
-                key={i}
-                style={{
-                  border: "1px solid #ccc",
-                  borderBottomWidth: "3px",
-                  width: col.width,
-                  height: "70px",
-                  background: "#d3e1f1",
-                  textAlign: "center",
-                  fontWeight: 600,
-                  color: "#444",
-                }}
-              >
-                {col.title}
-              </th>
-            ))}
-          </tr>
-        </thead>
-
-        <tbody>
-          {/* 
-            data.map() itera su ogni riga dell'array data
-            - rowData: rappresenta l'array contenente i dati di una singola riga
-            - r: è l'indice della riga corrente (0,1,2,3,4)
-          */}
-          {data.map((rowData, r) => {
-            const punti = ["1", "2", "3"].reduce((acc, colName) => {
-              const colIndex = columns.findIndex(c => c.title === colName);
-              return acc + (rowData[colIndex] ? 1 : 0);
-            }, 0);
-              
-            return (
-              <tr key={r}>
-              {rowData.map((value, c) => (
-                <td
-                  key={c}
-                  onClick={() => handleCellClick(r, c)}
-                  style={{
-                    border: "1px solid #ccc",
-                    width: "columns[c].width",
-                    height: "38px",
-                    textAlign: "center",
-                    position: "relative",
-                    cursor: "pointer",
-                    background:
-                      editing?.row === r && editing?.col === c
-                        ? "#f7f9fa"
-                        : "#fff",
-                    color: "#222",
-                    ...(selected.row === r && selected.col === c
-                      ? {
-                          outline: "2px solid #0078ff",
-                          outlineOffset: "-2px",
-                          boxShadow: "0 0 4px rgba(0,120,255,0.3)",
-                        }
-                      : {}),
-                    transition: "background 0.15s ease",
-                  }}
+      <div className="fedetest-table-container">
+        <table className="fedetest-table">
+          <thead>
+            <tr>
+              {columns.map((col, i) => (
+                <th
+                  key={i}
+                  className="fedetest-th"
+                  style={{ width: col.width }}
                 >
-                  {/* Verifica se la cella corrente (r,c) è quella in fase di modifica */}
-                  {/* Se è la colonna "Punti", mostra solo il conteggio */}
-                  {c === 7 ? (  // aggiornato indice colonna punti
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        lineHeight: "32px",
-                        fontSize: "14px",
-                        userSelect: "none",
-                        fontWeight: "bold",
-                        color: "#333",
-                      }}
-                    >
-                      {punti === 0? "" : punti*5}
-                    </div>
-            ) : editing?.row === r && editing?.col === c ? (
-                    // Se la cella è in modifica, mostra un input per l'editing
-                    <input
-                      // Riferimento all'elemento input per gestire il focus
-                      ref={inputRef}
-                      // Il valore dell'input è sincronizzato con il dato della cella
-                      value={value}
-                      // Aggiorna il valore della cella quando l'input cambia
-                      onChange={(e) => updateCell(r, c, e.target.value)}
-                      // Gestisce i tasti speciali durante l'editing
-                      onKeyDown={handleInputKeyDown}
-                      // Stili dell'input per farlo apparire come una cella
-                      style={{
-                        width: "100%",          // Occupa tutta la larghezza
-                        height: "100%",         // Occupa tutta l'altezza
-                        border: "none",         // Rimuove il bordo dell'input
-                        outline: "none",        // Rimuove l'outline di focus
-                        textAlign: "center",    // Centra il testo
-                        fontSize: "14px",       // Dimensione del testo
-                        boxSizing: "border-box", // Include padding nel calcolo dimensioni
-                        background: "#f7f9fa",  // Sfondo leggermente diverso
-                        color: "#222",          // Colore del testo
-                      }}
-                    />
-                  ) : (
-                    // Se la cella non è in modifica, mostra un div con il valore
-                    <div
-                      style={{
-                        width: "100%",          // Occupa tutta la larghezza
-                        height: "100%",         // Occupa tutta l'altezza
-                        lineHeight: "32px",     // Allinea verticalmente il testo
-                        fontSize: "14px",       // Dimensione del testo
-                        userSelect: "none",     // Impedisce la selezione del testo
-                        color: "#222",          // Colore del testo
-                      }}
-                    >
-                      {/* Mostra il valore della cella */}
-                      {value}
-                    </div>
-                  )}
-                </td>
+                  {col.title}
+                </th>
               ))}
-            </tr>)
-          })}
-        </tbody>
-      </table>
+            </tr>
+          </thead>
+          <tbody>
+            {/* 
+              data.map() itera su ogni riga dell'array data
+              - rowData: rappresenta l'array contenente i dati di una singola riga
+              - r: è l'indice della riga corrente (0,1,2,3,4)
+            */}
+            {data.map((rowData, r) => {
+              const punti = ["1", "2", "3"].reduce((acc, colName) => {
+                const colIndex = columns.findIndex(c => c.title === colName);
+                return acc + (rowData[colIndex] ? 1 : 0);
+              }, 0);
+                
+              return (
+                <tr key={r}>
+                {columns.map((col, c) => (
+                  <td
+                    key={c}
+                    onClick={() => handleCellClick(r, c)}
+                    className={
+                      "fedetest-td" +
+                      (editing?.row === r && editing?.col === c ? " fedetest-td-editing" : "") +
+                      (selected.row === r && selected.col === c ? " fedetest-td-selected" : "")
+                    }
+                    style={{ width: columns[c].width }}
+                  >
+                    {/* Se è la colonna "Punti", mostra solo il conteggio */}
+                    {c === columns.length - 1 ? (
+                      <div className="fedetest-punti-cell">
+                        {punti === 0 ? "" : punti * 5}
+                      </div>
+                    ) : editing?.row === r && editing?.col === c ? (
+                      <input
+                        ref={inputRef}
+                        value={data[r][c]}
+                        onChange={(e) => updateCell(r, c, e.target.value, false)}
+                        onKeyDown={handleInputKeyDown}
+                        onBlur={() => {
+                          if (columns[c].title === "Codice compito" && data[r][c]) {
+                            if (!isValidCodiceCompito(data[r][c])) {
+                              setErrorMessage("Inserire un codice corretto");
+                              showTemporaryError();
+                            }
+                          }
+                          setEditing(null);
+                        }}
+                        className="fedetest-input"
+                      />
+                    ) : (
+                      <div className="fedetest-cell-value">
+                        {data[r][c]}
+                      </div>
+                    )}
+                  </td>
+                ))}
+                </tr>)
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
