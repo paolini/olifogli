@@ -32,10 +32,10 @@ export default function TableInner({
   // Usa l'ID come ancora per la selezione a intervallo per resistere ai riordinamenti
   const [lastClickedId, setLastClickedId] = useState<string|null>(null)
   const toggleSelectAll = () => {
-    if (ctx.selectedIds.size === ctx.rows.length) {
+    if (ctx.selectedIds.size === ctx.viewRows.length) {
       ctx.setSelectedIds(new Set())
     } else {
-      ctx.setSelectedIds(new Set(ctx.rows.map(row => row._id.toString())))
+      ctx.setSelectedIds(new Set(ctx.viewRows.map(row => row._id.toString())))
     }
   }
 
@@ -47,12 +47,12 @@ export default function TableInner({
     ctx.setSelectedIds(prev => {
       const next = new Set(prev)
   if (shift && lastClickedId) {
-        const anchorIndex = ctx.rows.findIndex(r => r._id.toString() === lastClickedId)
-        const currentIndex = ctx.rows.findIndex(r => r._id.toString() === rowId)
+        const anchorIndex = ctx.viewRows.findIndex(r => r._id.toString() === lastClickedId)
+        const currentIndex = ctx.viewRows.findIndex(r => r._id.toString() === rowId)
         if (anchorIndex !== -1 && currentIndex !== -1) {
           const start = Math.min(anchorIndex, currentIndex)
           const end = Math.max(anchorIndex, currentIndex)
-          const idsInRange = ctx.rows.slice(start, end + 1).map(r => r._id.toString())
+          const idsInRange = ctx.viewRows.slice(start, end + 1).map(r => r._id.toString())
           if (checked) idsInRange.forEach(id => next.add(id))
           else idsInRange.forEach(id => next.delete(id))
           return next
@@ -71,7 +71,7 @@ export default function TableInner({
       ctx={ctx}
       setSort={setSort}
       criteria={criteria}
-      allSelected={ctx.selectedIds.size === ctx.rows.length && ctx.rows.length > 0}
+      allSelected={ctx.selectedIds.size === ctx.viewRows.length && ctx.viewRows.length > 0}
       toggleSelectAll={toggleSelectAll}
     />
     <TableBody 
@@ -167,9 +167,9 @@ function TableBody({
   }
 
   return <tbody>
-    {ctx.rows.map((row, index) => {
-      const prevRow = index > 0 ? ctx.rows[index - 1] : null
-      const nextRow = index < ctx.rows.length - 1 ? ctx.rows[index + 1] : null
+    {ctx.viewRows.map((row, index) => {
+      const prevRow = index > 0 ? ctx.viewRows[index - 1] : null
+      const nextRow = index < ctx.viewRows.length - 1 ? ctx.viewRows[index + 1] : null
       const nextFieldName = nextRow ? findFirstEmptyEditableField(nextRow) : null
       
       return (edit && rowInputState.rowIsBeingEdited && row._id === rowInputState.rowId)
@@ -213,7 +213,7 @@ function TableBody({
         setRowInputState={setRowInputState}
         showAdditionalColumns={ctx.showAdditionalColumns} 
         showHiddenColumns={ctx.showHiddenColumns}
-        prevRow={ctx.rows.length > 0 ? ctx.rows[ctx.rows.length - 1] : null} />
+        prevRow={ctx.viewRows.length > 0 ? ctx.viewRows[ctx.viewRows.length - 1] : null} />
     )}
     {edit && !(rowInputState.rowIsBeingEdited && rowInputState.rowId === null) && (
       <tr key="add-row">
