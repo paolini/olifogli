@@ -13,6 +13,8 @@ export default function App() {
   const columns = [
     { title: "Cognome", width: 180, singleChar: false },
     { title: "Nome", width: 180, singleChar: false },
+    { title: "Anno di corso", width: 80, singleChar: true },
+    { title: "Sezione", width: 120, singleChar: false },
     { title: "1", width: 40, singleChar: true },
     { title: "2", width: 40, singleChar: true },
     { title: "3", width: 40, singleChar: true },
@@ -36,6 +38,12 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Stato per gestire la visibilità del popup
+  const [showError, setShowError] = useState(false);
+
+  // Stato per il messaggio di errore
+  const [errorMessage, setErrorMessage] = useState("Inserire 1 o 2");
+
   // Effetto per gestire il focus dell'input quando si entra in modalità modifica
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -49,8 +57,48 @@ export default function App() {
     containerRef.current?.focus();
   }, []);
 
+  // Funzione per validare l'anno (solo 1 o 2)
+  const isValidYear = (value: string) => {
+    if (!value) return true; // permetti valori vuoti
+    return value === "1" || value === "2";
+  };
+
+  // Funzione per validare le risposte (1,2,3)
+  const isValidAnswer = (value: string) => {
+    const validAnswers = ['A', 'B', 'C', 'D', 'E', 'X', '-'];
+    return value === '' || validAnswers.includes(value.toUpperCase());
+  };
+
+  // Funzione per normalizzare le risposte in maiuscolo
+  const normalizeAnswer = (value: string) => value.toUpperCase();
+
+  // Funzione per mostrare temporaneamente l'errore
+  const showTemporaryError = () => {
+    setShowError(true);
+    setTimeout(() => setShowError(false), 2000); // Nasconde dopo 2 secondi
+  };
+
   // Funzione per aggiornare il valore di una cella
   const updateCell = (r: number, c: number, value: string) => {
+    const column = columns[c];
+    
+    // Validazione Anno di corso
+    if (column.title === "Anno di corso" && !isValidYear(value)) {
+      if (value) setErrorMessage("Inserire 1 o 2");
+      showTemporaryError();
+      return;
+    }
+
+    // Validazione risposte 1,2,3
+    if (["1", "2", "3"].includes(column.title)) {
+      if (!isValidAnswer(value)) {
+        if (value) setErrorMessage("Inserisci A, B, C, D, E, X oppure -");
+        showTemporaryError();
+        return;
+      }
+      value = normalizeAnswer(value);
+    }
+
     setData((prev) => {
       const copy = prev.map((row) => [...row]);
       copy[r][c] = value;
@@ -109,13 +157,25 @@ export default function App() {
         setEditing(selected);
     // Gestione input diretto di caratteri
     else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      if (col === 5) return;
+      if (col === 7) return;  // ultima colonna "Punti" 
       const colConfig = columns[col];
       if (colConfig.singleChar) {
-        // Per le colonne centrali: inserisce il carattere e sposta a destra
+        const isAnnoField = colConfig.title === "Anno di corso";
+        const isValidInput = !isAnnoField || isValidYear(e.key);
+
+        // Se è una delle colonne 1,2,3 e il carattere non è valido, mostra errore e NON spostare il focus e NON entrare in input
+        if (["1", "2", "3"].includes(colConfig.title) && !isValidAnswer(e.key)) {
+          setErrorMessage("Inserisci A, B, C, D, E, X oppure -");
+          showTemporaryError();
+          // NON chiamare updateCell, NON cambiare editing
+          return;
+        }
+
         updateCell(row, col, e.key);
         setEditing(null);
-        moveSelection(row, Math.min(col + 1, cols - 1));
+        if (!isAnnoField || isValidInput) {
+          moveSelection(row, Math.min(col + 1, cols - 1));
+        }
       } else {
         // Per prima e ultima colonna: entra in modalità modifica
         setEditing(selected);
@@ -206,6 +266,22 @@ export default function App() {
         outline: "none",
       }}
     >
+      {showError && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#f44336',
+          color: 'white',
+          padding: '15px 30px',
+          borderRadius: '4px',
+          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+        }}>
+          {errorMessage}
+        </div>
+      )}
       <table
         style={{
           borderCollapse: "collapse",
@@ -222,7 +298,7 @@ export default function App() {
                   border: "1px solid #ccc",
                   borderBottomWidth: "3px",
                   width: col.width,
-                  height: "50px",
+                  height: "70px",
                   background: "#d3e1f1",
                   textAlign: "center",
                   fontWeight: 600,
@@ -256,7 +332,7 @@ export default function App() {
                   style={{
                     border: "1px solid #ccc",
                     width: "columns[c].width",
-                    height: "32px",
+                    height: "38px",
                     textAlign: "center",
                     position: "relative",
                     cursor: "pointer",
@@ -277,7 +353,7 @@ export default function App() {
                 >
                   {/* Verifica se la cella corrente (r,c) è quella in fase di modifica */}
                   {/* Se è la colonna "Punti", mostra solo il conteggio */}
-                  {c === 5 ? (
+                  {c === 7 ? (  // aggiornato indice colonna punti
                     <div
                       style={{
                         width: "100%",
