@@ -1,407 +1,128 @@
 "use client"
 
-import { useState, useEffect, SetStateAction, Dispatch, ReactElement } from 'react'
-import { Row, Sheet, useRequestScanSheetGenerationMutation, useOlimanagerCreateParticipantMutation, useOlimanagerBulkUpdateResultsMutation } from '@/app/graphql/generated'
+import { Row, Sheet } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
-import TableInner from './TableInner'
-import LoadingWrapper from './LoadingWrapper'
 import { schemas } from '../lib/schema'
 import ErrorElement from './Error'
 import { Field } from '../lib/schema/fields'
-import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
-import { RowInputState } from './RowInputStateActions'
-import { useDeleteRows, usePatchRow } from './TableInputRow'
-import { ObjectId } from 'bson'
-import { gql } from 'graphql-request'
 import useProfile from '../lib/useProfile'
-import Loading from './Loading'
-import Schema from '../lib/schema/Schema'
+import TableActions, { TableActionsErrors, useTableActionsContext } from './TableActions'
+import Checkboxes, { useCheckboxesState } from './TableCheckboxes'
+import TableBody, { useTableBodyContext } from './TableBody'
+import TableHeader from './TableHeader'
+import { useState } from 'react'
+import { myTimestamp } from '../lib/util'
 
-const _ = gql`
-    mutation requestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
-        requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
-    }
-`;
+export type SortCriterium = {
+    field: string|Field,
+    direction: number
+}
 
-const __ = gql`
-  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
-    olimanagerCreateParticipant(rowIds: $rowIds, username: $username, password: $password)
-  }
-`;
+export type RowField = {
+    name: string,
+    label: string
+    value_formatter?: ({row, value}: {row: Row, value: string}) => string
+}
 
-const ___ = gql`
-  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
-    olimanagerBulkUpdateResults(rowIds: $rowIds, username: $username, password: $password)
-  }
-`;
+export type Column = Field | RowField
 
-export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
+function rowModified(row: Row): boolean {
+    return row?.updatedOn && row?.updatedOn !== row?.createdOn
+}
+
+const ADDITIONAL_COLUMNS: RowField[] = [
+    {
+        name: 'createdOn', 
+        label: 'istante creazione',
+        value_formatter: ({row, value}) => value ? myTimestamp(value) : ''
+    },
+    {
+        name: 'createdBy', 
+        label: 'creato da'
+    },
+    {
+        name: 'updatedOn', 
+        label: 'istante modifica',
+        value_formatter: ({row, value}) => (value && rowModified(row)) ? myTimestamp(value) : ''
+    },
+    {
+        name: 'updatedBy', 
+        label: 'aggiornato da',
+        value_formatter: ({row, value}) => (value && rowModified(row)) ? value : ''
+    },
+]
+
+export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
+  edit: boolean,
   rows: Row[],
   sheet: Sheet,
-  edit?: boolean,
-  onRefresh?: () => Promise<void>,
+  refresh?: () => Promise<void>,
   refreshLoading?: boolean
 }) {
-  const [rowInputState, setRowInputState] = useState<RowInputState>({
-    rowIsBeingEdited: false,
-    rowId: null,
-    oldData: null,
-    newData: null,
-    focusFieldName: null,
-    updatedOn: null
-  })
-  const [viewRows, setViewRows] = useState<Row[]>(rows)
+    const schema = schemas[sheet.schema]
+    const profile = useProfile();
+    const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
+    const [checkboxesState, setCheckboxesState] = useCheckboxesState();
+    const tableBodyContext = useTableBodyContext({schema, rows, showStandardAnswers: checkboxesState.showStandardAnswers});
+    const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
 
-  // aggrega tutto lo stato che può essere utilizzato
-  // dal menu a tendina delle azioni
-  const ctx = useTableContext(rows, sheet, onRefresh)
-
-  useEffect(() => {
-    setViewRows(prevViewRows => {
-      const map_id_to_incoming_row = Object.fromEntries(rows.map((row,i) => [row._id.toString(), {row,i}]))
-      const replacedRows: Row[] = prevViewRows.map(r => {
-        const row = map_id_to_incoming_row[r._id.toString()]?.row
-        if (row === undefined) return undefined
-        delete map_id_to_incoming_row[r._id.toString()]
-        return row
-      }).filter(r => r!==undefined)
-
-      return [
-        ...replacedRows,
-        ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
-      ]
+    const tableActionContext = useTableActionsContext({
+        schema, 
+        profile:profile || undefined, sheet, 
+        userHasSheetAdminPrivileges,
+        refresh, 
+        checkboxesState, 
+        sortedRows: tableBodyContext.sortedRows, 
+        selectedIds: tableBodyContext.selectedIds, 
     })
-  }, [rows])
 
-  if (!ctx.schema) {
-    return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
-  }
+    if (!schema) {
+        return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
+    }
 
-  return <div className="table-container">
-    <div className="table-header">
-      <ctx.Errors />
-      <Checkboxes ctx={ctx} />
-      <ActionSelector ctx={ctx}/>
+    const columns: Column[] = [
+        ...(checkboxesState.showAdditionalColumns ? ADDITIONAL_COLUMNS : []),
+        ...schema.fields.filter(f => checkboxesState.showHiddenColumns || !f.hidden)
+    ]
+
+    return <div className="table-container">
+        <div className="table-header">
+            <TableActionsErrors ctx={tableActionContext} />
+            <Checkboxes schema={schema} state={checkboxesState} setState={setCheckboxesState} />
+            <TableActions ctx={tableActionContext}/>
+        </div>
+
+        <div className="table-scroll-container">
+            <table className="my-table">
+                <TableHeader 
+                    schema={schema}
+                    columns={columns} 
+                    doSortRows={doSortRows} sortCriterium={sortCriterium} setSortCriterium={setSortCriterium}
+                    allSelected={tableBodyContext.selectedIds.size === tableBodyContext.sortedRows.length}
+                    selectAll={() => {tableBodyContext.setSelectedIds(new Set(tableBodyContext.sortedRows.map(row => row._id.toString())))}}
+                    selectNone={() => {tableBodyContext.setSelectedIds(new Set())}}
+                    />
+                <TableBody 
+                    ctx={tableBodyContext} 
+                    edit={edit}
+                    columns={columns}
+                />
+            </table>
+        </div>
     </div>
-
-    <div className="table-scroll-container">
-      <LoadingWrapper>
-        <TableInner
-          ctx={ctx}
-          rowInputState={rowInputState}
-          setRowInputState={setRowInputState}
-          edit={edit}
-          setSort={setSort}
-          refreshLoading={refreshLoading}
-        />
-      </LoadingWrapper>
-    </div>
-  </div>
-
-  function setSort(field: Field|string, direction: number) {
-    if (field instanceof Field) {
-      const sort_criteria = [{ campo: field, direzione: direction }]
-      setViewRows(viewRows => tableOrdina(sort_criteria, viewRows))
-    } else {
-      setViewRows(viewRows => [...viewRows].sort((a,b) => {
-        const aValue = a[field as keyof Row];
-        const bValue = b[field as keyof Row];
-        if (aValue < bValue) return -direction;
-        if (aValue > bValue) return direction;
-        return 0;
-      }))
+    
+    function doSortRows(field: Field|string, direction: number) {
+        if (field instanceof Field) {
+            const sort_criteria = [{ campo: field, direzione: direction }]
+            tableBodyContext.setSortedRows(oldSortedRows => tableOrdina(sort_criteria, oldSortedRows))
+        } else {
+            tableBodyContext.setSortedRows(oldSortedRows => [...oldSortedRows].sort((a,b) => {
+                const aValue = a[field as keyof Row];
+                const bValue = b[field as keyof Row];
+                if (aValue < bValue) return -direction;
+                if (aValue > bValue) return direction;
+                return 0;
+            }))
+        }
     }
-  }
-}
-
-export type TableContext = {
-  profile: ReturnType<typeof useProfile>,
-  rows: Row[],
-  sheet: Sheet,
-  schema: Schema,
-  onRefresh?: () => Promise<void>,
-  selectedIds: Set<string>,
-  setSelectedIds: Dispatch<SetStateAction<Set<string>>>,
-  showStandardAnswers: boolean,
-  setShowStandardAnswers: (show: boolean) => void,
-  showAdditionalColumns: boolean,
-  setShowAdditionalColumns: (show: boolean) => void,
-  showHiddenColumns: boolean,
-  setShowHiddenColumns: (show: boolean) => void,
-  deleteRows: (args: { variables: { ids: ObjectId[] } }) => Promise<unknown>,
-  patchRow: (args: { variables: { _id: ObjectId, updatedOn: Date, data: Record<string, unknown> } }) => Promise<unknown>,
-  requestScanSheetGeneration: (args: { variables: { sheetId: ObjectId, selectedRowIds?: ObjectId[] } }) => Promise<unknown>,
-  olimanagerCreateParticipant: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
-  olimanagerBulkUpdateResults: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
-  userHasSheetAdminPrivileges: boolean
-  loading: boolean,
-  Errors: () => ReactElement,
-  olimanagerEmail: string,
-  setOlimanagerEmail: Dispatch<SetStateAction<string>>,
-  olimanagerPassword: string,
-  setOlimanagerPassword: Dispatch<SetStateAction<string>>,
-}
-
-function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
-  const profile = useProfile()
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
-  const [showAdditionalColumns, setShowAdditionalColumns] = useState<boolean>(false)
-  const [showHiddenColumns, setShowHiddenColumns] = useState<boolean>(false)
-  
-  const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
-  const [patchRow, { loading: patchLoading }] = usePatchRow()
-
-  const [requestScanSheetGeneration, { loading: scanSheetLoading, error: scanSheetError }] = useRequestScanSheetGenerationMutation({
-    refetchQueries: ['ScanSheetJobs']
-  })
-  const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
-  const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
-  const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
-  const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
-
-  const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
-  const schema = schemas[sheet.schema]
-  const loading = deleteLoading || olimanagerCreateParticipantLoading || olimanagerBulkUpdateLoading || scanSheetLoading || patchLoading
-  function Errors() {
-    return <>
-      <ErrorElement error={olimanagerCreateParticipantError} />
-      <ErrorElement error={olimanagerBulkUpdateError} />
-      <ErrorElement error={scanSheetError} />
-    </>
-  }
-
-  return {
-    rows,
-    sheet,
-    onRefresh,
-    profile,
-    schema,
-    selectedIds, setSelectedIds,
-    showStandardAnswers, setShowStandardAnswers,
-    showAdditionalColumns, setShowAdditionalColumns,
-    showHiddenColumns, setShowHiddenColumns,
-    olimanagerEmail, setOlimanagerEmail,
-    olimanagerPassword, setOlimanagerPassword,
-    deleteRows,
-    patchRow,
-    requestScanSheetGeneration,
-    olimanagerCreateParticipant,
-    olimanagerBulkUpdateResults,
-    Errors,
-    loading,
-    userHasSheetAdminPrivileges,
-  }
-}
-
-function Checkboxes({ctx}: {ctx: TableContext}) {
-  return <>
-        {(ctx.schema instanceof ArchimedeCommon) &&
-        <label>
-          <input type="checkbox" checked={ctx.showStandardAnswers} onChange={e => ctx.setShowStandardAnswers(e.target.checked)} />
-          {' '}Mostra risposte standard
-        </label>
-      }
-      <label className="ml-4">
-        <input type="checkbox" checked={ctx.showAdditionalColumns} onChange={e => ctx.setShowAdditionalColumns(e.target.checked)} />
-        {' '}Mostra colonne informative
-      </label>
-      <label className="ml-4">
-        <input type="checkbox" checked={ctx.showHiddenColumns} onChange={e => ctx.setShowHiddenColumns(e.target.checked)} />
-        {' '}Mostra colonne nascoste
-      </label>
-  </>
-}
-
-function ActionSelector({ctx}: {ctx: TableContext}) {
-  return <>
-        { ctx.loading
-      ? <Loading />
-      : <select
-        className="ml-2 border rounded px-2 py-1"
-        onChange={(e) => actions[e.target.value].handler(ctx)}
-        value="none"
-      >
-        <option value="none" disabled>
-          {ctx.selectedIds.size} {`${ctx.selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
-        </option>
-        {Object.entries(actions).map(([key, action]) => {
-          if (action.hidden(ctx)) return null
-          return <option 
-            key={key} 
-            value={key} 
-            disabled={action.disabled(ctx)}
-          >
-            {action.label}
-          </option>
-        })}
-      </select>}
-  </>
-}
-
-type Action = {
-  label: string,
-  hidden: (ctx: TableContext) => boolean,
-  disabled: (ctx: TableContext) => boolean,
-  handler: (ctx: TableContext) => Promise<void> | void
-}
-
-const actions: Record<string, Action> = {
-  'delete': {
-    label: 'Elimina righe selezionate',
-    hidden: ctx => false,
-    disabled: ctx => ctx.selectedIds.size === 0,
-    handler: handleDeleteSelectedRows
-  },
-  'scan': {
-    label: 'Genera fogli risposte',
-    hidden: ctx => false,
-    disabled: ctx => ctx.selectedIds.size === 0 || !ctx.userHasSheetAdminPrivileges,
-    handler: handleGenerateScanSheet
-  },
-  'gen_ids': {
-    label: 'Genera ID studenti',
-    hidden: ctx => !ctx.schema.fields.some(field => field.name === 'id'),
-    disabled: ctx => !ctx.showHiddenColumns,
-    handler: handleGenerateStudentIds
-  },
-  'olimanager': {
-    hidden: ctx => !ctx.profile?.isAdmin,
-    label: 'Crea/abbina partecipanti (Olimanager)',
-    disabled: ctx => ctx.selectedIds.size === 0,
-    handler: handleOlimanagerCreateParticipants
-  },
-  'update_scores': {
-    hidden: ctx => !ctx.profile?.isAdmin,
-    label: 'Aggiorna risultati (Olimanager)',
-    disabled: ctx => ctx.selectedIds.size === 0,
-    handler: handleOlimanagerUpdateScores
-  }
-}
-
-async function handleDeleteSelectedRows(ctx: TableContext) {
-  if (ctx.selectedIds.size === 0) return
-
-  const confirmed = confirm(
-    `Sei sicuro di voler eliminare ${ctx.selectedIds.size} ${ctx.selectedIds.size === 1 ? 'riga' : 'righe'}?`
-  )
-  
-  if (!confirmed) return
-  
-  try {
-    const ids = Array.from(ctx.selectedIds).map(id => new ObjectId(id))
-    await ctx.deleteRows({ variables: { ids } })
-    ctx.setSelectedIds(new Set()) // Deseleziona tutte le righe dopo l'eliminazione
-  } catch (error) {
-    alert(`Errore durante l'eliminazione: ${error}`)
-  }
-}
-
-function handleGenerateScanSheet(ctx: TableContext) {
-  const selectedRowIds = ctx.rows
-    .filter(row => ctx.selectedIds.has(row._id.toString()))
-    .map(row => new ObjectId(row._id))
-  ctx.requestScanSheetGeneration({
-    variables: {
-      sheetId: new ObjectId(ctx.sheet._id),
-      selectedRowIds: selectedRowIds.length > 0 ? selectedRowIds : undefined,
-    }
-  })
-  
-  alert('Hai richiesto la generazione dei fogli risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.')
-}
-
-async function handleGenerateStudentIds(ctx: TableContext) {
-  // Trova il massimo valore del campo id
-  const maxId = ctx.rows.reduce((max, row) => {
-    const idValue = parseInt(row.data.id || '0', 10)
-    return isNaN(idValue) ? max : Math.max(max, idValue)
-  }, 0)
-
-  // Trova le righe con id vuoto
-  const rowsWithEmptyId = ctx.rows.filter(row => !row.data.id || row.data.id === '')
-  
-  if (rowsWithEmptyId.length === 0) {
-    alert('Non ci sono righe con id vuoto')
-    return
-  }
-
-  const confirmed = confirm(
-    `Vuoi generare ${rowsWithEmptyId.length} ID studenti a partire da ${maxId + 1}?`
-  )
-  
-  if (!confirmed) return
-
-  // Aggiorna le righe con id vuoto
-  let nextId = maxId + 1
-  try {
-    await Promise.all(
-      rowsWithEmptyId.map(row => {
-        const id = nextId++
-        return ctx.patchRow({
-          variables: {
-            _id: new ObjectId(row._id),
-            updatedOn: row.updatedOn,
-            data: {
-              ...row.data,
-              id: id.toString()
-            }
-          }
-        })
-      })
-    )
-    alert(`Generati ${rowsWithEmptyId.length} ID studenti`)
-  } catch (error) {
-    alert(`Errore durante la generazione degli ID: ${error}`)
-  }
-}
-
-function askOlimanagerCredentials(ctx: TableContext): {username: string, password: string} {
-  const username = prompt('Username olimanager (email)', ctx.olimanagerEmail) ?? ''
-  const password = prompt('Password', ctx.olimanagerPassword) ?? ''
-  ctx.setOlimanagerEmail(username)
-  ctx.setOlimanagerPassword(password)
-  return {username, password}
-}
-
-function filterValidRowsAndConfirm(ctx: TableContext): Row[] | null  {
-  const valid_rows = ctx.rows
-    .filter(row => ctx.selectedIds.has(row._id.toString()))
-    .filter(row => !row.error)
-  
-  if (valid_rows.length !== ctx.selectedIds.size 
-    && !confirm(`Solo ${valid_rows.length} righe su ${ctx.selectedIds.size} selezionate sono valide. Procedo con le righe valide?`)) {
-      return null
-    }
-
-  return valid_rows
-}
-
-async function handleOlimanagerCreateParticipants(ctx: TableContext) {
-  const valid_rows = filterValidRowsAndConfirm(ctx)
-  if (!valid_rows || !confirm(`Inviare ${valid_rows.length} righe a Olimanager per creazione/abbinamento partecipanti?`)) {
-    return
-  }
-
-  const {username, password} = askOlimanagerCredentials(ctx)
-  const res = await ctx.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: boolean[]}}
-  const arr = res.data?.olimanagerCreateParticipant || []
-  const ok = arr.filter(Boolean).length
-  const ko = arr.length - ok
-  alert(`Esito Olimanager: ${ok} ok, ${ko} errori`)
-  if (ctx.onRefresh) await ctx.onRefresh()
-}
-
-async function handleOlimanagerUpdateScores(ctx: TableContext) {
-  const valid_rows = filterValidRowsAndConfirm(ctx)
-  if (!valid_rows || !confirm(`Aggiornare i risultati su Olimanager per ${valid_rows.length} righe selezionate?`)) {
-    return
-  }
-  const ids = valid_rows.map(row => new ObjectId(row._id))
-  const {username, password} = askOlimanagerCredentials(ctx)
-
-  const res = await ctx.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
-  alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
-  
-  if (ctx.onRefresh) await ctx.onRefresh()
 }

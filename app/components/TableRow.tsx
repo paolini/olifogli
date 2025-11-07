@@ -1,64 +1,127 @@
-import { WithId } from 'mongodb'
-import Schema from '@/app/lib/schema/Schema'
-import { ChoiceAnswerField, Field } from '@/app/lib/schema/fields'
+import { useEffect, useRef } from "react"
+import { Row } from "../graphql/generated"
+import { ChoiceAnswerField, Field } from "../lib/schema/fields"
+import Schema from "../lib/schema/Schema"
+import { Column, RowField } from "./Table"
+import TableRowInput from "./TableRowInput"
+import { RowModifiedData } from "./TableBody"
 
-import { Row } from '@/app/graphql/generated'
-import { myTimestamp } from '../lib/util'
+export type RowSelectionState = {
+    isSelected: boolean,
+    doSelect: (shift: boolean) => void,
+    doDeselect: (shift: boolean) => void,
+}
 
-export default function TableRow({schema, row, onCellClick, showStandardAnswers, showAdditionalColumns, showHiddenColumns, isSelected, onToggleSelect}: {
-  schema: Schema,
-  row: WithId<Row>,
-  onCellClick?: (fieldName: string) => void,
-  showStandardAnswers: boolean,
-  showAdditionalColumns: boolean,
-  showHiddenColumns: boolean,
-  isSelected?: boolean,
-  onToggleSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void
+export default function TableRow({edit, schema, row, columns, focusColumnName, modifiedData, selectionState, showStandardAnswers, onCellClick}:{
+    edit: boolean,
+    schema: Schema,
+    row: Row,
+    columns: Column[],
+    focusColumnName: string,
+    modifiedData?: RowModifiedData,
+    selectionState: RowSelectionState,
+    showStandardAnswers: boolean,
+    onCellClick: (column: Column) => void
 }) {
-  // Calcola quanto tempo è passato dall'ultimo aggiornamento
-  const timeSinceUpdate = row.updatedOn ? Date.now() - new Date(row.updatedOn).getTime() : Infinity
-  const isRecent = timeSinceUpdate < 60000
-  const elapsedTime = isRecent ? timeSinceUpdate / 1000 : 0 // tempo già trascorso in secondi
-  
-  const className = `clickable${isRecent ? " recently-added" : ""}`
-  const style = isRecent ? { 
-    '--fade-delay': `-${elapsedTime}s` 
-  } as React.CSSProperties : undefined
+    const {className, style } = computeRecentFadeStyling();
+    
+    // Effetto per gestire il focus dell'input quando si entra in modalità modifica
+    const inputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (focusColumnName && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [focusColumnName]);
 
-  const columns = schema.fields.filter(f => !f.hidden || showHiddenColumns);
-  
-  return <tr className={className} style={style}>
-    <td className="checkbox-cell">
+    return <tr className={`${className} clickable`} style={style} onKeyDown={onKeyDown}>
+        <CheckboxCell selectionState={selectionState} />
+        {columns.map(column => (column instanceof Field) 
+        ? <DataCell edit={edit} hasFocus={focusColumnName === column.name} rowModifiedData={rowModifiedData} key={column.name} field={column} value={row.data[column.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick(column)} inputRef={inputRef}/>
+        : <InfoCell key={column.name} row={row} column={column}/>
+        )}
+        {(row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
+        {(row?.olimanager?.participantId) && <td className="olimanager-participant-id">oli={row.olimanager.participantId} sync={row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
+    </tr>
+
+    function computeRecentFadeStyling() {
+        // Calcola quanto tempo è passato dall'ultimo aggiornamento
+        const timeSinceUpdate = row.updatedOn ? Date.now() - new Date(row.updatedOn).getTime() : Infinity
+        const isRecent = timeSinceUpdate < 60000
+        const elapsedTime = isRecent ? timeSinceUpdate / 1000 : 0 // tempo già trascorso in secondi
+    
+        const className = `${isRecent ? "recently-added" : ""}`
+        const style = isRecent ? { 
+            '--fade-delay': `-${elapsedTime}s` 
+        } as React.CSSProperties : undefined
+        return { className, style }
+    }
+
+    function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) {   
+        if (!focusColumnName) return;
+        if (e.key === 'ArrowLeft') {
+            const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+            if (currentIndex > 0) {
+                e.preventDefault();
+                e.stopPropagation
+                const prevCol = columns[currentIndex - 1];
+                onCellClick(prevCol);
+                return;
+            } 
+        } else if (e.key === 'ArrowRight') {
+            const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+            if (currentIndex < columns.length - 1) {
+                e.preventDefault();
+                e.stopPropagation
+                const nextCol = columns[currentIndex + 1];
+                onCellClick(nextCol);
+                return;
+            }
+        }
+    }
+}
+
+function CheckboxCell({selectionState}:{
+    selectionState: RowSelectionState
+}) {
+    const { isSelected, doSelect, doDeselect } = selectionState;
+    return <td className="checkbox-cell">
       <input 
         type="checkbox" 
-        checked={isSelected || false}
-        onChange={onToggleSelect}
+        checked={isSelected}
+        onChange={onChange}
       />
     </td>
-    { showAdditionalColumns && <TableInfoCells row={row} />}
-    {columns.map(field => <TableCell key={field.name} field={field} value={row.data[field.name]} showStandardAnswers={showStandardAnswers} onClick={() => onCellClick && onCellClick(field.name)} />)}
-    {(row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
-    {(row?.olimanager?.participantId) && <td className="olimanager-participant-id">oli={row.olimanager.participantId} sync={row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
-  </tr>
+
+    function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+        // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
+        const native = e.nativeEvent
+        const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
+        const checked = e.currentTarget.checked
+        if (checked) doSelect(shift)
+        else doDeselect(shift)
+    }
 }
 
-export function TableInfoCells({row}: {
-  row: WithId<Row>|undefined
+function InfoCell({row, column}:{
+    row: Row,
+    column: RowField
 }) {
-  const modified = row?.updatedOn && row?.updatedOn !== row?.createdOn
-  return <>
-    <td className="createdOn">{row?.createdOn && myTimestamp(row.createdOn)}</td>
-    <td className="createdBy">{row?.createdBy || ''}</td> 
-    <td className="updatedOn">{modified && myTimestamp(row.updatedOn)}</td>
-    <td className="updatedBy">{modified && row?.updatedBy || ''}</td>
-  </>
+    let value = row[column.name as keyof Row] || '';
+    return <td className={column.name}>
+        {column.value_formatter ? column.value_formatter({row,value}) : value}
+    </td>
 }
 
-export function TableCell({field, value, showStandardAnswers, onClick}:{
+function DataCell({edit, hasFocus, rowModifiedData, field, value, showStandardAnswers, onClick, inputRef}:{
+  edit: boolean,
+  hasFocus: boolean,
+  rowModifiedData?: RowModifiedData,
   field: Field,
   value: string,
-  showStandardAnswers?: boolean,
-  onClick?: () => void
+  showStandardAnswers: boolean,
+  onClick: () => void,
+  inputRef: React.RefObject<HTMLInputElement|null>
 }) {
   let extra_css="";
   let correct_value = undefined;
@@ -81,6 +144,7 @@ export function TableCell({field, value, showStandardAnswers, onClick}:{
   }
   if (showStandardAnswers &&field.name === 'variant') {
     if (value.length === 3) {
+    // mostra il codice della variante standard
       value = `›${value.charAt(0)}11‹` 
     }
   }
@@ -89,8 +153,17 @@ export function TableCell({field, value, showStandardAnswers, onClick}:{
     ? field.css_style(value) 
     : field.css_style;
 
-  return <td key={field.name} title={title} className={`${field.css_class} ${extra_css}`} onClick={onClick} style={style}>
-      {value}
-  </td>
-}
+  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''}`;
 
+  return <td title={title} className={className} onClick={onClick} style={style}>
+      {hasFocus ? <TableRowInput inputRef={inputRef} value={value} setValue={setValue}/> : value}
+  </td>
+
+  function setValue(newValue: string) {
+    if (!rowModifiedData) return;
+    const old
+    if (field.name in rowModifiedData || newValue !== value) {
+        rowModifiedData[field.name] = newValue;
+    }
+  }
+}

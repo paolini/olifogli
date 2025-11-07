@@ -334,10 +334,19 @@ table.my-table {
   height: 32px;
 }
 
-.my-table input {
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
+td.checkbox-cell {
+  text-align: center;
+}
+
+input.table-row {
+  width: 100%;           /* Occupa tutta la larghezza */
+  height: 100%;          /* Occupa tutta l'altezza */
+  border: none;          /* Rimuove il bordo dell'input */
+  outline: none;         /* Rimuove l'outline di focus */
+  font-size: 14px;       /* Dimensione del testo */
+  box-sizing: border-box;/* Include padding nel calcolo dimensioni */
+  background: #f7f9fa;   /* Sfondo leggermente diverso */
+  color: #222;           /* Colore del testo */
 }
 
 .my-table td {
@@ -345,6 +354,12 @@ table.my-table {
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 4px;
+}
+
+td.focus {
+  outline: 2px solid #0078ff;
+  outline-offset: -2px;
+  box-shadow: 0 0 4px rgba(0,120,255,0.3);
 }
 
 td.workbook-data-value {

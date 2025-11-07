@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react'
+import { useEffect, useRef, Dispatch, SetStateAction } from 'react'
 import { WithId } from 'mongodb'
 import { useMutation, StoreObject, gql } from '@apollo/client'
 import Schema from '@/app/lib/schema/Schema'
 
 import { InputCell } from '@/app/components/Input'
-import { Data } from '@/app/lib/models'
 import { Row } from '@/app/graphql/generated'
-import { TableInfoCells, TableCell } from './TableRow'
 import { RowInputState, stopEditRow, updateNewData, saveAndContinue, saveAndClose, cancelEditRow, handleRowChange } from './RowInputStateActions'
 
 export default function TableInputRow({
@@ -254,13 +252,13 @@ const PATCH_ROW = gql`
 `
 
 const DELETE_ROW = gql`
-  mutation deleteRow($_id: ObjectId!) {
+  mutation DeleteRow($_id: ObjectId!) {
     deleteRow(_id: $_id)
   }
 `
 
 const DELETE_ROWS = gql`
-  mutation deleteRows($ids: [ObjectId!]!) {
+  mutation DeleteRows($ids: [ObjectId!]!) {
     deleteRows(ids: $ids)
   }
 `

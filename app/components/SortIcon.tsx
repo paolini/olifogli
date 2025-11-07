@@ -2,22 +2,21 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react' 
 
-import { Criteria } from './Ordering'
 import { Field } from '../lib/schema/fields'
 
-export default function SortIcon({ field, criteria, setSort }: 
+export default function SortIcon({ direction, doSort }: 
     { 
-      field: Field|string, // Field object or field name 
-      criteria?: Criteria, 
-      setSort: (field: Field|string, direction: number) => void }
-  ) {
+      direction: number, // 1: ascending, -1: descending, 0: none
+      doSort: (direction: number) => void
+  }) {
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [menuPosition, setMenuPosition] = useState<{ top: number, left: number } | null>(null)
 
-  const sortCriteria = criteria ? criteria.criteriOrdina.find(c => c.campo === field) : 0
-  const icon = sortCriteria 
-    ? (sortCriteria.direzione > 0 ? <ArrowUp size={16} /> : <ArrowDown size={16} />)
+  const icon = direction > 0 
+    ? <ArrowUp size={16} /> 
+    : direction < 0 
+    ? <ArrowDown size={16} />
     : <ChevronsUpDown size={16} />
   
   useEffect(() => {
@@ -42,13 +41,13 @@ export default function SortIcon({ field, criteria, setSort }:
       minWidth: '100px'
     }}>
       <button 
-        onClick={() => { setSort(field, 1); setIsOpen(false); }}
+        onClick={() => { doSort(1); setIsOpen(false); }}
         style={{ display: 'block', width: '100%', padding: '8px', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer' }}
       >
         Ascendente
       </button>
       <button 
-        onClick={() => { setSort(field, -1); setIsOpen(false); }}
+        onClick={() => { doSort(-1); setIsOpen(false); }}
         style={{ display: 'block', width: '100%', padding: '8px', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer' }}
       >
         Discendente
@@ -56,18 +55,16 @@ export default function SortIcon({ field, criteria, setSort }:
     </div>
   ) : null
 
-  return (
-    <>
+  return <>
       <button 
         ref={buttonRef}
-        className={`sort-icon-button text-gray-500 hover:text-gray-700 ${sortCriteria ? 'sort-visible' : 'sort-hidden'}`} 
+        className={`sort-icon-button text-gray-500 hover:text-gray-700 ${direction ? 'sort-visible' : 'sort-hidden'}`}
         onClick={() => setIsOpen(!isOpen)}
         title="Ordina"
       >
         {icon}
       </button>
       {createPortal(menu, document.body)}
-    </>
-  )
+  </>
 }
 
