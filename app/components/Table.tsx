@@ -54,7 +54,7 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
   // aggrega tutto lo stato che può essere utilizzato
   // dal menu a tendina delle azioni
-  const ctx = useTableContext(rows, sheet, onRefresh)
+  const ctx = useTableContext(rows, viewRows, sheet, onRefresh)
 
   useEffect(() => {
     setViewRows(prevViewRows => {
@@ -116,7 +116,8 @@ export default function Table({rows, sheet, edit, onRefresh, refreshLoading}: {
 
 export type TableContext = {
   profile: ReturnType<typeof useProfile>,
-  rows: Row[],
+  //rows: Row[],
+  viewRows: Row[],
   sheet: Sheet,
   schema: Schema,
   onRefresh?: () => Promise<void>,
@@ -142,7 +143,7 @@ export type TableContext = {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
+function useTableContext(rows: Row[], viewRows: Row[], sheet: Sheet, onRefresh: (() => Promise<void>)|undefined): TableContext {
   const profile = useProfile()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showStandardAnswers, setShowStandardAnswers] = useState<boolean>(false)
@@ -172,7 +173,8 @@ function useTableContext(rows: Row[], sheet: Sheet, onRefresh: (() => Promise<vo
   }
 
   return {
-    rows,
+    //rows,
+    viewRows,
     sheet,
     onRefresh,
     profile,
@@ -298,7 +300,7 @@ async function handleDeleteSelectedRows(ctx: TableContext) {
 }
 
 function handleGenerateScanSheet(ctx: TableContext) {
-  const selectedRowIds = ctx.rows
+  const selectedRowIds = ctx.viewRows
     .filter(row => ctx.selectedIds.has(row._id.toString()))
     .map(row => new ObjectId(row._id))
   ctx.requestScanSheetGeneration({
@@ -313,13 +315,13 @@ function handleGenerateScanSheet(ctx: TableContext) {
 
 async function handleGenerateStudentIds(ctx: TableContext) {
   // Trova il massimo valore del campo id
-  const maxId = ctx.rows.reduce((max, row) => {
+  const maxId = ctx.viewRows.reduce((max, row) => {
     const idValue = parseInt(row.data.id || '0', 10)
     return isNaN(idValue) ? max : Math.max(max, idValue)
   }, 0)
 
   // Trova le righe con id vuoto
-  const rowsWithEmptyId = ctx.rows.filter(row => !row.data.id || row.data.id === '')
+  const rowsWithEmptyId = ctx.viewRows.filter(row => !row.data.id || row.data.id === '')
   
   if (rowsWithEmptyId.length === 0) {
     alert('Non ci sono righe con id vuoto')
@@ -365,7 +367,7 @@ function askOlimanagerCredentials(ctx: TableContext): {username: string, passwor
 }
 
 function filterValidRowsAndConfirm(ctx: TableContext): Row[] | null  {
-  const valid_rows = ctx.rows
+  const valid_rows = ctx.viewRows
     .filter(row => ctx.selectedIds.has(row._id.toString()))
     .filter(row => !row.error)
   
