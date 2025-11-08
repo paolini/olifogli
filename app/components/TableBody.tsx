@@ -1,4 +1,4 @@
-import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useState } from "react"
+import { Dispatch, KeyboardEvent, SetStateAction, useCallback, useEffect, useMemo, useState } from "react"
 import { Row, Sheet } from "../graphql/generated"
 import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
@@ -80,10 +80,23 @@ export default function TableBody({edit, ctx, columns}: {
     ctx: TableBodyContext,
     columns: Column[]
 }) {
-
+    const setModifiedData = useCallback((field: string, value: string | undefined) => {
+      // se value è undefined tolgo il campo dal record
+      // altrimenti lo aggiungo/aggiorno
+      ctx.setRowModifiedData(prev => {
+        if (value === undefined) {
+          const {[field]: _, ...data} = prev
+          return data
+        } else {
+          return {...prev, [field]: value}
+        }
+      })
+    }, [ctx.setRowModifiedData])
+          
     useEffect(remap_incoming_rows_to_sorted, [ctx.rows])
 
     return <tbody onKeyDown={onKeyDown}>
+      <tr><td colSpan={columns.length + 1}>{JSON.stringify(ctx.rowModifiedData)}</td></tr>
         {ctx.sortedRows.map((row) => {
             const focusColumnName = (ctx.focusRow === row) ? ctx.focusFieldName : ''
             if (focusColumnName && ctx.error) {
@@ -164,18 +177,6 @@ export default function TableBody({edit, ctx, columns}: {
       const newRow: RowEventuallyNew = {_id: undefined, data, updatedOn: new Date(), error:''}
       ctx.setSortedRows([...ctx.sortedRows, newRow])
       return newRow
-    }
-
-    function setModifiedData(field:string, value:string|undefined) {
-      // se value è undefined tolgo il campo dal record
-      // altrimenti lo aggiungo/aggiorno
-      if (value === undefined) {
-        const {[field]: _, ...data} = ctx.rowModifiedData
-        ctx.setRowModifiedData(data)
-      } else {
-        const data = {...ctx.rowModifiedData, [field]: value}
-        ctx.setRowModifiedData(data)
-      }
     }
 
     function compute_selection_state_for_row(rowId: string): RowSelectionState {
@@ -261,6 +262,7 @@ export default function TableBody({edit, ctx, columns}: {
         }
     }
 }
+
 
 export const ADD_ROW = gql`
   mutation addRow($sheetId: ObjectId!, $data: Data!) {
