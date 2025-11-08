@@ -100,7 +100,7 @@ export default class ArchimedeCommon extends Competition {
             new Field('surname',{header: "Cognome"}),
             new Field('name',{header: "Nome"}),
             new DateField('birthDate',{header: 'Data di nascita'}),
-            new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', numeric: true, alternativeNames: ['anno']}),
+            new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno']}),
             new Field('classSection',{header:'Sezione'}),
             new Field('variant',{header: "Codice compito", additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
@@ -119,7 +119,7 @@ export default class ArchimedeCommon extends Competition {
             new ChoiceAnswerField('r14', {header: '14'}),
             new ChoiceAnswerField('r15', {header: '15'}),
             new ChoiceAnswerField('r16', {header: '16', additionalCssStyle: 'thick-border-right'}),
-            new Field('score', {header: 'Punti', numeric: true, editable: false, required: false, additionalCssStyle: 'thick-border-right', css_style: score_to_color_style}),
+            new Field('score', {header: 'Punti', type: 'number', editable: false, required: false, additionalCssStyle: 'thick-border-right', css_style: score_to_color_style}),
         ])
         this.fields_to_be_copied_on_new_row = ['classYear', 'classSection']
         this.fields_to_be_ignored_on_inport = ['Nome concorrente', 'Email', 'ID utente', 'Genere', 'Codice fiscale', 'Ruolo', 'Verificato', 'Approvato/a', 'Approvato/a il', 'Idoneo/a', 'Codice meccanografico', 'Tipo scuola', 'Nome scuola', 'Città scuola', 'Provincia scuola', 'Sigla provincia scuola', 'Regione scuola', 'Email scuola', 'Data creazione membro'];

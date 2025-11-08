@@ -36,7 +36,7 @@ export default class AmmissioneSenior extends Schema {
             new ChoiceAnswerField('r18', {header: '18'}),
             new ChoiceAnswerField('r19', {header: '19'}),
             new ChoiceAnswerField('r20', {header: '20'}),
-            new Field('punti', {header: 'punti', numeric: true, editable: false, required: false, additionalCssStyle: 'thick-border-right'}),
+            new Field('punti', {header: 'punti', type: "number",editable: false, required: false, additionalCssStyle: 'thick-border-right'}),
         ])
         this.name = "ammissione_senior"
         this.scan_fields = this.fields.filter(f => 

@@ -12,6 +12,7 @@ import TableBody, { isRow, RowEventuallyNew, useTableBodyContext } from './Table
 import TableHeader from './TableHeader'
 import { useState } from 'react'
 import { myTimestamp } from '../lib/util'
+import { Data } from '../lib/models'
 
 export type SortCriterium = {
     field: string|Field,
@@ -63,8 +64,11 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const profile = useProfile();
     const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
     const [checkboxesState, setCheckboxesState] = useCheckboxesState();
-    const tableBodyContext = useTableBodyContext({schema, sheet, rows, showStandardAnswers: checkboxesState.showStandardAnswers});
+    const tableBodyContext = useTableBodyContext({schema, sheet, showStandardAnswers: checkboxesState.showStandardAnswers}, rows);
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
+    const [sortedRows, setSortedRows] = useState<RowEventuallyNew[]>(rows)
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [rowModifiedData, setRowModifiedData] = useState<Data>({})
 
     const tableActionContext = useTableActionsContext({
         schema, 
@@ -72,8 +76,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         userHasSheetAdminPrivileges,
         refresh, 
         checkboxesState, 
-        sortedRows: tableBodyContext.sortedRows, 
-        selectedIds: tableBodyContext.selectedIds, 
+        sortedRows: sortedRows, 
+        selectedIds: selectedIds, 
     })
 
     if (!schema) {
@@ -98,13 +102,20 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     schema={schema}
                     columns={columns} 
                     doSortRows={doSortRows} sortCriterium={sortCriterium} setSortCriterium={setSortCriterium}
-                    allSelected={tableBodyContext.selectedIds.size === tableBodyContext.sortedRows.length}
-                    selectAll={() => {tableBodyContext.setSelectedIds(new Set(tableBodyContext.sortedRows.filter(isRow).map(row => row._id.toString())))}}
-                    selectNone={() => {tableBodyContext.setSelectedIds(new Set())}}
+                    allSelected={selectedIds.size === sortedRows.length}
+                    selectAll={() => {setSelectedIds(new Set(sortedRows.filter(isRow).map(row => row._id.toString())))}}
+                    selectNone={() => {setSelectedIds(new Set())}}
                     />
                 <TableBody 
-                    ctx={tableBodyContext} 
                     edit={edit}
+                    rows={rows}
+                    sortedRows={sortedRows}
+                    setSortedRows={setSortedRows}
+                    selectedIds={selectedIds}
+                    setSelectedIds={setSelectedIds}
+                    rowModifiedData={rowModifiedData}
+                    setRowModifiedData={setRowModifiedData}
+                    ctx={tableBodyContext} 
                     columns={columns}
                 />
             </table>
@@ -114,9 +125,9 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     function doSortRows(field: Field|string, direction: number) {
         if (field instanceof Field) {
             const sort_criteria = [{ campo: field, direzione: direction }]
-            tableBodyContext.setSortedRows(oldSortedRows => tableOrdina(sort_criteria, oldSortedRows))
+            setSortedRows(oldSortedRows => tableOrdina(sort_criteria, oldSortedRows))
         } else {
-            tableBodyContext.setSortedRows(oldSortedRows => [...oldSortedRows].sort((a,b) => {
+            setSortedRows(oldSortedRows => [...oldSortedRows].sort((a,b) => {
                 const aValue = a[field as keyof RowEventuallyNew];
                 const bValue = b[field as keyof RowEventuallyNew];
                 if (aValue < bValue) return -direction;
