@@ -5,6 +5,7 @@ import Schema from "../lib/schema/Schema"
 import { Column, RowField } from "./Table"
 import TableRowInput from "./TableRowInput"
 import { Data } from "../lib/models"
+import { RowEventuallyNew } from "./TableBody"
 
 export type RowSelectionState = {
     isSelected: boolean,
@@ -15,7 +16,7 @@ export type RowSelectionState = {
 export default function TableRow({edit, schema, row, columns, focusColumnName, modifiedData, setModifiedData, selectionState, showStandardAnswers, onCellClick}:{
     edit: boolean,
     schema: Schema,
-    row: Row,
+    row: RowEventuallyNew,
     columns: Column[],
     focusColumnName: string,
     modifiedData: Data,
@@ -52,8 +53,8 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
             onClick={() => onCellClick(column)} inputRef={inputRef}/>
         : <InfoCell key={column.name} row={row} column={column}/>
         )}
-        {(row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
-        {(row?.olimanager?.participantId) && <td className="olimanager-participant-id">oli={row.olimanager.participantId} sync={row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
+        {row._id && (row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
+        {row._id && row?.olimanager?.participantId && <td className="olimanager-participant-id">oli={row.olimanager.participantId} sync={row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
     </tr>
 
     function computeRecentFadeStyling() {
@@ -116,12 +117,12 @@ function CheckboxCell({selectionState}:{
 }
 
 function InfoCell({row, column}:{
-    row: Row,
+    row: RowEventuallyNew,
     column: RowField
 }) {
-    let value = row[column.name as keyof Row] || '';
+    let value = row._id ? row[column.name as keyof Row] || '' : '';
     return <td className={column.name}>
-        {column.value_formatter ? column.value_formatter({row,value}) : value}
+        {(row._id && column.value_formatter) ? column.value_formatter({row,value}) : value}
     </td>
 }
 

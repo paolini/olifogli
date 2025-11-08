@@ -1,11 +1,11 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react"
+import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useState } from "react"
 import { Row, Sheet } from "../graphql/generated"
 import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
 import { Column } from "./Table"
 import { Data } from "../lib/models"
 import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
-
+import { Field } from "../lib/schema/fields"
 
 export type TableBodyInput = {
     schema: Schema,
@@ -14,26 +14,22 @@ export type TableBodyInput = {
     showStandardAnswers: boolean,
 }
 
-/*
-export type RowInputState = {
-  rowIsBeingEdited: boolean,
-  rowId: ObjectId|null,
-  oldData: Data|null,
-  newData: Data|null,
-  focusFieldName: string|null,
-  updatedOn: Date|null
-}
-  */
+export type RowEventuallyNew = Row | {
+  _id: undefined,
+  data: Data,
+  updatedOn: Date,
+  error: string,
+} 
 
 export type TableBodyContext = TableBodyInput & {
-    sortedRows: Row[],
-    setSortedRows: (rows: Row[] | ((prev: Row[]) => Row[])) => void,
+    sortedRows: RowEventuallyNew[],
+    setSortedRows: (rows: RowEventuallyNew[] | ((prev: RowEventuallyNew[]) => RowEventuallyNew[])) => void,
     selectedIds: Set<string>,
     setSelectedIds: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void,
-    focusRow: Row | null,
-    setFocusRow: (row: Row | null) => void,
-    focusFieldName: string|null,
-    setFocusFieldName: (fieldName: string | null) => void,
+    focusRow: RowEventuallyNew | null,
+    setFocusRow: (row: RowEventuallyNew | null) => void,
+    focusFieldName: string,
+    setFocusFieldName: (fieldName: string) => void,
     lastClickedId: string|null,
     setLastClickedId: (id: string | null) => void,
     rowModifiedData: Data,
@@ -47,10 +43,10 @@ export type TableBodyContext = TableBodyInput & {
 }
 
 export function useTableBodyContext(input: TableBodyInput): TableBodyContext {
-    const [sortedRows, setSortedRows] = useState<Row[]>(input.rows)
+    const [sortedRows, setSortedRows] = useState<RowEventuallyNew[]>(input.rows)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-    const [focusRow, setFocusRow] = useState<Row | null>(null)
-    const [focusFieldName, setFocusFieldName] = useState<string|null>(null)
+    const [focusRow, setFocusRow] = useState<RowEventuallyNew | null>(null)
+    const [focusFieldName, setFocusFieldName] = useState<string>('')
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [rowModifiedData, setRowModifiedData] = useState<Data>({})
 
@@ -87,21 +83,20 @@ export default function TableBody({edit, ctx, columns}: {
 
     useEffect(remap_incoming_rows_to_sorted, [ctx.rows])
 
-    return <tbody>
-      <tr><td colSpan={10}>{JSON.stringify(ctx.rowModifiedData)}</td></tr>
+    return <tbody onKeyDown={onKeyDown}>
         {ctx.sortedRows.map((row) => {
-            const focusColumnName = ctx.focusRow === row && ctx.focusFieldName || ''
+            const focusColumnName = (ctx.focusRow === row) ? ctx.focusFieldName : ''
             if (focusColumnName && ctx.error) {
               return <tr className="error" onClick={() => ctx.dismissErrors()}><td colSpan={columns.length + 1}>Errore: {ctx.error.message}</td><td></td></tr>
             }
             return <TableRow
                 edit={edit}
                 schema={ctx.schema}
-                key={row._id.toString()} 
+                key={(row._id || '__new__').toString()} 
                 row={row} 
                 columns={columns}
                 focusColumnName={focusColumnName}
-                selectionState={compute_selection_state_for_row(row._id.toString())}
+                selectionState={compute_selection_state_for_row((row._id || '__new__').toString())}
                 showStandardAnswers={ctx.showStandardAnswers}
                 onCellClick={(column: Column) => onCellClick(column,row)}
                 modifiedData={ctx.rowModifiedData}
@@ -109,6 +104,56 @@ export default function TableBody({edit, ctx, columns}: {
             />}
         )}
     </tbody>
+
+    function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
+      const focusRow = ctx.focusRow
+      if (edit // stiamo modificando il foglio 
+        && focusRow // c'è una riga in modifica
+        && e.key === "Enter"
+      ) {
+          const rows = ctx.sortedRows
+          e.preventDefault()
+          e.stopPropagation()
+          saveRowIfNeeded(focusRow)
+          ctx.setRowModifiedData({}) 
+          const row_index = rows.indexOf(focusRow)
+          if (row_index<0) return // non dovrebbe succedere!
+          const editable_columns = columns.filter(col => (col instanceof Field && !col.hidden && col.editable))
+          if (row_index + 1 === rows.length) {
+            // era l'ultima riga della tabella
+            if (editable_columns.length >0) {
+              const newRow = addNewRowSimilarTo(focusRow)
+              ctx.setFocusRow(newRow)
+              ctx.setFocusFieldName(editable_columns[0].name)
+            } else {
+              // non ci sono colonne da modificare
+              ctx.setFocusRow(null)
+              ctx.setFocusFieldName('')
+            }
+          } else {
+            const newFocusRow = rows[row_index + 1]
+            const keys = editable_columns.map(col => col.name)
+            const values = keys.map(key => newFocusRow.data[key])
+            let i = keys.indexOf(ctx.focusFieldName)
+            if (i<=0) i=0;
+            while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
+            if (keys[i]) {
+              ctx.setFocusRow(newFocusRow)
+              ctx.setFocusFieldName(keys[i])
+            } else {
+              ctx.setFocusRow(null)
+              ctx.setFocusFieldName('')
+            }
+          }
+      }
+    }
+
+    function addNewRowSimilarTo(row?: RowEventuallyNew): RowEventuallyNew {
+      const data: Data = Object.fromEntries(ctx.schema.fields.map(field => [field.name,'']))
+      const newRow: RowEventuallyNew = {_id: undefined, data, updatedOn: new Date(), error:''}
+      ctx.setSortedRows([...ctx.sortedRows, newRow])
+      return newRow
+    }
 
     function setModifiedData(field:string, value:string|undefined) {
       // se value è undefined tolgo il campo dal record
@@ -125,12 +170,12 @@ export default function TableBody({edit, ctx, columns}: {
     function compute_selection_state_for_row(rowId: string): RowSelectionState {
         function allIds(rowId: string, shift: boolean): string[] {
             if (!ctx.lastClickedId || !shift) return [rowId]
-            const currentIndex = ctx.sortedRows.findIndex(r => r._id.toString() === rowId)
+            const currentIndex = ctx.sortedRows.findIndex(r => (r._id || '__new__').toString() === rowId)
             if (currentIndex === -1) return [rowId] // non dovrebbe accadere!
-            let anchorIndex = ctx.sortedRows.findIndex(r => r._id.toString() === ctx.lastClickedId)
+            let anchorIndex = ctx.sortedRows.findIndex(r => (r._id || '__new__').toString() === ctx.lastClickedId)
             if (anchorIndex === -1) anchorIndex = currentIndex
             const [start, end] = [Math.min(anchorIndex, currentIndex), Math.max(anchorIndex, currentIndex)]
-            return ctx.sortedRows.slice(start, end + 1).map(r => r._id.toString())
+            return ctx.sortedRows.slice(start, end + 1).map(r => (r._id || '__new__').toString())
         }
         function doSelect(shift: boolean) {
             const ids_set = new Set(allIds(rowId, shift))
@@ -151,22 +196,23 @@ export default function TableBody({edit, ctx, columns}: {
     function remap_incoming_rows_to_sorted() {
         ctx.setSelectedIds(oldSelectedIds => oldSelectedIds.intersection(new Set(ctx.rows.map(r => r._id.toString()))))
         ctx.setSortedRows(prevSortedRows => {
-        const map_id_to_incoming_row = Object.fromEntries(ctx.rows.map((row,i) => [row._id.toString(), {row,i}]))
-        const replacedRows: Row[] = prevSortedRows.map(r => {
-            const row = map_id_to_incoming_row[r._id.toString()]?.row
-            if (row === undefined) return undefined
-            delete map_id_to_incoming_row[r._id.toString()]
-            return row
-        }).filter(r => r!==undefined)
+          const map_id_to_incoming_row = Object.fromEntries(ctx.rows.map((row,i) => [row._id.toString(), {row,i}]))
+          const replacedRows: RowEventuallyNew[] = prevSortedRows.map(r => {
+              if (r._id === undefined) return r // nuova riga, la mantengo così com'è
+              const row = map_id_to_incoming_row[r._id.toString()]?.row
+              if (row === undefined) return undefined
+              delete map_id_to_incoming_row[r._id.toString()]
+              return row
+          }).filter(r => r!==undefined)
 
-        return [
-            ...replacedRows,
-            ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
-            ]
+          return [
+              ...replacedRows,
+              ...Object.values(map_id_to_incoming_row).sort().map(obj => obj.row)
+              ]
         })
     }   
 
-    async function onCellClick(column: Column, row: Row) {
+    async function onCellClick(column: Column, row: RowEventuallyNew) {
         const newRow = row
         const oldRow = ctx.focusRow
         if (newRow !== oldRow) {
@@ -183,9 +229,8 @@ export default function TableBody({edit, ctx, columns}: {
         ctx.setFocusFieldName(column.name)
     }
 
-    async function saveRowIfNeeded(row: Row) {
+    async function saveRowIfNeeded(row: RowEventuallyNew) {
         const data = ctx.rowModifiedData
-        alert(JSON.stringify(data))
         const modifiedFields = Object.keys(data)
         if (modifiedFields.length !== 0) {
             if (row._id) {
