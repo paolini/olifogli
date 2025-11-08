@@ -42,36 +42,6 @@ export function Input({type, size, value, setValue, width, onEnter, onEscape, on
     onKeyDown={onKeyDown}
     style={{ padding: '1px 1px' }} // Add padding for better UX
   />
-
-  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (onEnter && e.key === "Enter") onEnter()
-    if (onEscape && e.key === "Escape") {
-      e.preventDefault()
-      onEscape()
-    }
-    
-    if (onArrowNavigation) {
-      const input = e.target as HTMLInputElement
-      const cursorPos = input.selectionStart || 0
-      const cursorEnd = input.selectionEnd || 0
-      const isAtStart = cursorPos === 0 && cursorEnd === 0
-      const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
-      
-      if (e.key === "ArrowLeft" && isAtStart) {
-        e.preventDefault()
-        onArrowNavigation('left', true)
-      } else if (e.key === "ArrowRight" && isAtEnd) {
-        e.preventDefault()
-        onArrowNavigation('right', true)
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault()
-        onArrowNavigation('up', true)
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault()
-        onArrowNavigation('down', true)
-      }
-    }
-  }
 }
 
 export function DateInput({type, size, value, setValue, width, onEnter, onEscape, onArrowNavigation, inputRef}:{
@@ -97,48 +67,7 @@ export function DateInput({type, size, value, setValue, width, onEnter, onEscape
     style={{ padding: '1px 1px' }} // Add padding for better UX
   />
 
-  function normalize(value: string): string {
-    // rimpiazza tutti i caratteri non numerici con /
-    value = value.split('').map(c => (c >= '0' && c <= '9' ? c : '/')).join('')
 
-    // rimpiazza doppie barre con una sola barra
-    value = value.replace(/\/+/g, '/')
-
-    // aggiunge padding di 0 se ci sono meno di due cifre
-    const parts = value.split('/').map((part, index) =>
-      (part.length === 1 && (index < 2)) 
-        ? '0' + part 
-        : part)
-
-    // aggiunge secolo 20 se ho tre elementi e il terzo ha due cifre
-    if (parts.length === 3 && 2===parts[2].length) {
-      parts[2] = '20' + parts[2]
-    }
-
-    // aggiunge 200 se l'anno ha una sola cifra
-    if (parts.length === 3 && 1 === parts[2].length) {
-      parts[2] = '200' + parts[2]
-    }
-
-    value = parts.join('/')
-    return value
-  }
-
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!setValue) return
-    setValue(e.target.value)
-//    setValue(normalize(e.target.value))
-  }
-
-  function onBlur() {
-    if (!setValue) return
-    const originalValue = value
-    value = normalize(originalValue)
-
-    if (value!==originalValue) {
-      setValue(value)
-    }
-  }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (onEnter && e.key === "Enter") {

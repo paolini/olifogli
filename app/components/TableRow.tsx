@@ -182,6 +182,6 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
   return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus ? <TableRowInput inputRef={inputRef} value={value} setValue={setNewValue} oldValue={oldValue}/> : value}
+      {hasFocus ? <TableRowInput field={field} inputRef={inputRef} value={value} setValue={setNewValue} oldValue={oldValue}/> : value}
   </td>
 }
