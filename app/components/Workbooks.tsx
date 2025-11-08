@@ -7,7 +7,6 @@ import { gql, useMutation } from '@apollo/client'
 import { useGetWorkbooksQuery } from '../graphql/generated'
 import useProfile from '../lib/useProfile'
 import Button from './Button'
-import { Input } from './Input'
 import { useState } from 'react'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -113,7 +112,7 @@ function NewWorkbookForm() {
   })
 
   return <div className="flex items-center gap-2">
-    <Input value={name} setValue={setName} onEnter={createWorkbook} />
+    <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createWorkbook()} />
     <Button disabled={!name || loading} onClick={createWorkbook}>Nuova raccolta</Button>
     <Error error={error} />
   </div>

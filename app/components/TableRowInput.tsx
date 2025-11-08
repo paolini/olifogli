@@ -9,6 +9,21 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
     oldValue: string,
     setValue: (newValue: string|undefined) => void
 }) {
+    const lastValueRef = useRef(value);
+
+    useEffect(() => {
+        lastValueRef.current = value;
+    }, [value]);
+
+    useEffect(() => {
+        // Cleanup allo smontaggio
+        return () => {
+            const latest = lastValueRef.current;
+            if (latest !== undefined) {
+                cleanAndSet(latest);
+            }
+        };
+    }, []); // Eseguito solo all’unmount
 
     return <input                       
         className="table-row" 
@@ -19,14 +34,19 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
         onKeyDown={onKeyDown}
     />
 
-    function onChange(e: ChangeEvent<HTMLInputElement>) {
-        const cleaned = e.currentTarget.value
+    function cleanAndSet(value: string) {
+        const cleaned = field.clean(value)
+        console.log(`Cleaning up value on unmount: ${JSON.stringify({cleaned, oldValue, value})}`);
         setValue(cleaned === oldValue ? undefined : cleaned)
     }
 
+    function onChange(e: ChangeEvent<HTMLInputElement>) {
+        const value = e.currentTarget.value
+        setValue(value === oldValue ? undefined : value)
+    }
+
     function onBlur(e: FocusEvent<HTMLInputElement>) {
-        const cleaned = field.clean(e.currentTarget.value)
-        setValue(cleaned === oldValue ? undefined : cleaned)
+        cleanAndSet(e.currentTarget.value)
     }
 
     function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {

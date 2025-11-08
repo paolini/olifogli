@@ -8,7 +8,6 @@ import Error from './Error'
 import { gql } from 'graphql-tag'
 import { useState } from 'react'
 import { schemas } from '../lib/schema'
-import { Input } from './Input'
 import Button from './Button'
 
 const _ = gql`query GetSheets($workbookId: ObjectId) {
@@ -71,7 +70,7 @@ function SheetForm({ workbookId }: { workbookId: ObjectId }) {
                 <option key={key} value={key}>{schema.header}</option>
             )}
         </select> {}
-        <Input value={name} setValue={setName}/> {}
+        <input value={name} onChange={e => setName(e.target.value)} /> {}
         <Button disabled={loading||schema==""||name==""} onClick={create}>
             Nuovo foglio
         </Button>

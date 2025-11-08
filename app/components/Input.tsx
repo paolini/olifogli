@@ -1,7 +1,7 @@
 "use client"
 import type { KeyboardEvent, Ref } from "react"
 import { Field } from "../lib/schema/fields"
-
+/*
 export function InputCell({field, value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}: {
   field: Field,
   value: string,
@@ -300,3 +300,4 @@ export function ScoreInput({value, setValue, onEnter, onEscape, onArrowNavigatio
     }
   }
 }
+  */

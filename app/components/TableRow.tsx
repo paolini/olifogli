@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { Row } from "../graphql/generated"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
@@ -25,6 +25,19 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void
 }) {
+    // memoized setters per ogni campo
+    // evita che il setter venga ricreato ad ogni render
+    // e rende stabile il riferimento della colonna
+    const setters = useMemo(() => {
+      const map: Record<string, (v: string | undefined) => void> = {};
+      for (const field of columns.filter(col => col instanceof Field)) {
+        map[field.name] = (newValue) => {
+          console.log(`setter for field ${field.name} called with value ${newValue}`);
+          return setModifiedData(field.name, newValue) }
+      }
+      return map;
+    }, [setModifiedData]);
+
     const {className, style } = computeRecentFadeStyling();
     
     // Effetto per gestire il focus dell'input quando si entra in modalità modifica
@@ -48,7 +61,7 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
             key={column.name} field={column} 
             edit={edit} hasFocus={focusColumnName === column.name} 
             newValue={newData[column.name]} oldValue={oldData[column.name]}
-            setNewValue={new_value => setModifiedData(column.name, new_value)} 
+            setNewValue={setters[column.name]} // {new_value => setModifiedData(column.name, new_value)} 
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)} inputRef={inputRef}/>
         : <InfoCell key={column.name} row={row} column={column}/>
