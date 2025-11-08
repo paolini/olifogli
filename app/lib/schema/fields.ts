@@ -1,5 +1,7 @@
 import { CSSProperties } from "react"
 
+type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
+
 type FieldOptions = {
     header?: string
     alternativeNames?: string[]
@@ -10,7 +12,7 @@ type FieldOptions = {
     additionalCssStyle?: string
     hidden?: boolean
     required?: boolean
-    numeric?: boolean
+    type?: FieldType
 }
 
 export class Field {
@@ -19,13 +21,12 @@ export class Field {
     css_class: string // used in CSS
     css_style: undefined | CSSProperties | ((value: string) => CSSProperties)
     editable: boolean
-    widget: string // identify the HTML input widget
     alternativeNames: string[] // alternative names for CSV column matching
     required: boolean = true
     hidden: boolean = false
-    numeric: boolean = false
+    type: FieldType = 'text'
 
-    constructor(name: string, {header, editable, widget, alternativeNames, additionalCssStyle, css_style, hidden, required, numeric}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_class = `field-${this.name}`
@@ -35,10 +36,9 @@ export class Field {
         this.css_style = css_style || undefined
         this.editable = editable !== undefined ? editable : true
         this.alternativeNames = alternativeNames || []
-        this.widget = widget || 'Input'
+        this.type = type || 'text'
         this.hidden = hidden !== undefined ? hidden : this.hidden
         this.required = required !== undefined ? required : true
-        this.numeric = numeric !== undefined ? numeric : false
     }
 
     // Get all possible names for this field (main name + alternatives)
@@ -59,7 +59,7 @@ export class Field {
     }
 
     compare(value1: string, value2: string): number {
-        if (this.numeric) {
+        if (this.type === 'number') {
             const n1 = parseFloat(value1) || 0
             const n2 = parseFloat(value2) || 0
             const r = ((n1 > n2) ? 1 : (n1 < n2) ? -1 : 0)
@@ -92,7 +92,7 @@ export class ChoiceAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-ChoiceAnswer`
-        this.widget = 'ChoiceInput'
+        this.type = 'choice-answer'
     }
 
     csv(value: string): string {
@@ -104,8 +104,7 @@ export class NumericAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-NumericAnswer`
-        this.widget = 'NumericInput'
-        this.numeric = true
+        this.type = 'number'
     }
 }
 
@@ -113,8 +112,7 @@ export class ScoreAnswerField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-ScoreAnswer`
-        this.widget = 'ScoreInput'
-        this.numeric = true
+        this.type = 'number'
     }
 }
 
@@ -122,35 +120,61 @@ export class DateField extends Field {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-Date`
-        this.widget = 'DateInput'
+        this.type = 'date'
     }
 
+    // normalizza la data in formato gg/mm/aaaa
     clean(value: string): string {
-        // normalizza la data in formato gg/mm/aaaa
+        console.log(`[DateField.clean] raw input: "${value}"`)
         value = value.trim()
+        console.log(`[DateField.clean] trimmed input: "${value}"`)
 
         // se è nel formato yyyy-mm-dd la converte in dd/mm/yyyy
         const iso_date_match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        console.log(`[DateField.clean] iso_date_match:`, iso_date_match)
         if (iso_date_match) {
             const year = iso_date_match[1]
             const month = iso_date_match[2]
             const day = iso_date_match[3]
+            console.log(`[DateField.clean] detected ISO date -> day: ${day}, month: ${month}, year: ${year}`)
             return `${day}/${month}/${year}`
         }
 
-        // 0 padding delle singole cifre
-        const parts = value.split('/').map(part => 
-            part.length === 1
-            ? '0' + part
-            : part
-        )
+        // rimpiazza tutti i caratteri non numerici con /
+        console.log(`[DateField.clean] before non-digit replacement: "${value}"`)
+        value = value.split('').map(c => (c >= '0' && c <= '9' ? c : '/')).join('')
+        console.log(`[DateField.clean] after non-digit replacement: "${value}"`)
 
-        // se l'anno ha due cifre, aggiunge il secolo 20
-        if (parts.length === 3 && parts[2].length === 2) {
-            parts[2] = '20' + parts[2]
+        // rimpiazza doppie barre con una sola barra
+        console.log(`[DateField.clean] before collapsing slashes: "${value}"`)
+        value = value.replace(/\/+/g, '/')
+        console.log(`[DateField.clean] after collapsing slashes: "${value}"`)
+
+        // aggiunge padding di 0 se ci sono meno di due cifre
+        const parts = value.split('/').map((part, index) =>
+        (part.length === 1 && (index < 2)) 
+            ? '0' + part 
+            : part)
+        console.log(`[DateField.clean] parts after padding:`, parts)
+
+        // aggiunge secolo 20 se ho tre elementi e il terzo ha due cifre
+        if (parts.length === 3 && 2===parts[2].length) {
+        console.log(`[DateField.clean] two-digit year detected, prefixing 20 -> before: ${parts[2]}`)
+        parts[2] = '20' + parts[2]
+        console.log(`[DateField.clean] year after prefix: ${parts[2]}`)
         }
 
-        return parts.join('/')
+        // aggiunge 200 se l'anno ha una sola cifra
+        if (parts.length === 3 && 1 === parts[2].length) {
+        console.log(`[DateField.clean] one-digit year detected, prefixing 200 -> before: ${parts[2]}`)
+        parts[2] = '200' + parts[2]
+        console.log(`[DateField.clean] year after prefix: ${parts[2]}`)
+        }
+
+        value = parts.join('/')
+        console.log(`[DateField.clean] final value: "${value}"`)
+
+        return value
     }
 
     isValid(value: string): boolean {
