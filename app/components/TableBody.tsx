@@ -253,24 +253,35 @@ export default function TableBody({edit, rows, ctx, columns, sortedRows, setSort
     }
 
     async function saveRowIfNeeded(row: RowEventuallyNew) {
-        const data = rowModifiedData
-        const modifiedFields = Object.keys(data)
-        if (modifiedFields.length !== 0) {
-            if (row._id) {
-                // update
-                await ctx.patchRow({variables: {
-                    _id: row._id,
-                    updatedOn: row.updatedOn || new Date(),
-                    data: data,
-                }})
-            } else {
-                // add
-                await ctx.addRow({variables: {
-                    sheetId: ctx.sheet._id,
-                    data: data,
-                }})
-            }
+    const data = rowModifiedData
+    const modifiedFields = Object.keys(data)
+    if (modifiedFields.length !== 0) {
+      if (row._id) {
+        // update
+        await ctx.patchRow({variables: {
+          _id: row._id,
+          updatedOn: row.updatedOn || new Date(),
+          data: data,
+        }})
+        // aggiorna lo stato locale subito
+        setSortedRows(prevRows => prevRows.map(r => {
+          if (r._id === row._id) {
+            return { ...r, data: { ...r.data, ...data } };
+          }
+          return r;
+        }));
+      } else {
+        // add
+        const result = await ctx.addRow({variables: {
+          sheetId: ctx.sheet._id,
+          data: data,
+        }});
+        // aggiorna lo stato locale subito (aggiungi la nuova riga se serve)
+        if (result && result.data && result.data.addRow) {
+          setSortedRows(prevRows => prevRows.map(r => r._id === undefined ? result.data!.addRow : r));
         }
+      }
+    }
     }
 }
 
