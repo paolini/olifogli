@@ -36,7 +36,7 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
           return setModifiedData(field.name, newValue) }
       }
       return map;
-    }, [setModifiedData]);
+    }, [setModifiedData,columns]);
 
     const {className, style } = computeRecentFadeStyling();
     
@@ -159,7 +159,7 @@ function InfoCell({row, column}:{
     row: RowEventuallyNew,
     column: RowField
 }) {
-    let value = row._id ? row[column.name as keyof Row] || '' : '';
+    const value = row._id ? row[column.name as keyof Row] || '' : '';
     return <td className={column.name}>
         {(row._id && column.value_formatter) ? column.value_formatter({row,value}) : value}
     </td>

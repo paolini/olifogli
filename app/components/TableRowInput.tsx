@@ -23,10 +23,11 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
         return () => {
             const latest = lastValueRef.current;
             if (latest !== undefined) {
-                cleanAndSet(latest);
+                const cleaned = field.clean(latest)
+                setValue(cleaned === oldValue ? undefined : cleaned)
             }
         };
-    }, []); // Eseguito solo all’unmount
+    }, [field, oldValue]); // RIMOSSO setValue dalle dipendenze
 
     return <input                       
         className="table-row" 
@@ -46,7 +47,6 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
 
     function cleanAndSet(value: string) {
         const cleaned = field.clean(value)
-        console.log(`Cleaning up value on unmount: ${JSON.stringify({cleaned, oldValue, value})}`);
         setValue(cleaned === oldValue ? undefined : cleaned)
     }
 
