@@ -63,7 +63,9 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
             newValue={newData[column.name]} oldValue={oldData[column.name]}
             setNewValue={setters[column.name]} // {new_value => setModifiedData(column.name, new_value)} 
             showStandardAnswers={showStandardAnswers} 
-            onClick={() => onCellClick(column)} inputRef={inputRef}/>
+            onClick={() => onCellClick(column)} inputRef={inputRef}
+            moveLeft={() => moveLeft()} moveRight={() => moveRight()}
+            />
         : <InfoCell key={column.name} row={row} column={column}/>
         )}
         {row._id && (row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
@@ -83,36 +85,50 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
         return { className, style }
     }
 
+    function moveLeft() {
+      const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+      if (currentIndex < 1) return false;
+      const prevCol = columns[currentIndex - 1];
+      onCellClick(prevCol);
+      return true
+    }
+
+    function moveRight() {
+      const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+      if (currentIndex < 0 || currentIndex >= columns.length - 1) return false;
+      const nextCol = columns[currentIndex + 1];
+      onCellClick(nextCol);
+      return true;
+    }
+
     function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) {   
         if (!focusColumnName) return;
         if (e.key === 'ArrowLeft') {
-            const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-            if (currentIndex > 0) {
-                e.preventDefault();
-                e.stopPropagation
-                const prevCol = columns[currentIndex - 1];
-                onCellClick(prevCol);
-                return;
-            } 
-        } else if (e.key === 'ArrowRight') {
-            const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-            if (currentIndex < columns.length - 1) {
-                e.preventDefault();
-                e.stopPropagation
-                const nextCol = columns[currentIndex + 1];
-                onCellClick(nextCol);
-                return;
-            }
-        } else if (e.key === 'Tab') {
+          if (moveLeft()) {
             e.preventDefault();
             e.stopPropagation();
-            const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-            let nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
-            if (nextIndex < 0) nextIndex = 0;
-            if (nextIndex >= columns.length) nextIndex = columns.length - 1;
-            const nextCol = columns[nextIndex];
-            onCellClick(nextCol);
             return;
+          }
+        } else if (e.key === 'ArrowRight') {
+          if (moveRight()) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        } else if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (moveLeft()) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+          } else {
+            if (moveRight()) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+          }
         }
     }
 }
@@ -149,7 +165,7 @@ function InfoCell({row, column}:{
     </td>
 }
 
-function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, inputRef}:{
+function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, inputRef, moveLeft, moveRight}:{
   edit: boolean,
   hasFocus: boolean,
   field: Field,
@@ -159,6 +175,8 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   showStandardAnswers: boolean,
   onClick: () => void,
   inputRef: React.RefObject<HTMLInputElement|null>
+  moveLeft: () => boolean,
+  moveRight: () => boolean,
 }) {
   let extra_css="";
   let correct_value = undefined;
@@ -166,7 +184,7 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   let value = newValue;
   if (field instanceof ChoiceAnswerField) {
     oldValue = oldValue.charAt(0);
-    if (newValue?.length === 7) {
+    if (value?.length === 7) {
       // showStandardAnswers decides whether to show 
       // the corresponding answers in the standard permutation (211/311)
       correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
@@ -195,6 +213,13 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
   return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus ? <TableRowInput field={field} inputRef={inputRef} value={value} setValue={setNewValue} oldValue={oldValue}/> : value}
+      {hasFocus 
+        ? <TableRowInput 
+            field={field} inputRef={inputRef} 
+            value={value} setValue={setNewValue} 
+            oldValue={oldValue}
+            moveLeft={moveLeft} moveRight={moveRight}
+          />
+        : value}
   </td>
 }
