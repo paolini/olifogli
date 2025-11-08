@@ -24,6 +24,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
 
     const schema = schemas[sheet.schema]
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) throw new Error(`La riga è stata modificata da qualcun altro`);
+    data = {...row.data, ...data} // mantiene i campi non modificati
     data = schema.clean(data)
     const derived_data = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
     
