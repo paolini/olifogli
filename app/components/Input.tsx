@@ -1,7 +1,7 @@
 "use client"
 import type { KeyboardEvent, Ref } from "react"
 import { Field } from "../lib/schema/fields"
-/*
+
 export function InputCell({field, value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}: {
   field: Field,
   value: string,
@@ -67,91 +67,6 @@ export function DateInput({type, size, value, setValue, width, onEnter, onEscape
     style={{ padding: '1px 1px' }} // Add padding for better UX
   />
 
-
-
-  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (onEnter && e.key === "Enter") {
-      onEnter()
-      return
-    }
-
-    if (onEscape && e.key === "Escape") {
-      e.preventDefault()
-      onEscape()
-      return
-    }
-
-    // Gestione navigazione con frecce
-    if (onArrowNavigation) {
-      const input = e.target as HTMLInputElement
-      const cursorPos = input.selectionStart || 0
-      const cursorEnd = input.selectionEnd || 0
-      const isAtStart = cursorPos === 0 && cursorEnd === 0
-      const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
-      
-      if (e.key === "ArrowLeft" && isAtStart) {
-        e.preventDefault()
-        onArrowNavigation('left', true)
-        return
-      } else if (e.key === "ArrowRight" && isAtEnd) {
-        e.preventDefault()
-        onArrowNavigation('right', true)
-        return
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault()
-        onArrowNavigation('up', true)
-        return
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault()
-        onArrowNavigation('down', true)
-        return
-      }
-    }
-
-    if (!setValue) return
-
-    const input = e.target as HTMLInputElement
-
-    let key = e.key
-    if (key === ' ' || key==='.') key = '/'
-
-    if (key >= '0' && key <= '9' || key === '/') {      
-      let cursorPos = input.selectionStart || 0
-      const cursorEnd = input.selectionEnd || 0
-      let value = input.value
-      // rimpiazza eventuali '|' con '/'
-      value = value.replace(/\|/g, '/')
-
-      // inserisci carattere e '|' come cursore
-      value = input.value.slice(0, cursorPos) + key + '|' + input.value.slice(cursorEnd)
-
-      // sostituisci eventuali doppie barre con una sola barra
-      value = value.replace(/\/+/g, '/')
-      value = value.replace(/\/\|\//g, '/|')
-
-      // Aggiungi una barra se value = "gg|" o "gg/mm|"
-      if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
-        value = value.replace('|', '/|')
-      }
-
-      cursorPos = value.indexOf('|')
-      value = value.replace('|', '')
-
-      // Aggiorna il valore e il cursors
-      setValue(value)
-
-      // Imposta la posizione del cursore
-      setTimeout(() => {
-        const input = document.activeElement as HTMLInputElement
-        if (input) {
-          input.setSelectionRange(cursorPos, cursorPos)
-        }
-      }, 0)
-
-      // Previeni l'inserimento normale
-      e.preventDefault()
-    }
-  }
 }
 
 export function ChoiceInput({value, setValue, onEnter, onEscape, onArrowNavigation, inputRef}:{
@@ -300,4 +215,3 @@ export function ScoreInput({value, setValue, onEnter, onEscape, onArrowNavigatio
     }
   }
 }
-  */

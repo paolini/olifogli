@@ -2,17 +2,20 @@ import { useEffect, useRef } from "react"
 import type { ChangeEvent, FocusEvent, KeyboardEvent, RefObject } from "react"
 import { Field } from "../lib/schema/fields"
 
-export default function TableRowInput({field, inputRef, value, setValue, oldValue}:{
+export default function TableRowInput({field, inputRef, value, setValue, oldValue, moveLeft, moveRight}:{
     field: Field,
     inputRef: RefObject<HTMLInputElement|null>,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void
+    moveLeft: () => boolean,
+    moveRight: () => boolean,
 }) {
     const lastValueRef = useRef(value);
 
     useEffect(() => {
         lastValueRef.current = value;
+
     }, [value]);
 
     useEffect(() => {
@@ -32,7 +35,14 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
         onChange={onChange}
         onBlur={onBlur}
         onKeyDown={onKeyDown}
+        onFocus={onFocus}
     />
+
+    function onFocus(e: FocusEvent<HTMLInputElement>) {
+        if (field.type === 'choice-answer') {
+            e.target.select()
+        }
+    }
 
     function cleanAndSet(value: string) {
         const cleaned = field.clean(value)
@@ -61,8 +71,15 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
         const cursorEnd = input.selectionEnd || 0
         const isAtStart = cursorPos === 0 && cursorEnd === 0
         const isAtEnd = cursorPos === input.value.length && cursorEnd === input.value.length
-      
-        if ((e.key === "ArrowLeft" && isAtStart)
+
+        if (field.type === 'choice-answer') {
+            const newValue = choiceAnswerKeyDownHandler(e, input, moveLeft, moveRight);
+            if (newValue !== undefined) {
+                e.preventDefault()
+                setValue(newValue === oldValue ? undefined : newValue)
+                return
+            }
+        } else if ((e.key === "ArrowLeft" && isAtStart)
             || (e.key === "ArrowRight" && isAtEnd)) {
             // fai gestire il movimento di focus alla tabella
             e.preventDefault()
@@ -116,4 +133,32 @@ function dateKeyDownHandler(key: string, input: HTMLInputElement):string|undefin
       return value
     }
     return undefined
+}
+
+function choiceAnswerKeyDownHandler(e: KeyboardEvent<HTMLInputElement>, input: HTMLInputElement, moveLeft: () => boolean, moveRight: () => boolean):string|undefined {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        // lascia che il movimento venga gestito da TableRow
+        e.preventDefault()
+        return 
+    } else if (e.key === "Delete") {
+        return ''
+    } else if (e.key === "Backspace") {
+        setTimeout(() => moveLeft(),0)
+        return ''
+    } else if (e.key.length === 1) {
+        // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
+        let char = e.key.toUpperCase()
+        if (char === '0') char = '-'
+        else if (char === '1') char = 'A'
+        else if (char === '2') char = 'B'
+        else if (char === '3') char = 'C'
+        else if (char === '4') char = 'D'
+        else if (char === '5') char = 'E'
+        else if (char === '6') char = 'X'
+        if (! "ABCDEX-".includes(char)) char = 'X'
+        setTimeout(() => moveRight(), 0);      
+        return char // Sostituisci il valore
+    } else {
+        return undefined;
+    }
 }
