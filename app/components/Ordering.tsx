@@ -3,6 +3,7 @@ import { WithId } from 'mongodb'
 import { Row } from '@/app/graphql/generated'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
+import { RowEventuallyNew } from './TableBody'
 
 export type CriterioOrd = {
   campo: Field
@@ -100,7 +101,7 @@ export function Ordering({ criteria }: { criteria: Criteria }) {
     }
 }
 
-export function filtraEOrdina(criteria: Criteria, rows: Row[]): Row[] {
+export function filtraEOrdina(criteria: Criteria, rows: RowEventuallyNew[]): RowEventuallyNew[] {
     return tableOrdina(criteria.criteriOrdina, tableCerca(criteria, rows))
 }
 
@@ -122,13 +123,13 @@ export function InputCerca({field, type, criteria, size}:{
     return <input type="text" size={value == "" ? 1 : value.length + 1} value={value} onChange={Battuta} placeholder="cerca"/>
 }
 
-export function tableOrdina(criteriOrdina: CriterioOrd[], rows: WithId<Row>[]): WithId<Row>[] {
-    const rowssort: WithId<Row>[] = [...rows]
-    rowssort.sort((a: WithId<Row>, b: WithId<Row>) => confrontaCriteri(criteriOrdina, a, b))
+export function tableOrdina(criteriOrdina: CriterioOrd[], rows: RowEventuallyNew[]): RowEventuallyNew[] {
+    const rowssort: RowEventuallyNew[] = [...rows]
+    rowssort.sort((a: RowEventuallyNew, b: RowEventuallyNew) => confrontaCriteri(criteriOrdina, a, b))
     return rowssort
   }
 
-function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: WithId<Row>, row2: WithId<Row>): number {
+function confrontaCriteri(criteriOrdina: CriterioOrd[], row1: RowEventuallyNew, row2: RowEventuallyNew): number {
     let res: number = 0
 
     for (let i=0; i < criteriOrdina.length; i++) {
@@ -170,8 +171,8 @@ function aggiornaCriteriCerca({criteriCerca, setCriteriCerca}:Criteria, campo: F
     }
   }
 
-function tableCerca({criteriCerca}:Criteria, rows: WithId<Row>[]): WithId<Row>[] {
-    let rowsOk: WithId<Row>[] = [...rows]
+function tableCerca({criteriCerca}:Criteria, rows: RowEventuallyNew[]): RowEventuallyNew[] {
+    let rowsOk: RowEventuallyNew[] = [...rows]
     if (criteriCerca.length >= 0) {
       criteriCerca.forEach((a) => {rowsOk = rowsOk.filter(riga => (riga.data[a.campo.name]||'').includes(a.value) )})
     }

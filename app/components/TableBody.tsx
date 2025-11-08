@@ -17,9 +17,14 @@ export type TableBodyInput = {
 export type RowEventuallyNew = Row | {
   _id: undefined,
   data: Data,
+  createdOn?: Date,
   updatedOn: Date,
   error: string,
 } 
+
+export function isRow(obj: RowEventuallyNew): obj is Row {
+  return obj._id !== undefined;
+}
 
 export type TableBodyContext = TableBodyInput & {
     sortedRows: RowEventuallyNew[],
@@ -96,7 +101,6 @@ export default function TableBody({edit, ctx, columns}: {
     useEffect(remap_incoming_rows_to_sorted, [ctx.rows])
 
     return <tbody onKeyDown={onKeyDown}>
-      <tr><td colSpan={columns.length + 1}>{JSON.stringify(ctx.rowModifiedData)}</td></tr>
         {ctx.sortedRows.map((row) => {
             const focusColumnName = (ctx.focusRow === row) ? ctx.focusFieldName : ''
             if (focusColumnName && ctx.error) {
