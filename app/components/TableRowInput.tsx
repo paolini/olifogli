@@ -1,7 +1,8 @@
-export default function TableRowInput({inputRef, value, setValue}:{
+export default function TableRowInput({inputRef, value, setValue, oldValue}:{
     inputRef: React.RefObject<HTMLInputElement|null>,
     value: string,
-    setValue: (newValue: string) => void
+    oldValue: string,
+    setValue: (newValue: string|undefined) => void
 }) {
     return <input                       
         className="table-row" 
@@ -13,11 +14,12 @@ export default function TableRowInput({inputRef, value, setValue}:{
     />
 
     function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-        setValue(e.currentTarget.value)
+        const v = e.currentTarget.value
+        setValue(v === oldValue ? undefined : v)
     }
 
     function onBlur(e: React.FocusEvent<HTMLInputElement>) {
-        // gestito da TableInputRowOld
+        // da fare
     }
 
     function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

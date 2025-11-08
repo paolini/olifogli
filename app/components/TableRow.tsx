@@ -19,7 +19,7 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
     columns: Column[],
     focusColumnName: string,
     modifiedData: Data,
-    setModifiedData: (field: string, value: string) => void,
+    setModifiedData: (field: string, value: string|undefined) => void,
     selectionState: RowSelectionState,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void
@@ -35,13 +35,18 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
         }
     }, [focusColumnName]);
 
-    return <tr className={`${className} clickable`} style={style} onKeyDown={onKeyDown}>
+    const rowHasFocus = Boolean(focusColumnName);
+    const newData: Data = rowHasFocus ? {...row.data, ...modifiedData} : row.data;
+    const oldData: Data = row.data;
+    const modified: boolean = rowHasFocus && Object.keys(modifiedData).length > 0;
+
+    return <tr className={`${className} clickable ${modified ? 'modified' : ''}`} style={style} onKeyDown={onKeyDown}>
         <CheckboxCell selectionState={selectionState} />
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
             edit={edit} hasFocus={focusColumnName === column.name} 
-            value={row.data[column.name]} newValue={modifiedData[column.name]}
+            newValue={newData[column.name]} oldValue={oldData[column.name]}
             setNewValue={new_value => setModifiedData(column.name, new_value)} 
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)} inputRef={inputRef}/>
@@ -120,22 +125,24 @@ function InfoCell({row, column}:{
     </td>
 }
 
-function DataCell({edit, hasFocus, field, value, newValue, setNewValue, showStandardAnswers, onClick, inputRef}:{
+function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, inputRef}:{
   edit: boolean,
   hasFocus: boolean,
   field: Field,
-  value: string,
-  newValue: string,
-  setNewValue: (newValue: string) => void,
+  oldValue: string, // valore originale
+  newValue: string, // valore eventualmente modificato
+  setNewValue: (newValue: string|undefined) => void,
   showStandardAnswers: boolean,
   onClick: () => void,
   inputRef: React.RefObject<HTMLInputElement|null>
 }) {
   let extra_css="";
   let correct_value = undefined;
-  let title = value;
+  let title = newValue;
+  let value = newValue;
   if (field instanceof ChoiceAnswerField) {
-    if (value.length === 7) {
+    oldValue = oldValue.charAt(0);
+    if (newValue?.length === 7) {
       // showStandardAnswers decides whether to show 
       // the corresponding answers in the standard permutation (211/311)
       correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
@@ -147,10 +154,10 @@ function DataCell({edit, hasFocus, field, value, newValue, setNewValue, showStan
             : ["A", "B", "C", "D", "E"].includes(value) 
               ? "incorrect" 
               : "invalid";
-      title = value === correct_value ? value : `${value} (invece di ${correct_value})`;
+      title = (value === correct_value) ? value : `${value} (invece di ${correct_value})`;
     }
   }
-  if (showStandardAnswers &&field.name === 'variant') {
+  if (showStandardAnswers && field.name === 'variant') {
     if (value.length === 3) {
     // mostra il codice della variante standard
       value = `›${value.charAt(0)}11‹` 
@@ -161,9 +168,9 @@ function DataCell({edit, hasFocus, field, value, newValue, setNewValue, showStan
     ? field.css_style(value) 
     : field.css_style;
 
-  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''}`;
+  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
   return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus ? <TableRowInput inputRef={inputRef} value={newValue} setValue={setNewValue}/> : value}
+      {hasFocus ? <TableRowInput inputRef={inputRef} value={value} setValue={setNewValue} oldValue={oldValue}/> : value}
   </td>
 }

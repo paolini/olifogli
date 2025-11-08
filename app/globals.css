@@ -345,7 +345,8 @@ input.table-row {
   outline: none;         /* Rimuove l'outline di focus */
   font-size: 14px;       /* Dimensione del testo */
   box-sizing: border-box;/* Include padding nel calcolo dimensioni */
-  background: #f7f9fa;   /* Sfondo leggermente diverso */
+  /*background: #f7f9fa;*/   /* Sfondo leggermente diverso */
+  background: transparent;   /* Sfondo trasparente */
   color: #222;           /* Colore del testo */
 }
 

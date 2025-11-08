@@ -4,7 +4,7 @@ import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
 import { Column } from "./Table"
 import { Data } from "../lib/models"
-import { gql, StoreObject, useMutation } from "@apollo/client"
+import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
 
 
 export type TableBodyInput = {
@@ -41,6 +41,9 @@ export type TableBodyContext = TableBodyInput & {
     addRow: ReturnType<typeof useAddRow>[0],
     patchRow: ReturnType<typeof usePatchRow>[0],
     deleteRow: ReturnType<typeof useDeleteRow>[0],
+    loading: boolean,
+    error: ApolloError | undefined,
+    dismissErrors: () => void,
 }
 
 export function useTableBodyContext(input: TableBodyInput): TableBodyContext {
@@ -70,6 +73,9 @@ export function useTableBodyContext(input: TableBodyInput): TableBodyContext {
         rowModifiedData,
         setRowModifiedData,
         addRow, patchRow, deleteRow,
+        loading: addLoading || patchLoading || deleteLoading,
+        error: addError || patchError || deleteError,
+        dismissErrors: () => { addReset(); patchReset(); deleteReset(); },
     }
 }
 
@@ -82,9 +88,12 @@ export default function TableBody({edit, ctx, columns}: {
     useEffect(remap_incoming_rows_to_sorted, [ctx.rows])
 
     return <tbody>
-        <tr><td colSpan={12}>{JSON.stringify(ctx.rowModifiedData)}</td></tr>
+      <tr><td colSpan={10}>{JSON.stringify(ctx.rowModifiedData)}</td></tr>
         {ctx.sortedRows.map((row) => {
             const focusColumnName = ctx.focusRow === row && ctx.focusFieldName || ''
+            if (focusColumnName && ctx.error) {
+              return <tr className="error" onClick={() => ctx.dismissErrors()}><td colSpan={columns.length + 1}>Errore: {ctx.error.message}</td><td></td></tr>
+            }
             return <TableRow
                 edit={edit}
                 schema={ctx.schema}
@@ -96,10 +105,22 @@ export default function TableBody({edit, ctx, columns}: {
                 showStandardAnswers={ctx.showStandardAnswers}
                 onCellClick={(column: Column) => onCellClick(column,row)}
                 modifiedData={ctx.rowModifiedData}
-                setModifiedData={(field:string, value:string) => ctx.setRowModifiedData(old => ({...old, [field]: value}))}
+                setModifiedData={setModifiedData}
             />}
         )}
     </tbody>
+
+    function setModifiedData(field:string, value:string|undefined) {
+      // se value è undefined tolgo il campo dal record
+      // altrimenti lo aggiungo/aggiorno
+      if (value === undefined) {
+        const {[field]: _, ...data} = ctx.rowModifiedData
+        ctx.setRowModifiedData(data)
+      } else {
+        const data = {...ctx.rowModifiedData, [field]: value}
+        ctx.setRowModifiedData(data)
+      }
+    }
 
     function compute_selection_state_for_row(rowId: string): RowSelectionState {
         function allIds(rowId: string, shift: boolean): string[] {
@@ -154,7 +175,7 @@ export default function TableBody({edit, ctx, columns}: {
                 // c'è da salvare la riga vecchia
                 saveRowIfNeeded(oldRow)
             }
-            ctx.setRowModifiedData(newRow.data)
+            ctx.setRowModifiedData({})
             ctx.setFocusRow(newRow)
         } else {
             // stessa riga, cambia solo la colonna
@@ -163,30 +184,25 @@ export default function TableBody({edit, ctx, columns}: {
     }
 
     async function saveRowIfNeeded(row: Row) {
-        const modifiedData = ctx.rowModifiedData
-        const modifiedFields = Object.keys(modifiedData)
-            .filter(field => modifiedData[field] !== row[field as keyof Row])
+        const data = ctx.rowModifiedData
+        alert(JSON.stringify(data))
+        const modifiedFields = Object.keys(data)
         if (modifiedFields.length !== 0) {
-            const updatedData: Data = Object.fromEntries(
-                modifiedFields.map(field => [field, modifiedData[field]])
-            )
             if (row._id) {
                 // update
                 await ctx.patchRow({variables: {
                     _id: row._id,
                     updatedOn: row.updatedOn || new Date(),
-                    data: updatedData,
+                    data: data,
                 }})
             } else {
                 // add
                 await ctx.addRow({variables: {
                     sheetId: ctx.sheet._id,
-                    data: updatedData,
+                    data: data,
                 }})
             }
-            ctx.setRowModifiedData({})
         }
-
     }
 }
 
