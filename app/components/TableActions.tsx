@@ -2,7 +2,7 @@ import { ObjectId } from "bson"
 import { Row, Sheet, useOlimanagerBulkUpdateResultsMutation, useOlimanagerCreateParticipantMutation, useRequestScanSheetGenerationMutation } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import { CheckboxesState } from "./TableCheckboxes"
-import { useDeleteRows, usePatchRow } from "./TableBody"
+import { RowEventuallyNew, useDeleteRows, usePatchRow } from "./TableBody"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
@@ -38,7 +38,7 @@ export function TableActionsErrors({ctx}: {ctx: TableActionContext}) {
 type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
   sheet: Sheet,
-  sortedRows: Row[],
+  sortedRows: RowEventuallyNew[],
   refresh?: () => Promise<void>,
   selectedIds: Set<string>,
   schema: Schema,
@@ -149,7 +149,7 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
 
 function handleGenerateScanSheet(ctx: TableActionContext) {
   const selectedRowIds = ctx.sortedRows
-    .filter(row => ctx.selectedIds.has(row._id.toString()))
+    .filter(row => row._id && ctx.selectedIds.has(row._id.toString()))
     .map(row => new ObjectId(row._id))
   ctx.mutations.requestScanSheetGeneration({
     variables: {
@@ -216,8 +216,8 @@ function askOlimanagerCredentials(ctx: TableActionContext): {username: string, p
 
 function filterValidRowsAndConfirm(ctx: TableActionContext): Row[] | null  {
   const valid_rows = ctx.sortedRows
-    .filter(row => ctx.selectedIds.has(row._id.toString()))
-    .filter(row => !row.error)
+    .filter(row => row._id && ctx.selectedIds.has(row._id.toString()))
+    .filter(row => !row.error) as Row[]
   
   if (valid_rows.length !== ctx.selectedIds.size 
     && !confirm(`Solo ${valid_rows.length} righe su ${ctx.selectedIds.size} selezionate sono valide. Procedo con le righe valide?`)) {

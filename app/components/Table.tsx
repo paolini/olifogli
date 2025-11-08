@@ -8,7 +8,7 @@ import { Field } from '../lib/schema/fields'
 import useProfile from '../lib/useProfile'
 import TableActions, { TableActionsErrors, useTableActionsContext } from './TableActions'
 import Checkboxes, { useCheckboxesState } from './TableCheckboxes'
-import TableBody, { useTableBodyContext } from './TableBody'
+import TableBody, { isRow, RowEventuallyNew, useTableBodyContext } from './TableBody'
 import TableHeader from './TableHeader'
 import { useState } from 'react'
 import { myTimestamp } from '../lib/util'
@@ -99,7 +99,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     columns={columns} 
                     doSortRows={doSortRows} sortCriterium={sortCriterium} setSortCriterium={setSortCriterium}
                     allSelected={tableBodyContext.selectedIds.size === tableBodyContext.sortedRows.length}
-                    selectAll={() => {tableBodyContext.setSelectedIds(new Set(tableBodyContext.sortedRows.map(row => row._id.toString())))}}
+                    selectAll={() => {tableBodyContext.setSelectedIds(new Set(tableBodyContext.sortedRows.filter(isRow).map(row => row._id.toString())))}}
                     selectNone={() => {tableBodyContext.setSelectedIds(new Set())}}
                     />
                 <TableBody 
@@ -117,8 +117,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             tableBodyContext.setSortedRows(oldSortedRows => tableOrdina(sort_criteria, oldSortedRows))
         } else {
             tableBodyContext.setSortedRows(oldSortedRows => [...oldSortedRows].sort((a,b) => {
-                const aValue = a[field as keyof Row];
-                const bValue = b[field as keyof Row];
+                const aValue = a[field as keyof RowEventuallyNew];
+                const bValue = b[field as keyof RowEventuallyNew];
                 if (aValue < bValue) return -direction;
                 if (aValue > bValue) return direction;
                 return 0;
