@@ -90,6 +90,16 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
                 onCellClick(nextCol);
                 return;
             }
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            e.stopPropagation();
+            const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+            let nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
+            if (nextIndex < 0) nextIndex = 0;
+            if (nextIndex >= columns.length) nextIndex = columns.length - 1;
+            const nextCol = columns[nextIndex];
+            onCellClick(nextCol);
+            return;
         }
     }
 }

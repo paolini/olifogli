@@ -146,6 +146,17 @@ export default function TableBody({edit, ctx, columns}: {
             }
           }
       }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        // esco dalla modalità modifica
+        if (Object.keys(ctx.rowModifiedData).length > 0 && !confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) {
+            return
+        }
+        ctx.setFocusRow(null)
+        ctx.setFocusFieldName('')
+        ctx.setRowModifiedData({})
+      }
     }
 
     function addNewRowSimilarTo(row?: RowEventuallyNew): RowEventuallyNew {
