@@ -8,11 +8,13 @@ import { Field } from '../lib/schema/fields'
 import useProfile from '../lib/useProfile'
 import TableActions, { TableActionsErrors, useTableActionsContext } from './TableActions'
 import Checkboxes, { useCheckboxesState } from './TableCheckboxes'
-import TableBody, { isRow, RowEventuallyNew, useTableBodyContext } from './TableBody'
+import TableBody, { EMPTY_TABLE_STATE, Line, TableState } from './TableBody'
 import TableHeader from './TableHeader'
 import { useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
+import { table } from '@uiw/react-md-editor'
+import { setTimeout } from 'node:timers/promises'
 
 export type SortCriterium = {
     field: string|Field,
@@ -64,11 +66,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const profile = useProfile();
     const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
     const [checkboxesState, setCheckboxesState] = useCheckboxesState();
-    const tableBodyContext = useTableBodyContext({schema, sheet, showStandardAnswers: checkboxesState.showStandardAnswers}, rows);
+    const [ tableState, setTableState ] = useState<TableState>(EMPTY_TABLE_STATE)
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
-    const [sortedRows, setSortedRows] = useState<RowEventuallyNew[]>(rows)
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-    const [rowModifiedData, setRowModifiedData] = useState<Data>({})
 
     const tableActionContext = useTableActionsContext({
         schema, 
@@ -76,8 +75,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         userHasSheetAdminPrivileges,
         refresh, 
         checkboxesState, 
-        sortedRows: sortedRows, 
-        selectedIds: selectedIds, 
+        tableState
     })
 
     if (!schema) {
@@ -91,10 +89,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
 
     return <div className="table-container">
         <div className="table-header">
-            <TableActionsErrors ctx={tableActionContext} />
+{/*            <TableActionsErrors ctx={tableActionContext} />
             <Checkboxes schema={schema} state={checkboxesState} setState={setCheckboxesState} />
             <TableActions ctx={tableActionContext}/>
-        </div>
+*/}     </div>
 
         <div className="table-scroll-container">
             <table className="my-table">
@@ -102,38 +100,59 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     schema={schema}
                     columns={columns} 
                     doSortRows={doSortRows} sortCriterium={sortCriterium} setSortCriterium={setSortCriterium}
-                    allSelected={selectedIds.size === sortedRows.length}
-                    selectAll={() => {setSelectedIds(new Set(sortedRows.filter(isRow).map(row => row._id.toString())))}}
-                    selectNone={() => {setSelectedIds(new Set())}}
+                    allSelected={tableState.selectedLineKeys.size === tableState.lines.length}
+                    selectAll={() => selectAll()}
+                    selectNone={() => setTableState(prev => ({...prev,selectedLineKeys: new Set()}))}
                     />
                 <TableBody 
                     edit={edit}
+                    sheet={sheet}
+                    schema={schema}
                     rows={rows}
-                    sortedRows={sortedRows}
-                    setSortedRows={setSortedRows}
-                    selectedIds={selectedIds}
-                    setSelectedIds={setSelectedIds}
-                    rowModifiedData={rowModifiedData}
-                    setRowModifiedData={setRowModifiedData}
-                    ctx={tableBodyContext} 
                     columns={columns}
+                    tableState={tableState}
+                    setTableState={setTableState}
+                    showStandardAnswers={checkboxesState.showStandardAnswers}
                 />
             </table>
         </div>
     </div>
     
+    function selectAll() {
+        setTableState(prev => ({
+            ...prev,
+            selectedLineKeys: new Set<string>(prev.lines.map(line => line.key))
+        }))
+    }
+
     function doSortRows(field: Field|string, direction: number) {
         if (field instanceof Field) {
             const sort_criteria = [{ campo: field, direzione: direction }]
-            setSortedRows(oldSortedRows => tableOrdina(sort_criteria, oldSortedRows))
+            setTableState(prev => {
+                const lines = [...prev.lines]
+                tableOrdina(sort_criteria, lines)
+                if (!lines.some((line, i) => line !== prev.lines[i])) {
+                    return prev // shortcut: don't modify the array
+                }
+                return {...prev,lines}
+            })
         } else {
-            setSortedRows(oldSortedRows => [...oldSortedRows].sort((a,b) => {
-                const aValue = a[field as keyof RowEventuallyNew];
-                const bValue = b[field as keyof RowEventuallyNew];
-                if (aValue < bValue) return -direction;
-                if (aValue > bValue) return direction;
-                return 0;
-            }))
+            setTableState(prev => {
+                const lines = [...prev.lines]
+                lines.sort((a,b) => {
+                    if (!a.row) return -1
+                    if (!b.row) return 1
+                    const aValue = a.row[field as keyof Row];
+                    const bValue = b.row[field as keyof Row];
+                    if (aValue < bValue) return -direction;
+                    if (aValue > bValue) return direction;
+                    return 0;
+                })
+                if (!lines.some((line,i)=> line !== prev.lines[i])) {
+                    return prev // shortcut
+                }
+                return {...prev,lines}
+            })
         }
     }
 }

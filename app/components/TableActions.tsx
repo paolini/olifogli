@@ -2,7 +2,7 @@ import { ObjectId } from "bson"
 import { Row, Sheet, useOlimanagerBulkUpdateResultsMutation, useOlimanagerCreateParticipantMutation, useRequestScanSheetGenerationMutation } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import { CheckboxesState } from "./TableCheckboxes"
-import { RowEventuallyNew, useDeleteRows, usePatchRow } from "./TableBody"
+import { Line, TableState, useDeleteRows, usePatchRow } from "./TableBody"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
@@ -15,7 +15,7 @@ export default function TableActions({ctx}: {ctx: TableActionContext}) {
             value="none"
         >
             <option value="none" disabled>
-            {ctx.selectedIds.size} {`${ctx.selectedIds.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+            {ctx.tableState.selectedLineKeys.size} {`${ctx.tableState.selectedLineKeys.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
             </option>
             {Object.entries(actions).map(([key, action]) => {
             if (action.hidden(ctx)) return null
@@ -38,12 +38,11 @@ export function TableActionsErrors({ctx}: {ctx: TableActionContext}) {
 type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
   sheet: Sheet,
-  sortedRows: RowEventuallyNew[],
   refresh?: () => Promise<void>,
-  selectedIds: Set<string>,
   schema: Schema,
   checkboxesState: CheckboxesState,
   userHasSheetAdminPrivileges: boolean,
+  tableState: TableState
 }
 
 type TableActionContext = TableActionInput & {
@@ -62,7 +61,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, sortedRows, refresh, selectedIds, schema, checkboxesState, userHasSheetAdminPrivileges}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, userHasSheetAdminPrivileges, tableState}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
   const [patchRow, { loading: patchLoading }] = usePatchRow()
 
@@ -73,8 +72,8 @@ export function useTableActionsContext({profile, sheet, sortedRows, refresh, sel
   const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
   const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
   const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
-   
-    return {profile, sheet, sortedRows, refresh, selectedIds, schema, checkboxesState, userHasSheetAdminPrivileges, 
+
+    return {profile, sheet, refresh, schema, checkboxesState, userHasSheetAdminPrivileges, tableState,
         mutations: {
             deleteRows,
             patchRow,
@@ -101,13 +100,13 @@ const actions: Record<string, Action> = {
   'delete': {
     label: 'Elimina righe selezionate',
     hidden: ctx => false,
-    disabled: ctx => ctx.selectedIds.size === 0,
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleDeleteSelectedRows
   },
   'scan': {
     label: 'Genera fogli risposte',
     hidden: ctx => false,
-    disabled: ctx => ctx.selectedIds.size === 0 || !ctx.userHasSheetAdminPrivileges,
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || !ctx.userHasSheetAdminPrivileges,
     handler: handleGenerateScanSheet
   },
   'gen_ids': {
@@ -119,28 +118,28 @@ const actions: Record<string, Action> = {
   'olimanager': {
     hidden: ctx => !ctx.profile?.isAdmin,
     label: 'Crea/abbina partecipanti (Olimanager)',
-    disabled: ctx => ctx.selectedIds.size === 0,
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerCreateParticipants
   },
   'update_scores': {
     hidden: ctx => !ctx.profile?.isAdmin,
     label: 'Aggiorna risultati (Olimanager)',
-    disabled: ctx => ctx.selectedIds.size === 0,
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerUpdateScores
   }
 }
 
 async function handleDeleteSelectedRows(ctx: TableActionContext) {
-  if (ctx.selectedIds.size === 0) return
+  if (ctx.tableState.selectedLineKeys.size === 0) return
 
   const confirmed = confirm(
-    `Sei sicuro di voler eliminare ${ctx.selectedIds.size} ${ctx.selectedIds.size === 1 ? 'riga' : 'righe'}?`
+    `Sei sicuro di voler eliminare ${ctx.tableState.selectedLineKeys.size} ${ctx.tableState.selectedLineKeys.size === 1 ? 'riga' : 'righe'}?`
   )
   
   if (!confirmed) return
   
   try {
-    const ids = Array.from(ctx.selectedIds).map(id => new ObjectId(id))
+    const ids = Array.from(ctx.tableState.selectedLineKeys).map(id => new ObjectId(id))
     await ctx.mutations.deleteRows({ variables: { ids } })
   } catch (error) {
     alert(`Errore durante l'eliminazione: ${error}`)
