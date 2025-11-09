@@ -104,10 +104,10 @@ export default function App() {
     }
 
     // Validazione Codice compito SOLO se richiesto (invio/tab/freccia)
-    if (
-      column.title === "Codice compito" &&
-      validateCodiceCompito &&
-      !isValidCodiceCompito(value)
+    if (false
+      //column.title === "Codice compito" &&
+      //validateCodiceCompito &&
+      //!isValidCodiceCompito(value)
     ) {
       setErrorMessage("Inserire un codice corretto");
       showTemporaryError();
@@ -230,7 +230,8 @@ export default function App() {
       (e.key === "Enter" || e.key === "Tab" || e.key.startsWith("Arrow"))
     ) {
       if (
-        !isValidCodiceCompito(data[row][col])
+        false
+        //!isValidCodiceCompito(data[row][col])
       ) {
         setErrorMessage("Inserire un codice corretto");
         showTemporaryError();
@@ -353,7 +354,7 @@ export default function App() {
                         onChange={(e) => updateCell(r, c, e.target.value, false)}
                         onKeyDown={handleInputKeyDown}
                         onBlur={() => {
-                          if (columns[c].title === "Codice compito" && data[r][c]) {
+                          if (false) { //(columns[c].title === "Codice compito" && data[r][c]) {
                             if (!isValidCodiceCompito(data[r][c])) {
                               setErrorMessage("Inserire un codice corretto");
                               showTemporaryError();
