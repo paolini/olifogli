@@ -343,7 +343,6 @@ input.table-row {
   height: 100%;          /* Occupa tutta l'altezza */
   border: none;          /* Rimuove il bordo dell'input */
   outline: none;         /* Rimuove l'outline di focus */
-  font-size: 14px;       /* Dimensione del testo */
   box-sizing: border-box;/* Include padding nel calcolo dimensioni */
   /*background: #f7f9fa;*/   /* Sfondo leggermente diverso */
   background: transparent;   /* Sfondo trasparente */
@@ -445,6 +444,10 @@ td.field-variant, td.field-variant input {
 th.field-ChoiceAnswer, td.field-ChoiceAnswer {
   text-align: center;
   min-width: 5ex;
+}
+
+td.field-ChoiceAnswer input {
+  text-align: center; 
 }
 
 col.field-NumberAnswer {

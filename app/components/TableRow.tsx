@@ -5,7 +5,7 @@ import Schema from "../lib/schema/Schema"
 import { Column, RowField } from "./Table"
 import TableRowInput from "./TableRowInput"
 import { Data } from "../lib/models"
-import { RowEventuallyNew } from "./TableBody"
+import { Line } from "./TableBody"
 
 export type RowSelectionState = {
     isSelected: boolean,
@@ -13,15 +13,14 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({edit, schema, row, columns, focusColumnName, modifiedData, setModifiedData, selectionState, showStandardAnswers, onCellClick}:{
+export default function TableRow({edit, schema, line, setLineData, columns, selectionState, focusColumnName,showStandardAnswers, onCellClick}:{
     edit: boolean,
     schema: Schema,
-    row: RowEventuallyNew,
+    line: Line,
+    setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
-    focusColumnName: string,
-    modifiedData: Data,
-    setModifiedData: (field: string, value: string|undefined) => void,
     selectionState: RowSelectionState,
+    focusColumnName: string,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void
 }) {
@@ -33,13 +32,14 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
       for (const field of columns.filter(col => col instanceof Field)) {
         map[field.name] = (newValue) => {
           console.log(`setter for field ${field.name} called with value ${newValue}`);
-          return setModifiedData(field.name, newValue) }
+          return setLineData(field.name, newValue) }
       }
       return map;
-    }, [setModifiedData,columns]);
+    }, [setLineData, columns]);
 
     const {className, style } = computeRecentFadeStyling();
-    
+
+    /*
     // Effetto per gestire il focus dell'input quando si entra in modalità modifica
     const inputRef = useRef<HTMLInputElement>(null);
     useEffect(() => {
@@ -48,12 +48,13 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
             inputRef.current.select();
         }
     }, [focusColumnName]);
+    */
 
-    const rowHasFocus = Boolean(focusColumnName);
-    const newData: Data = rowHasFocus ? {...row.data, ...modifiedData} : row.data;
-    const oldData: Data = row.data;
-    const modified: boolean = rowHasFocus && Object.keys(modifiedData).length > 0;
-
+    const modified: boolean = Object.keys(line.data).length > 0;
+    const EMPTY_DATA = columns.filter(c => c instanceof Field).map(c => [c.name,''])
+    const oldData = line.row ? line.row.data : EMPTY_DATA
+    const newData = {...oldData, ...line.data}
+    
     return <tr className={`${className} clickable ${modified ? 'modified' : ''}`} style={style} onKeyDown={onKeyDown}>
         <CheckboxCell selectionState={selectionState} />
         {columns.map(column => (column instanceof Field) 
@@ -61,20 +62,20 @@ export default function TableRow({edit, schema, row, columns, focusColumnName, m
             key={column.name} field={column} 
             edit={edit} hasFocus={focusColumnName === column.name} 
             newValue={newData[column.name]} oldValue={oldData[column.name]}
-            setNewValue={setters[column.name]} // {new_value => setModifiedData(column.name, new_value)} 
+            setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
-            onClick={() => onCellClick(column)} inputRef={inputRef}
+            onClick={() => onCellClick(column)}
             moveLeft={() => moveLeft()} moveRight={() => moveRight()}
             />
-        : <InfoCell key={column.name} row={row} column={column}/>
+        : <InfoCell key={column.name} line={line} column={column}/>
         )}
-        {row._id && (row.error || row?.olimanager?.error) && <td className="alert">{row.error || row?.olimanager?.error}</td>}
-        {row._id && row?.olimanager?.participantId && <td className="olimanager-participant-id">oli={row.olimanager.participantId} sync={row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
+        { (line.error || line?.row?.olimanager?.error) && <td className="alert">{line.error || line?.row?.olimanager?.error}</td>}
+        { line.row && line?.row?.olimanager?.participantId && <td className="olimanager-participant-id">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
     </tr>
 
     function computeRecentFadeStyling() {
         // Calcola quanto tempo è passato dall'ultimo aggiornamento
-        const timeSinceUpdate = row.updatedOn ? Date.now() - new Date(row.updatedOn).getTime() : Infinity
+        const timeSinceUpdate = line?.row?.updatedOn ? Date.now() - new Date(line.row.updatedOn).getTime() : Infinity
         const isRecent = timeSinceUpdate < 60000
         const elapsedTime = isRecent ? timeSinceUpdate / 1000 : 0 // tempo già trascorso in secondi
     
@@ -155,17 +156,17 @@ function CheckboxCell({selectionState}:{
     }
 }
 
-function InfoCell({row, column}:{
-    row: RowEventuallyNew,
+function InfoCell({line, column}:{
+    line: Line,
     column: RowField
 }) {
-    const value = row._id ? row[column.name as keyof Row] || '' : '';
+    const value = line.row ? line.row[column.name as keyof Row] || '' : '';
     return <td className={column.name}>
-        {(row._id && column.value_formatter) ? column.value_formatter({row,value}) : value}
+        {(line.row && column.value_formatter) ? column.value_formatter({row: line.row,value}) : value}
     </td>
 }
 
-function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, inputRef, moveLeft, moveRight}:{
+function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, moveLeft, moveRight}:{
   edit: boolean,
   hasFocus: boolean,
   field: Field,
@@ -174,7 +175,6 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   setNewValue: (newValue: string|undefined) => void,
   showStandardAnswers: boolean,
   onClick: () => void,
-  inputRef: React.RefObject<HTMLInputElement|null>
   moveLeft: () => boolean,
   moveRight: () => boolean,
 }) {
@@ -215,7 +215,7 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   return <td title={title} className={className} onClick={onClick} style={style}>
       {hasFocus 
         ? <TableRowInput 
-            field={field} inputRef={inputRef} 
+            field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
             moveLeft={moveLeft} moveRight={moveRight}

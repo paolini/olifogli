@@ -2,9 +2,8 @@ import { useEffect, useRef } from "react"
 import type { ChangeEvent, FocusEvent, KeyboardEvent, RefObject } from "react"
 import { Field } from "../lib/schema/fields"
 
-export default function TableRowInput({field, inputRef, value, setValue, oldValue, moveLeft, moveRight}:{
+export default function TableRowInput({field, value, setValue, oldValue, moveLeft, moveRight}:{
     field: Field,
-    inputRef: RefObject<HTMLInputElement|null>,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void
@@ -31,7 +30,6 @@ export default function TableRowInput({field, inputRef, value, setValue, oldValu
 
     return <input                       
         className="table-row" 
-        ref={inputRef}
         value={value}
         onChange={onChange}
         onBlur={onBlur}
