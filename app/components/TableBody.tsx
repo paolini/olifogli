@@ -38,7 +38,7 @@ function newLine(row?: Row, data: Data = {}) : Line {
 
 export type TableState = {
   lines: Line[], // tutte le righe della tabella, comprese quelle nuove non ancora salvate
-  focusLine: Line | undefined, // riga attualmente in modifica
+  focusLineKey: string, // riga attualmente in modifica o ''
   focusFieldName: string, // colonna attualmente in modifica o ''
   selectedLineKeys: Set<string>, // righe selezionate
   lastClickedLineKey: string, // ultima riga cliccata (per selezione con shift) potrebbe non esistere più...
@@ -46,7 +46,7 @@ export type TableState = {
 
 export const EMPTY_TABLE_STATE: TableState = {
     lines: [],
-    focusLine: undefined,
+    focusLineKey: '',
     focusFieldName: '',
     selectedLineKeys: new Set<string>(),
     lastClickedLineKey: ''
@@ -102,7 +102,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         const newTableLines: Line[] = []
 
         // componi il nuovo elenco delle righe
-        let focusLine = prevTableState.focusLine
+        let focusLineKey = prevTableState.focusLineKey  
         let focusFieldName = prevTableState.focusFieldName
         let lastClickedLineKey = prevTableState.lastClickedLineKey
         const lines: Line[] = []
@@ -134,14 +134,13 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
                 }
                 const line = newLine(incomingRow)
                 lines.push(line)
-                if (focusLine === r) focusLine = line
                 modified_count++
               }
             } else {
               // la riga non c'è più... deve essere stata cancellata da qualcun'altro
-              if (focusLine === r) {
+              if (focusLineKey === r.key) {
                 alert(`La riga che stai modificando è stata cancellata da un altro utente.`)
-                focusLine = undefined
+                focusLineKey = ''
                 focusFieldName = ''
               }
               if (lastClickedLineKey === r.key) {
@@ -175,7 +174,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         
         return {
           lines,
-          focusLine,
+          focusLineKey,
           focusFieldName,
           selectedLineKeys,
           lastClickedLineKey,
@@ -183,10 +182,12 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
       })
     }, [rows]);
 
+    const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
+
     return <tbody onKeyDown={onKeyDown}>
         {tableState.lines.map(line => {
-            let focusColumnName=tableState.focusLine === line ? tableState.focusFieldName : ''
-            if (tableState.focusLine === line && error) {
+            let focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
+            if (tableState.focusLineKey === line.key && error) {
               return <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
             }
             return <TableRow
@@ -202,7 +203,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
                 onCellClick={(column: Column) => onCellClick(column,line)}
             />}
         )}
-        { edit && (!tableState.focusLine || tableState.focusLine.row) 
+        { edit && (!tableState.focusLineKey || focusLine?.row) 
           && <tr><td></td><td colSpan={columns.length}>
               <Button onClick={e => setTableState(prev => addNewRow(prev))}>
                   aggiungi nuova riga
@@ -255,7 +256,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     function moveFocusTo(prev: TableState, line: Line|undefined, fieldName: string): TableState {
         let lines: Line[] = prev.lines
 
-        if (line !== prev.focusLine && prev.focusLine) {
+        if (prev.focusLineKey && line?.key !== prev.focusLineKey) {
             // se cambio linea sarà meglio salvare tutte le linee rimaste aperte
             // (dovrebbe essere solo la prev.focusLine...)
 
@@ -274,22 +275,22 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         }
 
         // metti il focus sulla nuova riga
-        const focusLine = line
+        const focusLineKey = line?.key || ''
         const focusFieldName = fieldName
         return {
             ...prev,
             lines,
-            focusLine,
+            focusLineKey,
             focusFieldName,
         }
     }
 
-    function cancelUnsavedModification(prev: TableState) {
-        const focusLine = prev.focusLine
+    function cancelUnsavedModification(prev: TableState): TableState {
+        const focusLineKey = prev.focusLineKey
         if (!focusLine) return prev
         if (focusLine.data.keys.length === 0 && !focusLine.error) return {
             ...prev,
-            focusLine: undefined,
+            focusLineKey: '',
             focusFieldName: '',
         }
         const newLine = {
@@ -299,14 +300,14 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         }
         return {
           ...prev,
-          focusLine: undefined,
+          focusLineKey: '',
           focusFieldName: '',
           lines: prev.lines.map(l => l === focusLine ? newLine : l)
         }
     }
 
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
-      const focusLine = tableState.focusLine
+      const focusLineKey = tableState.focusLineKey
       if (edit // stiamo modificando il foglio 
         && focusLine // c'è una riga in modifica
         && e.key === "Enter"
@@ -348,7 +349,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         e.preventDefault();
         e.stopPropagation();
         // esco dalla modalità modifica
-        const focusLine = tableState.focusLine
+        const focusLine = tableState.lines.find(l => l.key === focusLineKey)
         if (focusLine && focusLine.data.keys.length>0) {
             if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
         } 

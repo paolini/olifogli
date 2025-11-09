@@ -226,6 +226,10 @@ tr.modified {
   background-color: var(--recent-highlight);
 }
 
+tr.focus {
+  background-color: #dfdfdf;
+}s
+
 td.modified {
   background-color: var(--recent-highlight-darker);
 }

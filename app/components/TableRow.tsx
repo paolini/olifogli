@@ -4,7 +4,6 @@ import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
 import { Column, RowField } from "./Table"
 import TableRowInput from "./TableRowInput"
-import { Data } from "../lib/models"
 import { Line } from "./TableBody"
 
 export type RowSelectionState = {
@@ -50,13 +49,14 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
     }, [focusColumnName]);
     */
 
+    const hasFocus = focusColumnName != ''
     const modified: boolean = Object.keys(line.data).length > 0;
     const EMPTY_DATA = columns.filter(c => c instanceof Field).map(c => [c.name,''])
     const oldData = line.row ? line.row.data : EMPTY_DATA
     const newData = {...oldData, ...line.data}
     
-    return <tr className={`${className} clickable ${modified ? 'modified' : ''}`} style={style} onKeyDown={onKeyDown}>
-        <CheckboxCell selectionState={selectionState} />
+    return <tr className={`${className} clickable ${hasFocus ? 'focus' : ''}`} style={style} onKeyDown={onKeyDown}>
+        <CheckboxCell selectionState={selectionState} hasFocus={!!focusColumnName} />
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
@@ -134,8 +134,9 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
     }
 }
 
-function CheckboxCell({selectionState}:{
+function CheckboxCell({selectionState, hasFocus}:{
     selectionState: RowSelectionState
+    hasFocus: boolean
 }) {
     const { isSelected, doSelect, doDeselect } = selectionState;
     return <td className="checkbox-cell">
