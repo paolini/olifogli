@@ -10,11 +10,19 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
     moveLeft: () => boolean,
     moveRight: () => boolean,
 }) {
+    const inputRef = useRef<HTMLInputElement>(null)
     const lastValueRef = useRef(value);
 
     useEffect(() => {
-        lastValueRef.current = value;
+        const input = inputRef.current
+        if (input) {
+            input.focus()
+            input.select()
+        }
+    }, [inputRef])
 
+    useEffect(() => {
+        lastValueRef.current = value;
     }, [value]);
 
     useEffect(() => {
@@ -30,6 +38,7 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
 
     return <input                       
         className="table-row" 
+        ref={inputRef}
         value={value}
         onChange={onChange}
         onBlur={onBlur}
