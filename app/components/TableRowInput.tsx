@@ -25,6 +25,7 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
         lastValueRef.current = value;
     }, [value]);
 
+    /*
     useEffect(() => {
         // Cleanup allo smontaggio
         return () => {
@@ -36,6 +37,7 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
             }
         };
     }, [field, oldValue, setValue]); // RIMOSSO setValue dalle dipendenze
+    */
 
     return <input                       
         className="table-row" 
@@ -48,26 +50,31 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
     />
 
     function onFocus(e: FocusEvent<HTMLInputElement>) {
+        console.log(`TableRowInput onFocus for field ${field.name}`);
         if (field.type === 'choice-answer') {
             e.target.select()
         }
     }
 
     function cleanAndSet(value: string) {
+        console.log(`TableRowInput cleanAndSet for field ${field.name} with value: ${value}`);
         const cleaned = field.clean(value)
         setValue(cleaned === oldValue ? undefined : cleaned)
     }
 
     function onChange(e: ChangeEvent<HTMLInputElement>) {
+        console.log(`TableRowInput onChange for field ${field.name} with value: ${e.currentTarget.value}`);
         const value = e.currentTarget.value
         setValue(value === oldValue ? undefined : value)
     }
 
     function onBlur(e: FocusEvent<HTMLInputElement>) {
+        console.log(`TableRowInput onBlur for field ${field.name} with value: ${e.currentTarget.value}`);
         cleanAndSet(e.currentTarget.value)
     }
 
     function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+        console.log(`TableRowInput onKeyDown for field ${field.name} with key: ${e.key}`);
         if (e.key === "Enter" || e.key === "Escape" 
             || e.key === "Tab" || e.key=== "ArrowUp" 
             || e.key === "ArrowDown") {
