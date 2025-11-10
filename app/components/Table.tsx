@@ -13,6 +13,7 @@ import TableHeader from './TableHeader'
 import { KeyboardEvent, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
+import { gql, useMutation } from '@apollo/client'
 
 export type SortCriterium = {
     field: string|Field,
@@ -682,3 +683,44 @@ export function choiceAnswerKeyDownHandler(key: string, moveLeft: () => boolean,
         return undefined;
     }
 }
+
+const _ = gql`
+  mutation addRow($sheetId: ObjectId!, $data: Data!) {
+    addRow(sheetId: $sheetId, data: $data) {
+      _id
+      error
+      data
+      createdOn
+      createdBy
+      updatedOn
+      updatedBy
+    }
+  }
+`
+
+const __ = gql`
+  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
+    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
+      _id
+      __typename
+      createdOn
+      createdBy
+      updatedOn
+      updatedBy
+      error
+      data
+    }
+  }
+`
+
+const ___ = gql`
+  mutation DeleteRow($_id: ObjectId!) {
+    deleteRow(_id: $_id)
+  }
+`
+
+const _____ = gql`
+  mutation DeleteRows($ids: [ObjectId!]!) {
+    deleteRows(ids: $ids)
+  }
+`

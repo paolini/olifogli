@@ -3,14 +3,13 @@ import { useApolloClient, gql, useQuery, TypedDocumentNode, useMutation } from '
 import { useState, useRef, Dispatch, SetStateAction } from "react"
 import { ObjectId } from "bson"
 
-import { Row, ScanJob, ScanResults, Sheet, useScanJobsQuery } from "@/app/graphql/generated"
+import { Row, ScanJob, ScanResults, Sheet, useAddRowMutation, usePatchRowMutation, useScanJobsQuery } from "@/app/graphql/generated"
 import { Data } from '@/app/lib/models'
 import Button from "./Button"
 import ErrorElement from "./Error"
 import Loading from "./Loading"
 import { myTimestamp } from "../lib/util"
 import { schemas } from "../lib/schema"
-import { useAddRow, usePatchRow } from './TableBody'
 
 export default function ScansImport({sheet, data_rows}:{
     sheet: Sheet,
@@ -176,8 +175,8 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     data_rows: Row[],
     showRaw: boolean
 }) {
-    const [addRow, {loading: addLoading, error: addError}] = useAddRow()
-    const [patchRow, {loading: patchLoading, error: patchError}] = usePatchRow()
+    const [addRow, {loading: addLoading, error: addError}] = useAddRowMutation()
+    const [patchRow, {loading: patchLoading, error: patchError}] = usePatchRowMutation()
     const [selected, setSelected] = useState<ObjectId[]>([])
     const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { jobId: job._id } })
     if (error) return <ErrorElement error={error} />

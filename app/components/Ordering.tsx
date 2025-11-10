@@ -1,9 +1,7 @@
 import { useState, Dispatch, SetStateAction, Fragment } from 'react'
-import { WithId } from 'mongodb'
-import { Row } from '@/app/graphql/generated'
 import Schema from '@/app/lib/schema/Schema'
 import { Field } from '@/app/lib/schema/fields'
-import { Line } from './TableBody'
+import { Line } from './Table'
 
 export type CriterioOrd = {
   campo: Field
