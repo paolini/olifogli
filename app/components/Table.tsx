@@ -80,6 +80,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} />
         </div>
         <div className="table-scroll-container">
+            focusLineKey: {tableState.focusLineKey}
+            {} focusFieldName: {tableState.focusFieldName}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}

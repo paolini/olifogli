@@ -84,6 +84,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     useEffect(() => {
       // shortcut: se non ci sono modifiche da fare, non fare niente!
       setTableState(prevTableState => {
+        console.log(`TableBody useEffect on rows change: updating tableState with ${rows.length} rows`)
         // incoming rows we must:
         // * preserve the existing RowType objects where possible to avoid re-rendering
         // * remove rows that are no longer present
@@ -251,17 +252,6 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         })
     }
 
-    function moveFocusTo(line: Line|undefined, fieldName: string) {
-        console.log(`moveFocusTo: from lineKey=${tableState.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
-        const lines: Line[] = tableState.lines
-
-        if (tableState.focusFieldName !== (line ? line.key : '')) {
-            saveLineIfNeeded(focusLine)
-        }
-
-        setTableState(prev => moveFocusToSetter(prev, line, fieldName))
-    }
-
     // sposta il focus nella tabella
     // avvia il salvataggio della riga che perde il focus, se serve
     function moveFocusToSetter(prev: TableState, line: Line|undefined, fieldName: string): TableState {
@@ -269,7 +259,11 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         
         // metti il focus sulla nuova riga
         const focusLineKey = line?.key || ''
-        if (focusLineKey === prev.focusLineKey) return prev // SHORTCUT!
+        
+        if (focusLineKey === prev.focusLineKey && fieldName === prev.focusFieldName) {
+          console.log(`moveFocusToSetter: no change in focusLineKey`)
+          return prev // SHORTCUT!
+        }
         
         const focusFieldName = fieldName
         const lines: Line[] = prev.lines
