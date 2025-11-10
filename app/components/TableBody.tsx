@@ -4,7 +4,7 @@ import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
 import { Column } from "./Table"
 import { Data } from "../lib/models"
-import { gql, StoreObject, useMutation } from "@apollo/client"
+import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
 import { Field } from "../lib/schema/fields"
 import Button from "./Button"
 
@@ -22,7 +22,7 @@ export type Line = {
     error: string, // saving error or ''
 }
 
-function newLine(row?: Row, data: Data = {}) : Line {
+export function newLine(row?: Row, data: Data = {}) : Line {
   return {
     key: row ? row._id.toString() : Date.now().toString(),
     row,
@@ -48,7 +48,7 @@ export const EMPTY_TABLE_STATE: TableState = {
     lastClickedLineKey: ''
 }
 
-export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading
+export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData
 }: {
     edit: boolean,
     sheet: Sheet,
@@ -59,27 +59,25 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     setTableState: Dispatch<SetStateAction<TableState>>,
     showStandardAnswers: boolean,
     refresh?: () => Promise<void>,
-    refreshLoading?: boolean
+    refreshLoading?: boolean,
+    loading: boolean,
+    error: ApolloError | undefined,
+    dismissErrors: () => void,
+    onCellClick: (column: Column, line: Line) => void,
+    addNewRow: () => void,
+    setLineData: (line: Line, field: string, value: string | undefined) => void,
 }) {
-    const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRowMutation() // useAddRow()
-    const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRowMutation() // usePatchRow()
-    const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRowMutation() // useDeleteRow()
-    const loading = addLoading || patchLoading || deleteLoading
-    const error = addError || patchError || deleteError
-    const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
-
     useEffect(effectFunction, [rows, setTableState]);
 
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
 
-    return <tbody onKeyDown={onKeyDown}>
+    return <tbody>
         {tableState.lines.map(line => {
             const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
-            return <>
-              { (tableState.focusLineKey === line.key && error) && 
-                <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
-              }
-              <TableRow
+            if (tableState.focusLineKey === line.key && error) {
+              return  <tr key={`error-${line.key}`} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
+            }
+            return <TableRow
                   edit={edit}
                   schema={schema}
                   key={line.key}
@@ -91,7 +89,6 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
               />
-            </>
             }
         )}
         <tr><td></td><td colSpan={columns.length}>
@@ -205,193 +202,6 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         }
       })
     }
-    
-    function setLineData(line: Line, field: string, value: string|undefined) {
-      setTableState(prev => ({
-        ...prev,
-        // only change lines:
-        lines: prev.lines.map(l => l===line 
-          ? {
-            ...l,
-            data: dataSetter(l.data, field, value)
-          } 
-          : l)
-      }))
-
-      function dataSetter(prev: Data, field: string, value:string|undefined) {
-          if (value === undefined) {
-            // remove field
-            const {[field]:_, ...rest} = prev;
-            return prev;
-          } else {
-            return {...prev, [field]: value}
-          }
-      }
-    }
-    
-    // aggiunge una nuova riga vuota in fondo alla tabella
-    // e ci mette il focus
-    function addNewRow() {
-        saveLineIfNeeded(focusLine)
-        
-        setTableState(prev => {
-            // aggiungi una nuova riga
-            const line = newLine()
-            const firstEditableColumn = columns.find(col => (col instanceof Field && !col.hidden && col.editable)) as Field | undefined
-            const focusFieldName = firstEditableColumn?.name || ''
-            const state = {
-              ...prev,
-              lines: [...prev.lines, line]
-            }
-            return moveFocusToSetter(state, line, focusFieldName)
-        })
-    }
-
-    // sposta il focus nella tabella
-    // avvia il salvataggio della riga che perde il focus, se serve
-    function moveFocusToSetter(prev: TableState, line: Line|undefined, fieldName: string): TableState {
-        console.log(`moveFocusToSetter: from lineKey=${prev.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
-        
-        // metti il focus sulla nuova riga
-        const focusLineKey = line?.key || ''
-
-        if (focusLineKey === prev.focusLineKey && fieldName === prev.focusFieldName) {
-          console.log(`moveFocusToSetter: no change in focusLineKey`)
-          return prev // SHORTCUT!
-        }
-        
-        const focusFieldName = fieldName
-        const lines: Line[] = prev.lines
-        return {
-            ...prev,
-            lines,
-            focusLineKey,
-            focusFieldName,
-        }
-    }
-
-    function cancelUnsavedModification() {
-        const focusLineKey = tableState.focusLineKey
-        if (!focusLine) return
-        if (focusLine.data.keys.length === 0 && !focusLine.error) {
-            setTableState(prev => ({
-                ...prev,
-                focusLineKey: '',
-                focusFieldName: '',
-            }))
-            return
-        }
-        setTableState(prev => {
-            const newLine = {
-                ...focusLine,
-                data: {},
-                error: ''
-            }
-            return {
-              ...prev,
-              focusLineKey: '',
-              focusFieldName: '',
-              lines: prev.lines.map(l => l === focusLine ? newLine : l)
-            }
-        })
-    }
-
-    function pressEnter() {
-      console.log(`TableBody onKeyDown Enter pressed`)
-      if (!focusLine) return
-      const lines = tableState.lines
-      const row_index = lines.indexOf(focusLine)
-      if (row_index < 0) return // non dovrebbe succedere!
-      const editable_columns = columns.filter(col => (col instanceof Field && !col.hidden && col.editable))
-      if (row_index + 1 === lines.length) {
-        // era l'ultima riga della tabella
-        if (editable_columns.length >0) {
-          console.log(`move focus to new row`)
-          addNewRow()
-        } else {
-          // non ci sono colonne da modificare
-          // togli il focus
-          console.log(`no editable columns, removing focus`)
-          saveLineIfNeeded(focusLine)
-          setTableState(prev => moveFocusToSetter(prev, undefined, ''))
-        }
-      } else {
-        // trovo la riga successiva
-        const newFocusLine = lines[row_index + 1]
-        // mi sposto a sinistra finché ci sono celle vuote
-        const keys = editable_columns.map(col => col.name)
-        const values = keys.map(key => newFocusLine.data[key])
-        let i = keys.indexOf(tableState.focusFieldName)
-        if (i<=0) i=0;
-        while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
-        if (keys[i]) {
-          // muovo il focus
-          console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
-          saveLineIfNeeded(focusLine) // CORRETTO!
-          setTableState(prev => moveFocusToSetter(prev, newFocusLine, keys[i]))
-        } else {
-          // tolgo il focus perché non ci sono colonne modificabili
-          console.log(`no editable columns in next row, removing focus`)
-          saveLineIfNeeded(focusLine) // CORRETTO!
-          setTableState(prev => moveFocusToSetter(prev, undefined, ''))
-        }
-      }
-    }
-
-    function pressArrowDownOrUp(down: boolean) {
-      console.log(`TableBody onKeyDown ArrowDown pressed`)
-      if (!focusLine) return
-      const lines = tableState.lines
-      const row_index = lines.indexOf(focusLine)
-      if (row_index < 0) return // non dovrebbe succedere!
-
-      const next_index = down ? row_index + 1 : row_index - 1
-      if (next_index < 0) return
-      if (next_index >= lines.length) return
-
-      // trovo la riga successiva
-      const newFocusLine = lines[next_index]
-
-      // muovo il focus
-      console.log(`move focus to line ${newFocusLine.key}`)
-      saveLineIfNeeded(focusLine)
-      setTableState(prev => moveFocusToSetter(prev, newFocusLine, prev.focusFieldName))
-    }
-
-    function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
-      const focusLineKey = tableState.focusLineKey
-      if (edit // stiamo modificando il foglio 
-        && focusLine // c'è una riga in modifica
-        && e.key === "Enter"
-      ) {
-        e.preventDefault()
-        e.stopPropagation()
-        pressEnter()
-        return
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        // esco dalla modalità modifica
-        const focusLine = tableState.lines.find(l => l.key === focusLineKey)
-        if (focusLine && focusLine.data.keys.length>0) {
-            if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
-        } 
-        cancelUnsavedModification();
-      }
-      if (e.key === "ArrowDown" && focusLine) {
-        e.preventDefault();
-        e.stopPropagation();
-        pressArrowDownOrUp(true);
-        return;
-      }
-      if (e.key === "ArrowUp" && focusLine) {
-        e.preventDefault();
-        e.stopPropagation();
-        pressArrowDownOrUp(false);
-        return;
-      }
-    }
 
     function compute_selection_state_for_row(key: string): RowSelectionState {
         function allIds(key: string, shift: boolean): string[] {
@@ -406,17 +216,17 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         function doSelect(shift: boolean) {
             const keys_set = new Set(allIds(key, shift))
             setTableState(prev => ({
-              ...prev,
-              selectedLineKeys: prev.selectedLineKeys.union(keys_set),
-              lastClickedLineKey: key
+                ...prev,
+                selectedLineKeys: prev.selectedLineKeys.union(keys_set),
+                lastClickedLineKey: key
             }))
         }
         function doDeselect(shift: boolean) {
             const keys_set = new Set(allIds(key, shift))
             setTableState(prev => ({
-              ...prev,
-              selectedLineKeys: prev.selectedLineKeys.difference(keys_set),
-              lastClickedLineKey: key
+                ...prev,
+                selectedLineKeys: prev.selectedLineKeys.difference(keys_set),
+                lastClickedLineKey: key
             }))
         }
         return {
@@ -425,126 +235,9 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         }
     }
 
-    async function onCellClick(column: Column, line: Line) {
-        console.log(`TableBody onCellClick lineKey=${line.key} column=${column.name}`)
-        if (line.key !== tableState.focusLineKey) saveLineIfNeeded(focusLine);
-        setTableState(prev => moveFocusToSetter(prev, line, column.name))
-    }
+    
 
-    // avvia il salvataggio asincrono della linea
-    // restituisce una Line con attributo saving appropriato
-    // alla fine del salvataggio asyncrono verrà aggiornato tableState
-    function saveLineIfNeeded(line: Line|undefined) {
-        if (line === undefined) return 
-        const data = line.data
-        if (Object.keys(data).length === 0 || line.saving) {
-            return
-        } else {
-            console.log(`saveLineIfNeeded: saving line ${line.key} with data`, data)
-            const row = line.row
-            const key = line.key  
-            if (row) {
-                saveRow(row, data) // async progress
-            } else {
-                createRow(key, data) // async progress
-            }
-            setTableState(prev => {
-              let modified_count = 0
-              const lines: Line[] = prev.lines.map(l => {
-                  if (l.key === key) {
-                      modified_count++
-                      return {
-                          ...l,
-                          saving: true,
-                          error: ''
-                      }
-                  } else {
-                      return l
-                  }
-            })
-
-            if (modified_count === 0) return prev // SHORTCUT!
-
-            return {
-                  ...prev,
-                  lines
-              }
-            })
-        }
-    }
-
-    async function saveRow(row: Row, data: Data) {
-        console.log(`saving row ${row._id} with data`, data)
-        
-        function updateLineState(update: Partial<Line>) {
-            setTableState(prev => {
-              console.log(`updateLineState called in saveRow`)
-              const lines: Line[] = prev.lines.map(line => line.row === row 
-                  ? {...line, ...update}
-                  : line)
-              return {...prev, lines }
-            })
-        }
-
-        const res = await patchRow({variables: {
-            _id: row._id,
-            updatedOn: row.updatedOn || new Date(),
-            data,
-        }})
-        console.log('saveRow result', res)
-
-        const errors = res.errors
-        const r: Row | undefined | null = res.data?.patchRow
-        if (errors) {
-            updateLineState({saving: false,  error: errors.map(e=>`${e}`).join(', ')})
-            return
-        } 
-        if (!r) {
-            updateLineState({saving: false, error: 'connection error'})
-            return
-        }
-        // ha salvato!
-        updateLineState({
-            row: r,
-            data: {},
-            saving: false,
-            error: ''
-        })
-    }
-
-    async function createRow(lineKey: string, data: Data) {
-        function updateLineState(update: Partial<Line>) {
-            setTableState(prev => {
-              const lines: Line[] = prev.lines.map(line => line.key === lineKey 
-                  ? {...line, ...update}
-                  : line)
-              return {...prev, lines }
-            })
-        }
-
-        const res = await addRow({variables: {
-            sheetId: sheet._id,
-            data: data,
-        }})
-
-        const row: Row | undefined | null = res.data?.addRow
-        const errors = res.errors
-        if (errors) {
-            updateLineState({saving: false, error: errors.map(e => `${e}`).join(', ') })
-            return
-        }
-        if (!row) {
-            updateLineState({saving: false, error: 'connection error'})
-            return
-        }
-        updateLineState({
-            row,
-            data: {},
-            saving: false,
-            error: ''
-        })
-    }
-}
+  }
 
 
 export const ADD_ROW = gql`
