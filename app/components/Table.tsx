@@ -142,8 +142,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     />
                 <TableBody 
                     edit={edit}
-                    sheet={sheet}
-                    schema={schema}
                     rows={rows}
                     columns={columns}
                     tableState={tableState}
@@ -473,7 +471,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         const isAtEnd = cursorPos === input?.value.length && cursorEnd === input.value.length
 
         if (field.type === 'choice-answer') {
-            const newValue = choiceAnswerKeyDownHandler(key, moveLeft, moveRight, preventDefault);
+            const newValue = choiceAnswerKeyDownHandler(key, preventDefault);
             if (newValue !== undefined) {
                 preventDefault()
                 setValue(newValue === oldValue ? undefined : newValue)
@@ -616,74 +614,72 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             error: ''
         })
     }
-}
 
-export function dateKeyDownHandler(key: string, input: HTMLInputElement|undefined):string|undefined {
-    if (key === ' ' || key==='.') key = '/'
+    function dateKeyDownHandler(key: string, input: HTMLInputElement|undefined):string|undefined {
+        if (key === ' ' || key==='.') key = '/'
 
-    if (key >= '0' && key <= '9' || key === '/') {      
-      let cursorPos = input?.selectionStart || 0
-      const cursorEnd = input?.selectionEnd || 0
-      let value = input?.value || ''
-      // rimpiazza eventuali '|' con '/'
-      value = value.replace(/\|/g, '/')
+        if (key >= '0' && key <= '9' || key === '/') {      
+        let cursorPos = input?.selectionStart || 0
+        const cursorEnd = input?.selectionEnd || 0
+        let value = input?.value || ''
+        // rimpiazza eventuali '|' con '/'
+        value = value.replace(/\|/g, '/')
 
-      // inserisci carattere e '|' come cursore
-      value = value.slice(0, cursorPos) + key + '|' + value.slice(cursorEnd)
+        // inserisci carattere e '|' come cursore
+        value = value.slice(0, cursorPos) + key + '|' + value.slice(cursorEnd)
 
-      // sostituisci eventuali doppie barre con una sola barra
-      value = value.replace(/\/+/g, '/')
-      value = value.replace(/\/\|\//g, '/|')
+        // sostituisci eventuali doppie barre con una sola barra
+        value = value.replace(/\/+/g, '/')
+        value = value.replace(/\/\|\//g, '/|')
 
-      // Aggiungi una barra se value = "gg|" o "gg/mm|"
-      if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
-        value = value.replace('|', '/|')
-      }
-
-      cursorPos = value.indexOf('|')
-      value = value.replace('|', '')
-
-      // Imposta la posizione del cursore
-      setTimeout(() => {
-        const input = document.activeElement as HTMLInputElement
-        if (input) {
-          input.setSelectionRange(cursorPos, cursorPos)
+        // Aggiungi una barra se value = "gg|" o "gg/mm|"
+        if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
+            value = value.replace('|', '/|')
         }
-      }, 0)
-      return value
-    }
-    return undefined
-}
 
-export function choiceAnswerKeyDownHandler(key: string, moveLeft: () => boolean, moveRight: () => boolean, preventDefault: () => void):string|undefined {
-    
-    if (key === "ArrowLeft" || key === "ArrowRight") {
-        // lascia che il movimento venga gestito da TableRow
-        preventDefault()
-        return
-    } else if (key === "Delete") {
-        return ''
-    } else if (key === "Backspace") {
-        setTimeout(() => moveLeft(),0)
-        return ''
-    } else if (key.length === 1) {
-        // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
-        let char = key.toUpperCase()
-        if (char === '0') char = '-'
-        else if (char === '1') char = 'A'
-        else if (char === '2') char = 'B'
-        else if (char === '3') char = 'C'
-        else if (char === '4') char = 'D'
-        else if (char === '5') char = 'E'
-        else if (char === '6') char = 'X'
-        if (! "ABCDEX-".includes(char)) char = 'X'
-        setTimeout(() => moveRight(), 0);      
-        return char // Sostituisci il valore
-    } else {
-        return undefined;
+        cursorPos = value.indexOf('|')
+        value = value.replace('|', '')
+
+        // Imposta la posizione del cursore
+        setTimeout(() => {
+            const input = document.activeElement as HTMLInputElement
+            if (input) {
+            input.setSelectionRange(cursorPos, cursorPos)
+            }
+        }, 0)
+        return value
+        }
+        return undefined
+    }
+
+    function choiceAnswerKeyDownHandler(key: string, preventDefault: () => void):string|undefined {
+        if (key === "ArrowLeft" || key === "ArrowRight") {
+            // lascia che il movimento venga gestito da TableRow
+            preventDefault()
+            return
+        } else if (key === "Delete") {
+            return ''
+        } else if (key === "Backspace") {
+            setTimeout(() => moveLeft(),0)
+            return ''
+        } else if (key.length === 1) {
+            // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
+            let char = key.toUpperCase()
+            if (char === '0') char = '-'
+            else if (char === '1') char = 'A'
+            else if (char === '2') char = 'B'
+            else if (char === '3') char = 'C'
+            else if (char === '4') char = 'D'
+            else if (char === '5') char = 'E'
+            else if (char === '6') char = 'X'
+            if (! "ABCDEX-".includes(char)) char = 'X'
+            setTimeout(() => moveRight(), 0);      
+            return char // Sostituisci il valore
+        } else {
+            return undefined;
+        }
     }
 }
-
 const _ = gql`
   mutation addRow($sheetId: ObjectId!, $data: Data!) {
     addRow(sheetId: $sheetId, data: $data) {
