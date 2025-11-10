@@ -7,7 +7,6 @@ import { Data } from "../lib/models"
 import { gql, StoreObject, useMutation } from "@apollo/client"
 import { Field } from "../lib/schema/fields"
 import Button from "./Button"
-import next from "next"
 
 export type TableBodyInput = {
     schema: Schema,
@@ -49,7 +48,7 @@ export const EMPTY_TABLE_STATE: TableState = {
     lastClickedLineKey: ''
 }
 
-export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers
+export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading
 }: {
     edit: boolean,
     sheet: Sheet,
@@ -59,6 +58,8 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     tableState: TableState,
     setTableState: Dispatch<SetStateAction<TableState>>,
     showStandardAnswers: boolean,
+    refresh?: () => Promise<void>,
+    refreshLoading?: boolean
 }) {
     const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRowMutation() // useAddRow()
     const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRowMutation() // usePatchRow()
@@ -204,12 +205,15 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
                 onCellClick={(column: Column) => onCellClick(column,line)}
             />}
         )}
-        { edit && (!tableState.focusLineKey || focusLine?.row) 
-          && <tr><td></td><td colSpan={columns.length}>
-              <Button onClick={e => addNewRow()} disabled={loading}>
+        <tr><td></td><td colSpan={columns.length}>
+        { edit && (!tableState.focusLineKey || focusLine?.row) && 
+          <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
                   aggiungi nuova riga
-              </Button>
-          </td></tr>}
+              </Button>}
+        <Button onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
+          Aggiorna
+        </Button>
+        </td></tr>
     </tbody>
 
     function setLineData(line: Line, field: string, value: string|undefined) {
