@@ -7,6 +7,7 @@ import { Data } from "../lib/models"
 import { gql, StoreObject, useMutation } from "@apollo/client"
 import { Field } from "../lib/schema/fields"
 import Button from "./Button"
+import next from "next"
 
 export type TableBodyInput = {
     schema: Schema,
@@ -259,7 +260,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         
         // metti il focus sulla nuova riga
         const focusLineKey = line?.key || ''
-        
+
         if (focusLineKey === prev.focusLineKey && fieldName === prev.focusFieldName) {
           console.log(`moveFocusToSetter: no change in focusLineKey`)
           return prev // SHORTCUT!
@@ -301,52 +302,78 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         })
     }
 
+    function pressEnter() {
+      console.log(`TableBody onKeyDown Enter pressed`)
+      if (!focusLine) return
+      const lines = tableState.lines
+      const row_index = lines.indexOf(focusLine)
+      if (row_index < 0) return // non dovrebbe succedere!
+      const editable_columns = columns.filter(col => (col instanceof Field && !col.hidden && col.editable))
+      if (row_index + 1 === lines.length) {
+        // era l'ultima riga della tabella
+        if (editable_columns.length >0) {
+          console.log(`move focus to new row`)
+          addNewRow()
+        } else {
+          // non ci sono colonne da modificare
+          // togli il focus
+          console.log(`no editable columns, removing focus`)
+          saveLineIfNeeded(focusLine)
+          setTableState(prev => moveFocusToSetter(prev, undefined, ''))
+        }
+      } else {
+        // trovo la riga successiva
+        const newFocusLine = lines[row_index + 1]
+        // mi sposto a sinistra finché ci sono celle vuote
+        const keys = editable_columns.map(col => col.name)
+        const values = keys.map(key => newFocusLine.data[key])
+        let i = keys.indexOf(tableState.focusFieldName)
+        if (i<=0) i=0;
+        while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
+        if (keys[i]) {
+          // muovo il focus
+          console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
+          saveLineIfNeeded(focusLine) // CORRETTO!
+          setTableState(prev => moveFocusToSetter(prev, newFocusLine, keys[i]))
+        } else {
+          // tolgo il focus perché non ci sono colonne modificabili
+          console.log(`no editable columns in next row, removing focus`)
+          saveLineIfNeeded(focusLine) // CORRETTO!
+          setTableState(prev => moveFocusToSetter(prev, undefined, ''))
+        }
+      }
+    }
+
+    function pressArrowDownOrUp(down: boolean) {
+      console.log(`TableBody onKeyDown ArrowDown pressed`)
+      if (!focusLine) return
+      const lines = tableState.lines
+      const row_index = lines.indexOf(focusLine)
+      if (row_index < 0) return // non dovrebbe succedere!
+
+      const next_index = down ? row_index + 1 : row_index - 1
+      if (next_index < 0) return
+      if (next_index >= lines.length) return
+
+      // trovo la riga successiva
+      const newFocusLine = lines[next_index]
+
+      // muovo il focus
+      console.log(`move focus to line ${newFocusLine.key}`)
+      saveLineIfNeeded(focusLine)
+      setTableState(prev => moveFocusToSetter(prev, newFocusLine, prev.focusFieldName))
+    }
+
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
       const focusLineKey = tableState.focusLineKey
       if (edit // stiamo modificando il foglio 
         && focusLine // c'è una riga in modifica
         && e.key === "Enter"
       ) {
-          console.log(`TableBody onKeyDown Enter pressed`)
-          const lines = tableState.lines
-          e.preventDefault()
-          e.stopPropagation()
-          const row_index = lines.indexOf(focusLine)
-          if (row_index < 0) return // non dovrebbe succedere!
-          const editable_columns = columns.filter(col => (col instanceof Field && !col.hidden && col.editable))
-          if (row_index + 1 === lines.length) {
-            // era l'ultima riga della tabella
-            if (editable_columns.length >0) {
-              console.log(`move focus to new row`)
-              addNewRow()
-            } else {
-              // non ci sono colonne da modificare
-              // togli il focus
-              console.log(`no editable columns, removing focus`)
-              saveLineIfNeeded(focusLine)
-              setTableState(prev => moveFocusToSetter(prev, undefined, ''))
-            }
-          } else {
-            // trovo la riga successiva
-            const newFocusLine = lines[row_index + 1]
-            // mi sposto a sinistra finché ci sono celle vuote
-            const keys = editable_columns.map(col => col.name)
-            const values = keys.map(key => newFocusLine.data[key])
-            let i = keys.indexOf(tableState.focusFieldName)
-            if (i<=0) i=0;
-            while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
-            if (keys[i]) {
-              // muovo il focus
-              console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
-              saveLineIfNeeded(newFocusLine)
-              setTableState(prev => moveFocusToSetter(prev, newFocusLine, keys[i]))
-            } else {
-              // tolgo il focus perché non ci sono colonne modificabili
-              console.log(`no editable columns in next row, removing focus`)
-              saveLineIfNeeded(newFocusLine)
-              setTableState(prev => moveFocusToSetter(prev, undefined, ''))
-            }
-          }
+        e.preventDefault()
+        e.stopPropagation()
+        pressEnter()
+        return
       }
       if (e.key === "Escape") {
         e.preventDefault();
@@ -357,6 +384,18 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
             if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
         } 
         cancelUnsavedModification();
+      }
+      if (e.key === "ArrowDown" && focusLine) {
+        e.preventDefault();
+        e.stopPropagation();
+        pressArrowDownOrUp(true);
+        return;
+      }
+      if (e.key === "ArrowUp" && focusLine) {
+        e.preventDefault();
+        e.stopPropagation();
+        pressArrowDownOrUp(false);
+        return;
       }
     }
 
