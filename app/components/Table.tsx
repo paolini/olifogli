@@ -6,9 +6,9 @@ import { schemas } from '../lib/schema'
 import ErrorElement from './Error'
 import { Field } from '../lib/schema/fields'
 import useProfile from '../lib/useProfile'
-import TableActions, { TableActionsErrors, useTableActionsContext } from './TableActions'
-import Checkboxes, { useCheckboxesState } from './TableCheckboxes'
-import TableBody, { EMPTY_TABLE_STATE, Line, newLine, TableState } from './TableBody'
+import TableActions from './TableActions'
+import { useCheckboxesState } from './TableCheckboxes'
+import TableBody from './TableBody'
 import TableHeader from './TableHeader'
 import { KeyboardEvent, useState } from 'react'
 import { myTimestamp } from '../lib/util'
@@ -53,6 +53,42 @@ const ADDITIONAL_COLUMNS: RowField[] = [
     },
 ]
 
+export type Line = {
+    key: string,
+    row: Row | undefined, // database row, undefined for new rows
+    data: Data, // modified unsaved data
+    saving: boolean, // async saving in progress
+    error: string, // saving error or ''
+}
+
+export function newLine(row?: Row, data: Data = {}) : Line {
+  return {
+    key: row ? row._id.toString() : Date.now().toString(),
+    row,
+    data,
+    saving: false,
+    error: ''
+  };
+}
+
+export type TableState = {
+  lines: Line[], // tutte le righe della tabella, comprese quelle nuove non ancora salvate
+  focusLineKey: string, // riga attualmente in modifica o ''
+  focusFieldName: string, // colonna attualmente in modifica o ''
+  isEditing: boolean, // se stiamo modificando una cella
+  selectedLineKeys: Set<string>, // righe selezionate
+  lastClickedLineKey: string, // ultima riga cliccata (per selezione con shift) potrebbe non esistere più...
+}
+
+export const EMPTY_TABLE_STATE: TableState = {
+    lines: [],
+    focusLineKey: '',
+    focusFieldName: '',
+    isEditing: false,
+    selectedLineKeys: new Set<string>(),
+    lastClickedLineKey: ''
+}
+
 export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
   edit: boolean,
   rows: Row[],
@@ -83,14 +119,17 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         ...schema.fields.filter(f => checkboxesState.showHiddenColumns || !f.hidden)
     ]
 
-    const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
+    const focusLine = edit ? tableState.lines.find(l => l.key === tableState.focusLineKey) : undefined
+    const focusColumn = focusLine ? columns.find(c => c.name === tableState.focusFieldName) : undefined
+    const focusField = focusColumn instanceof Field ? focusColumn : undefined
+    const isEditing = focusField && tableState.isEditing
 
     return <div className="table-container">
         <div className="table-header">
             <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
-            currentRow={tableState.focusLineKey} currentField={tableState.focusFieldName}
+            currentRow={tableState.focusLineKey} currentField={tableState.focusFieldName} isEditing={isEditing?"true":"false"}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}
@@ -117,6 +156,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     addNewRow={addNewRow}
                     loading={loading}
                     setLineData={setLineData}
+                    cellKeyDown={cellKeyDown}
                 />
             </table>
         </div>
@@ -171,15 +211,18 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             } 
             : l)
         }))
+    }
 
-        function dataSetter(prev: Data, field: string, value:string|undefined) {
-            if (value === undefined) {
+    // setta o rimuove un campo da un oggetto Data
+    // (se value è undefined, rimuove il campo)
+    // restituisce un nuovo oggetto Data in uscita
+    function dataSetter(prev: Data, field: string, value:string|undefined) {
+        if (value === undefined) {
             // remove field
             const {[field]:_, ...rest} = prev;
-            return prev;
-            } else {
+            return rest;
+        } else {
             return {...prev, [field]: value}
-            }
         }
     }
     
@@ -258,37 +301,37 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         if (row_index < 0) return // non dovrebbe succedere!
         const editable_columns = columns.filter(col => (col instanceof Field && !col.hidden && col.editable))
         if (row_index + 1 === lines.length) {
-        // era l'ultima riga della tabella
-        if (editable_columns.length >0) {
-            console.log(`move focus to new row`)
-            addNewRow()
+            // era l'ultima riga della tabella
+            if (editable_columns.length >0) {
+                console.log(`move focus to new row`)
+                addNewRow()
+            } else {
+                // non ci sono colonne da modificare
+                // togli il focus
+                console.log(`no editable columns, removing focus`)
+                saveLineIfNeeded(focusLine)
+                setTableState(prev => moveFocusToSetter(prev, undefined, ''))
+            }
         } else {
-            // non ci sono colonne da modificare
-            // togli il focus
-            console.log(`no editable columns, removing focus`)
-            saveLineIfNeeded(focusLine)
-            setTableState(prev => moveFocusToSetter(prev, undefined, ''))
-        }
-        } else {
-        // trovo la riga successiva
-        const newFocusLine = lines[row_index + 1]
-        // mi sposto a sinistra finché ci sono celle vuote
-        const keys = editable_columns.map(col => col.name)
-        const values = keys.map(key => newFocusLine.data[key])
-        let i = keys.indexOf(tableState.focusFieldName)
-        if (i<=0) i=0;
-        while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
-        if (keys[i]) {
-            // muovo il focus
-            console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
-            saveLineIfNeeded(focusLine) // CORRETTO!
-            setTableState(prev => moveFocusToSetter(prev, newFocusLine, keys[i]))
-        } else {
-            // tolgo il focus perché non ci sono colonne modificabili
-            console.log(`no editable columns in next row, removing focus`)
-            saveLineIfNeeded(focusLine) // CORRETTO!
-            setTableState(prev => moveFocusToSetter(prev, undefined, ''))
-        }
+            // trovo la riga successiva
+            const newFocusLine = lines[row_index + 1]
+            // mi sposto a sinistra finché ci sono celle vuote
+            const keys = editable_columns.map(col => col.name)
+            const values = keys.map(key => newFocusLine.data[key])
+            let i = keys.indexOf(tableState.focusFieldName)
+            if (i<=0) i=0;
+            while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
+            if (keys[i]) {
+                // muovo il focus
+                console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
+                saveLineIfNeeded(focusLine) // CORRETTO!
+                setTableState(prev => moveFocusToSetter(prev, newFocusLine, keys[i]))
+            } else {
+                // tolgo il focus perché non ci sono colonne modificabili
+                console.log(`no editable columns in next row, removing focus`)
+                saveLineIfNeeded(focusLine) // CORRETTO!
+                setTableState(prev => moveFocusToSetter(prev, undefined, ''))
+            }
         }
     }
 
@@ -313,7 +356,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     }
 
     function moveLeft() {
-        if (!focusLine) return
+        if (!focusLine) return false
         const focusColumnName = tableState.focusFieldName
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
         if (currentIndex < 1) return false;
@@ -323,7 +366,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     }
 
     function moveRight() {
-        if (!focusLine) return
+        if (!focusLine) return false
         const focusColumnName = tableState.focusFieldName
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
         if (currentIndex < 0 || currentIndex >= columns.length - 1) return false;
@@ -335,48 +378,121 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
         console.log(`Table onKeyDown for key: ${e.key}`);
         const focusLineKey = tableState.focusLineKey
-        if (edit // stiamo modificando il foglio 
-        && focusLine // c'è una riga in modifica
-        && e.key === "Enter"
-        ) {
-        e.preventDefault()
-        e.stopPropagation()
-        pressEnter()
-        return
+        // salva cella in modifica
+        if (e.key === "Enter" && isEditing) {
+            e.preventDefault()
+            e.stopPropagation()
+            pressEnter()
+        // attiva modifica della cella attiva
+        } else if ((e.key === "Enter" || e.key === "F2") && focusField && !isEditing) {
+            e.preventDefault();
+            e.stopPropagation();
+            setTableState(prev => ({
+                ...prev,
+                isEditing: true
+            }))
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            // esco dalla modalità modifica
+            const focusLine = tableState.lines.find(l => l.key === focusLineKey)
+            if (focusLine && focusLine.data.keys.length>0) {
+                if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
+            } 
+            cancelUnsavedModification();
+        } else if (e.key === "ArrowDown" && focusLine) {
+            e.preventDefault();
+            e.stopPropagation();
+            pressArrowDownOrUp(true);
+        } else if (e.key === "ArrowUp" && focusLine) {
+            e.preventDefault();
+            e.stopPropagation();
+            pressArrowDownOrUp(false);
+        } else if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            e.stopPropagation();
+            // sposto il focus a sinistra
+            moveLeft();
+        } else if (e.key === "ArrowRight") {
+            e.preventDefault();
+            e.stopPropagation();
+            // sposto il focus a destra
+            moveRight();
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && focusField && edit && !isEditing) {
+            // inizio la modifica della cella attiva
+            e.preventDefault();
+            e.stopPropagation();
+            cellKeyDown(e.key, undefined, () => e.preventDefault(), () => e.stopPropagation() );
+            setTableState(prev => ({
+                ...prev,
+                isEditing: true
+            }))
         }
-        if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        // esco dalla modalità modifica
-        const focusLine = tableState.lines.find(l => l.key === focusLineKey)
-        if (focusLine && focusLine.data.keys.length>0) {
-            if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
-        } 
-        cancelUnsavedModification();
+    }
+
+    function cellKeyDown(key: string, input: HTMLInputElement|undefined, preventDefault: () => void, stopPropagation: () => void) {
+        // input può essere undefined perché al primo 
+        // carattere digitato non c'è ancora l'input nella cella
+        // è però garantito che il primo carattere non è speciale
+
+        // non c'è una riga con il focus
+        if (!focusLine) return
+
+        // la colonna con il focus non è un campo modificabile
+        if (!(focusField instanceof Field)) return
+
+        const field: Field = focusField;
+        const oldValue = focusLine.row ? (focusLine.row.data[field.name] || '') : ''
+
+        function setValue(value: string|undefined) {
+            setTableState(prev => {
+                return {
+                    ...prev,
+                    // only change lines:
+                    lines: prev.lines.map(l => l===focusLine 
+                        ? {
+                        ...l,
+                        data: dataSetter(l.data, field.name, value)
+                        } 
+                        : l)
+                }
+            })
         }
-        if (e.key === "ArrowDown" && focusLine) {
-        e.preventDefault();
-        e.stopPropagation();
-        pressArrowDownOrUp(true);
-        return;
+
+        console.log(`cellKeyDown with key: ${key}`);
+        if (key === "Enter" || key === "Escape" 
+            || key === "Tab" || key === "ArrowUp" 
+            || key === "ArrowDown") {
+            preventDefault()
+            return
         }
-        if (e.key === "ArrowUp" && focusLine) {
-        e.preventDefault();
-        e.stopPropagation();
-        pressArrowDownOrUp(false);
-        return;
-        }
-        if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        e.stopPropagation();
-        // sposto il focus a sinistra
-        moveLeft();
-        }
-        if (e.key === "ArrowRight") {
-        e.preventDefault();
-        e.stopPropagation();
-        // sposto il focus a destra
-        moveRight();
+        const cursorPos = input?.selectionStart || 0
+        const cursorEnd = input?.selectionEnd || 0
+        const isAtStart = cursorPos === 0 && cursorEnd === 0
+        const isAtEnd = cursorPos === input?.value.length && cursorEnd === input.value.length
+
+        if (field.type === 'choice-answer') {
+            const newValue = choiceAnswerKeyDownHandler(key, moveLeft, moveRight, preventDefault);
+            if (newValue !== undefined) {
+                preventDefault()
+                setValue(newValue === oldValue ? undefined : newValue)
+                return
+            }
+        } else if ((key === "ArrowLeft" && isAtStart)
+            || (key === "ArrowRight" && isAtEnd)) {
+            // fai gestire il movimento di focus alla tabella
+            preventDefault()
+            return
+        } else if (key === "ArrowLeft" || key === "ArrowRight") {
+            // evita che le componenti superiori intercettino l'evento
+            stopPropagation()
+        } else if (field.type === 'date') {
+            const newValue = dateKeyDownHandler(key, input)
+            if (newValue !== undefined) {
+                preventDefault()
+                setValue(newValue === oldValue ? undefined : newValue)
+                return
+            }
         }
     }
 
@@ -498,5 +614,71 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             saving: false,
             error: ''
         })
+    }
+}
+
+export function dateKeyDownHandler(key: string, input: HTMLInputElement|undefined):string|undefined {
+    if (key === ' ' || key==='.') key = '/'
+
+    if (key >= '0' && key <= '9' || key === '/') {      
+      let cursorPos = input?.selectionStart || 0
+      const cursorEnd = input?.selectionEnd || 0
+      let value = input?.value || ''
+      // rimpiazza eventuali '|' con '/'
+      value = value.replace(/\|/g, '/')
+
+      // inserisci carattere e '|' come cursore
+      value = value.slice(0, cursorPos) + key + '|' + value.slice(cursorEnd)
+
+      // sostituisci eventuali doppie barre con una sola barra
+      value = value.replace(/\/+/g, '/')
+      value = value.replace(/\/\|\//g, '/|')
+
+      // Aggiungi una barra se value = "gg|" o "gg/mm|"
+      if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
+        value = value.replace('|', '/|')
+      }
+
+      cursorPos = value.indexOf('|')
+      value = value.replace('|', '')
+
+      // Imposta la posizione del cursore
+      setTimeout(() => {
+        const input = document.activeElement as HTMLInputElement
+        if (input) {
+          input.setSelectionRange(cursorPos, cursorPos)
+        }
+      }, 0)
+      return value
+    }
+    return undefined
+}
+
+export function choiceAnswerKeyDownHandler(key: string, moveLeft: () => boolean, moveRight: () => boolean, preventDefault: () => void):string|undefined {
+    
+    if (key === "ArrowLeft" || key === "ArrowRight") {
+        // lascia che il movimento venga gestito da TableRow
+        preventDefault()
+        return
+    } else if (key === "Delete") {
+        return ''
+    } else if (key === "Backspace") {
+        setTimeout(() => moveLeft(),0)
+        return ''
+    } else if (key.length === 1) {
+        // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
+        let char = key.toUpperCase()
+        if (char === '0') char = '-'
+        else if (char === '1') char = 'A'
+        else if (char === '2') char = 'B'
+        else if (char === '3') char = 'C'
+        else if (char === '4') char = 'D'
+        else if (char === '5') char = 'E'
+        else if (char === '6') char = 'X'
+        if (! "ABCDEX-".includes(char)) char = 'X'
+        setTimeout(() => moveRight(), 0);      
+        return char // Sostituisci il valore
+    } else {
+        return undefined;
     }
 }

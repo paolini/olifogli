@@ -2,7 +2,7 @@ import { Dispatch, KeyboardEvent, SetStateAction, useEffect } from "react"
 import { Row, Sheet, useAddRowMutation, useDeleteRowMutation, usePatchRowMutation } from "../graphql/generated"
 import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
-import { Column } from "./Table"
+import { Column, Line, newLine, TableState } from "./Table"
 import { Data } from "../lib/models"
 import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
 import { Field } from "../lib/schema/fields"
@@ -14,41 +14,7 @@ export type TableBodyInput = {
     showStandardAnswers: boolean,
 }
 
-export type Line = {
-    key: string,
-    row: Row | undefined, // database row, undefined for new rows
-    data: Data, // modified unsaved data
-    saving: boolean, // async saving in progress
-    error: string, // saving error or ''
-}
-
-export function newLine(row?: Row, data: Data = {}) : Line {
-  return {
-    key: row ? row._id.toString() : Date.now().toString(),
-    row,
-    data,
-    saving: false,
-    error: ''
-  };
-}
-
-export type TableState = {
-  lines: Line[], // tutte le righe della tabella, comprese quelle nuove non ancora salvate
-  focusLineKey: string, // riga attualmente in modifica o ''
-  focusFieldName: string, // colonna attualmente in modifica o ''
-  selectedLineKeys: Set<string>, // righe selezionate
-  lastClickedLineKey: string, // ultima riga cliccata (per selezione con shift) potrebbe non esistere più...
-}
-
-export const EMPTY_TABLE_STATE: TableState = {
-    lines: [],
-    focusLineKey: '',
-    focusFieldName: '',
-    selectedLineKeys: new Set<string>(),
-    lastClickedLineKey: ''
-}
-
-export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData
+export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDown
 }: {
     edit: boolean,
     sheet: Sheet,
@@ -66,6 +32,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     onCellClick: (column: Column, line: Line) => void,
     addNewRow: () => void,
     setLineData: (line: Line, field: string, value: string | undefined) => void,
+    cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
 }) {
     useEffect(effectFunction, [rows, setTableState]);
 
@@ -79,7 +46,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
             }
             return <TableRow
                   edit={edit}
-                  schema={schema}
+                  isEditing={tableState.isEditing}
                   key={line.key}
                   line={line}
                   setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
@@ -88,6 +55,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
                   selectionState={compute_selection_state_for_row(line.key)}
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
+                  cellKeyDown={cellKeyDown}
               />
             }
         )}
@@ -197,6 +165,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
           lines,
           focusLineKey,
           focusFieldName,
+          isEditing: prevTableState.isEditing && focusLineKey !== '' && focusFieldName !== '',
           selectedLineKeys,
           lastClickedLineKey,
         }
