@@ -75,21 +75,24 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     return <tbody onKeyDown={onKeyDown}>
         {tableState.lines.map(line => {
             const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
-            if (tableState.focusLineKey === line.key && error) {
-              return <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
+            return <>
+              { (tableState.focusLineKey === line.key && error) && 
+                <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
+              }
+              <TableRow
+                  edit={edit}
+                  schema={schema}
+                  key={line.key}
+                  line={line}
+                  setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
+                  columns={columns}
+                  focusColumnName={focusColumnName}
+                  selectionState={compute_selection_state_for_row(line.key)}
+                  showStandardAnswers={showStandardAnswers}
+                  onCellClick={(column: Column) => onCellClick(column,line)}
+              />
+            </>
             }
-            return <TableRow
-                edit={edit}
-                schema={schema}
-                key={line.key}
-                line={line}
-                setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
-                columns={columns}
-                focusColumnName={focusColumnName}
-                selectionState={compute_selection_state_for_row(line.key)}
-                showStandardAnswers={showStandardAnswers}
-                onCellClick={(column: Column) => onCellClick(column,line)}
-            />}
         )}
         <tr><td></td><td colSpan={columns.length}>
         { edit && (!tableState.focusLineKey || focusLine?.row) && 
