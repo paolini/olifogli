@@ -3,7 +3,7 @@ import { Row, Sheet } from "../graphql/generated"
 import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
 import { Column, Line, newLine, TableState } from "./Table"
-import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
+import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 
 export type TableBodyInput = {
@@ -12,11 +12,8 @@ export type TableBodyInput = {
     showStandardAnswers: boolean,
 }
 
-export default function TableBody({edit, sheet, schema, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDown
-}: {
+export default function TableBody({edit, rows, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDown} : {
     edit: boolean,
-    sheet: Sheet,
-    schema: Schema,
     rows: Row[],
     columns: Column[],
     tableState: TableState,
@@ -60,8 +57,8 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         <tr><td></td><td colSpan={columns.length}>
         { edit && (!tableState.focusLineKey || focusLine?.row) && 
           <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
-                  aggiungi nuova riga
-              </Button>}
+            aggiungi nuova riga
+          </Button>}
         <Button onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
           Aggiorna
         </Button>
