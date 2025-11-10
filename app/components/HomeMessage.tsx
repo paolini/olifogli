@@ -46,7 +46,7 @@ export default function HomeMessage() {
         refetchQueries: ['GetSetting']
     })
     
-    if (loading) return <Loading />
+    if (loading) return null
     if (error) return <Error error={error} />
     
     const setting = data?.getSetting
