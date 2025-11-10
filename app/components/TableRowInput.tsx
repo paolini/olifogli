@@ -35,7 +35,7 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
                 setValue(cleaned === oldValue ? undefined : cleaned)
             }
         };
-    }, [field, oldValue]); // RIMOSSO setValue dalle dipendenze
+    }, [field, oldValue, setValue]); // RIMOSSO setValue dalle dipendenze
 
     return <input                       
         className="table-row" 
