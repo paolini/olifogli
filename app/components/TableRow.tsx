@@ -62,7 +62,7 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
         ? <DataCell 
             key={column.name} field={column} 
             edit={edit && column.editable } hasFocus={focusColumnName === column.name} 
-            newValue={newData[column.name]} oldValue={oldData[column.name]}
+            newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
             setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
