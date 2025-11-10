@@ -10,7 +10,7 @@ import TableActions from './TableActions'
 import { useCheckboxesState } from './TableCheckboxes'
 import TableBody from './TableBody'
 import TableHeader from './TableHeader'
-import { KeyboardEvent, useState } from 'react'
+import { KeyboardEvent, useEffect, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
 import { gql, useMutation } from '@apollo/client'
@@ -111,6 +111,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
 
+    useEffect(effectFunction, [rows, setTableState]);
+
     if (!schema) {
         return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
     }
@@ -142,7 +144,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     />
                 <TableBody 
                     edit={edit}
-                    rows={rows}
                     columns={columns}
                     tableState={tableState}
                     setTableState={setTableState}
@@ -156,11 +157,115 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     loading={loading}
                     setLineData={setLineData}
                     cellKeyDown={cellKeyDown}
+                    moveLeft={() => moveLeft()}
+                    moveRight={() => moveRight()}
                 />
             </table>
         </div>
     </div>
     
+    function effectFunction() {
+      // shortcut: se non ci sono modifiche da fare, non fare niente!
+      setTableState(prevTableState => {
+        console.log(`TableBody useEffect on rows change: updating tableState with ${rows.length} rows`)
+        // incoming rows we must:
+        // * preserve the existing RowType objects where possible to avoid re-rendering
+        // * remove rows that are no longer present
+        // * add new rows
+        // * preserve the order of existing rows, appending new rows at the end
+        // * preserve new rows not yet saved to the database
+
+        // put incoming rows into a dictionary for quick searching
+        const rowFromId: Record<string,Row> = Object.fromEntries(rows.map(r => [r._id.toString(),r]))
+
+        // estrae le righe nuove in modifica (ma dovrebbe essercene al più una...)
+        const newTableLines: Line[] = []
+
+        // componi il nuovo elenco delle righe
+        let focusLineKey = prevTableState.focusLineKey  
+        let focusFieldName = prevTableState.focusFieldName
+        let lastClickedLineKey = prevTableState.lastClickedLineKey
+        const lines: Line[] = []
+        let modified_count = 0
+        const deletedLineKeys: Set<string> = new Set<string>()
+
+        // mantieni l'ordine pre-esistente, itera sulle righe vecchie
+        for (const l of prevTableState.lines) {
+          if (!l.row) {
+            // riga nuova ancora non salvata (dovrebbe essere l'ultima dell'elenco) 
+            newTableLines.push(l);
+          } else {
+            // riga pre-esistente, controlla se c'è ancora
+            const id = l.row._id.toString()
+            const incomingRow: Row|undefined = rowFromId[id]
+            if (incomingRow) {
+              // rimuovi dal dizionario per controllare alla fine cosa resta
+              delete rowFromId[id]
+              // confronta le Date convertendole in millisecondi
+              if (incomingRow.updatedOn == l.row.updatedOn) {
+                // la riga non è stata modificata
+                lines.push(l);
+              } else {
+                console.log(`Row ${id} has been modified externally ${l.row.updatedOn} -> ${incomingRow.updatedOn}`);
+                if (Object.keys(l.data).length>0) {
+                  // UGH! la riga è stata modificata da un altro utente 
+                  // mentre io pure la stavo modificando!
+                  // ... ma forse l'altro utente sono io?
+                  if (!l.saving) alert(`La riga che stai modificando è stata modificata da un altro utente. Controlla e ripeti le tue modifiche.`);
+                  // r.data viene perso!
+                }
+                lines.push(newLine(incomingRow))
+                modified_count++
+              }
+            } else {
+              // la riga non c'è più... deve essere stata cancellata da qualcun'altro
+              if (focusLineKey === l.key) {
+                alert(`La riga che stai modificando è stata cancellata da un altro utente.`)
+                focusLineKey = ''
+                focusFieldName = ''
+              }
+              if (lastClickedLineKey === l.key) {
+                // poco male...
+                lastClickedLineKey = ''
+              }
+              deletedLineKeys.add(l.key)
+            }
+          }
+        }
+
+        if (modified_count=== 0 && deletedLineKeys.size===0 && Object.keys(rowFromId).length===0) {
+            // non c'è stata nessuna modifica, 
+            // questo evita di modificare lo stato senza motivo
+            // SHORTCUT:
+            console.log(`useEffect showcut!`)
+            return prevTableState
+        }
+        console.log(`useEffect detected changes: modified_count=${modified_count} deleted_count=${deletedLineKeys.size} new_count=${Object.keys(rowFromId).length}`)
+        
+        // aggiungiamo le nuove righe in ingresso
+        Object.values(rowFromId).forEach(r => {
+          lines.push(newLine(r))
+        })
+
+        // aggiungiamo le righe nuove non salvate (una sola al più...)
+        newTableLines.forEach(line => lines.push(line))
+
+        // filtriamo la selezione
+        const selectedLineKeys: Set<string> = deletedLineKeys.size === 0
+          ? prevTableState.selectedLineKeys // non modificare lo stato se non serve (SHORTCUT!)
+          : prevTableState.selectedLineKeys.difference(deletedLineKeys)
+        
+        return {
+          lines,
+          focusLineKey,
+          focusFieldName,
+          isEditing: prevTableState.isEditing && focusLineKey !== '' && focusFieldName !== '',
+          selectedLineKeys,
+          lastClickedLineKey,
+        }
+      })
+    }
+
     function selectAll() {
         setTableState(prev => ({
             ...prev,

@@ -12,7 +12,7 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({edit, isEditing, line, setLineData, columns, selectionState, focusColumnName,showStandardAnswers, onCellClick, cellKeyDown}:{
+export default function TableRow({edit, isEditing, line, setLineData, columns, selectionState, focusColumnName,showStandardAnswers, onCellClick, cellKeyDown, moveLeft, moveRight}:{
     edit: boolean,
     isEditing: boolean,
     line: Line,
@@ -23,6 +23,8 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
     cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+    moveLeft: () => boolean,
+    moveRight: () => boolean,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -58,7 +60,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
     const newData = {...oldData, ...line.data}
     
     return <tr className={`${className} clickable ${hasFocus ? 'focus' : ''}`} style={style} onKeyDown={onKeyDown}>
-        <CheckboxCell selectionState={selectionState} hasFocus={!!focusColumnName} />
+        <CheckboxCell selectionState={selectionState} />
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
@@ -88,6 +90,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
         return { className, style }
     }
 
+    /*
     function moveLeft() {
       const currentIndex = columns.findIndex(col => col.name === focusColumnName);
       if (currentIndex < 1) return false;
@@ -103,6 +106,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
       onCellClick(nextCol);
       return true;
     }
+    */
 
     function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) { 
         console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
@@ -137,9 +141,8 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
     }
 }
 
-function CheckboxCell({selectionState, hasFocus}:{
+function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
-    hasFocus: boolean
 }) {
     const { isSelected, doSelect, doDeselect } = selectionState;
     return <td className="checkbox-cell">
