@@ -8,13 +8,10 @@ import { Field } from '../lib/schema/fields'
 import useProfile from '../lib/useProfile'
 import TableActions, { TableActionsErrors, useTableActionsContext } from './TableActions'
 import Checkboxes, { useCheckboxesState } from './TableCheckboxes'
-import TableBody, { EMPTY_TABLE_STATE, Line, TableState } from './TableBody'
+import TableBody, { EMPTY_TABLE_STATE, TableState } from './TableBody'
 import TableHeader from './TableHeader'
 import { useState } from 'react'
 import { myTimestamp } from '../lib/util'
-import { Data } from '../lib/models'
-import { table } from '@uiw/react-md-editor'
-import { setTimeout } from 'node:timers/promises'
 
 export type SortCriterium = {
     field: string|Field,
@@ -69,15 +66,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const [ tableState, setTableState ] = useState<TableState>(EMPTY_TABLE_STATE)
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
 
-    const tableActionContext = useTableActionsContext({
-        schema, 
-        profile:profile || undefined, sheet, 
-        userHasSheetAdminPrivileges,
-        refresh, 
-        checkboxesState, 
-        tableState
-    })
-
     if (!schema) {
         return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
     }
@@ -89,13 +77,9 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
 
     return <div className="table-container">
         <div className="table-header">
-{/*            <TableActionsErrors ctx={tableActionContext} />
-            <Checkboxes schema={schema} state={checkboxesState} setState={setCheckboxesState} />
-            <TableActions ctx={tableActionContext}/>
-*/}     </div>
-
+            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} />
+        </div>
         <div className="table-scroll-container">
-            focusLineKey: {tableState.focusLineKey} focusFieldName: {tableState.focusFieldName}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}
