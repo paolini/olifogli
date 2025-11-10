@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { KeyboardEvent, useMemo } from "react"
 import { Row } from "../graphql/generated"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
@@ -61,7 +61,7 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
-            edit={edit} hasFocus={focusColumnName === column.name} 
+            edit={edit && column.editable } hasFocus={focusColumnName === column.name} 
             newValue={newData[column.name]} oldValue={oldData[column.name]}
             setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
@@ -70,7 +70,7 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
-        { (line.error || line?.row?.olimanager?.error) && <td className="alert">{line.error || line?.row?.olimanager?.error}</td>}
+        { (line?.row?.error || line?.row?.olimanager?.error) && <td className="alert">{line.row?.error || line.row?.olimanager?.error}</td>}
         { line.row && line?.row?.olimanager?.participantId && <td className="olimanager-participant-id">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
     </tr>
 
@@ -214,8 +214,8 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
 
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
-  return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus 
+  return <td tabIndex={-1} title={title} className={className} onClick={onClick} onKeyDown={onKeyDown} style={style}>
+      {hasFocus && edit
         ? <TableRowInput 
             field={field}
             value={value} setValue={setNewValue} 
@@ -224,4 +224,8 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
           />
         : value}
   </td>
+
+  function onKeyDown(e: KeyboardEvent<HTMLTableCellElement>) {
+    console.log(`DataCell onKeyDown for field ${field.name} with key: ${e.key}`);
+  }
 }
