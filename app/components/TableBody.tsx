@@ -1,11 +1,9 @@
-import { Dispatch, KeyboardEvent, SetStateAction, useEffect } from "react"
-import { Row, Sheet, useAddRowMutation, useDeleteRowMutation, usePatchRowMutation } from "../graphql/generated"
+import { Dispatch, SetStateAction, useEffect } from "react"
+import { Row, Sheet } from "../graphql/generated"
 import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
 import { Column, Line, newLine, TableState } from "./Table"
-import { Data } from "../lib/models"
 import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
-import { Field } from "../lib/schema/fields"
 import Button from "./Button"
 
 export type TableBodyInput = {
@@ -203,125 +201,5 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
             doSelect, doDeselect
         }
     }
-
-    
-
   }
 
-
-export const ADD_ROW = gql`
-  mutation addRow($sheetId: ObjectId!, $data: Data!) {
-    addRow(sheetId: $sheetId, data: $data) {
-      _id
-      error
-      data
-      createdOn
-      createdBy
-      updatedOn
-      updatedBy
-    }
-  }
-`
-
-const PATCH_ROW = gql`
-  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
-    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
-      _id
-      __typename
-      createdOn
-      createdBy
-      updatedOn
-      updatedBy
-      error
-      data
-    }
-  }
-`
-
-const DELETE_ROW = gql`
-  mutation DeleteRow($_id: ObjectId!) {
-    deleteRow(_id: $_id)
-  }
-`
-
-const DELETE_ROWS = gql`
-  mutation DeleteRows($ids: [ObjectId!]!) {
-    deleteRows(ids: $ids)
-  }
-`
-
-export function useAddRow() {
-  return useMutation<{ addRow: Row }>(ADD_ROW, {
-    update(cache, { data }) {
-      if (!data) return      
-      const newRow = data.addRow // Assumendo che la mutazione restituisca la nuova riga          
-      cache.modify({
-        fields: {
-          rows(existingRows = [], { readField }) {
-            // Controlla se la riga è già presente per evitare duplicati
-            if (existingRows.some((row:StoreObject) => readField("_id", row) === newRow._id)) {
-              return existingRows
-            }
-            return [...existingRows, newRow]
-          },
-        },
-      })
-    }
-  })
-}
-
-export function usePatchRow() {
-  return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
-    update(cache, { data }) {
-      console.log(`patchRow update cache`)
-      const updatedRow = data?.patchRow
-      if (!updatedRow) return
-
-      cache.modify({
-        id: cache.identify(updatedRow),
-        fields: Object.fromEntries(
-          Object.entries(updatedRow).map(([key, value]) => [key, () => value])
-        ),
-      })
-    }
-  })
-}
-
-export function useDeleteRow() {
-  return useMutation<{ deleteRow: string }>(DELETE_ROW, {
-    update(cache, { data }) {
-      const deletedId = data?.deleteRow
-      if (!deletedId) return
-
-      cache.modify({
-        fields: {
-          rows(existingRows = [], { readField }) {
-            return existingRows.filter((row:StoreObject) => readField("_id", row) !== deletedId);
-          },
-        },
-      })
-    }
-  })
-}
-
-export function useDeleteRows() {
-  return useMutation<{ deleteRows: number }>(DELETE_ROWS, {
-    update(cache, { data }, { variables }) {
-      const deletedCount = data?.deleteRows
-      if (!deletedCount || !variables) return
-
-      const idsToDelete = variables.ids
-
-      cache.modify({
-        fields: {
-          rows(existingRows = [], { readField }) {
-            return existingRows.filter((row:StoreObject) => {
-              const rowId = readField("_id", row)
-              return !idsToDelete.some((id: unknown) => id?.toString() === rowId?.toString())
-            });
-          },
-        },
-      })
-    }
-  })
-}

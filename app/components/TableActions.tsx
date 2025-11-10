@@ -1,8 +1,8 @@
 import { ObjectId } from "bson"
-import { Row, Sheet, useOlimanagerBulkUpdateResultsMutation, useOlimanagerCreateParticipantMutation, useRequestScanSheetGenerationMutation } from "../graphql/generated"
+import { Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
-import { TableState, useDeleteRows, usePatchRow } from "./TableBody"
+import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
@@ -66,8 +66,8 @@ type TableActionContext = TableActionInput & {
 }
 
 export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState}: TableActionInput): TableActionContext {
-  const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
-  const [patchRow, { loading: patchLoading }] = usePatchRow()
+  const [deleteRows, { loading: deleteLoading }] = useDeleteRowsMutation()
+  const [patchRow, { loading: patchLoading }] = usePatchRowMutation()
 
   const [requestScanSheetGeneration, { loading: scanSheetLoading, error: scanSheetError }] = useRequestScanSheetGenerationMutation({
     refetchQueries: ['ScanSheetJobs']
