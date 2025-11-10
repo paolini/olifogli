@@ -3,6 +3,7 @@ import { ObjectId } from 'bson';
 
 import Button from './Button'
 import SheetsSortIcon from './SheetsSortIcon'
+import FilterIcon from './FilterIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
@@ -69,9 +70,17 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     // Stato per la paginazione
     const [displayLimit, setDisplayLimit] = useState(20)
     const filterState = useSheetsFilterState()
+    // Stato filtro per colonne dinamiche
+    const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+    const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
 
     const allSheets: GetSheetsQuery['sheets'] = sheets;
-    const filteredSheets = filterSheets(filterState, allSheets);
+    // Applica filtro per colonne dinamiche
+    let filteredSheets = filterSheets(filterState, allSheets);
+    Object.entries(columnFilters).forEach(([col, val]) => {
+        if (val)
+            filteredSheets = filteredSheets.filter(s => (s.commonData?.[col] ?? '').toString().toLowerCase().includes(val.toLowerCase()))
+    })
     let sortedSheets = filteredSheets;
     if (sort) {
         type Sheet = GetSheetsQuery['sheets'][number]
@@ -102,12 +111,17 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const emptySheetIds = filteredSheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
 
     const columnsSet = new Set<string>()
+    // Colonne presenti nei dati filtrati
     filteredSheets.forEach(sheet => {
         if (!sheet.commonData) return
         Object.keys(sheet.commonData).forEach(key => {
             if (key === 'info') return
             columnsSet.add(key)
         })
+    })
+    // Colonne con filtro attivo
+    Object.keys(columnFilters).forEach(key => {
+        if (columnFilters[key]) columnsSet.add(key)
     })
     const columns = Array.from(columnsSet)
 
@@ -209,19 +223,48 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     </>
 
     function Th({field,header}:{field:string,header:string}) {
-        return <th key={field} style={{ cursor: 'pointer' }} onClick={() => {
-            setSort(s => {
-                if (!s || s.field !== field) return { field: field, direction: 1 };
-                if (s.direction === 1) return { field: field, direction: -1 };
-                return null;
-            });
-        }}>
-            <span className="flex items-center gap-1">
-                {header.replace('_', ' ')}
-                <SheetsSortIcon direction={sort?.field === header ? sort.direction : undefined} />
+        const isFiltered = !!columnFilters[field]
+        return <th key={field} style={{ position: 'relative' }}>
+            <span className="flex items-center justify-between gap-2">
+                <span>{header.replace('_', ' ')}</span>
+                <span className="flex items-center gap-1">
+                    <span style={{ cursor: 'pointer' }} onClick={() => {
+                        setSort(s => {
+                            if (!s || s.field !== field) return { field: field, direction: 1 };
+                            if (s.direction === 1) return { field: field, direction: -1 };
+                            return null;
+                        });
+                    }}>
+                        <SheetsSortIcon direction={sort?.field === field ? sort.direction : undefined} />
+                    </span>
+                    <span style={{ cursor: 'pointer' }} onClick={() => setFilterMenuOpen(filterMenuOpen === field ? null : field)}>
+                        <FilterIcon active={isFiltered} />
+                    </span>
+                </span>
             </span>
+            {filterMenuOpen === field && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, background: 'white', border: '1px solid #ccc', padding: 8, zIndex: 10, minWidth: 120 }}>
+                    <input
+                        type="text"
+                        value={columnFilters[field] || ''}
+                        onChange={e => setColumnFilters(f => ({ ...f, [field]: e.target.value }))}
+                        onKeyDown={e => {
+                            if (e.key === 'Escape') {
+                                setColumnFilters(f => ({ ...f, [field]: '' }))
+                                setFilterMenuOpen(null)
+                            }
+                        }}
+                        placeholder={`Filtra ${header}`}
+                        className="border rounded px-2 py-1 w-full"
+                        autoFocus
+                    />
+                    <div className="flex gap-2 mt-2">
+                        <button className="text-xs px-2 py-1 border rounded" onClick={() => setColumnFilters(f => ({ ...f, [field]: '' }))}>Reset</button>
+                        <button className="text-xs px-2 py-1 border rounded" onClick={() => setFilterMenuOpen(null)}>Chiudi</button>
+                    </div>
+                </div>
+            )}
         </th>
-
     }
 
     async function deleteEmptySheets() {
