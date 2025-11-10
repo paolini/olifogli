@@ -492,3 +492,7 @@ col.actions-cell {
   opacity: 1;
 }
 
+.my-table input:focus {
+  outline: 2px solid var(--secondary);
+  outline-offset: -2px;
+}
