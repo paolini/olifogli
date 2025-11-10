@@ -24,20 +24,6 @@ export default function TableRowInput({field, value, setValue, oldValue, cellKey
         lastValueRef.current = value;
     }, [value]);
 
-    /*
-    useEffect(() => {
-        // Cleanup allo smontaggio
-        return () => {
-            const latest = lastValueRef.current;
-            if (latest !== undefined) {
-                const cleaned = field.clean(latest)
-                console.log(`TableRowInput unmounting, cleaning up value: ${latest} -> ${cleaned}`);
-                setValue(cleaned === oldValue ? undefined : cleaned)
-            }
-        };
-    }, [field, oldValue, setValue]); // RIMOSSO setValue dalle dipendenze
-    */
-
     return <input                       
         className="table-row" 
         ref={inputRef}
