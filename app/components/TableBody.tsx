@@ -179,13 +179,13 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
           lastClickedLineKey,
         }
       })
-    }, [rows]);
+    }, [rows, setTableState]);
 
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
 
     return <tbody onKeyDown={onKeyDown}>
         {tableState.lines.map(line => {
-            let focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
+            const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
             if (tableState.focusLineKey === line.key && error) {
               return <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
             }
@@ -253,7 +253,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
 
     function moveFocusTo(line: Line|undefined, fieldName: string) {
         console.log(`moveFocusTo: from lineKey=${tableState.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
-        let lines: Line[] = tableState.lines
+        const lines: Line[] = tableState.lines
 
         if (tableState.focusFieldName !== (line ? line.key : '')) {
             saveLineIfNeeded(focusLine)
@@ -272,7 +272,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         if (focusLineKey === prev.focusLineKey) return prev // SHORTCUT!
         
         const focusFieldName = fieldName
-        let lines: Line[] = prev.lines
+        const lines: Line[] = prev.lines
         return {
             ...prev,
             lines,
