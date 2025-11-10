@@ -1,16 +1,12 @@
-import { Dispatch, KeyboardEvent, SetStateAction, useCallback, useEffect, useMemo, useState } from "react"
+import { Dispatch, KeyboardEvent, SetStateAction, useEffect } from "react"
 import { Row, Sheet, useAddRowMutation, useDeleteRowMutation, usePatchRowMutation } from "../graphql/generated"
 import TableRow, { RowSelectionState } from "./TableRow"
 import Schema from "../lib/schema/Schema"
 import { Column } from "./Table"
 import { Data } from "../lib/models"
-import { ApolloError, gql, StoreObject, useMutation } from "@apollo/client"
+import { gql, StoreObject, useMutation } from "@apollo/client"
 import { Field } from "../lib/schema/fields"
 import Button from "./Button"
-import { GraphQLFormattedError } from "graphql"
-import { errorToJSON } from "next/dist/server/render"
-import { Oooh_Baby } from "next/font/google"
-import { table } from "console"
 
 export type TableBodyInput = {
     schema: Schema,
@@ -110,44 +106,45 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         const deletedLineKeys: Set<string> = new Set<string>()
 
         // mantieni l'ordine pre-esistente, itera sulle righe vecchie
-        for (const r of prevTableState.lines) {
-          if (!r.row) {
+        for (const l of prevTableState.lines) {
+          if (!l.row) {
             // riga nuova ancora non salvata (dovrebbe essere l'ultima dell'elenco) 
-            newTableLines.push(r);
+            newTableLines.push(l);
           } else {
             // riga pre-esistente, controlla se c'è ancora
-            const id = r.row._id.toString()
+            const id = l.row._id.toString()
             const incomingRow: Row|undefined = rowFromId[id]
             if (incomingRow) {
               // rimuovi dal dizionario per controllare alla fine cosa resta
               delete rowFromId[id]
               // confronta le Date convertendole in millisecondi
-              if (+incomingRow.updatedOn == +r.row.updatedOn) {
+              if (incomingRow.updatedOn == l.row.updatedOn) {
                 // la riga non è stata modificata
-                lines.push(r);
+                lines.push(l);
               } else {
-                if (Object.keys(r.data).length>0) {
+                console.log(`Row ${id} has been modified externally ${l.row.updatedOn} -> ${incomingRow.updatedOn}`);
+                if (Object.keys(l.data).length>0) {
                   // UGH! la riga è stata modificata da un altro utente 
                   // mentre io pure la stavo modificando!
-                  alert(`La riga che stai modificando è stata modificata da un altro utente. Controlla e ripeti le tue modifiche.`);
+                  // ... ma forse l'altro utente sono io?
+                  if (!l.saving) alert(`La riga che stai modificando è stata modificata da un altro utente. Controlla e ripeti le tue modifiche.`);
                   // r.data viene perso!
                 }
-                const line = newLine(incomingRow)
-                lines.push(line)
+                lines.push(newLine(incomingRow))
                 modified_count++
               }
             } else {
               // la riga non c'è più... deve essere stata cancellata da qualcun'altro
-              if (focusLineKey === r.key) {
+              if (focusLineKey === l.key) {
                 alert(`La riga che stai modificando è stata cancellata da un altro utente.`)
                 focusLineKey = ''
                 focusFieldName = ''
               }
-              if (lastClickedLineKey === r.key) {
+              if (lastClickedLineKey === l.key) {
                 // poco male...
                 lastClickedLineKey = ''
               }
-              deletedLineKeys.add(r.key)
+              deletedLineKeys.add(l.key)
             }
           }
         }
@@ -156,8 +153,10 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
             // non c'è stata nessuna modifica, 
             // questo evita di modificare lo stato senza motivo
             // SHORTCUT:
+            console.log(`useEffect showcut!`)
             return prevTableState
         }
+        console.log(`useEffect detected changes: modified_count=${modified_count} deleted_count=${deletedLineKeys.size} new_count=${Object.keys(rowFromId).length}`)
         
         // aggiungiamo le nuove righe in ingresso
         Object.values(rowFromId).forEach(r => {
@@ -205,7 +204,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         )}
         { edit && (!tableState.focusLineKey || focusLine?.row) 
           && <tr><td></td><td colSpan={columns.length}>
-              <Button onClick={e => setTableState(prev => addNewRow(prev))}>
+              <Button onClick={e => addNewRow()} disabled={loading}>
                   aggiungi nuova riga
               </Button>
           </td></tr>}
@@ -236,47 +235,44 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     
     // aggiunge una nuova riga vuota in fondo alla tabella
     // e ci mette il focus
-    function addNewRow(prev: TableState): TableState {
-        // aggiungi una nuova riga
-        const line = newLine()
-        const state = {
-          ...prev,
-          lines: [...prev.lines, line]
-        }
-        const firstEditableColumn = columns.find(col => (col instanceof Field && !col.hidden && col.editable)) as Field | undefined
-        const focusFieldName = firstEditableColumn?.name || ''
+    function addNewRow() {
+        saveLineIfNeeded(focusLine)
+        
+        setTableState(prev => {
+            // aggiungi una nuova riga
+            const line = newLine()
+            const firstEditableColumn = columns.find(col => (col instanceof Field && !col.hidden && col.editable)) as Field | undefined
+            const focusFieldName = firstEditableColumn?.name || ''
+            const state = {
+              ...prev,
+              lines: [...prev.lines, line]
+            }
+            return moveFocusToSetter(state, line, focusFieldName)
+        })
+    }
 
-        // questa funzione si preoccupa di salvare la riga
-        // attualmente in modifica
-        return moveFocusTo(state, line, focusFieldName)
+    function moveFocusTo(line: Line|undefined, fieldName: string) {
+        console.log(`moveFocusTo: from lineKey=${tableState.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
+        let lines: Line[] = tableState.lines
+
+        if (tableState.focusFieldName !== (line ? line.key : '')) {
+            saveLineIfNeeded(focusLine)
+        }
+
+        setTableState(prev => moveFocusToSetter(prev, line, fieldName))
     }
 
     // sposta il focus nella tabella
     // avvia il salvataggio della riga che perde il focus, se serve
-    function moveFocusTo(prev: TableState, line: Line|undefined, fieldName: string): TableState {
-        let lines: Line[] = prev.lines
-
-        if (prev.focusLineKey && line?.key !== prev.focusLineKey) {
-            // se cambio linea sarà meglio salvare tutte le linee rimaste aperte
-            // (dovrebbe essere solo la prev.focusLine...)
-
-            let count_modified = 0
-
-            // questo fa partire il processo asincrono di salvataggio per tutte le righe che 
-            // che lo richiedono
-            // conto le righe modificate per avere una SHORTCUT in caso non ci siano modifiche.
-            const newLines = prev.lines.map(l => {
-              const ll = saveLineIfNeeded(l)
-              if (ll !== l) count_modified++
-              return ll
-            })
-
-            if (count_modified > 0 ) lines = newLines // non modifica l'array se non serve 
-        }
-
+    function moveFocusToSetter(prev: TableState, line: Line|undefined, fieldName: string): TableState {
+        console.log(`moveFocusToSetter: from lineKey=${prev.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
+        
         // metti il focus sulla nuova riga
         const focusLineKey = line?.key || ''
+        if (focusLineKey === prev.focusLineKey) return prev // SHORTCUT!
+        
         const focusFieldName = fieldName
+        let lines: Line[] = prev.lines
         return {
             ...prev,
             lines,
@@ -285,25 +281,30 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         }
     }
 
-    function cancelUnsavedModification(prev: TableState): TableState {
-        const focusLineKey = prev.focusLineKey
-        if (!focusLine) return prev
-        if (focusLine.data.keys.length === 0 && !focusLine.error) return {
-            ...prev,
-            focusLineKey: '',
-            focusFieldName: '',
+    function cancelUnsavedModification() {
+        const focusLineKey = tableState.focusLineKey
+        if (!focusLine) return
+        if (focusLine.data.keys.length === 0 && !focusLine.error) {
+            setTableState(prev => ({
+                ...prev,
+                focusLineKey: '',
+                focusFieldName: '',
+            }))
+            return
         }
-        const newLine = {
-          ...focusLine,
-          data: {},
-          error: ''
-        }
-        return {
-          ...prev,
-          focusLineKey: '',
-          focusFieldName: '',
-          lines: prev.lines.map(l => l === focusLine ? newLine : l)
-        }
+        setTableState(prev => {
+            const newLine = {
+                ...focusLine,
+                data: {},
+                error: ''
+            }
+            return {
+              ...prev,
+              focusLineKey: '',
+              focusFieldName: '',
+              lines: prev.lines.map(l => l === focusLine ? newLine : l)
+            }
+        })
     }
 
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
@@ -312,6 +313,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         && focusLine // c'è una riga in modifica
         && e.key === "Enter"
       ) {
+          console.log(`TableBody onKeyDown Enter pressed`)
           const lines = tableState.lines
           e.preventDefault()
           e.stopPropagation()
@@ -321,11 +323,14 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
           if (row_index + 1 === lines.length) {
             // era l'ultima riga della tabella
             if (editable_columns.length >0) {
-              setTableState(prev => addNewRow(prev))
+              console.log(`move focus to new row`)
+              addNewRow()
             } else {
               // non ci sono colonne da modificare
               // togli il focus
-              setTableState(prev => moveFocusTo(prev, undefined, ''))
+              console.log(`no editable columns, removing focus`)
+              saveLineIfNeeded(focusLine)
+              setTableState(prev => moveFocusToSetter(prev, undefined, ''))
             }
           } else {
             // trovo la riga successiva
@@ -338,10 +343,14 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
             while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
             if (keys[i]) {
               // muovo il focus
-              setTableState(prev => moveFocusTo(prev, newFocusLine, keys[i]))
+              console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
+              saveLineIfNeeded(newFocusLine)
+              setTableState(prev => moveFocusToSetter(prev, newFocusLine, keys[i]))
             } else {
               // tolgo il focus perché non ci sono colonne modificabili
-              setTableState(prev => moveFocusTo(prev, undefined, ''))
+              console.log(`no editable columns in next row, removing focus`)
+              saveLineIfNeeded(newFocusLine)
+              setTableState(prev => moveFocusToSetter(prev, undefined, ''))
             }
           }
       }
@@ -353,7 +362,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
         if (focusLine && focusLine.data.keys.length>0) {
             if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
         } 
-        setTableState(prev => cancelUnsavedModification(prev))
+        cancelUnsavedModification();
       }
     }
 
@@ -390,33 +399,59 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     }
 
     async function onCellClick(column: Column, line: Line) {
-        setTableState(prev => moveFocusTo(prev, line, column.name))
+        console.log(`TableBody onCellClick lineKey=${line.key} column=${column.name}`)
+        if (line.key !== tableState.focusLineKey) saveLineIfNeeded(focusLine);
+        setTableState(prev => moveFocusToSetter(prev, line, column.name))
     }
 
     // avvia il salvataggio asincrono della linea
     // restituisce una Line con attributo saving appropriato
     // alla fine del salvataggio asyncrono verrà aggiornato tableState
-    function saveLineIfNeeded(line: Line): Line {
+    function saveLineIfNeeded(line: Line|undefined) {
+        if (line === undefined) return 
         const data = line.data
         if (Object.keys(data).length === 0 || line.saving) {
-            return line
+            return
         } else {
-            if (line.row) {
-                saveRow(line.row, line.data) // async progress
+            console.log(`saveLineIfNeeded: saving line ${line.key} with data`, data)
+            const row = line.row
+            const key = line.key  
+            if (row) {
+                saveRow(row, data) // async progress
             } else {
-                createRow(line.key, line.data) // async progress
+                createRow(key, data) // async progress
             }
+            setTableState(prev => {
+              let modified_count = 0
+              const lines: Line[] = prev.lines.map(l => {
+                  if (l.key === key) {
+                      modified_count++
+                      return {
+                          ...l,
+                          saving: true,
+                          error: ''
+                      }
+                  } else {
+                      return l
+                  }
+            })
+
+            if (modified_count === 0) return prev // SHORTCUT!
+
             return {
-                ...line,
-                saving: true,
-                error: ''
-            }
+                  ...prev,
+                  lines
+              }
+            })
         }
     }
 
     async function saveRow(row: Row, data: Data) {
+        console.log(`saving row ${row._id} with data`, data)
+        
         function updateLineState(update: Partial<Line>) {
             setTableState(prev => {
+              console.log(`updateLineState called in saveRow`)
               const lines: Line[] = prev.lines.map(line => line.row === row 
                   ? {...line, ...update}
                   : line)
@@ -429,6 +464,7 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
             updatedOn: row.updatedOn || new Date(),
             data,
         }})
+        console.log('saveRow result', res)
 
         const errors = res.errors
         const r: Row | undefined | null = res.data?.patchRow
@@ -548,6 +584,7 @@ export function useAddRow() {
 export function usePatchRow() {
   return useMutation<{ patchRow: StoreObject }>(PATCH_ROW, {
     update(cache, { data }) {
+      console.log(`patchRow update cache`)
       const updatedRow = data?.patchRow
       if (!updatedRow) return
 

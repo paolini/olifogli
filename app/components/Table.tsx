@@ -95,6 +95,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
 */}     </div>
 
         <div className="table-scroll-container">
+            focusLineKey: {tableState.focusLineKey} focusFieldName: {tableState.focusFieldName}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}

@@ -31,6 +31,7 @@ export default function TableRowInput({field, value, setValue, oldValue, moveLef
             const latest = lastValueRef.current;
             if (latest !== undefined) {
                 const cleaned = field.clean(latest)
+                console.log(`TableRowInput unmounting, cleaning up value: ${latest} -> ${cleaned}`);
                 setValue(cleaned === oldValue ? undefined : cleaned)
             }
         };
