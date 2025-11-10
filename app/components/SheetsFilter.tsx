@@ -66,7 +66,7 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
 
     return <div className="mb-2 flex items-center gap-3">
         <select value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)} className="border rounded px-2 py-1">
-            { schema===undefined && <option value="">Tutti gli schemi</option>}
+            <option value="">Tutti gli schemi</option>
             {availableSchemas.map(schemaKey => (
                 <option key={schemaKey} value={schemaKey}>
                     {schemas[schemaKey]?.header || schemaKey}
