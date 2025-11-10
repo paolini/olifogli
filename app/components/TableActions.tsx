@@ -46,6 +46,7 @@ type TableActionInput = {
   checkboxesState: CheckboxesState, setCheckboxesState: Dispatch<SetStateAction<CheckboxesState>>,
   userHasSheetAdminPrivileges: boolean,
   tableState: TableState,
+  setTableState: Dispatch<SetStateAction<TableState>>,
 }
 
 type TableActionContext = TableActionInput & {
@@ -64,7 +65,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
   const [patchRow, { loading: patchLoading }] = usePatchRow()
 
@@ -78,7 +79,8 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
 
   return {
       profile, sheet, refresh, schema, 
-      checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState,
+      checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, 
+      tableState, setTableState,
       mutations: {
             deleteRows,
             patchRow,
@@ -144,8 +146,26 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
   if (!confirmed) return
   
   try {
-    const ids = Array.from(ctx.tableState.selectedLineKeys).map(id => new ObjectId(id))
+    const selected_lines = ctx.tableState.lines.filter(line => ctx.tableState.selectedLineKeys.has(line.key))
+    const ids = selected_lines
+      .filter(line => line?.row?._id)
+      .map(line => new ObjectId(line?.row?._id))
+    const lines_without_row = selected_lines.filter(line => !line?.row?._id)
     await ctx.mutations.deleteRows({ variables: { ids } })
+    if (lines_without_row.length > 0) {
+        let focusLineKey = ctx.tableState.focusLineKey
+        if (focusLineKey && ctx.tableState.selectedLineKeys.has(focusLineKey)) {
+            focusLineKey = ''
+        }
+        // righe da mantenere: tutte quello con line.row (che verranno cancellate dalla mutazione)
+        // e quelle che non erano state selezionate
+        ctx.setTableState(prev => ({
+          ...prev,
+          lines: prev.lines.filter(line => line.row || !ctx.tableState.selectedLineKeys.has(line.key)),
+          focusLineKey: '',
+          focusColumnName: '',
+        }))
+    }
   } catch (error) {
     alert(`Errore durante l'eliminazione: ${error}`)
   }
