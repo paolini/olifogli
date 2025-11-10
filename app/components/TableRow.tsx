@@ -1,4 +1,4 @@
-import { KeyboardEvent, useMemo } from "react"
+import { KeyboardEvent, useMemo, useState } from "react"
 import { Row } from "../graphql/generated"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
@@ -180,6 +180,7 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   moveLeft: () => boolean,
   moveRight: () => boolean,
 }) {
+  const [isEditing, setIsEditing] = useState(false);
   let extra_css="";
   let correct_value = undefined;
   let title = newValue;
@@ -214,8 +215,8 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
 
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
-  return <td tabIndex={-1} title={title} className={className} onClick={onClick} onKeyDown={onKeyDown} style={style}>
-      {hasFocus && edit
+  return <td title={title} className={className} onClick={onClick} style={style}>
+      {hasFocus && edit && isEditing
         ? <TableRowInput 
             field={field}
             value={value} setValue={setNewValue} 
@@ -224,8 +225,4 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
           />
         : value}
   </td>
-
-  function onKeyDown(e: KeyboardEvent<HTMLTableCellElement>) {
-    console.log(`DataCell onKeyDown for field ${field.name} with key: ${e.key}`);
-  }
 }
