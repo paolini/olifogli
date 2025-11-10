@@ -1,14 +1,17 @@
 import { ObjectId } from "bson"
 import { Row, Sheet, useOlimanagerBulkUpdateResultsMutation, useOlimanagerCreateParticipantMutation, useRequestScanSheetGenerationMutation } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
-import { CheckboxesState } from "./TableCheckboxes"
-import { Line, TableState, useDeleteRows, usePatchRow } from "./TableBody"
+import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
+import { TableState, useDeleteRows, usePatchRow } from "./TableBody"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
 
-export default function TableActions({ctx}: {ctx: TableActionContext}) {
+export default function TableActions(input: TableActionInput) {
+    const ctx = useTableActionsContext(input)
     return <>
+        <TableActionsErrors ctx={ctx} />
+        <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
             className="ml-2 border rounded px-2 py-1"
             onChange={(e) => actions[e.target.value].handler(ctx)}
@@ -40,9 +43,9 @@ type TableActionInput = {
   sheet: Sheet,
   refresh?: () => Promise<void>,
   schema: Schema,
-  checkboxesState: CheckboxesState,
+  checkboxesState: CheckboxesState, setCheckboxesState: Dispatch<SetStateAction<CheckboxesState>>,
   userHasSheetAdminPrivileges: boolean,
-  tableState: TableState
+  tableState: TableState,
 }
 
 type TableActionContext = TableActionInput & {
@@ -61,7 +64,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, userHasSheetAdminPrivileges, tableState}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRows()
   const [patchRow, { loading: patchLoading }] = usePatchRow()
 
@@ -73,8 +76,10 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
   const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
   const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
 
-    return {profile, sheet, refresh, schema, checkboxesState, userHasSheetAdminPrivileges, tableState,
-        mutations: {
+  return {
+      profile, sheet, refresh, schema, 
+      checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState,
+      mutations: {
             deleteRows,
             patchRow,
             requestScanSheetGeneration,
@@ -147,28 +152,31 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
 }
 
 function handleGenerateScanSheet(ctx: TableActionContext) {
-  const selectedRowIds = ctx.sortedRows
-    .filter(row => row._id && ctx.selectedIds.has(row._id.toString()))
-    .map(row => new ObjectId(row._id))
-  ctx.mutations.requestScanSheetGeneration({
-    variables: {
-      sheetId: new ObjectId(ctx.sheet._id),
-      selectedRowIds: selectedRowIds.length > 0 ? selectedRowIds : undefined,
-    }
-  })
+  const sheetId = ctx.sheet._id
+  const selectedLineKeys = ctx.tableState.selectedLineKeys
+  const selectedRowIds: ObjectId[] = ctx.tableState.lines
+      .filter(line => (selectedLineKeys.size === 0 || selectedLineKeys.has(line.key)) && line.row?._id)
+      .map(line => line.row?._id as ObjectId)
+
+  if (selectedRowIds.length === 0) {
+      alert('Nessuna riga valida selezionata per la generazione dei fogli risposte.')
+      return
+  }
   
-  alert('Hai richiesto la generazione dei fogli risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.')
+  ctx.mutations.requestScanSheetGeneration({variables: {sheetId, selectedRowIds}})
+
+  alert(`Hai richiesto la generazione di ${selectedRowIds.length === 1 ? 'un foglio' : `${selectedRowIds.length} fogli`} risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.`)
 }
 
 async function handleGenerateStudentIds(ctx: TableActionContext) {
   // Trova il massimo valore del campo id
-  const maxId = ctx.sortedRows.reduce((max, row) => {
-    const idValue = parseInt(row.data.id || '0', 10)
+  const maxId = ctx.tableState.lines.reduce((max, line) => {
+    const idValue = parseInt(line.row?.data.id || '0', 10)
     return isNaN(idValue) ? max : Math.max(max, idValue)
   }, 0)
 
   // Trova le righe con id vuoto
-  const rowsWithEmptyId = ctx.sortedRows.filter(row => !row.data.id || row.data.id === '')
+  const rowsWithEmptyId = ctx.tableState.lines.filter(line => line.row && (!line.row?.data.id || line.row?.data.id === ''))
   
   if (rowsWithEmptyId.length === 0) {
     alert('Non ci sono righe con id vuoto')
@@ -185,14 +193,15 @@ async function handleGenerateStudentIds(ctx: TableActionContext) {
   let nextId = maxId + 1
   try {
     await Promise.all(
-      rowsWithEmptyId.map(row => {
+      rowsWithEmptyId.map(line => {
+        if (!line.row) return Promise.resolve()
         const id = nextId++
         return ctx.mutations.patchRow({
           variables: {
-            _id: new ObjectId(row._id),
-            updatedOn: row.updatedOn,
+            _id: line.row._id,
+            updatedOn: line.row.updatedOn,
             data: {
-              ...row.data,
+              ...line.row.data,
               id: id.toString()
             }
           }
@@ -214,16 +223,18 @@ function askOlimanagerCredentials(ctx: TableActionContext): {username: string, p
 }
 
 function filterValidRowsAndConfirm(ctx: TableActionContext): Row[] | null  {
-  const valid_rows = ctx.sortedRows
-    .filter(row => row._id && ctx.selectedIds.has(row._id.toString()))
-    .filter(row => !row.error) as Row[]
-  
-  if (valid_rows.length !== ctx.selectedIds.size 
-    && !confirm(`Solo ${valid_rows.length} righe su ${ctx.selectedIds.size} selezionate sono valide. Procedo con le righe valide?`)) {
+  const lines = ctx.tableState.lines
+  const selectedLineKeys = ctx.tableState.selectedLineKeys
+  const valid_lines = lines
+    .filter(line => line?.row?._id && selectedLineKeys.has(line.key))
+    .filter(line => line?.row && !line.row.error)
+
+  if (valid_lines.length !== selectedLineKeys.size
+    && !confirm(`Solo ${valid_lines.length} righe su ${selectedLineKeys.size} selezionate sono valide. Procedo con le righe valide?`)) {
       return null
     }
 
-  return valid_rows
+  return valid_lines.map(line => line.row as Row)
 }
 
 async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
