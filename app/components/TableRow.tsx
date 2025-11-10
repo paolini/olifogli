@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useMemo } from "react"
 import { Row } from "../graphql/generated"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
@@ -31,7 +31,8 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
       for (const field of columns.filter(col => col instanceof Field)) {
         map[field.name] = (newValue) => {
           console.log(`setter for field ${field.name} called with value ${newValue}`);
-          return setLineData(field.name, newValue) }
+          return setLineData(field.name, newValue) 
+        }
       }
       return map;
     }, [setLineData, columns]);
