@@ -4,7 +4,7 @@ import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import Schema from "../lib/schema/Schema"
 import { Column, RowField } from "./Table"
 import TableRowInput from "./TableRowInput"
-import { Line } from "./TableBody"
+import { Line } from "./Table"
 
 export type RowSelectionState = {
     isSelected: boolean,
@@ -12,16 +12,17 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({edit, schema, line, setLineData, columns, selectionState, focusColumnName,showStandardAnswers, onCellClick}:{
+export default function TableRow({edit, isEditing, line, setLineData, columns, selectionState, focusColumnName,showStandardAnswers, onCellClick, cellKeyDown}:{
     edit: boolean,
-    schema: Schema,
+    isEditing: boolean,
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
     selectionState: RowSelectionState,
     focusColumnName: string,
     showStandardAnswers: boolean,
-    onCellClick: (column: Column) => void
+    onCellClick: (column: Column) => void,
+    cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -61,12 +62,12 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
-            edit={edit && column.editable } hasFocus={focusColumnName === column.name} 
+            isEditing={isEditing} hasFocus={focusColumnName === column.name} 
             newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
             setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
-            moveLeft={() => moveLeft()} moveRight={() => moveRight()}
+            cellKeyDown={cellKeyDown}
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
@@ -103,7 +104,8 @@ export default function TableRow({edit, schema, line, setLineData, columns, sele
       return true;
     }
 
-    function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) {   
+    function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) { 
+        console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
         if (!focusColumnName) return;
         if (e.key === 'ArrowLeft') {
           if (moveLeft()) {
@@ -168,8 +170,8 @@ function InfoCell({line, column}:{
     </td>
 }
 
-function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, moveLeft, moveRight}:{
-  edit: boolean,
+function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown}:{
+  isEditing: boolean,
   hasFocus: boolean,
   field: Field,
   oldValue: string, // valore originale
@@ -177,10 +179,8 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   setNewValue: (newValue: string|undefined) => void,
   showStandardAnswers: boolean,
   onClick: () => void,
-  moveLeft: () => boolean,
-  moveRight: () => boolean,
+  cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
 }) {
-  const [isEditing, setIsEditing] = useState(false);
   let extra_css="";
   let correct_value = undefined;
   let title = newValue;
@@ -216,12 +216,12 @@ function DataCell({edit, hasFocus, field, oldValue, newValue, setNewValue, showS
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
   return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus && edit //&& isEditing
+      {hasFocus && isEditing
         ? <TableRowInput 
             field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
-            moveLeft={moveLeft} moveRight={moveRight}
+            cellKeyDown={cellKeyDown}
           />
         : value}
   </td>
