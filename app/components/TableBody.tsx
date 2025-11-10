@@ -68,22 +68,41 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
 
-    /*
-    const setModifiedData = useCallback((field: string, value: string | undefined) => {
-      // se value è undefined tolgo il campo dal record
-      // altrimenti lo aggiungo/aggiorno
-      setRowModifiedData(prev => {
-        if (value === undefined) {
-          const {[field]: _, ...data} = prev
-          return data
-        } else {
-          return {...prev, [field]: value}
-        }
-      })
-    }, [setRowModifiedData])
-    */
+    useEffect(effectFunction, [rows, setTableState]);
 
-    useEffect(() => {
+    const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
+
+    return <tbody onKeyDown={onKeyDown}>
+        {tableState.lines.map(line => {
+            const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
+            if (tableState.focusLineKey === line.key && error) {
+              return <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
+            }
+            return <TableRow
+                edit={edit}
+                schema={schema}
+                key={line.key}
+                line={line}
+                setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
+                columns={columns}
+                focusColumnName={focusColumnName}
+                selectionState={compute_selection_state_for_row(line.key)}
+                showStandardAnswers={showStandardAnswers}
+                onCellClick={(column: Column) => onCellClick(column,line)}
+            />}
+        )}
+        <tr><td></td><td colSpan={columns.length}>
+        { edit && (!tableState.focusLineKey || focusLine?.row) && 
+          <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
+                  aggiungi nuova riga
+              </Button>}
+        <Button onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
+          Aggiorna
+        </Button>
+        </td></tr>
+    </tbody>
+
+    function effectFunction() {
       // shortcut: se non ci sono modifiche da fare, non fare niente!
       setTableState(prevTableState => {
         console.log(`TableBody useEffect on rows change: updating tableState with ${rows.length} rows`)
@@ -182,40 +201,8 @@ export default function TableBody({edit, sheet, schema, rows, columns, tableStat
           lastClickedLineKey,
         }
       })
-    }, [rows, setTableState]);
-
-    const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
-
-    return <tbody onKeyDown={onKeyDown}>
-        {tableState.lines.map(line => {
-            const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
-            if (tableState.focusLineKey === line.key && error) {
-              return <tr key={line.key} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
-            }
-            return <TableRow
-                edit={edit}
-                schema={schema}
-                key={line.key}
-                line={line}
-                setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
-                columns={columns}
-                focusColumnName={focusColumnName}
-                selectionState={compute_selection_state_for_row(line.key)}
-                showStandardAnswers={showStandardAnswers}
-                onCellClick={(column: Column) => onCellClick(column,line)}
-            />}
-        )}
-        <tr><td></td><td colSpan={columns.length}>
-        { edit && (!tableState.focusLineKey || focusLine?.row) && 
-          <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
-                  aggiungi nuova riga
-              </Button>}
-        <Button onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
-          Aggiorna
-        </Button>
-        </td></tr>
-    </tbody>
-
+    }
+    
     function setLineData(line: Line, field: string, value: string|undefined) {
       setTableState(prev => ({
         ...prev,
