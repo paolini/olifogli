@@ -4,7 +4,6 @@ import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
 import { RowSelectionState } from "./TableRow";
-import { typeDefs } from "../graphql/typedefs";
 
 export function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
@@ -38,8 +37,7 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown, inputRef}:{
-  isEditing: boolean,
+export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown}:{
   hasFocus: boolean,
   field: Field,
   oldValue: string, // valore originale
@@ -48,16 +46,15 @@ export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNew
   showStandardAnswers: boolean,
   onClick: () => void,
   cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
-  inputRef: RefObject<HTMLInputElement | null>,
 }) {
   const tdRef = useRef<HTMLTableCellElement>(null);
     
   useEffect(() => {
-    if (hasFocus && isEditing && inputRef.current) {
-        inputRef.current.focus();
+    if (hasFocus && tdRef.current) {
+        tdRef.current.focus();
         //inputRef.current.select();
     }
-  }, [hasFocus, isEditing, inputRef]);
+  }, [hasFocus, tdRef]);
   
   let extra_css="";
   let correct_value = undefined;
@@ -95,26 +92,25 @@ export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNew
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
   return <td title={title} className={className} onClick={onClick} style={style} ref={tdRef}>
-      {hasFocus && isEditing
+      {hasFocus
         ? <TableCellInput 
             field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
             cellKeyDown={cellKeyDown}
-            inputRef={inputRef}
           />
         : value}
   </td>
 }
 
-export default function TableCellInput({field, value, setValue, oldValue, cellKeyDown, inputRef}:{
+export default function TableCellInput({field, value, setValue, oldValue, cellKeyDown}:{
     field: Field,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void
     cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
-    inputRef: RefObject<HTMLInputElement | null>,
 }) {
+    const inputRef = useRef<HTMLInputElement>(null);
     const lastValueRef = useRef(value);
 
     useEffect(() => {

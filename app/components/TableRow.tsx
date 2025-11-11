@@ -10,8 +10,7 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({isEditing, line, setLineData, columns, selectionState, focusColumnName, showStandardAnswers, onCellClick, cellKeyDown, moveLeft, moveRight, inputRef}:{
-    isEditing: boolean,
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, showStandardAnswers, onCellClick, cellKeyDown, moveLeft, moveRight}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
@@ -22,7 +21,6 @@ export default function TableRow({isEditing, line, setLineData, columns, selecti
     cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
     moveLeft: () => boolean,
     moveRight: () => boolean,
-    inputRef: RefObject<HTMLInputElement | null>,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -62,13 +60,12 @@ export default function TableRow({isEditing, line, setLineData, columns, selecti
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
-            isEditing={isEditing} hasFocus={focusColumnName === column.name} 
+            hasFocus={focusColumnName === column.name} 
             newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
             setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
             cellKeyDown={cellKeyDown}
-            inputRef={inputRef}
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
