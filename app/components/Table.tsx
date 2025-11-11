@@ -553,22 +553,25 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         } else {
             // trovo la riga successiva
             const newFocusLine = lines[row_index + 1]
+
+            // indietreggio sulle colonne se sono vuote
             // mi sposto a sinistra finché ci sono celle vuote
             const keys = editable_columns.map(col => col.name)
-            const values = keys.map(key => newFocusLine.data[key])
+            const values = keys.map(key => newFocusLine.data[key] || newFocusLine.row?.data[key] || '')
             let i = keys.indexOf(tableState.focusFieldName)
-            if (i<=0) i=0;
-            while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
-            if (keys[i]) {
-                // muovo il focus
-                // console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
-                saveLineIfNeeded(focusLine) // CORRETTO!
-                setTableState(prev => stateMoveFocusTo(prev, newFocusLine, keys[i]))
-            } else {
-                // tolgo il focus perché non ci sono colonne modificabili
-                // console.log(`no editable columns in next row, removing focus`)
-                saveLineIfNeeded(focusLine) // CORRETTO!
-                setTableState(prev => stateMoveFocusTo(prev, undefined, ''))
+            if (i>=0) {
+                while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
+                if (keys[i]) {
+                    // muovo il focus
+                    // console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
+                    saveLineIfNeeded(focusLine) // CORRETTO!
+                    setTableState(prev => stateMoveFocusTo(prev, newFocusLine, keys[i]))
+                } else {
+                    // tolgo il focus perché non ci sono colonne modificabili
+                    // console.log(`no editable columns in next row, removing focus`)
+                    saveLineIfNeeded(focusLine) // CORRETTO!
+                    setTableState(prev => stateMoveFocusTo(prev, undefined, ''))
+                }
             }
         }
     }
