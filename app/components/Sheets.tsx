@@ -16,6 +16,7 @@ import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
+import { pluralize } from '../lib/util';
 // removed unused font import
 
 const DELETE_WORKBOOK = gql`
@@ -194,13 +195,13 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={deleteEmptySheets}>
-                    Elimina {emptySheetIds.length} {emptySheetIds.length === 1 ? 'foglio vuoto' : 'fogli vuoti'}
+                    Elimina {pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}
                 </Button> 
                 <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={deleteSelectedSheets}>
-                    Elimina {selectedIds.length} {selectedIds.length === 1 ? 'foglio selezionato' : 'fogli selezionati'}
+                    Elimina {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button disabled={selectedIds.length === 0 || validatingRows} onClick={validateSelectedSheets}>
-                    Rivalida {selectedIds.length} {selectedIds.length === 1 ? 'foglio selezionato' : 'fogli selezionati'}
+                    Rivalida {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     Elimina raccolta
