@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react"
-import type { ChangeEvent, FocusEvent } from "react"
+import type { ChangeEvent, FocusEvent, RefObject } from "react"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
 import { RowSelectionState } from "./TableRow";
+import { typeDefs } from "../graphql/typedefs";
 
 export function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
@@ -37,7 +38,7 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown}:{
+export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown, inputRef}:{
   isEditing: boolean,
   hasFocus: boolean,
   field: Field,
@@ -47,11 +48,22 @@ export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNew
   showStandardAnswers: boolean,
   onClick: () => void,
   cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+  inputRef: RefObject<HTMLInputElement | null>,
 }) {
+  const tdRef = useRef<HTMLTableCellElement>(null);
+    
+  useEffect(() => {
+    if (hasFocus && isEditing && inputRef.current) {
+        inputRef.current.focus();
+        //inputRef.current.select();
+    }
+  }, [hasFocus, isEditing, inputRef]);
+  
   let extra_css="";
   let correct_value = undefined;
   let title = newValue;
   let value = newValue;
+
   if (field instanceof ChoiceAnswerField) {
     oldValue = oldValue.charAt(0);
     if (value?.length === 7) {
@@ -82,26 +94,27 @@ export function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNew
 
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
-  return <td title={title} className={className} onClick={onClick} style={style}>
+  return <td title={title} className={className} onClick={onClick} style={style} ref={tdRef}>
       {hasFocus && isEditing
-        ? <TableRowInput 
+        ? <TableCellInput 
             field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
             cellKeyDown={cellKeyDown}
+            inputRef={inputRef}
           />
         : value}
   </td>
 }
 
-export default function TableRowInput({field, value, setValue, oldValue, cellKeyDown}:{
+export default function TableCellInput({field, value, setValue, oldValue, cellKeyDown, inputRef}:{
     field: Field,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void
     cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+    inputRef: RefObject<HTMLInputElement | null>,
 }) {
-    const inputRef = useRef<HTMLInputElement>(null)
     const lastValueRef = useRef(value);
 
     useEffect(() => {
@@ -127,26 +140,26 @@ export default function TableRowInput({field, value, setValue, oldValue, cellKey
     />
 
     function onFocus(e: FocusEvent<HTMLInputElement>) {
-        console.log(`TableRowInput onFocus for field ${field.name}`);
+        // console.log(`TableRowInput onFocus for field ${field.name}`);
         if (field.type === 'choice-answer') {
             e.target.select()
         }
     }
 
     function cleanAndSet(value: string) {
-        console.log(`TableRowInput cleanAndSet for field ${field.name} with value: ${value}`);
+        // console.log(`TableRowInput cleanAndSet for field ${field.name} with value: ${value}`);
         const cleaned = field.clean(value)
         setValue(cleaned === oldValue ? undefined : cleaned)
     }
 
     function onChange(e: ChangeEvent<HTMLInputElement>) {
-        console.log(`TableRowInput onChange for field ${field.name} with value: ${e.currentTarget.value}`);
+        // console.log(`TableRowInput onChange for field ${field.name} with value: ${e.currentTarget.value}`);
         const value = e.currentTarget.value
         setValue(value === oldValue ? undefined : value)
     }
 
     function onBlur(e: FocusEvent<HTMLInputElement>) {
-        console.log(`TableRowInput onBlur for field ${field.name} with value: ${e.currentTarget.value}`);
+        // console.log(`TableRowInput onBlur for field ${field.name} with value: ${e.currentTarget.value}`);
         cleanAndSet(e.currentTarget.value)
     }
 }

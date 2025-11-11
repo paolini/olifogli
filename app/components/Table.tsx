@@ -10,10 +10,10 @@ import TableActions from './TableActions'
 import { useCheckboxesState } from './TableCheckboxes'
 import TableBody from './TableBody'
 import TableHeader from './TableHeader'
-import { KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
-import { gql, useMutation } from '@apollo/client'
+import { gql } from '@apollo/client'
 
 export type SortCriterium = {
     field: string|Field,
@@ -110,6 +110,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const loading = addLoading || patchLoading || deleteLoading
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(effectFunction, [rows, setTableState]);
 
@@ -131,7 +132,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     );
     const focusField = focusColumn instanceof Field ? focusColumn : undefined
     const isEditing = focusField && tableState.isEditing
-    const cellIsEditable = focusField && edit && focusField.editable
 
     return <div className="table-container">
         <div className="table-header">
@@ -158,13 +158,14 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     refreshLoading={refreshLoading}
                     error={error}
                     dismissErrors={dismissErrors}
-                    onCellClick={onCellClick}
+                    onCellClick={(column: Column, line: Line) => moveFocusTo(column, line)}
                     addNewRow={addNewRow}
                     loading={loading}
                     setLineData={setLineData}
                     cellKeyDown={cellKeyDown}
                     moveLeft={() => moveLeft()}
                     moveRight={() => moveRight()}
+                    inputRef={inputRef}
                 />
             </table>
         </div>
@@ -173,7 +174,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     function effectFunction() {
       // shortcut: se non ci sono modifiche da fare, non fare niente!
       setTableState(prevTableState => {
-        console.log(`TableBody useEffect on rows change: updating tableState with ${rows.length} rows`)
+        // console.log(`TableBody useEffect on rows change: updating tableState with ${rows.length} rows`)
         // incoming rows we must:
         // * preserve the existing RowType objects where possible to avoid re-rendering
         // * remove rows that are no longer present
@@ -212,7 +213,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                 // la riga non è stata modificata
                 lines.push(l);
               } else {
-                console.log(`Row ${id} has been modified externally ${l.row.updatedOn} -> ${incomingRow.updatedOn}`);
+                // console.log(`Row ${id} has been modified externally ${l.row.updatedOn} -> ${incomingRow.updatedOn}`);
                 if (Object.keys(l.data).length>0) {
                   // UGH! la riga è stata modificata da un altro utente 
                   // mentre io pure la stavo modificando!
@@ -243,11 +244,11 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             // non c'è stata nessuna modifica, 
             // questo evita di modificare lo stato senza motivo
             // SHORTCUT:
-            console.log(`useEffect showcut!`)
+            // console.log(`useEffect showcut!`)
             return prevTableState
         }
-        console.log(`useEffect detected changes: modified_count=${modified_count} deleted_count=${deletedLineKeys.size} new_count=${Object.keys(rowFromId).length}`)
-        
+        // console.log(`useEffect detected changes: modified_count=${modified_count} deleted_count=${deletedLineKeys.size} new_count=${Object.keys(rowFromId).length}`)
+
         // aggiungiamo le nuove righe in ingresso
         Object.values(rowFromId).forEach(r => {
           lines.push(newLine(r))
@@ -311,7 +312,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     }
 
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
-        console.log(`Table onKeyDown for key: ${e.key}`);
+        // console.log(`Table onKeyDown for key: ${e.key}`);
         const focusLineKey = tableState.focusLineKey
         // salva cella in modifica
         if (e.key === "Enter" && isEditing) {
@@ -354,14 +355,37 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             // sposto il focus a destra
             moveRight();
         } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && focusField && edit && !isEditing) {
+            // input diretto,
             // inizio la modifica della cella attiva
             e.preventDefault();
             e.stopPropagation();
-            cellKeyDown(e.key, undefined, () => e.preventDefault(), () => e.stopPropagation() );
             setTableState(prev => ({
                 ...prev,
                 isEditing: true
             }))
+            if (true) {
+                // aspetta che l'input venga creato
+                setTimeout(() => {
+                    if (inputRef.current) {
+                        // inserisci il carattere digitato sostituendo l'intero input
+                        inputRef.current.value = e.key;
+                    } else {
+                        // alert("miss")
+                    }
+                }, 0);
+            } else if (false) {
+                // inutile perché cellKeyDown non gestisce i singoli caratteri
+                // direttamente, ma delega all'input, che ancora non esiste
+                cellKeyDown(e.key, undefined, () => e.preventDefault(), () => e.stopPropagation())
+            } else {
+                // bisogna ritardare l'ingresso dell'input per 
+                // permettere alla cella di entrare in modalità modifica
+                setTableState(prev => {
+                    setTimeout(() => 
+                    cellKeyDown(e.key, undefined, () => e.preventDefault(), () => e.stopPropagation()), 0);
+                    return prev;
+                })
+            }
         }
     }
 
@@ -394,7 +418,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             })
         }
 
-        console.log(`cellKeyDown with key: ${key}`);
+        // console.log(`cellKeyDown with key: ${key}`);
         if (key === "Enter" || key === "Escape" 
             || key === "Tab" || key === "ArrowUp" 
             || key === "ArrowDown") {
@@ -496,10 +520,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         }
     }
 
-    async function onCellClick(column: Column, line: Line) {
-        console.log(`TableBody onCellClick lineKey=${line.key} column=${column.name}`)
+    function moveFocusTo(column: Column, line: Line) {
         if (line.key !== tableState.focusLineKey) saveLineIfNeeded(focusLine);
-        setTableState(prev => stateMoveFocusTo(prev, line, column.name))
+        const sameCell = line.key === tableState.focusLineKey && column.name === tableState.focusFieldName
+        setTableState(prev => stateMoveFocusTo(prev, line, column.name, sameCell))
     }
 
     // aggiunge una nuova riga vuota in fondo alla tabella
@@ -516,7 +540,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                 ...prev,
                 lines: [...prev.lines, line]
             }
-            return stateMoveFocusTo(state, line, focusFieldName)
+            return stateMoveFocusTo(state, line, focusFieldName, false)
         })
     }
 
@@ -554,14 +578,14 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         if (row_index + 1 === lines.length) {
             // era l'ultima riga della tabella
             if (editable_columns.length >0) {
-                console.log(`move focus to new row`)
+                // console.log(`move focus to new row`)
                 addNewRow()
             } else {
                 // non ci sono colonne da modificare
                 // togli il focus
-                console.log(`no editable columns, removing focus`)
+                // console.log(`no editable columns, removing focus`)
                 saveLineIfNeeded(focusLine)
-                setTableState(prev => stateMoveFocusTo(prev, undefined, ''))
+                setTableState(prev => stateMoveFocusTo(prev, undefined, '', false))
             }
         } else {
             // trovo la riga successiva
@@ -574,14 +598,14 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
             if (keys[i]) {
                 // muovo il focus
-                console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
+                // console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
                 saveLineIfNeeded(focusLine) // CORRETTO!
-                setTableState(prev => stateMoveFocusTo(prev, newFocusLine, keys[i]))
+                setTableState(prev => stateMoveFocusTo(prev, newFocusLine, keys[i], false))
             } else {
                 // tolgo il focus perché non ci sono colonne modificabili
-                console.log(`no editable columns in next row, removing focus`)
+                // console.log(`no editable columns in next row, removing focus`)
                 saveLineIfNeeded(focusLine) // CORRETTO!
-                setTableState(prev => stateMoveFocusTo(prev, undefined, ''))
+                setTableState(prev => stateMoveFocusTo(prev, undefined, '', false))
             }
         }
     }
@@ -600,9 +624,9 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         const newFocusLine = lines[next_index]
 
         // muovo il focus
-        console.log(`move focus to line ${newFocusLine.key}`)
+        // console.log(`move focus to line ${newFocusLine.key}`)
         saveLineIfNeeded(focusLine)
-        setTableState(prev => stateMoveFocusTo(prev, newFocusLine, prev.focusFieldName))
+        setTableState(prev => stateMoveFocusTo(prev, newFocusLine, prev.focusFieldName, false))
     }
 
     function moveLeft() {
@@ -611,7 +635,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
         if (currentIndex < 1) return false;
         const prevCol = columns[currentIndex - 1];
-        onCellClick(prevCol, focusLine);
+        moveFocusTo(prevCol, focusLine);
         return true
     }
 
@@ -621,28 +645,37 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
         if (currentIndex < 0 || currentIndex >= columns.length - 1) return false;
         const nextCol = columns[currentIndex + 1];
-        onCellClick(nextCol, focusLine);
+        moveFocusTo(nextCol, focusLine);
         return true;
     }
 
     // sposta il focus nella tabella
     // avvia il salvataggio della riga che perde il focus, se serve
     // questa funzione va usata dentro a setTableState
-    function stateMoveFocusTo(prev: TableState, line: Line|undefined, fieldName: string): TableState {
+    // se isEditing=false rimuove la modalità editing
+    // se isEditing=true mette, se possibile, la modalità editing
+    // se isEditing=undefined mantiene, se possibile, lo stato precedente
+    function stateMoveFocusTo(prev: TableState, line: Line|undefined, fieldName: string, setEditing?: boolean): TableState {
         // console.log(`moveFocusToSetter: from lineKey=${prev.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
-        
         // metti il focus sulla nuova riga
         const focusLineKey = line?.key || ''
 
-        if (focusLineKey === prev.focusLineKey && fieldName === prev.focusFieldName) {
+        if (focusLineKey === prev.focusLineKey && fieldName === prev.focusFieldName && (!setEditing || prev.isEditing)) {
             // console.log(`moveFocusToSetter: no change in focusLineKey`)
             return prev // SHORTCUT!
         }
         
+        // nuovi valori:
         const lines: Line[] = prev.lines
         const focusFieldName = fieldName
-        const focusField = columns.find(c => c.name === focusFieldName)
-        const isEditing = focusLineKey !== '' && focusFieldName !== '' && prev.isEditing && focusField !== undefined && (focusField instanceof Field) && focusField.editable
+        let isEditing = false
+
+        if (setEditing) {
+            // controllo se possibile entrare in madalità edit:
+            const focusField = columns.find(c => c.name === focusFieldName)
+            const focusFieldIsEditable = focusField !== undefined && (focusField instanceof Field) && focusField.editable
+            isEditing = focusFieldIsEditable
+        }
 
         return {
             ...prev,
@@ -688,7 +721,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         if (Object.keys(data).length === 0 || line.saving) {
             return
         } else {
-            console.log(`saveLineIfNeeded: saving line ${line.key} with data`, data)
+            // console.log(`saveLineIfNeeded: saving line ${line.key} with data`, data)
             const row = line.row
             const key = line.key  
             if (row) {
@@ -722,11 +755,11 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     }
 
     async function saveRow(row: Row, data: Data) {
-        console.log(`saving row ${row._id} with data`, data)
+        // console.log(`saving row ${row._id} with data`, data)
         
         function updateLineState(update: Partial<Line>) {
             setTableState(prev => {
-                console.log(`updateLineState called in saveRow`)
+                // console.log(`updateLineState called in saveRow`)
                 const lines: Line[] = prev.lines.map(line => line.row === row 
                     ? {...line, ...update}
                     : line)
@@ -739,7 +772,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
             updatedOn: row.updatedOn || new Date(),
             data,
         }})
-        console.log('saveRow result', res)
+        // console.log('saveRow result', res)
 
         const errors = res.errors
         const r: Row | undefined | null = res.data?.patchRow
