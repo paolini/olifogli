@@ -2,7 +2,6 @@ import { useSession, signIn } from "next-auth/react"
 
 import Workbooks from './Workbooks'
 import Button from './Button'
-import Sheets from './Sheets'
 import useProfile from "../lib/useProfile"
 import HomeMessage from './HomeMessage'
 
