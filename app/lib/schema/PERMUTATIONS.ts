@@ -116,15 +116,25 @@ function computeVariantMappings(variantCode:string, permutations_data: Permutati
     const questionCode = variantCode.charAt(2);
 
     const questions_permutation = permutations_data.questions[questionCode]?.map((i:number) => i-1);
-    const permutation_answers = permutations_data.answers[answerCode]+'X-';
-    const correct_raw = permutations_data.correct[year];
     if (!questions_permutation) {
-        return "codice compito non valido";
+        if (Object.keys(permutations_data.questions).length === 0) {
+            return "configurazione errata (manca 'questions_permutation')";
+        } else return "codice compito non valido";
     }
+
+    const permutation_answers = permutations_data.answers[answerCode]+'X-';
     if (!permutation_answers) {
+        if (Object.keys(permutations_data.answers).length === 0) {
+            return "configurazione errata (manca 'answers_permutation')";
+        }
         return "codice compito non valido";
     }
+
+    const correct_raw = permutations_data.correct[year];
     if (!correct_raw) {
+        if (Object.keys(permutations_data.correct).length === 0) {
+            return "configurazione errata (manca 'correct_answers')";
+        }
         return "codice compito non valido";
     }
     const correct_answers = correct_raw.split('');
