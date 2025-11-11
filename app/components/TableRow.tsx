@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { RefObject, useMemo } from "react"
 import { Field } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
@@ -10,8 +10,7 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({edit, isEditing, line, setLineData, columns, selectionState, focusColumnName,showStandardAnswers, onCellClick, cellKeyDown, moveLeft, moveRight}:{
-    edit: boolean,
+export default function TableRow({isEditing, line, setLineData, columns, selectionState, focusColumnName, showStandardAnswers, onCellClick, cellKeyDown, moveLeft, moveRight, inputRef}:{
     isEditing: boolean,
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
@@ -23,6 +22,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
     cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
     moveLeft: () => boolean,
     moveRight: () => boolean,
+    inputRef: RefObject<HTMLInputElement | null>,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -31,7 +31,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
       const map: Record<string, (v: string | undefined) => void> = {};
       for (const field of columns.filter(col => col instanceof Field)) {
         map[field.name] = (newValue) => {
-          console.log(`setter for field ${field.name} called with value ${newValue}`);
+          // console.log(`setter for field ${field.name} called with value ${newValue}`);
           return setLineData(field.name, newValue) 
         }
       }
@@ -53,8 +53,8 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
 
     const hasFocus = focusColumnName != ''
     const modified: boolean = Object.keys(line.data).length > 0;
-    const EMPTY_DATA = columns.filter(c => c instanceof Field).map(c => [c.name,''])
-    const oldData = line.row ? line.row.data : EMPTY_DATA
+    const EMPTY_DATA = useMemo(() => columns.filter(c => c instanceof Field).map(c => [c.name,'']), [columns])
+    const oldData = useMemo(() => line.row ? line.row.data : EMPTY_DATA, [line.row, EMPTY_DATA])
     const newData = {...oldData, ...line.data}
     
     return <tr className={`${className} clickable ${hasFocus ? 'focus' : ''}`} style={style} onKeyDown={onKeyDown}>
@@ -68,6 +68,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
             cellKeyDown={cellKeyDown}
+            inputRef={inputRef}
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
@@ -89,7 +90,7 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
     }
 
     function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) { 
-        console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
+        // console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
         if (!focusColumnName) return;
         if (e.key === 'ArrowLeft') {
           if (moveLeft()) {

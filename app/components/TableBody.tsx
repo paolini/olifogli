@@ -1,10 +1,10 @@
-import { Dispatch, SetStateAction } from "react"
+import { Dispatch, RefObject, SetStateAction } from "react"
 import TableRow, { RowSelectionState } from "./TableRow"
 import { Column, Line, TableState } from "./Table"
 import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDown, moveLeft, moveRight} : {
+export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDown, moveLeft, moveRight, inputRef} : {
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -21,6 +21,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
     moveLeft: () => boolean,
     moveRight: () => boolean,
+    inputRef: RefObject<HTMLInputElement | null>,
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
 
@@ -31,7 +32,6 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
               return  <tr key={`error-${line.key}`} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
             }
             return <TableRow
-                  edit={edit}
                   isEditing={tableState.isEditing}
                   key={line.key}
                   line={line}
@@ -44,6 +44,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
                   cellKeyDown={cellKeyDown}
                   moveLeft={moveLeft}
                   moveRight={moveRight}
+                  inputRef={inputRef}
               />
             }
         )}
