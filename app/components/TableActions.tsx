@@ -6,6 +6,7 @@ import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
+import { pluralize } from "../lib/util"
 
 export default function TableActions(input: TableActionInput) {
     const ctx = useTableActionsContext(input)
@@ -18,7 +19,7 @@ export default function TableActions(input: TableActionInput) {
             value="none"
         >
             <option value="none" disabled>
-            {ctx.tableState.selectedLineKeys.size} {`${ctx.tableState.selectedLineKeys.size===1 ? 'riga selezionata' : 'righe selezionate'}`}
+            {pluralize(ctx.tableState.selectedLineKeys.size, 'riga selezionata', 'righe selezionate')}
             </option>
             {Object.entries(actions).map(([key, action]) => {
             if (action.hidden(ctx)) return null
@@ -140,7 +141,7 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
   if (ctx.tableState.selectedLineKeys.size === 0) return
 
   const confirmed = confirm(
-    `Sei sicuro di voler eliminare ${ctx.tableState.selectedLineKeys.size} ${ctx.tableState.selectedLineKeys.size === 1 ? 'riga' : 'righe'}?`
+    `Sei sicuro di voler eliminare ${pluralize(ctx.tableState.selectedLineKeys.size, 'riga', 'righe')}?`
   )
   
   if (!confirmed) return

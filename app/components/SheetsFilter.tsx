@@ -1,6 +1,7 @@
 import { Dispatch, SetStateAction, useState } from "react"
 import { GetSheetsQuery, Maybe } from "../graphql/generated"
 import { schemas } from "../lib/schema"
+import { pluralize } from "../lib/util"
 
 export type SheetsFilterState = {
     schema: string, // initial value
@@ -87,7 +88,7 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
             <option value="chiuso_o_bloccato">Chiusi o bloccati</option>
             <option value="chiuso_non_bloccato">Chiusi ma non bloccati</option>
         </select>
-        <span>{filteredSheets.length} {filteredSheets.length === 1 ? "foglio" : "fogli"} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${sheets.length})`}</span>
+        <span>{pluralize(filteredSheets.length, "foglio", "fogli")} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${sheets.length})`}</span>
     </div>
     }   
 

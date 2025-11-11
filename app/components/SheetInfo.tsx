@@ -7,7 +7,7 @@ import Button from './Button'
 import Error from './Error'
 import {Row, Sheet, User, useDeleteSheetMutation } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
-import { myTimestamp } from '../lib/util'
+import { myTimestamp, pluralize } from '../lib/util'
 import { schemas } from '../lib/schema'
 
 
@@ -25,9 +25,9 @@ export default function SheetInfo({sheet,data,profile}:{
     return <>
         <SheetInfoPanel sheet={sheet} profile={profile} />
         <div>
-              <span><b>{rows.length}</b> {rows.length === 1 ? "riga" : "righe"}</span>
+              <span><b>{pluralize(rows.length, "riga", "righe")}</b></span>
               {' • '}
-              <span><b>{n_valid_rows}</b> {n_valid_rows === 1 ? "valida" : "valide"}</span>
+              <span><b>{pluralize(n_valid_rows, "valida", "valide")}</b></span>
               {n_valid_rows < rows.length && <>{' • '}<span>non è possibile chiudere il foglio</span></>}
               <br />
         </div>

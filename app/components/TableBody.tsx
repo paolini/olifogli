@@ -3,6 +3,7 @@ import TableRow, { RowSelectionState } from "./TableRow"
 import { Column, Line, TableState } from "./Table"
 import { ApolloError } from "@apollo/client"
 import Button from "./Button"
+import { pluralize } from "../lib/util"
 
 export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDownHandler, moveLeft, moveRight} : {
     edit: boolean,
@@ -53,6 +54,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
         <Button onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
           Aggiorna
         </Button>
+        <span className="mx-8">{pluralize(tableState.lines.length,"riga","righe")}</span>
         </td></tr>
     </tbody>
 
