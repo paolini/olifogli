@@ -3,7 +3,7 @@ import { useSession, signIn } from "next-auth/react"
 import Workbooks from './Workbooks'
 import Button from './Button'
 import useProfile from "../lib/useProfile"
-import HomeMessage from './HomeMessage'
+import GlobalMessage from './GlobalMessage'
 
 export default function Splash() {
   const { data: session } = useSession()
@@ -16,7 +16,14 @@ export default function Splash() {
   </div>
 
   return <div>
-    <HomeMessage />
+    <GlobalMessage name="home_message"
+      description="Messaggio della home page"
+    />
+    <GlobalMessage name="instructions"
+      title="dettagli"
+      description="Istruzioni per l'uso della piattaforma"
+      collapsed={true}
+    />
     <Workbooks />
   </div>
 }
