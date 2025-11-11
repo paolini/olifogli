@@ -1,9 +1,7 @@
-import { KeyboardEvent, useMemo, useState } from "react"
-import { Row } from "../graphql/generated"
-import { ChoiceAnswerField, Field } from "../lib/schema/fields"
-import Schema from "../lib/schema/Schema"
-import { Column, RowField } from "./Table"
-import TableRowInput from "./TableRowInput"
+import { useMemo } from "react"
+import { Field } from "../lib/schema/fields"
+import { Column } from "./Table"
+import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
 import { Line } from "./Table"
 
 export type RowSelectionState = {
@@ -90,24 +88,6 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
         return { className, style }
     }
 
-    /*
-    function moveLeft() {
-      const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-      if (currentIndex < 1) return false;
-      const prevCol = columns[currentIndex - 1];
-      onCellClick(prevCol);
-      return true
-    }
-
-    function moveRight() {
-      const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-      if (currentIndex < 0 || currentIndex >= columns.length - 1) return false;
-      const nextCol = columns[currentIndex + 1];
-      onCellClick(nextCol);
-      return true;
-    }
-    */
-
     function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) { 
         console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
         if (!focusColumnName) return;
@@ -141,91 +121,3 @@ export default function TableRow({edit, isEditing, line, setLineData, columns, s
     }
 }
 
-function CheckboxCell({selectionState}:{
-    selectionState: RowSelectionState
-}) {
-    const { isSelected, doSelect, doDeselect } = selectionState;
-    return <td className="checkbox-cell">
-      <input 
-        type="checkbox" 
-        checked={isSelected}
-        onChange={onChange}
-      />
-    </td>
-
-    function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-        // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
-        const native = e.nativeEvent
-        const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
-        const checked = e.currentTarget.checked
-        if (checked) doSelect(shift)
-        else doDeselect(shift)
-    }
-}
-
-function InfoCell({line, column}:{
-    line: Line,
-    column: RowField
-}) {
-    const value = line.row ? line.row[column.name as keyof Row] || '' : '';
-    return <td className={column.name}>
-        {(line.row && column.value_formatter) ? column.value_formatter({row: line.row,value}) : value}
-    </td>
-}
-
-function DataCell({isEditing, hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown}:{
-  isEditing: boolean,
-  hasFocus: boolean,
-  field: Field,
-  oldValue: string, // valore originale
-  newValue: string, // valore eventualmente modificato
-  setNewValue: (newValue: string|undefined) => void,
-  showStandardAnswers: boolean,
-  onClick: () => void,
-  cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
-}) {
-  let extra_css="";
-  let correct_value = undefined;
-  let title = newValue;
-  let value = newValue;
-  if (field instanceof ChoiceAnswerField) {
-    oldValue = oldValue.charAt(0);
-    if (value?.length === 7) {
-      // showStandardAnswers decides whether to show 
-      // the corresponding answers in the standard permutation (211/311)
-      correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
-      value = showStandardAnswers ? value.charAt(4) : value.charAt(0);
-      extra_css = value === correct_value
-        ? "correct"
-        : value === '-' 
-          ? "empty" 
-            : ["A", "B", "C", "D", "E"].includes(value) 
-              ? "incorrect" 
-              : "invalid";
-      title = (value === correct_value) ? value : `${value} (invece di ${correct_value})`;
-    }
-  }
-  if (showStandardAnswers && field.name === 'variant') {
-    if (value.length === 3) {
-    // mostra il codice della variante standard
-      value = `›${value.charAt(0)}11‹` 
-    }
-  }
-
-  const style = typeof field.css_style === 'function' 
-    ? field.css_style(value) 
-    : field.css_style;
-
-  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
-
-  return <td title={title} className={className} onClick={onClick} style={style}>
-      {hasFocus && isEditing
-        ? <TableRowInput 
-            field={field}
-            value={value} setValue={setNewValue} 
-            oldValue={oldValue}
-            cellKeyDown={cellKeyDown}
-          />
-        : value}
-  </td>
-}
