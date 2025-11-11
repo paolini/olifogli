@@ -1,10 +1,10 @@
-import { Dispatch, RefObject, SetStateAction } from "react"
+import { Dispatch, KeyboardEvent, SetStateAction } from "react"
 import TableRow, { RowSelectionState } from "./TableRow"
 import { Column, Line, TableState } from "./Table"
 import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDown, moveLeft, moveRight} : {
+export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDownHandler, moveLeft, moveRight} : {
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -18,7 +18,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     onCellClick: (column: Column, line: Line) => void,
     addNewRow: () => void,
     setLineData: (line: Line, field: string, value: string | undefined) => void,
-    cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+    cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     moveLeft: () => boolean,
     moveRight: () => boolean,
 }) {
@@ -39,7 +39,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
                   selectionState={compute_selection_state_for_row(line.key)}
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
-                  cellKeyDown={cellKeyDown}
+                  cellKeyDownHandler={cellKeyDownHandler}
                   moveLeft={moveLeft}
                   moveRight={moveRight}
               />
