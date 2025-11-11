@@ -139,6 +139,8 @@ export default function App() {
   };
 
   // Gestione degli eventi tastiera quando il focus è sul contenitore
+  //
+  // Come si garantisce che il focus sia sempre all'interno del contenitore?
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const { row, col } = selected;
     if (editing) return;
@@ -147,7 +149,7 @@ export default function App() {
     if (e.key === "Delete") {
       e.preventDefault();
       if (col === cols - 1) return; // ultima colonna "Punti" non modificabile
-      updateCell(row, col, "");
+      updateCell(row, col, ""); 
       setEditing(null);
       return;
     }
@@ -204,9 +206,22 @@ export default function App() {
       } else {
         // Per prima e ultima colonna: entra in modalità modifica
         setEditing(selected);
+
+        // questo comando potrebbe essere "fragile". Si assume
+        // che nel prossimo frame di esecuzione l'input sia 
+        // già montato e pronto per ricevere il carattere.
+        // Se così non fosse il carattere premuto verrebbe perso.
+        // Cosa succede se nel frattempo l'interfaccia viene aggiornata
+        // perché qualcos'altro è stato modificato? 
         setTimeout(() => {
           if (inputRef.current) {
+            // questa riga è quella che inserisce il carattere premuto
             inputRef.current.value = e.key;
+
+            // questa riga non ha effetto perché la gestione dei caratteri in 
+            // ingresso nell'<input> viene fatto dal gestore di default che 
+            // qui non viene chiamato visto che la funzione updateCell non 
+            // è collegata all'<input>.
             updateCell(row, col, e.key);
           }
         }, 0);
