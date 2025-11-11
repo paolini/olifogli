@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown'
 import MDEditor from '@uiw/react-md-editor'
 import '@uiw/react-md-editor/markdown-editor.css'
 import Button from './Button'
-import Loading from './Loading'
 import Error from './Error'
 import useProfile from '../lib/useProfile'
 
@@ -37,7 +36,7 @@ export default function HomeMessage() {
     const profile = useProfile()
     const [editing, setEditing] = useState(false)
     const [editValue, setEditValue] = useState('')
-    
+
     const { data, loading, error } = useQuery(GET_SETTING, {
         variables: { key: 'home_message' }
     })
@@ -82,7 +81,7 @@ export default function HomeMessage() {
     }
     
     return (
-        <div className="my-6 max-w-4xl">
+        <div className="mx-4 my-6 max-w-4xl">
             {editing ? (
                 <div className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm">
                     <div className="mb-4">
