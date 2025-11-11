@@ -10,7 +10,7 @@ import TableActions from './TableActions'
 import { useCheckboxesState } from './TableCheckboxes'
 import TableBody from './TableBody'
 import TableHeader from './TableHeader'
-import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { KeyboardEvent, KeyboardEventHandler, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
 import { gql } from '@apollo/client'
@@ -159,7 +159,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     addNewRow={addNewRow}
                     loading={loading}
                     setLineData={setLineData}
-                    cellKeyDown={cellKeyDown}
+                    cellKeyDownHandler={cellKeyDownHandler}
                     moveLeft={() => moveLeft()}
                     moveRight={() => moveRight()}
                 />
@@ -344,7 +344,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         }
     }
 
-    function cellKeyDown(key: string, input: HTMLInputElement|undefined, preventDefault: () => void, stopPropagation: () => void) {
+    function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
+        const key = e.key;
+        const input = e.currentTarget
+
         // input può essere undefined perché al primo 
         // carattere digitato non c'è ancora l'input nella cella
         // è però garantito che il primo carattere non è speciale
@@ -377,40 +380,43 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         if (key === "Enter" || key === "Escape" 
             || key === "Tab" || key === "ArrowUp" 
             || key === "ArrowDown") {
-            preventDefault()
+            e.preventDefault()
             return
         }
-        const cursorPos = input?.selectionStart || 0
-        const cursorEnd = input?.selectionEnd || 0
+        const cursorPos = input.selectionStart || 0
+        const cursorEnd = input.selectionEnd || 0
         const isAtStart = cursorPos === 0 && cursorEnd === 0
         const isAtEnd = cursorPos === input?.value.length && cursorEnd === input.value.length
 
         if (field.type === 'choice-answer') {
-            const newValue = choiceAnswerKeyDownHandler(key, preventDefault);
+            const newValue = choiceAnswerKeyDownHandler(e);
             if (newValue !== undefined) {
-                preventDefault()
+                e.preventDefault()
                 setValue(newValue === oldValue ? undefined : newValue)
                 return
             }
         } else if ((key === "ArrowLeft" && isAtStart)
             || (key === "ArrowRight" && isAtEnd)) {
             // fai gestire il movimento di focus alla tabella
-            preventDefault()
+            e.preventDefault()
             return
         } else if (key === "ArrowLeft" || key === "ArrowRight") {
             // evita che le componenti superiori intercettino l'evento
-            stopPropagation()
+            e.stopPropagation()
         } else if (field.type === 'date') {
-            const newValue = dateKeyDownHandler(key, input)
+            const newValue = dateKeyDownHandler(e)
             if (newValue !== undefined) {
-                preventDefault()
+                e.preventDefault()
                 setValue(newValue === oldValue ? undefined : newValue)
                 return
             }
         }
     }
 
-    function dateKeyDownHandler(key: string, input: HTMLInputElement|undefined):string|undefined {
+    // handler specifico per i campi di tipo 'date'
+    function dateKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
+        let key = e.key
+        const input = e.currentTarget
         if (key === ' ' || key==='.') key = '/'
 
         if (key >= '0' && key <= '9' || key === '/') {      
@@ -447,10 +453,12 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         return undefined
     }
 
-    function choiceAnswerKeyDownHandler(key: string, preventDefault: () => void):string|undefined {
+    // handler specifico per i campi di tipo 'choice-answer' (singolo carattere)
+    function choiceAnswerKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
+        let key = e.key
         if (key === "ArrowLeft" || key === "ArrowRight") {
             // lascia che il movimento venga gestito da TableRow
-            preventDefault()
+            e.preventDefault()
             return
         } else if (key === "Delete") {
             return ''

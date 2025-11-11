@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import type { ChangeEvent, FocusEvent, RefObject } from "react"
+import type { ChangeEvent, FocusEvent, KeyboardEvent, RefObject } from "react"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
@@ -37,7 +37,7 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDown}:{
+export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDownHandler}:{
   hasFocus: boolean,
   field: Field,
   oldValue: string, // valore originale
@@ -45,7 +45,7 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
   setNewValue: (newValue: string|undefined) => void,
   showStandardAnswers: boolean,
   onClick: () => void,
-  cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+  cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
 }) {
   const tdRef = useRef<HTMLTableCellElement>(null);
     
@@ -97,18 +97,18 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
             field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
-            cellKeyDown={cellKeyDown}
+            cellKeyDownHandler={cellKeyDownHandler}
           />
         : value}
   </td>
 }
 
-export default function TableCellInput({field, value, setValue, oldValue, cellKeyDown}:{
+export default function TableCellInput({field, value, setValue, oldValue, cellKeyDownHandler}:{
     field: Field,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void
-    cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+    cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const lastValueRef = useRef(value);
@@ -131,7 +131,7 @@ export default function TableCellInput({field, value, setValue, oldValue, cellKe
         value={value}
         onChange={onChange}
         onBlur={onBlur}
-        onKeyDown={e => cellKeyDown(e.key, e.currentTarget, () => e.preventDefault(), () => e.stopPropagation())}
+        onKeyDown={cellKeyDownHandler}
         onFocus={onFocus}
     />
 

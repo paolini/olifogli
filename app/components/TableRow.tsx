@@ -1,4 +1,4 @@
-import { RefObject, useMemo } from "react"
+import { KeyboardEvent, RefObject, useMemo } from "react"
 import { Field } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
@@ -10,7 +10,7 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, showStandardAnswers, onCellClick, cellKeyDown, moveLeft, moveRight}:{
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, showStandardAnswers, onCellClick, cellKeyDownHandler, moveLeft, moveRight}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
@@ -18,7 +18,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     focusColumnName: string,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
-    cellKeyDown: (key: string, input: HTMLInputElement, preventDefault: () => void, stopPropagation: () => void) => void,
+    cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     moveLeft: () => boolean,
     moveRight: () => boolean,
 }) {
@@ -65,7 +65,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
-            cellKeyDown={cellKeyDown}
+            cellKeyDownHandler={cellKeyDownHandler}
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
