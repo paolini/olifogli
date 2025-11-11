@@ -454,7 +454,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
 
     // handler specifico per i campi di tipo 'choice-answer' (singolo carattere)
     function choiceAnswerKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
-        let key = e.key
+        const key = e.key
         if (key === "ArrowLeft" || key === "ArrowRight") {
             // lascia che il movimento venga gestito da TableRow
             e.preventDefault()
