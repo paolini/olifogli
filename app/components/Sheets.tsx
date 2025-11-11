@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from 'react';
+import { useState } from 'react';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
@@ -75,12 +75,18 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
     const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
 
-    const allSheets: GetSheetsQuery['sheets'] = sheets;
+    type Sheet = GetSheetsQuery['sheets'][number]
+
+    const allSheets: Sheet[] = sheets;
     // Applica filtro per colonne dinamiche
     let filteredSheets = filterSheets(filterState, allSheets);
     Object.entries(columnFilters).forEach(([col, val]) => {
-        if (val)
-            filteredSheets = filteredSheets.filter(s => (s.commonData?.[col] ?? '').toString().toLowerCase().includes(val.toLowerCase()))
+        if (!val) return
+        if (col.startsWith('__')) {
+            filteredSheets = filteredSheets.filter((s: Sheet) => s[col.slice(2) as keyof Sheet]?.toString().toLowerCase().includes(val.toLowerCase()))
+        } else {
+            filteredSheets = filteredSheets.filter((s: Sheet) => (s.commonData?.[col] ?? '').toString().toLowerCase().includes(val.toLowerCase()))
+        }
     })
     let sortedSheets = filteredSheets;
     if (sort) {
@@ -112,6 +118,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const emptySheetIds = filteredSheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
 
     const columnsSet = new Set<string>()
+    
     // Colonne presenti nei dati filtrati
     filteredSheets.forEach(sheet => {
         if (!sheet.commonData) return
@@ -120,9 +127,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             columnsSet.add(key)
         })
     })
+
     // Colonne con filtro attivo
     Object.keys(columnFilters).forEach(key => {
-        if (columnFilters[key]) columnsSet.add(key)
+        if (columnFilters[key] && !key.startsWith('__')) columnsSet.add(key)
     })
     const columns = Array.from(columnsSet)
 
@@ -143,6 +151,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         ) : (
             <>
             <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={filteredSheets}/>
+            { JSON.stringify({columnFilters, filterMenuOpen, columns}) }
             <table>
                 <thead>
                     <tr>
@@ -191,7 +200,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={deleteWorkbookError} />
         <Error error={deleteSheetsError} />
         <Error error={validateRowsError} />
-    <Error error={updateSheetError} />
+        <Error error={updateSheetError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={deleteEmptySheets}>
@@ -244,7 +253,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 </span>
             </span>
             {filterMenuOpen === field && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, background: 'white', border: '1px solid #ccc', padding: 8, zIndex: 10, minWidth: 120 }}>
+                <div> 
+                {/*style={{ position: 'absolute', top: '100%', left: 0, background: 'white', border: '1px solid #ccc', padding: 8, zIndex: 10, minWidth: 120 }}>*/}
                     <input
                         type="text"
                         value={columnFilters[field] || ''}
