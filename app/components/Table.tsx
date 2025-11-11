@@ -114,14 +114,11 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
 
     useEffect(effectFunction, [rows, setTableState]);
 
-    if (!schema) {
-        return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
-    }
-
-    const columns: Column[] = [
+    const columns: Column[] = useMemo(() => [
         ...(checkboxesState.showAdditionalColumns ? ADDITIONAL_COLUMNS : []),
         ...schema.fields.filter(f => checkboxesState.showHiddenColumns || !f.hidden)
-    ]
+    ], [checkboxesState, schema.fields]);
+
     const focusLine = useMemo(
         () => edit ? tableState.lines.find(l => l.key === tableState.focusLineKey) : undefined,
         [edit, tableState.lines, tableState.focusLineKey]
@@ -132,6 +129,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     );
     const focusField = focusColumn instanceof Field ? focusColumn : undefined
     const isEditing = focusField && tableState.isEditing
+
+    if (!schema) {
+        return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
+    }
 
     return <div className="table-container">
         <div className="table-header">
