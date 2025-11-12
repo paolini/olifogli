@@ -66,7 +66,10 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
 }
 
 function RankingSection({ report }: { report: RankingReport }) {
-    const schemaName = schemas[report.schema].header
+    const schema = report.schema
+    const schemaName = schemas[schema]?.header
+
+    if (!schemaName) return <Error error={"Schema non selezionato"} />
 
     return (
         <div className="border rounded-lg p-4 space-y-4">
