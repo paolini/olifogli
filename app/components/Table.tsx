@@ -608,6 +608,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         if (!focusLine) return false
         const focusColumnName = tableState.focusFieldName
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+        clean(focusLine, focusColumnName);
         if (currentIndex < 1) return false;
         const prevCol = columns[currentIndex - 1];
         moveFocusTo(prevCol, focusLine);
@@ -618,6 +619,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         if (!focusLine) return false
         const focusColumnName = tableState.focusFieldName
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
+        clean(focusLine, focusColumnName);
         if (currentIndex < 0 || currentIndex >= columns.length - 1) return false;
         const nextCol = columns[currentIndex + 1];
         moveFocusTo(nextCol, focusLine);
@@ -672,6 +674,17 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             return rest;
         } else {
             return {...prev, [field]: value}
+        }
+    }
+
+    function clean(line: Line, fieldName: string) {
+        const field = columns.find(c => c.name === fieldName)
+        if (field instanceof Field) {
+            let value = line.data[field.name] 
+            if (value !== undefined) {
+                value = field.clean(value)
+                setLineData(line, field.name, value)
+            }
         }
     }
 

@@ -97,8 +97,8 @@ export default class ArchimedeCommon extends Competition {
     constructor(name: string, description: string) {
         super(name, description, [
             new Field('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
-            new Field('surname',{header: "Cognome"}),
-            new Field('name',{header: "Nome"}),
+            new Field('surname',{header: "Cognome", titleCase: true}),
+            new Field('name',{header: "Nome", titleCase: true}),
             new DateField('birthDate',{header: 'Data di nascita'}),
             new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno']}),
             new Field('classSection',{header:'Sezione'}),

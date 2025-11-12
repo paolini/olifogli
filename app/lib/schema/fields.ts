@@ -1,3 +1,4 @@
+import { __EnumValue } from "graphql"
 import { CSSProperties } from "react"
 
 type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
@@ -13,6 +14,7 @@ type FieldOptions = {
     hidden?: boolean
     required?: boolean
     type?: FieldType
+    titleCase?: boolean
 }
 
 export class Field {
@@ -25,8 +27,9 @@ export class Field {
     required: boolean = true
     hidden: boolean = false
     type: FieldType = 'text'
+    titleCase: boolean = false
 
-    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_class = `field-${this.name}`
@@ -39,6 +42,7 @@ export class Field {
         this.type = type || 'text'
         this.hidden = hidden !== undefined ? hidden : this.hidden
         this.required = required !== undefined ? required : true
+        this.titleCase = titleCase || false
     }
 
     // Get all possible names for this field (main name + alternatives)
@@ -47,7 +51,18 @@ export class Field {
     }
 
     clean(value: string): string {
-        return value.trim()
+        value = value.trim()
+        if (this.titleCase) {
+            if (value.toLocaleUpperCase() === value) {
+                // era tutto maiuscolo!
+                value = value.toLocaleLowerCase()
+            }
+            if (value.toLocaleLowerCase() === value) {
+                // l'utente non ha usato maiuscole/minuscole
+                value = value.replace(/\b\w/g, c => c.toLocaleUpperCase())
+            }
+        }
+        return value
     }
 
     isValid(value: string): boolean {
