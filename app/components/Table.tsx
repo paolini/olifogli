@@ -229,7 +229,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                   // UGH! la riga è stata modificata da un altro utente 
                   // mentre io pure la stavo modificando!
                   // ... ma forse l'altro utente sono io?
-                  if (!l.saving) alert(`La riga che stai modificando è stata modificata da un altro utente. Controlla e ripeti le tue modifiche.`);
+                  if (!l.saving) alert(`La riga che stai modificando è stata modificata. Controlla e ripeti le tue modifiche.`);
                   // r.data viene perso!
                 }
                 lines.push(newLine(incomingRow))
@@ -238,7 +238,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             } else {
               // la riga non c'è più... deve essere stata cancellata da qualcun'altro
               if (focusLineKey === l.key) {
-                alert(`La riga che stai modificando è stata cancellata da un altro utente.`)
+                alert(`La riga che stai modificando è stata cancellata.`)
                 focusLineKey = ''
                 focusFieldName = ''
               }
