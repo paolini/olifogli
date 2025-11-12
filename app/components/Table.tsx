@@ -547,6 +547,11 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         if (!edit) return;
         if (line.key !== tableState.focusLineKey) saveLineIfNeeded(focusLine);
         const sameCell = line.key === tableState.focusLineKey && column.name === tableState.focusFieldName
+        if (sameCell && !tableState.inputFocus) {
+            // entriamo in modalità input
+            setTableState(prev => ({...prev, inputFocus: true}))
+            return
+        }
         setTableState(prev => stateMoveFocusTo(prev, line, column.name))
     }
 
