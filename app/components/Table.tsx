@@ -145,10 +145,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         <div className="table-header">
             <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload}/>
         </div>
-        focusLineKey: {tableState.focusLineKey}
-        {} |
-        focusFieldName: {tableState.focusFieldName}
-        {} | inputFocus: {tableState.inputFocus ? "on" : "off"}
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             <table className="my-table">
                 <TableHeader 
