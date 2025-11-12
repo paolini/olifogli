@@ -6,7 +6,7 @@ import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
-import { myTimestamp, pluralize } from "../lib/util"
+import { pluralize } from "../lib/util"
 import Button from "./Button"
 
 export default function TableActions(input: TableActionInput) {
@@ -33,7 +33,7 @@ export default function TableActions(input: TableActionInput) {
             </option>
             })}
       </select>
-      {ctx.csvDownload && <Button onClick={ctx.csvDownload} className="ml-4 px-4">
+      {ctx.csvDownload && <Button onClick={() => ctx.csvDownload()} className="ml-4 px-4">
         Scarica CSV
       </Button>}
     </>
@@ -52,7 +52,7 @@ type TableActionInput = {
   userHasSheetAdminPrivileges: boolean,
   tableState: TableState,
   setTableState: Dispatch<SetStateAction<TableState>>,
-  csvDownload: () => void,
+  csvDownload: (rows?: Row[]) => void,
 }
 
 type TableActionContext = TableActionInput & {
@@ -140,6 +140,12 @@ const actions: Record<string, Action> = {
     label: 'Aggiorna risultati (Olimanager)',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerUpdateScores
+  },
+  'csv_download': {
+    hidden: ctx => false,
+    label: 'scarica CSV righe selezionate',
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
+    handler: handleCsvDownload
   }
 }
 
@@ -298,4 +304,14 @@ async function handleOlimanagerUpdateScores(ctx: TableActionContext) {
   alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
   
   if (ctx.refresh) await ctx.refresh()
+}
+
+async function handleCsvDownload(ctx: TableActionContext) {
+  const selectedLineKeys = ctx.tableState.selectedLineKeys
+  const rows = ctx.tableState.lines
+    .filter(line => line.row && selectedLineKeys.has(line.key))
+    .map(line => (line.row as Row))
+  if (ctx.csvDownload) {
+    await ctx.csvDownload(rows)
+  }
 }

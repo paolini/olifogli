@@ -155,11 +155,12 @@ function SheetBody({sheet,profile}: {
                 onClick={() => setTab('scans')}>
                 IMPORTA SCANSIONI
             </button>
+            {/*
             <button 
                 className={`tab-button ${tab === 'download' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('download')}>
                 SCARICA CSV
-            </button>
+            </button>*/}
         </div>
         <div className="flex-1 flex flex-col min-h-0 overflow-auto">
         { tab === 'info' && 
@@ -177,7 +178,7 @@ function SheetBody({sheet,profile}: {
                 polling={polling}
                 setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
-                csvDownload={csv_download}
+                csvDownload={csvDownload}
             />
         }
         { tab === 'csv' &&  
@@ -194,7 +195,7 @@ function SheetBody({sheet,profile}: {
         }
         { tab === 'download' && 
             <div>
-                <Button onClick={() => csv_download()}>
+                <Button onClick={() => csvDownload()}>
                     Scarica CSV
                 </Button>
             </div>
@@ -210,13 +211,14 @@ function SheetBody({sheet,profile}: {
         router.replace('?' + params.toString(), { scroll: false });
     }
 
-    async function csv_download() {
-        if (!data) return
+    async function csvDownload(rows?: Row[]) {
+        if (!rows) rows = data?.rows
+        if (!rows) return
         const filename = `${sheet.name}_${schema.name.replace(' ', '_')}_${myTimestamp(new Date()).replace(':', '-').replace(' ', '_')}.csv`
 
         await downloadCSVWithPapa(
             schema.csv_header(),
-            data.rows.map(row => schema.csv_row(row.data)),
+            rows.map(row => schema.csv_row(row.data)),
             filename
         )
         setLastCsvDownload(new Date())
