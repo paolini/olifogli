@@ -330,8 +330,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             e.stopPropagation();
             // esco dalla modalità modifica
             const focusLine = tableState.lines.find(l => l.key === focusLineKey)
-            if (focusLine && focusLine.data.keys.length>0) {
-                if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) return
+            if (focusLine && Object.keys(focusLine.data).length > 0) {
+                if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) {
+                    return
+                }
             } 
             cancelUnsavedModification();
         } else if (e.key === "ArrowDown" && focusLine) {
@@ -523,7 +525,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
 
     function cancelUnsavedModification() {
         if (!focusLine) return
-        if (focusLine.data.keys.length === 0 && !focusLine.error) {
+        if (Object.keys(focusLine.data).length === 0 && !focusLine.error) {
             setTableState(prev => ({
                 ...prev,
                 focusLineKey: '',
