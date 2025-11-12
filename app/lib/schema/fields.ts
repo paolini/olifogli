@@ -15,6 +15,7 @@ type FieldOptions = {
     required?: boolean
     type?: FieldType
     titleCase?: boolean
+    options?: string[]
 }
 
 export class Field {
@@ -28,8 +29,9 @@ export class Field {
     hidden: boolean = false
     type: FieldType = 'text'
     titleCase: boolean = false
+    options: string[]|undefined = undefined
 
-    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, options}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_class = `field-${this.name}`
@@ -43,6 +45,7 @@ export class Field {
         this.hidden = hidden !== undefined ? hidden : this.hidden
         this.required = required !== undefined ? required : true
         this.titleCase = titleCase || false
+        this.options = options || undefined
     }
 
     // Get all possible names for this field (main name + alternatives)
@@ -66,7 +69,9 @@ export class Field {
     }
 
     isValid(value: string): boolean {
-        return !this.required || value !== ''
+        if (this.required && !value) return false
+        if (this.options && !this.options.includes(value) && value !=='') return false
+        return true
     }
 
     csv(value: string): string {

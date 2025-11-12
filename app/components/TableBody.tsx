@@ -61,7 +61,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
             <input type="checkbox" checked={!!polling} onChange={e => setPolling(e.target.checked)} /> 
             {} aggiornamento automatico
           </label>
-        <span className="mx-8">{pluralize(tableState.lines.length,"riga","righe")}</span>
+        <span className="mx-8">{pluralize(tableState.lines.length,"riga","righe")}, {pluralize(tableState.lines.filter(line => !line?.row?.error).length,"valida","valide")}</span>
         </td></tr>
     </tbody>
 

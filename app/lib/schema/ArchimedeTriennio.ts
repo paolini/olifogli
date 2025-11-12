@@ -6,6 +6,6 @@ export default class ArchimedeTriennio extends ArchimedeCommon  {
         super('archimede_triennio', 'Archimede Triennio')   
         this.header_essential = 'triennio'
         this.fields.filter(f => f instanceof OptionsField)
-            .forEach(f => {f.choices = ['3','4','5']})
+            .forEach(f => {f.options = ['3','4','5']})
         }
 }
