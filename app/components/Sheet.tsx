@@ -118,6 +118,7 @@ function SheetBody({sheet,profile}: {
         variables: {sheetId: sheet._id},
         pollInterval: (polling || tab === 'info') ? 5000 : 0
     });
+    const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
 
     const refresh = async () => {
         await refetch()
@@ -175,6 +176,8 @@ function SheetBody({sheet,profile}: {
                 refreshLoading={loading}
                 polling={polling}
                 setPolling={setPolling}
+                lastCsvDownload={lastCsvDownload}
+                csvDownload={csv_download}
             />
         }
         { tab === 'csv' &&  
@@ -209,13 +212,14 @@ function SheetBody({sheet,profile}: {
 
     async function csv_download() {
         if (!data) return
-        const filename = myTimestamp(new Date()).replace(':', '-').replace(' ', '_') + '.csv'
+        const filename = `${sheet.name}_${schema.name.replace(' ', '_')}_${myTimestamp(new Date()).replace(':', '-').replace(' ', '_')}.csv`
 
-        downloadCSVWithPapa(
+        await downloadCSVWithPapa(
             schema.csv_header(),
             data.rows.map(row => schema.csv_row(row.data)),
             filename
         )
+        setLastCsvDownload(new Date())
     }
 }
 

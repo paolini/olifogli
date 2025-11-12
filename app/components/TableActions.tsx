@@ -6,11 +6,13 @@ import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
-import { pluralize } from "../lib/util"
+import { myTimestamp, pluralize } from "../lib/util"
+import Button from "./Button"
 
 export default function TableActions(input: TableActionInput) {
     const ctx = useTableActionsContext(input)
     return <>
+        {myTimestamp(ctx.tableState.lastCsvDownload)}
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
@@ -32,6 +34,9 @@ export default function TableActions(input: TableActionInput) {
             </option>
             })}
       </select>
+      {ctx.csvDownload && <Button onClick={ctx.csvDownload} className="ml-4 px-4">
+        Scarica CSV
+      </Button>}
     </>
 }
 
@@ -48,6 +53,7 @@ type TableActionInput = {
   userHasSheetAdminPrivileges: boolean,
   tableState: TableState,
   setTableState: Dispatch<SetStateAction<TableState>>,
+  csvDownload: () => void,
 }
 
 type TableActionContext = TableActionInput & {
@@ -66,7 +72,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRowsMutation()
   const [patchRow, { loading: patchLoading }] = usePatchRowMutation()
 
@@ -93,7 +99,8 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
         },
 
         olimanagerEmail, setOlimanagerEmail,
-        olimanagerPassword, setOlimanagerPassword
+        olimanagerPassword, setOlimanagerPassword,
+        csvDownload,
     }
 }
 
@@ -140,8 +147,15 @@ const actions: Record<string, Action> = {
 async function handleDeleteSelectedRows(ctx: TableActionContext) {
   if (ctx.tableState.selectedLineKeys.size === 0) return
 
+  const nLines = ctx.tableState.selectedLineKeys.size
+
+  if (nLines > 1 && (!ctx.tableState.lastCsvDownload || (new Date().getTime() - ctx.tableState.lastCsvDownload.getTime()) > 60*1000)) {
+    alert(`L'eliminazione delle righe è una operazione irreversibile. Prima di procedere, usa la funzione "scarica CSV" per archiviare i dati inseriti.`)
+    return
+  }
+
   const confirmed = confirm(
-    `Sei sicuro di voler eliminare ${pluralize(ctx.tableState.selectedLineKeys.size, 'riga', 'righe')}?`
+    `Sei sicuro di voler eliminare ${pluralize(nLines, 'riga', 'righe')}? L'operazione è irreversibile.`
   )
   
   if (!confirmed) return

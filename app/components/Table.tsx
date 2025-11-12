@@ -78,6 +78,7 @@ export type TableState = {
   focusFieldName: string, // colonna attualmente in modifica o ''
   selectedLineKeys: Set<string>, // righe selezionate
   lastClickedLineKey: string, // ultima riga cliccata (per selezione con shift) potrebbe non esistere più...
+  lastCsvDownload?: Date, // istante dell'ultimo download CSV
 }
 
 export const EMPTY_TABLE_STATE: TableState = {
@@ -85,23 +86,26 @@ export const EMPTY_TABLE_STATE: TableState = {
     focusLineKey: '',
     focusFieldName: '',
     selectedLineKeys: new Set<string>(),
-    lastClickedLineKey: ''
+    lastClickedLineKey: '',
+    lastCsvDownload: undefined,
 }
 
-export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling}: {
-  edit: boolean,
-  rows: Row[],
-  sheet: Sheet,
-  refresh?: () => Promise<void>,
-  refreshLoading?: boolean,
-  polling: boolean,
-  setPolling: Dispatch<SetStateAction<boolean>>
+export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload}: {
+    edit: boolean,
+    rows: Row[],
+    sheet: Sheet,
+    refresh?: () => Promise<void>,
+    refreshLoading?: boolean,
+    polling: boolean,
+    setPolling: Dispatch<SetStateAction<boolean>>,
+    lastCsvDownload?: Date,
+    csvDownload: () => void,
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
     const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
     const [checkboxesState, setCheckboxesState] = useCheckboxesState();
-    const [ tableState, setTableState ] = useState<TableState>(EMPTY_TABLE_STATE)
+    const [tableState, setTableState ] = useState<TableState>(EMPTY_TABLE_STATE);
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
     const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRowMutation() // useAddRow()
     const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRowMutation() // usePatchRow()
@@ -112,6 +116,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
+    useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
     useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
     useEffect(effectFunction, [rows, setTableState]);
 
@@ -136,7 +141,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
 
     return <div className="table-container">
         <div className="table-header">
-            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState}/>
+            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             <table className="my-table">
