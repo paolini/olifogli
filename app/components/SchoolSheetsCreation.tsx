@@ -6,6 +6,7 @@ import Button from './Button'
 import { Data } from '../lib/models'
 import Loading from './Loading'
 import { gql } from '@apollo/client'
+import { pluralize } from '../lib/util'
 
 type Job = {
     rowId: ObjectId|null,
@@ -14,8 +15,9 @@ type Job = {
     schema: "archimede_biennio"|"archimede_triennio",
     permissions: Permission[],
     commonData: Data,
-    message?: string,
+    action?: string,
     selected?: boolean
+    messages?: string[]
 }
 
 /**
@@ -42,7 +44,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         { sheetsLoading && <div>caricamento fogli...</div> }
         <Error error={sheetsError} />
         { sheets && rows && 
-            <Process jobsCallback={jobs} workbookId={workbookId} sheetId={sheetId} done={done}/>
+            <Process jobsCallback={jobs} workbookId={workbookId} done={done}/>
         }
     </div>
 
@@ -63,16 +65,28 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                 // Nuovo job: viene creato
                 jobs[id] = {
                     ...job,
-                    message: 'crea',
-                    selected: job.permissions.length > 0
+                    action: 'crea',
+                    selected: job.permissions.length > 0,
+                    messages: []
                 }
                 if (shouldLog) console.log(`[${job.name}] ${job.schema}: crea (nuovo)`, {permissions: job.permissions, commonData: job.commonData, hasSheet: !!job.sheet})
             } else {
-                if (existing.message === 'crea') {
+                if (existing.action === 'crea') {
+                    let modified = false
+                    const modifications: string[] = []
                     // Il job esiste ed è in stato "crea": lo aggiorniamo
                     existing.rowId = job.rowId
                     // Merge permissions avoiding duplicates
                     const mergedPermissions = [...existing.permissions]
+                    for (const p of existing.permissions) {
+                        const match = job.permissions.find(np => 
+                            (p.email && np.email && p.email === np.email) ||
+                            (p.userId && np.userId && p.userId.equals(np.userId))
+                        )
+                        if (!match) {
+                            modifications.push(`(!) rimosso permesso ${p.email || p.userId} (${p.role})`)
+                        }
+                    }
                     for (const newPerm of job.permissions) {
                         const exists = mergedPermissions.some(p => 
                             (p.email && newPerm.email && p.email === newPerm.email) ||
@@ -80,19 +94,32 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                         )
                         if (!exists) {
                             mergedPermissions.push(newPerm)
+                            modified = true
+                            modifications.push(`aggiunto permesso ${newPerm.email || newPerm.userId} (${newPerm.role})`)
                         }
                     }
                     existing.permissions = mergedPermissions
-                    existing.commonData = {
-                        ...existing.commonData, 
-                        ...job.commonData}
-                    existing.message = 'aggiorna'
+
+                    for (const [k, v] of Object.entries(job.commonData)) {
+                        if (existing.commonData[k] !== v) {
+                            existing.commonData[k] = v
+                            modified = true
+                            modifications.push(`commonData.${k} cambiato da "${existing.commonData[k]}" a "${v}"`)
+                        }
+                    }
+                    if (modified) {    
+                        existing.action = 'aggiorna'
+                    } else {
+                        existing.action = 'immutato'
+                        existing.selected = false
+                    }
+                    existing.messages = [...existing.messages || [], ...modifications]
                     if (shouldLog) console.log(`[${job.name}] ${job.schema}: aggiorna (era "crea")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
                 } else {
                     // Il job esiste ed è già stato aggiornato: duplicato
-                    existing.message = 'duplicato'
+                    existing.action = 'duplicato'
                     existing.selected = false
-                    if (shouldLog) console.log(`[${job.name}] ${job.schema}: duplicato (era "${existing.message}")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
+                    if (shouldLog) console.log(`[${job.name}] ${job.schema}: duplicato (era "${existing.action}")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
                 }
             }
         }
@@ -157,15 +184,15 @@ export const UPDATE_SHEETS = gql`
   }
 `
 
-function Process({jobsCallback, workbookId, sheetId, done}: {
+function Process({jobsCallback, workbookId, done}: {
     jobsCallback: () => Promise<Record<string,Job>>,
     workbookId: ObjectId
-    sheetId: ObjectId
     done: () => void
 }) {
     const [createSheets, {loading: loadingCreate, error: errorCreate}] = useAddSheetsMutation()
     const [updateSheetsMutation, {loading: loadingUpdate, error: errorUpdate}] = useUpdateSheetsMutation()
     const [jobs, setJobs] = useState<null|Record<string,Job>>(null)
+    const [filterUnchanged, setFilterUnchanged] = useState(false)
     
     const loading = loadingCreate || loadingUpdate
     const error = errorCreate || errorUpdate
@@ -179,21 +206,31 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
         <Button className="mx-2" disabled={loading} onClick={go} >
             procedi
         </Button>
-        {} crea {Object.values(jobs).filter(job => job.selected && job.message === 'crea').length} fogli
-        {} aggiorna {Object.values(jobs).filter(job => job.selected && job.message === 'aggiorna').length} fogli
+        {} crea {pluralize(Object.values(jobs).filter(job => job.selected && job.action === 'crea').length,"foglio","fogli")},
+        {} aggiorna {pluralize(Object.values(jobs).filter(job => job.selected && job.action === 'aggiorna').length,"foglio","fogli")}
+        <label className="mx-4">
+            <input type="checkbox" checked={filterUnchanged} onChange={() => setFilterUnchanged(v => !v)}/>
+            {} nascondi immutati/duplicati
+        </label>
         <Error error={error}/>
         <table>
             <thead>
                 <tr>
                     <th></th>
+                    <th>azione</th>
                     <th>schema</th>
                     <th>codice</th>
                     <th>referenti</th>
                     <th>scuola</th>
-                    <th>città</th></tr>
+                    <th>città</th>
+                    <th>messaggi</th>
+                </tr>
             </thead>
             <tbody>
-                {Object.values(jobs).map(job => <tr key={job.name+'-'+job.schema}>
+                {Object.values(jobs)
+                    .filter(job => (!filterUnchanged || !["immutato","duplicato"].includes(job.action || '')))
+                    .map(job => 
+                <tr key={job.name+'-'+job.schema}>
                 <td>
                     <input 
                         type="checkbox" 
@@ -212,7 +249,9 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
                             })
                         }}
                         />
-                    {} {job.message}
+                </td>
+                <td>
+                    {job.action}
                 </td>
                 <td>
                     {job.schema}
@@ -229,6 +268,7 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
                 <td>
                     {job.commonData["Città_scuola"]}
                 </td>
+                <td title={(job.messages || []).join(', ')}>{job.messages?.length ? `${job.messages?.length} messaggi` : ''}</td>
                 </tr>)}
             </tbody>
         </table>
@@ -239,7 +279,7 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
         
         // Separa i job da creare da quelli da aggiornare
         const sheetsToCreate = jobsList
-            .filter(job => job.message === 'crea')
+            .filter(job => job.action === 'crea')
             .map(job => ({
                 schema: job.schema,
                 workbookId,
@@ -253,16 +293,8 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
             }))
         
         const sheetsToUpdate = jobsList
-            .filter(job => job.message === 'aggiorna' && job.sheet?._id)
-            .map(job => ({
-                _id: job.sheet!._id!,
-                permissions: job.permissions.map(p => ({
-                    email: p.email,
-                    userId: p.userId,
-                    role: p.role
-                })),
-                commonData: job.commonData,
-            }))
+            .filter(job => job.action === 'aggiorna' && job.sheet?._id)
+            .map(update_info_from_job)
         
         console.log('Sheets to create:', sheetsToCreate)
         console.log('Sheets to update:', sheetsToUpdate)
@@ -291,3 +323,24 @@ function Process({jobsCallback, workbookId, sheetId, done}: {
     }
 }
 
+type UpdateInfo = {
+    _id: ObjectId,
+    permissions: {
+        email?: string,
+        userId?: ObjectId,
+        role: string
+    }[],
+    commonData: Data
+}
+
+function update_info_from_job(job: Job): UpdateInfo {
+    return {
+        _id: job.sheet!._id!,
+        permissions: job.permissions.map(p => ({
+            email: p.email || undefined,
+            userId: p.userId || undefined,
+            role: p.role
+        })),
+        commonData: job.commonData,
+    }
+}
