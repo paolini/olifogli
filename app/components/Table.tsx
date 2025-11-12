@@ -546,10 +546,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         const lines = tableState.lines
         const row_index = lines.indexOf(focusLine)
         if (row_index < 0) return // non dovrebbe succedere!
-        const editable_columns = columns.filter(col => (col instanceof Field && !col.hidden && col.editable))
+        const visible_columns = columns.filter(col => (col instanceof Field && !col.hidden))
         if (row_index + 1 === lines.length) {
             // era l'ultima riga della tabella
-            if (editable_columns.length >0) {
+            if (visible_columns.length >0) {
                 // console.log(`move focus to new row`)
                 addNewRow()
             } else {
@@ -565,7 +565,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
 
             // indietreggio sulle colonne se sono vuote
             // mi sposto a sinistra finché ci sono celle vuote
-            const keys = editable_columns.map(col => col.name)
+            const keys = visible_columns.map(col => col.name)
             const values = keys.map(key => newFocusLine.data[key] || newFocusLine.row?.data[key] || '')
             let i = keys.indexOf(tableState.focusFieldName)
             if (i>=0) {
