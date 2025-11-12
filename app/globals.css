@@ -228,7 +228,7 @@ tr.modified {
 
 tr.focus {
   background-color: #dff8ff;
-}s
+}
 
 td.modified {
   background-color: var(--recent-highlight-darker);
@@ -364,6 +364,10 @@ td.focus {
   outline: 2px solid #0078ff;
   outline-offset: -2px;
   box-shadow: 0 0 4px rgba(0,120,255,0.3);
+}
+
+td.input-focus {
+  background-color: #bdf1ff;
 }
 
 td.workbook-data-value {

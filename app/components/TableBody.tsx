@@ -5,7 +5,7 @@ import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 import { pluralize } from "../lib/util"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDownHandler, moveLeft, moveRight, polling, setPolling} : {
+export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDownHandler, moveRightOrLeft, polling, setPolling} : {
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -20,8 +20,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     addNewRow: () => void,
     setLineData: (line: Line, field: string, value: string | undefined) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-    moveLeft: () => boolean,
-    moveRight: () => boolean,
+    moveRightOrLeft: (n: number) => boolean,
     polling: boolean,
     setPolling: Dispatch<SetStateAction<boolean>>
 }) {
@@ -39,12 +38,12 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
                   setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
                   columns={columns}
                   focusColumnName={focusColumnName}
+                  inputFocus={!!(focusColumnName && tableState.inputFocus)}
                   selectionState={compute_selection_state_for_row(line.key)}
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
                   cellKeyDownHandler={cellKeyDownHandler}
-                  moveLeft={moveLeft}
-                  moveRight={moveRight}
+                  moveRightOrLeft={moveRightOrLeft}
               />
             }
         )}
