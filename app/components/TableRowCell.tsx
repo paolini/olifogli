@@ -48,11 +48,14 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
   cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
 }) {
   const tdRef = useRef<HTMLTableCellElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
     
   useEffect(() => {
-    if (hasFocus && tdRef.current) {
-        //tdRef.current.focus();
-        //inputRef.current.select();
+    if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+    } else if (hasFocus && tdRef.current) {
+        tdRef.current?.focus();
     }
   }, [hasFocus, tdRef]);
   
@@ -98,28 +101,21 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
             cellKeyDownHandler={cellKeyDownHandler}
+            inputRef={inputRef}
           />
         : value}
   </td>
 }
 
-export default function TableCellInput({field, value, setValue, oldValue, cellKeyDownHandler}:{
+export default function TableCellInput({field, value, setValue, oldValue, cellKeyDownHandler, inputRef}:{
     field: Field,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
+    inputRef: RefObject<HTMLInputElement|null>
 }) {
-    const inputRef = useRef<HTMLInputElement>(null);
     const lastValueRef = useRef(value);
-
-    useEffect(() => {
-        const input = inputRef.current
-        if (input) {
-            input.focus()
-            //input.select()
-        }
-    }, [inputRef])
 
     useEffect(() => {
         lastValueRef.current = value;
