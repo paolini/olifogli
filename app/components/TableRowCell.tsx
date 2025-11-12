@@ -51,7 +51,7 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
     
   useEffect(() => {
     if (hasFocus && tdRef.current) {
-        tdRef.current.focus();
+        //tdRef.current.focus();
         //inputRef.current.select();
     }
   }, [hasFocus, tdRef]);
