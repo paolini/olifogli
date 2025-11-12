@@ -289,12 +289,12 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         if (field instanceof Field) {
             const sort_criteria = [{ campo: field, direzione: direction }]
             setTableState(prev => {
-                const lines = [...prev.lines]
-                tableOrdina(sort_criteria, lines)
-                if (!lines.some((line, i) => line !== prev.lines[i])) {
+                const prev_lines = prev.lines
+                const lines = tableOrdina(sort_criteria, prev_lines)
+                if (!prev_lines.some((line, i) => line !== lines[i])) {
                     return prev // shortcut: don't modify the array
                 }
-                return {...prev,lines}
+                return {...prev, lines}
             })
         } else {
             setTableState(prev => {
