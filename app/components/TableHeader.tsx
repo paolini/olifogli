@@ -39,9 +39,11 @@ export default function TableHeader({schema, columns, allSelected, selectAll, se
           : <th scope="col" key={col.name} className={col.name}>
                 {col.label}
                 <SortIcon direction={sortCriterium.field === col.name ? sortCriterium.direction : 0} doSort={(direction) => doSortRows(col.name, direction)} />
-              </th>
+             </th>
           )}
-          <th scope="col" className="actions-cell"></th>
+          <th scope="col" className="actions-cell">
+                <SortIcon direction={sortCriterium.field === 'error' ? sortCriterium.direction : 0} doSort={(direction) => doSortRows('error', direction)} />
+          </th>
         </tr>
       </thead>
     </>
