@@ -10,17 +10,17 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, showStandardAnswers, onCellClick, cellKeyDownHandler, moveLeft, moveRight}:{
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, showStandardAnswers, onCellClick, cellKeyDownHandler, moveRightOrLeft}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
     selectionState: RowSelectionState,
     focusColumnName: string,
+    inputFocus: boolean,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-    moveLeft: () => boolean,
-    moveRight: () => boolean,
+    moveRightOrLeft: (n: number) => boolean,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -55,12 +55,13 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     const oldData = useMemo(() => line.row ? line.row.data : EMPTY_DATA, [line.row, EMPTY_DATA])
     const newData = {...oldData, ...line.data}
     
-    return <tr className={`${className} clickable ${hasFocus ? 'focus' : ''}`} style={style} onKeyDown={onKeyDown}>
+    return <tr className={`${className} clickable ${hasFocus ? 'focus' : ''}`} style={style}>
         <CheckboxCell selectionState={selectionState} />
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 
             key={column.name} field={column} 
             hasFocus={focusColumnName === column.name} 
+            inputFocus={inputFocus}
             newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
             setNewValue={setters[column.name]}  
             showStandardAnswers={showStandardAnswers} 
@@ -89,33 +90,6 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) { 
         // console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
         if (!focusColumnName) return;
-        if (e.key === 'ArrowLeft') {
-          if (moveLeft()) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-        } else if (e.key === 'ArrowRight') {
-          if (moveRight()) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-        } else if (e.key === 'Tab') {
-          if (e.shiftKey) {
-            if (moveLeft()) {
-              e.preventDefault();
-              e.stopPropagation();
-              return;
-            }
-          } else {
-            if (moveRight()) {
-              e.preventDefault();
-              e.stopPropagation();
-              return;
-            }
-          }
-        }
     }
 }
 

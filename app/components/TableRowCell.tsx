@@ -4,6 +4,7 @@ import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
 import { RowSelectionState } from "./TableRow";
+import { table } from "console";
 
 export function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
@@ -37,8 +38,9 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDownHandler}:{
+export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDownHandler}:{
   hasFocus: boolean,
+  inputFocus: boolean,
   field: Field,
   oldValue: string, // valore originale
   newValue: string, // valore eventualmente modificato
@@ -51,13 +53,13 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
   const inputRef = useRef<HTMLInputElement>(null);
     
   useEffect(() => {
-    if (inputRef.current) {
+    if (inputRef.current && inputFocus) {
         inputRef.current.focus();
         inputRef.current.select();
     } else if (hasFocus && tdRef.current) {
         tdRef.current?.focus();
     }
-  }, [hasFocus, tdRef]);
+  }, [inputFocus, hasFocus, tdRef]);
   
   let extra_css="";
   let correct_value = undefined;
@@ -92,10 +94,10 @@ export function DataCell({hasFocus, field, oldValue, newValue, setNewValue, show
     ? field.css_style(value) 
     : field.css_style;
 
-  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
+  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${inputFocus && hasFocus ? 'input-focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
-  return <td tabIndex={1} title={title} className={className} onClick={onClick} style={style} ref={tdRef}>
-      {(hasFocus && field.editable)
+  return <td className={className} tabIndex={1} title={title} onClick={onClick} style={style} ref={tdRef}>
+      {(hasFocus && field.editable && inputFocus)
         ? <TableCellInput 
             field={field}
             value={value} setValue={setNewValue} 

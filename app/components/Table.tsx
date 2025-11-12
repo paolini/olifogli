@@ -10,7 +10,7 @@ import TableActions from './TableActions'
 import { useCheckboxesState } from './TableCheckboxes'
 import TableBody from './TableBody'
 import TableHeader from './TableHeader'
-import { Dispatch, KeyboardEvent, KeyboardEventHandler, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
+import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
 import { gql } from '@apollo/client'
@@ -79,6 +79,7 @@ export type TableState = {
   selectedLineKeys: Set<string>, // righe selezionate
   lastClickedLineKey: string, // ultima riga cliccata (per selezione con shift) potrebbe non esistere più...
   lastCsvDownload?: Date, // istante dell'ultimo download CSV
+  inputFocus: boolean, // siamo in modalità inserimento (vs navigazione)
 }
 
 export const EMPTY_TABLE_STATE: TableState = {
@@ -88,6 +89,7 @@ export const EMPTY_TABLE_STATE: TableState = {
     selectedLineKeys: new Set<string>(),
     lastClickedLineKey: '',
     lastCsvDownload: undefined,
+    inputFocus: false,
 }
 
 export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload}: {
@@ -143,6 +145,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         <div className="table-header">
             <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload}/>
         </div>
+        focusLineKey: {tableState.focusLineKey}
+        {} |
+        focusFieldName: {tableState.focusFieldName}
+        {} | inputFocus: {tableState.inputFocus ? "on" : "off"}
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             <table className="my-table">
                 <TableHeader 
@@ -168,8 +174,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                     loading={loading}
                     setLineData={setLineData}
                     cellKeyDownHandler={cellKeyDownHandler}
-                    moveLeft={() => moveLeft()}
-                    moveRight={() => moveRight()}
+                    moveRightOrLeft={moveRightOrLeft}
                     polling={polling}
                     setPolling={setPolling}
                 />
@@ -268,12 +273,15 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
           ? prevTableState.selectedLineKeys // non modificare lo stato se non serve (SHORTCUT!)
           : prevTableState.selectedLineKeys.difference(deletedLineKeys)
         
+        const inputFocus = !!(prevTableState.inputFocus && focusLineKey && focusFieldName)
+
         return {
           lines,
           focusLineKey,
           focusFieldName,
           selectedLineKeys,
           lastClickedLineKey,
+          inputFocus,
         }
       })
     }
@@ -319,13 +327,16 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
         // console.log(`Table onKeyDown for key: ${e.key}`);
         const focusLineKey = tableState.focusLineKey
+        const inputFocus = tableState.inputFocus
         if (!edit) return
         // salva cella in modifica
-        if (e.key === "Enter" && focusField) {
+        if (e.key === "Enter" && focusField && inputFocus) {
             e.preventDefault()
             e.stopPropagation()
             saveLineAndProceedToNext()
-        } else if (e.key === "Escape" && focusField) {
+        } else if ((e.key === "Enter" || e.key === "F2") && !inputFocus && focusField) {
+            setTableState(prev => ({...prev, inputFocus: true}))
+        } else if (e.key === "Escape" && focusField && inputFocus) {
             e.preventDefault();
             e.stopPropagation();
             // esco dalla modalità modifica
@@ -335,26 +346,59 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                     return
                 }
             } 
-            cancelUnsavedModification();
+            cancelUnsavedModification(inputFocus);
         } else if (e.key === "ArrowDown" && focusLine) {
             e.preventDefault();
             e.stopPropagation();
-            moveDownOrUp(true);
+            moveDownOrUp(1);
         } else if (e.key === "ArrowUp" && focusLine) {
             e.preventDefault();
             e.stopPropagation();
-            moveDownOrUp(false);
-        } else if (e.key === "ArrowLeft") {
+            moveDownOrUp(-1);
+        } else if (e.key === "PageDown" && focusLine) {
             e.preventDefault();
             e.stopPropagation();
-            // sposto il focus a sinistra
-            moveLeft();
-        } else if (e.key === "ArrowRight") {
+            moveDownOrUp(e.shiftKey ? 1000 : 10);
+        } else if (e.key === "PageUp" && focusLine) {
             e.preventDefault();
             e.stopPropagation();
-            // sposto il focus a destra
-            moveRight();
+            moveDownOrUp(e.shiftKey ? -1000 : -10);
+        } else if (e.key === 'ArrowLeft') {
+            if (moveRightOrLeft(e.shiftKey ? -5 : -1)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+        } else if (e.key === 'ArrowRight') {
+            if (moveRightOrLeft(e.shiftKey ? 5 : 1)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+        } else if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (moveRightOrLeft(-1)) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+          } else {
+            if (moveRightOrLeft(1)) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+          }
+        } else if (e.key === "Home") {
+            e.preventDefault();
+            e.stopPropagation();
+            moveRightOrLeft(-1000);
+        } else if (e.key === "End") {
+            e.preventDefault();
+            e.stopPropagation();
+            moveRightOrLeft(1000);
         }
+
     }
 
     function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
@@ -396,6 +440,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             || key === "Tab" || key === "ArrowUp" 
             || key === "ArrowDown") {
             e.preventDefault()
+            // viene gestito dall'handler superiore in Table
             return
         }
         const cursorPos = input.selectionStart || 0
@@ -478,7 +523,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         } else if (key === "Delete") {
             return ''
         } else if (key === "Backspace") {
-            setTimeout(() => moveLeft(),0)
+            setTimeout(() => moveRightOrLeft(-1),0)
             return ''
         } else if (key.length === 1) {
             // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
@@ -491,7 +536,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             else if (char === '5') char = 'E'
             else if (char === '6') char = 'X'
             if (! "ABCDEX-".includes(char)) char = 'X'
-            setTimeout(() => moveRight(), 0);      
+            setTimeout(() => moveRightOrLeft(1), 0);      
             return char // Sostituisci il valore
         } else {
             return undefined;
@@ -523,14 +568,22 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         })
     }
 
-    function cancelUnsavedModification() {
+    function cancelUnsavedModification(inputFocus: boolean) {
         if (!focusLine) return
         if (Object.keys(focusLine.data).length === 0 && !focusLine.error) {
-            setTableState(prev => ({
-                ...prev,
-                focusLineKey: '',
-                focusFieldName: '',
-            }))
+            if (inputFocus) {
+                setTableState(prev => ({
+                    ...prev,
+                    inputFocus: false,
+                }))
+            } else {
+                setTableState(prev => ({
+                    ...prev,
+                    focusLineKey: '',
+                    focusFieldName: '',
+                }))
+            }
+            
             return
         }
         setTableState(prev => {
@@ -592,15 +645,16 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         }
     }
 
-    function moveDownOrUp(down: boolean) {
+    function moveDownOrUp(down: number) {
         if (!focusLine) return
         const lines = tableState.lines
         const row_index = lines.indexOf(focusLine)
         if (row_index < 0) return // non dovrebbe succedere!
 
-        const next_index = down ? row_index + 1 : row_index - 1
-        if (next_index < 0) return
-        if (next_index >= lines.length) return
+        let next_index = row_index + down
+        if (next_index < 0) next_index = 0
+        if (next_index >= lines.length) next_index = lines.length -1
+        if (row_index === next_index) return
 
         // trovo la riga successiva
         const newFocusLine = lines[next_index]
@@ -609,28 +663,22 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         // console.log(`move focus to line ${newFocusLine.key}`)
         saveLineIfNeeded(focusLine)
         setTableState(prev => stateMoveFocusTo(prev, newFocusLine, prev.focusFieldName))
+        setTableState(prev => ({...prev, inputFocus: false}))
     }
 
-    function moveLeft() {
+    function moveRightOrLeft(n: number) {
         if (!focusLine) return false
         const focusColumnName = tableState.focusFieldName
         const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-        clean(focusLine, focusColumnName);
-        if (currentIndex < 1) return false;
-        const prevCol = columns[currentIndex - 1];
-        moveFocusTo(prevCol, focusLine);
-        return true
-    }
-
-    function moveRight() {
-        if (!focusLine) return false
-        const focusColumnName = tableState.focusFieldName
-        const currentIndex = columns.findIndex(col => col.name === focusColumnName);
-        clean(focusLine, focusColumnName);
-        if (currentIndex < 0 || currentIndex >= columns.length - 1) return false;
-        const nextCol = columns[currentIndex + 1];
+        if (tableState.inputFocus) clean(focusLine, focusColumnName);
+        if (currentIndex < 0) return false;
+        let nextIndex = currentIndex + n;
+        if (nextIndex < 0) nextIndex = 0;
+        if (nextIndex >= columns.length) nextIndex = columns.length - 1;
+        if (nextIndex === currentIndex) return false;
+        const nextCol = columns[nextIndex];
         moveFocusTo(nextCol, focusLine);
-        return true;
+        return true
     }
 
     // sposta il focus nella tabella.
