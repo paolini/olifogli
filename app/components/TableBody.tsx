@@ -5,7 +5,7 @@ import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 import { pluralize } from "../lib/util"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDownHandler, moveLeft, moveRight} : {
+export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, cellKeyDownHandler, moveLeft, moveRight, polling, setPolling} : {
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -22,6 +22,8 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     moveLeft: () => boolean,
     moveRight: () => boolean,
+    polling: boolean,
+    setPolling: Dispatch<SetStateAction<boolean>>
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
 
@@ -51,9 +53,14 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
           <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
             aggiungi nuova riga
           </Button>}
-        <Button onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
-          Aggiorna
-        </Button>
+        {!polling && 
+            <Button title="carica eventuali righe inserite da altri" onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
+                Aggiorna
+            </Button>}
+          <label title="se attivato vedrai comparire automaticamente le righe aggiunte da altri" className="ml-4">
+            <input type="checkbox" checked={!!polling} onChange={e => setPolling(e.target.checked)} /> 
+            {} aggiornamento automatico
+          </label>
         <span className="mx-8">{pluralize(tableState.lines.length,"riga","righe")}</span>
         </td></tr>
     </tbody>

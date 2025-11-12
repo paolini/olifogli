@@ -10,7 +10,7 @@ import TableActions from './TableActions'
 import { useCheckboxesState } from './TableCheckboxes'
 import TableBody from './TableBody'
 import TableHeader from './TableHeader'
-import { KeyboardEvent, KeyboardEventHandler, useEffect, useMemo, useRef, useState } from 'react'
+import { Dispatch, KeyboardEvent, KeyboardEventHandler, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
 import { gql } from '@apollo/client'
@@ -88,12 +88,14 @@ export const EMPTY_TABLE_STATE: TableState = {
     lastClickedLineKey: ''
 }
 
-export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
+export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling}: {
   edit: boolean,
   rows: Row[],
   sheet: Sheet,
   refresh?: () => Promise<void>,
-  refreshLoading?: boolean
+  refreshLoading?: boolean,
+  polling: boolean,
+  setPolling: Dispatch<SetStateAction<boolean>>
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
@@ -108,7 +110,9 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     const loading = addLoading || patchLoading || deleteLoading
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
+    useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
     useEffect(effectFunction, [rows, setTableState]);
 
     const columns: Column[] = useMemo(() => [
@@ -161,6 +165,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
                     cellKeyDownHandler={cellKeyDownHandler}
                     moveLeft={() => moveLeft()}
                     moveRight={() => moveRight()}
+                    polling={polling}
+                    setPolling={setPolling}
                 />
             </table>
         </div>
@@ -308,6 +314,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
         // console.log(`Table onKeyDown for key: ${e.key}`);
         const focusLineKey = tableState.focusLineKey
+        if (!edit) return
         // salva cella in modifica
         if (e.key === "Enter" && focusField) {
             e.preventDefault()
@@ -346,6 +353,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
         const key = e.key;
         const input = e.currentTarget
+
+        if (!edit) return;
 
         // input può essere undefined perché al primo 
         // carattere digitato non c'è ancora l'input nella cella
@@ -467,7 +476,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
         } else if (key.length === 1) {
             // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
             let char = key.toUpperCase()
-            if (char === '0') char = '-'
+            if (char === '0' || char === ' ') char = '-'
             else if (char === '1') char = 'A'
             else if (char === '2') char = 'B'
             else if (char === '3') char = 'C'
@@ -483,6 +492,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading}: {
     }
 
     function moveFocusTo(column: Column, line: Line) {
+        if (!edit) return;
         if (line.key !== tableState.focusLineKey) saveLineIfNeeded(focusLine);
         const sameCell = line.key === tableState.focusLineKey && column.name === tableState.focusFieldName
         setTableState(prev => stateMoveFocusTo(prev, line, column.name))

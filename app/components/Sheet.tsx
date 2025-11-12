@@ -73,7 +73,6 @@ export default function SheetElement({sheetId}: {
 
     const { sheet } = data
     if (!sheet || error) return <Error error={error} /> 
-    const schema = schemas[sheet.schema]
 
     return <div className="sheet-wrapper">
         <SheetBody sheet={sheet} profile={profile} />
@@ -103,22 +102,23 @@ function SheetBody({sheet,profile}: {
     sheet: Sheet
     profile: User|null
 }) {
-
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
-    const validTabs = ['info','table', 'edit', 'csv', 'scans', 'download'] as const;
+    const validTabs = ['info','table', 'csv', 'scans', 'download'] as const;
     type TabType = typeof validTabs[number];
     function isTabType(tab: string | null): tab is TabType {
         return validTabs.includes(tab as TabType);
     }
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
-    const { loading, error, data, refetch } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const canEdit: boolean = (profile && (profile._id === sheet.ownerId || profile.isAdmin || sheet.permissions?.some(p => p.userId === profile._id && (p.role === 'editor' || p.role === 'admin')))) || false;
+    const [polling, setPolling ] = useState<boolean>(!(tab === 'table' && canEdit));
+    const { loading, error, data, refetch, stopPolling, startPolling } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
-        pollInterval: tab==='edit' ? undefined : 5000
+        pollInterval: (polling || tab === 'info') ? 5000 : 0
     });
-    
+
     const refresh = async () => {
         await refetch()
     }
@@ -136,12 +136,14 @@ function SheetBody({sheet,profile}: {
             >
                 PANNELLO
             </button>
-            <button 
-                className={`tab-button ${tab === 'edit' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                onClick={() => setTab('edit')}
+            { <button 
+                className={`tab-button ${tab === 'table' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('table')}
             >
-                INSERIMENTO DATI
-            </button>
+                {canEdit 
+                ? "INSERIMENTO DATI"
+                : "VISUALIZZAZIONE DATI"}
+            </button>}
             <button 
                 className={`tab-button ${tab === 'csv' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('csv')}>
@@ -164,19 +166,21 @@ function SheetBody({sheet,profile}: {
             <SheetInfo sheet={sheet} data={data} profile={profile} />
         </div>
         }
-        { tab === 'edit' && 
+        { tab === 'table' && 
             <Table 
+                edit={canEdit} 
                 sheet={sheet} 
                 rows={data.rows} 
-                edit={true} 
                 refresh={refresh} 
                 refreshLoading={loading}
+                polling={polling}
+                setPolling={setPolling}
             />
         }
         { tab === 'csv' &&  
             ((sheet.closed || sheet.locked) 
                 ? <Error error="Il foglio è chiuso. Non è possibile importare dati." />
-                : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('edit')}/>
+                : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
             )
         }
         { tab === 'scans' && <div className="mx-2">
