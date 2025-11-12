@@ -151,7 +151,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         ) : (
             <>
             <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={filteredSheets}/>
-            { JSON.stringify({columnFilters, filterMenuOpen, columns}) }
             <table>
                 <thead>
                     <tr>
