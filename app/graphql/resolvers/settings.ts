@@ -5,11 +5,13 @@ import { getSettingsCollection } from '@/app/lib/mongodb'
 
 export async function getSetting(_: unknown, args: { key: string }, context: Context) {
     // Chiunque autenticato può leggere un setting
-    await get_authenticated_user(context)
+    // se la chiave non inizia con "public_" allora
+    // non è neanche necessario essere autenticati
+    if (!args.key.startsWith('public_')) await get_authenticated_user(context)
     
     const collection = await getSettingsCollection()
     const setting = await collection.findOne({ key: args.key })
-    
+
     return setting
 }
 

@@ -22,7 +22,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="flex justify-between items-center p-2">
         <div className="flex items-center gap-2">
-          <Link href="/" className="text-2xl font-bold hover:text-blue-600">
+          <Link href="/" className="mx-2 text-2xl font-bold hover:text-blue-600">
             Olifogli<sup className="ml-1 text-xs font-normal">{version}</sup>
           </Link>
           {breadcrumbs.length > 0 && (
