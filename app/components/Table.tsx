@@ -566,7 +566,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     function columnCanReceiveFocus(column: Column): boolean {
         const showHiddenColumns = checkboxesState.showHiddenColumns
         if (column instanceof Field) {
-            return showHiddenColumns || !column.hidden
+            return column.editable && (showHiddenColumns || !column.hidden)
         } else return false
     }
 
@@ -697,14 +697,18 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     function moveRightOrLeft(n: number) {
         if (!focusLine) return false
         const focusColumnName = tableState.focusFieldName
-        const currentIndex = columns.findIndex(col => col.name === focusColumnName);
         if (tableState.inputFocus) clean(focusLine, focusColumnName);
+        const permittedColumns = columns.filter(columnCanReceiveFocus)
+        const currentIndex = permittedColumns.findIndex(col => col.name === focusColumnName);
         if (currentIndex < 0) return false;
         let nextIndex = currentIndex + n;
         if (nextIndex < 0) nextIndex = 0;
-        if (nextIndex >= columns.length) nextIndex = columns.length - 1;
-        if (nextIndex === currentIndex) return false;
-        const nextCol = columns[nextIndex];
+        if (nextIndex >= permittedColumns.length) nextIndex = permittedColumns.length - 1;
+        if (nextIndex === currentIndex) {
+            // non mi sono mosso
+            return false;
+        }
+        const nextCol = permittedColumns[nextIndex];
         moveFocusTo(nextCol, focusLine);
         return true
     }
@@ -764,10 +768,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         const field = columns.find(c => c.name === fieldName)
         if (field instanceof Field) {
             let value = line.data[field.name] 
-            if (value !== undefined) {
-                value = field.clean(value)
-                setLineData(line, field.name, value)
-            }
+            value = field.clean(value || '')
+            setLineData(line, field.name, value)
         }
     }
 
