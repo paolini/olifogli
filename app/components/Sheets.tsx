@@ -203,19 +203,19 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={() => deleteEmptySheets()}>
-                    Elimina {pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}
+                    ⚙ Elimina {pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}
                 </Button> 
                 <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={() => deleteSelectedSheets()}>
-                    Elimina {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                    ⚙ Elimina {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button disabled={selectedIds.length === 0 || validatingRows} onClick={() => validateSelectedSheets()}>
-                    Rivalida {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                    ⚙ Rivalida {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => lockSelectedSheets()}>
-                    Blocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                    ⚙ Blocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
-                    Elimina raccolta
+                    ⚙ Elimina raccolta
                 </Button>
             </div>
         }
@@ -438,7 +438,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         { sheet.schema === 'scuole' && profile?.isAdmin && selected &&
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
-                    crea fogli scuole
+                    ⚙ crea fogli scuole
                 </Button>
             </td>
         }
@@ -466,7 +466,7 @@ function BulkCommonDataSetter({sheets, onApply}:{
     }
 
     return <div className="p-4 border rounded bg-gray-50">
-        <h2 className="font-bold mb-2">Modifica dati comuni</h2>
+        <h2 className="font-bold mb-2">⚙ Modifica dati comuni</h2>
         <div className="mb-2">
             <label className="flex items-center gap-2">
                 <input type="checkbox" checked={useTextarea} onChange={e => setUseTextarea(e.target.checked)} />
@@ -500,7 +500,7 @@ function BulkCommonDataSetter({sheets, onApply}:{
             </tbody>
         </table>
         <Button disabled={loading || !field.trim()} onClick={handleApply}>
-            {loading ? 'Applicazione...' : 'Applica'}
+            ⚙ Applica
         </Button> su {sheets.length} fogli
     </div>
 }
@@ -534,7 +534,7 @@ function BulkPermissionSetter({sheets, onApply}:{
     }
 
     return <div className="p-4 border rounded bg-gray-50 mt-3">
-        <h2 className="font-bold mb-2">Concedi permesso in blocco</h2>
+        <h2 className="font-bold mb-2">⚙ Concedi permesso in blocco</h2>
         <table className="commondata">
             <tbody>
             <tr>
@@ -558,7 +558,7 @@ function BulkPermissionSetter({sheets, onApply}:{
             </tbody>
         </table>
         <Button disabled={loading || !email.trim()} onClick={handleApply}>
-            {loading ? 'Applicazione...' : 'Concedi'}
+            ⚙ Concedi
         </Button> su {sheets.length} fogli
     </div>
 }

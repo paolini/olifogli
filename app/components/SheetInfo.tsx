@@ -47,12 +47,13 @@ function SheetInfoPanel({sheet,profile}:{
     if (!edit) {
         return <>
             <PanelDisplay sheet={sheet} />
-            {canModifySensibleData && <Button className="mb-4" onClick={() => setEdit(true)}>modifica</Button>}
+            {canModifySensibleData && 
+            <Button className="mb-4" onClick={() => setEdit(true)}>⚙ modifica</Button>}
         </>
     } else {
         return <>
             <PanelEdit sheet={sheet} profile={profile} />
-            <Button className="mb-4"onClick={() => setEdit(false)}>chiudi modifica</Button>
+            <Button className="mb-4"onClick={() => setEdit(false)}>⚙ chiudi modifica</Button>
         </>
     }
 }
@@ -133,7 +134,6 @@ function PanelEdit({sheet,profile}: {
     const [newFieldKey, setNewFieldKey] = useState('')
     const [newFieldValue, setNewFieldValue] = useState('')
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
-    const router = useRouter()
     const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
@@ -141,8 +141,6 @@ function PanelEdit({sheet,profile}: {
     // questi utenti possono aprire/chiudere ma non bloccare.
     // possono anche gestire i permessi di acceso al foglio (altri utenti)
     const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => p.userId === profile._id && p.role === 'admin'))
-
-    const schema = schemas[sheet.schema]
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
 
@@ -285,7 +283,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                     <td><Button className="mx-4" disabled={!canModifySensibleData}>apri</Button></td>
                     {profile?.isAdmin && <td>
                         <span className="text-sm text-gray-600 ml-2">
-                        bloccato da {sheet.lockedBy || 'sconosciuto'} 
+                        ⚙ bloccato da {sheet.lockedBy || 'sconosciuto'} 
                         {} il {myTimestamp(sheet.lockedOn)}
                         </span></td>}
                     </>
@@ -295,7 +293,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                     <td><span className="text-orange-600 font-semibold">chiuso</span></td>
                     <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button></td>
                     {profile?.isAdmin && <td>
-                        <span className="text-sm text-gray-600 ml-2">
+                        ⚙ <span className="text-sm text-gray-600 ml-2">
                         chiuso da {sheet.closedBy || 'sconosciuto'} 
                         {} il {myTimestamp(sheet.closedOn)}
                         </span></td>}
@@ -303,7 +301,10 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                 }
                 { !sheet.locked && !sheet.closed &&<>
                     <td><span className="text-green-600 font-semibold">aperto</span></td>
-                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>chiudi</Button></td>
+                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>
+                        chiudi
+                        </Button>
+                    </td>
                 </>}
                 </tr></tbody>
             </table>
@@ -358,16 +359,16 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                     doClearSheet()
                 }
                 }}>
-                Svuota questo foglio ({sheet.nRows} righe)
+                ⚙ Svuota questo foglio ({sheet.nRows} righe)
             </Button>
         }
         { canModifySensibleData && 
             <Button className="mx-2" variant="danger" disabled={deleting || sheet.nRows>0} onClick={() => {
-                if (confirm("Sei sicuro di voler eliminare questo foglio?")) {
+                if (confirm("Sei sicuro di voler eliminare questo foglio? Questa operazione è irreversibile.")) {
                     doDelete()
                 }
                 }}>
-                Elimina questo foglio
+                ⚙ Elimina questo foglio
             </Button>
         }
         </div>

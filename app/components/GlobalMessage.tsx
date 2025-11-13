@@ -161,11 +161,11 @@ export default function GlobalMessage({name, title, description, collapsed}: {na
                                         <button
                                             type="button"
                                             onClick={startEdit}
-                                            className="absolute top-2 right-2 p-2 rounded-full hover:bg-indigo-100 focus:outline-none"
+                                            className="absolute top-2 right-2 px-1 rounded hover:bg-indigo-100 focus:outline-none"
                                             title={message ? 'Modifica messaggio' : 'Aggiungi messaggio'}
                                         >
                                             {/* Icona matita Unicode */}
-                                            <span className="text-indigo-600 text-xl" role="img" aria-label="Modifica">✏️</span>
+                                            <span className="text-indigo-600 text-sm" role="img" aria-label="Modifica">✏️</span>
                                         </button>
                                     )}
                                 </div>

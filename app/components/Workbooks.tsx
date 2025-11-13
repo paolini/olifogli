@@ -113,7 +113,7 @@ function NewWorkbookForm() {
 
   return <div className="flex items-center gap-2">
     <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createWorkbook()} />
-    <Button disabled={!name || loading} onClick={createWorkbook}>Nuova raccolta</Button>
+    <Button disabled={!name || loading} onClick={createWorkbook}>⚙ Nuova raccolta</Button>
     <Error error={error} />
   </div>
 
