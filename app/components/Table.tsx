@@ -543,7 +543,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             else if (char === '4') char = 'D'
             else if (char === '5') char = 'E'
             else if (char === '9') char = 'X'
-            if (! "ABCDEX-".includes(char)) char = ' g'
+            if (! "ABCDEX-".includes(char)) char = ' '
             setTimeout(() => moveRightOrLeft(1), 0);      
             return char // Sostituisci il valore
         } else {
