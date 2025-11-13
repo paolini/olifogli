@@ -177,7 +177,7 @@ export default class ArchimedeCommon extends Competition {
             const row = existing_data_dict[id_short]
             const data: Data = {...(row?.data || {})}
             data.id_short = id_short
-            data.variante = raw?.TestCode || ''
+            data.variant = raw?.TestCode || ''
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
@@ -188,7 +188,7 @@ export default class ArchimedeCommon extends Competition {
         function convert_answer(s: string) {
             return {
                 '': '-',
-                'X': '-',
+                'X': 'X',
                 'A': 'A',
                 'B': 'B',
                 'C': 'C',
@@ -200,7 +200,7 @@ export default class ArchimedeCommon extends Competition {
                 'ABCE': 'D',
                 'ABCD': 'E',
                 'ABCDE': '-',
-            }[s] ?? s
+            }[s] ?? 'X'
         }
     }
 
