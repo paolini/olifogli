@@ -223,12 +223,13 @@ td.thick-border-left, th.thick-border-left {
   border-left: 2px solid gray;
 }
 
+
 tr.modified {
   background-color: var(--recent-highlight);
 }
 
-tr.focus {
-  background-color: var(--line-highlight);
+tr.focus, tr.modified.focus {
+  background-color: var(--line-highlight) !important;
 }
 
 td.modified {
