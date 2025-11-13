@@ -173,10 +173,10 @@ export default class ArchimedeCommon extends Competition {
 
         return Object.fromEntries(scan.map(scan => {
             const raw = scan.rawData || {}
-            const id_short = raw?.StudentCode || ''
-            const row = existing_data_dict[id_short]
+            const id = raw?.StudentCode || ''
+            const row = existing_data_dict[id]
             const data: Data = {...(row?.data || {})}
-            data.id_short = id_short
+            data.id = id
             data.variant = raw?.TestCode || ''
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
