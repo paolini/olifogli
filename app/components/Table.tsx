@@ -332,6 +332,12 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             saveLineAndProceedToNext()
         } else if ((e.key === "Enter" || e.key === "F2") && !inputFocus && focusField) {
             setTableState(prev => ({...prev, inputFocus: true}))
+        } else if ((e.key === "Delete" || e.key === "Backspace") && !inputFocus && focusLine) {
+            setValueInFocusCell('')
+            setTableState(prev => ({...prev, inputFocus: true}))
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !inputFocus && focusLine && focusField) {
+            setValueInFocusCell(e.key)
+            setTableState(prev => ({...prev, inputFocus: true}))
         } else if (e.key === "Escape" && focusField && inputFocus) {
             e.preventDefault();
             e.stopPropagation();
@@ -393,6 +399,12 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             e.preventDefault();
             e.stopPropagation();
             moveRightOrLeft(1000);
+        }
+
+        function setValueInFocusCell(s: string) {
+            if (focusLine && focusField) {
+                setLineData(focusLine, focusField.name, s)
+            }
         }
 
     }
