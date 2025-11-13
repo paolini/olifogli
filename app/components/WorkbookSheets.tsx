@@ -72,7 +72,7 @@ function SheetForm({ workbookId }: { workbookId: ObjectId }) {
         </select> {}
         <input value={name} onChange={e => setName(e.target.value)} /> {}
         <Button disabled={loading||schema==""||name==""} onClick={create}>
-            Nuovo foglio
+            ⚙ Nuovo foglio
         </Button>
     </div>
 

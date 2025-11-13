@@ -42,12 +42,14 @@ function Users() {
             <thead>
                 <tr>
                     <th>email</th>
-                    <th>admin</th>
+                    <th>nome</th>
+                    <th>⚙</th>
                 </tr>
             </thead>
             <tbody>
                 {users.map(user => <tr key={user._id.toString()}>
                     <td>{user.email}</td>
+                    <td>{user.name}</td>
                     <td>{user?.isAdmin ? '✓' : ''}</td>
                 </tr>)}
             </tbody>
