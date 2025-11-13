@@ -119,6 +119,7 @@ function SheetBody({sheet,profile}: {
         pollInterval: (polling || tab === 'info') ? 5000 : 0
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
+    const [csvImport, setCsvImport] = useState<boolean>(false)
 
     const refresh = async () => {
         await refetch()
@@ -141,15 +142,17 @@ function SheetBody({sheet,profile}: {
                 className={`tab-button ${tab === 'table' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('table')}
             >
-                {canEdit 
+                {canEdit && !sheet.closed && !sheet.locked
                 ? "INSERIMENTO DATI"
                 : "VISUALIZZAZIONE DATI"}
             </button>}
+            { /*
             <button 
                 className={`tab-button ${tab === 'csv' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('csv')}>
                 IMPORTA CSV
             </button>
+            */}
             <button 
                 className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('scans')}>
@@ -168,7 +171,7 @@ function SheetBody({sheet,profile}: {
             <SheetInfo sheet={sheet} data={data} profile={profile} />
         </div>
         }
-        { tab === 'table' && 
+        { tab === 'table' && !csvImport &&
             <Table 
                 edit={canEdit} 
                 sheet={sheet} 
@@ -179,13 +182,19 @@ function SheetBody({sheet,profile}: {
                 setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
+                setCsvImport={setCsvImport}
             />
         }
-        { tab === 'csv' &&  
-            ((sheet.closed || sheet.locked) 
-                ? <Error error="Il foglio è chiuso. Non è possibile importare dati." />
-                : <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setTab('table')}/>
-            )
+        { tab === 'table' && csvImport &&
+            /* ((sheet.closed || sheet.locked) 
+                ? <>
+                    <Error error="Il foglio è chiuso. Non è possibile importare dati." />
+                    <Button onClick={() => setCsvImport(false)}>
+                        Annulla importazione
+                    </Button>
+                </>
+                : */
+            <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setCsvImport(false)}/>
         }
         { tab === 'scans' && <div className="mx-2">
             <ScansSheetExport sheet={sheet} />

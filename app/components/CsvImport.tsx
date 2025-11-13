@@ -7,6 +7,7 @@ import { ObjectId } from 'bson'
 import { schemas } from "../lib/schema"
 import Error from './Error'
 import { Field } from "../lib/schema/fields";
+import Button from "./Button";
 
 const ADD_ROWS = gql`
     mutation addRows(
@@ -36,7 +37,19 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [headerMode, setHeaderMode] = useState<'auto'|'yes'|'no'>('auto');
   const [columnMapping, setColumnMapping] = useState<number[]|null>(null);
 
+  const fieldList = columns.filter(field => field.editable)
+    .map(field => field.name).join(', ');
+
   return <div className="p-4 border rounded-lg shadow-md">
+    <div>
+    <small>Il file CSV può essere ottenuto da qualunque <i>foglio di calcolo</i>. 
+    Conviene mantenere la prima riga con le intestazioni delle colonne, 
+    in modo che il sistema possa tentare di abbinare automaticamente le colonne del CSV ai campi dello schema.
+    Verranno cercati nomi simili ai seguenti: {}
+    <span className="text-gray-600">{fieldList}.</span>
+    </small>
+    </div>
+    <br />
       Caricamento di dati tramite file CSV  &nbsp; &nbsp;
         <input type="file" 
             disabled={data.length>0} 
@@ -70,26 +83,29 @@ export default function CsvImport({schemaName, sheetId, done}:{
             <option value=",">comma</option>
             <option value=";">semicolon</option>
         </select>  
-        <button
-          className="ml-2 px-2 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+        <Button className="mx-2"
           disabled={data.length>0}
           onClick={handlePasteCsv}
-          type="button"
         >
           Incolla da clipboard
-        </button>
-      { error && <Error error={error} />}
+        </Button>
+      { data.length === 0 && 
+        <Button variant="alert" onClick={() => done()}>
+          annulla importazione
+        </Button> }
       <br />
-      { columnMapping && (
-        <small className="text-gray-600">
+      <Error error={error} />
+      { data.length > 0 && columnMapping &&
+      <small className="text-gray-600">
           Le colonne sono state automaticamente riordinate in base alle intestazioni della prima riga del CSV.
           Puoi annullare il riordinamento delle colonne tramite le azioni qui sotto.
+      </small>}
+      { data.length > 0 && <p>
+        <small className="text-gray-600">
+          Controlla che la corrispondenza delle colonne sia quella giusta.
+          Puoi modificare l&apos;ordine delle colonne manualmente prima di procedere all&apos;importazione.
         </small>
-      )}
-      <small className="text-gray-600">
-        Controlla che la corrispondenza delle colonne sia quella giusta.
-        Puoi modificare l&apos;ordine delle colonne manualmente prima di procedere all&apos;importazione.
-      </small>
+      </p>}
       <br />
       { data.length > 0 
         && <CsvTable data={data} columns={columns} setData={setData} importRows={importRows} done={done} columnMapping={columnMapping} hasHeaderRow={(() => {
@@ -99,9 +115,9 @@ export default function CsvImport({schemaName, sheetId, done}:{
         })()}/>
         }
       { data.length > 0 && columnMapping && (
-        <button className="ml-2 px-2 py-1 border rounded bg-gray-100 hover:bg-gray-200" onClick={restoreOriginalOrder}>
-          Ripristina ordine colonne originale
-        </button>
+        <Button className="my-2" onClick={restoreOriginalOrder}>
+          Ripristina ordine originale colonne
+        </Button>
       )}
   </div>
 
@@ -404,7 +420,7 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
             {crop_data.length < data.length &&
                 <tr>
                     <td colSpan={columns.length}>
-                        <button onClick={() => setMaxShownRows(maxShownRows*2)}>Mostra altre righe</button>
+                        <Button onClick={() => setMaxShownRows(maxShownRows*2)}>Mostra altre righe</Button>
                     </td>
                 </tr>
             }
