@@ -6,7 +6,7 @@ import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
 import Error from "./Error"
-import { myTimestamp, pluralize } from "../lib/util"
+import { pluralize } from "../lib/util"
 import Button from "./Button"
 
 export default function TableActions(input: TableActionInput) {

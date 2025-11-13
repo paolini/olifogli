@@ -14,7 +14,7 @@ export default async function updateSheets (_: unknown, { sheets }: MutationUpda
     for (const sheetInput of sheets) {
         const sheetId = sheetInput._id
         
-        // Verifica che il foglio esista e l'utente abbia i permessi
+        // Verifica che il foglio esista
         const existingSheet = await collection.findOne({ _id: sheetId })
         if (!existingSheet) {
             throw new Error(`Sheet ${sheetInput._id} not found`)
@@ -24,6 +24,7 @@ export default async function updateSheets (_: unknown, { sheets }: MutationUpda
         const update: {
             permissions?: Permission[]
             commonData?: Record<string, string>
+            locked?: boolean
         } = {}
         
         if (sheetInput.permissions) {
@@ -53,6 +54,10 @@ export default async function updateSheets (_: unknown, { sheets }: MutationUpda
                 ...existingSheet.commonData,
                 ...sheetInput.commonData
             }
+        }
+
+        if (sheetInput.locked !== undefined && sheetInput.locked !== null) {
+            update.locked = sheetInput.locked
         }
         
         // Esegui l'update
