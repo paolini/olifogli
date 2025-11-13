@@ -9,8 +9,23 @@ import Error from "./Error"
 import { pluralize } from "../lib/util"
 import Button from "./Button"
 
+type TableActionInput = {
+  profile?: { isAdmin: boolean, email: string},
+  sheet: Sheet,
+  edit: boolean,
+  refresh?: () => Promise<void>,
+  schema: Schema,
+  checkboxesState: CheckboxesState, setCheckboxesState: Dispatch<SetStateAction<CheckboxesState>>,
+  userHasSheetAdminPrivileges: boolean,
+  tableState: TableState,
+  setTableState: Dispatch<SetStateAction<TableState>>,
+  csvDownload: (rows?: Row[]) => void,
+  setCsvImport: Dispatch<SetStateAction<boolean>>,
+}
+
 export default function TableActions(input: TableActionInput) {
     const ctx = useTableActionsContext(input)
+
     return <>
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
@@ -36,23 +51,15 @@ export default function TableActions(input: TableActionInput) {
       {ctx.csvDownload && <Button onClick={() => ctx.csvDownload()} className="ml-4 px-4">
         Scarica CSV
       </Button>}
+      <span className="px-1"/>
+      {ctx.edit && <Button onClick={() => ctx.setCsvImport(true)} className="px-4">
+        Importa CSV
+      </Button>}
     </>
 }
 
 export function TableActionsErrors({ctx}: {ctx: TableActionContext}) {
     return ctx.mutations.errors.map((error,i) => <Error key={i} error={error} />)
-}
-
-type TableActionInput = {
-  profile?: { isAdmin: boolean, email: string},
-  sheet: Sheet,
-  refresh?: () => Promise<void>,
-  schema: Schema,
-  checkboxesState: CheckboxesState, setCheckboxesState: Dispatch<SetStateAction<CheckboxesState>>,
-  userHasSheetAdminPrivileges: boolean,
-  tableState: TableState,
-  setTableState: Dispatch<SetStateAction<TableState>>,
-  csvDownload: (rows?: Row[]) => void,
 }
 
 type TableActionContext = TableActionInput & {
@@ -71,7 +78,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload, setCsvImport, edit}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRowsMutation()
   const [patchRow, { loading: patchLoading }] = usePatchRowMutation()
 
@@ -100,6 +107,8 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
         olimanagerEmail, setOlimanagerEmail,
         olimanagerPassword, setOlimanagerPassword,
         csvDownload,
+        setCsvImport,
+        edit,
     }
 }
 

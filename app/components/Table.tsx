@@ -92,7 +92,7 @@ export const EMPTY_TABLE_STATE: TableState = {
     inputFocus: false,
 }
 
-export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload}: {
+export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload, setCsvImport}: {
     edit: boolean,
     rows: Row[],
     sheet: Sheet,
@@ -102,6 +102,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     setPolling: Dispatch<SetStateAction<boolean>>,
     lastCsvDownload?: Date,
     csvDownload: () => void,
+    setCsvImport: Dispatch<SetStateAction<boolean>>,
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
@@ -112,7 +113,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRowMutation() // useAddRow()
     const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRowMutation() // usePatchRow()
     const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRowMutation() // useDeleteRow()
-
     const loading = addLoading || patchLoading || deleteLoading
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
@@ -143,7 +143,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
 
     return <div className="table-container">
         <div className="table-header">
-            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload} profile={profile||undefined}/>
+            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload} setCsvImport={setCsvImport} edit={edit} profile={profile||undefined}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             <table className="my-table">

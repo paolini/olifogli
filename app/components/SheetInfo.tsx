@@ -420,7 +420,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     }
 
     async function doOpenSheet() {
-        if (!confirm("Sei sicuro di voler riaprire questo foglio? Gli utenti potranno nuovamente modificarlo, ma impedirai la finalizzazione dati.")) return
+        if (!confirm("Sei sicuro di voler riaprire questo foglio? Gli aiutanti potranno nuovamente modificarlo, e impedirai la finalizzazione dati.")) return
         await openSheet({
             variables: {_id: sheet._id},
             refetchQueries: ['getSheet']
