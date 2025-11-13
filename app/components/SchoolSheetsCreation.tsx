@@ -163,7 +163,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
                         Codice_meccanografico: codice_meccanografico || '',
                         Nome_scuola: row.data?.Nome_scuola || '',
                         "Città_scuola": row.data["Città_scuola"] || '',
-                        "Distretto":  row.data["Nome_distretto"] || '',
+                        "Distretto":  (row.data["Nome_distretto"] || '').replace('Distretto di ',''),
                     }
                 })
             }
@@ -223,6 +223,7 @@ function Process({jobsCallback, workbookId, done}: {
                     <th>referenti</th>
                     <th>scuola</th>
                     <th>città</th>
+                    <th>distretto</th>
                     <th>messaggi</th>
                 </tr>
             </thead>
@@ -267,6 +268,9 @@ function Process({jobsCallback, workbookId, done}: {
                 </td>
                 <td>
                     {job.commonData["Città_scuola"]}
+                </td>
+                <td>
+                    {job.commonData["Distretto"]}
                 </td>
                 <td title={(job.messages || []).join(', ')}>{job.messages?.length ? `${job.messages?.length} messaggi` : ''}</td>
                 </tr>)}
