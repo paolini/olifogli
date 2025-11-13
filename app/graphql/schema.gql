@@ -61,6 +61,7 @@ input UpdateSheetInput {
   _id: ObjectId!
   permissions: [PermissionInput!]
   commonData: Data
+  locked: Boolean
 }
 
 type OlimanagerRowData {
