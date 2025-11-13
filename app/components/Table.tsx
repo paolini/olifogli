@@ -542,8 +542,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             else if (char === '3') char = 'C'
             else if (char === '4') char = 'D'
             else if (char === '5') char = 'E'
-            else if (char === '6') char = 'X'
-            if (! "ABCDEX-".includes(char)) char = 'X'
+            else if (char === '9') char = 'X'
+            if (! "ABCDEX-".includes(char)) char = ' g'
             setTimeout(() => moveRightOrLeft(1), 0);      
             return char // Sostituisci il valore
         } else {
