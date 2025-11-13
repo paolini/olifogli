@@ -1,4 +1,4 @@
-import { KeyboardEvent, RefObject, useMemo } from "react"
+import { Dispatch, KeyboardEvent, RefObject, SetStateAction, useMemo } from "react"
 import { Field } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
@@ -10,13 +10,15 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, showStandardAnswers, onCellClick, cellKeyDownHandler, moveRightOrLeft}:{
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, keyStrokeBuffer, setKeyStrokeBuffer, showStandardAnswers, onCellClick, cellKeyDownHandler, moveRightOrLeft}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
     selectionState: RowSelectionState,
     focusColumnName: string,
     inputFocus: boolean,
+    keyStrokeBuffer: string,
+    setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
@@ -64,6 +66,8 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             inputFocus={inputFocus}
             newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
             setNewValue={setters[column.name]}  
+            keyStrokeBuffer={keyStrokeBuffer}
+            setKeyStrokeBuffer={setKeyStrokeBuffer}
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
             cellKeyDownHandler={cellKeyDownHandler}

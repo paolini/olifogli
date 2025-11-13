@@ -117,6 +117,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+    const [keyStrokeBuffer, setKeyStrokeBuffer] = useState<string>('')
 
     useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
     useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
@@ -160,6 +161,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                     columns={columns}
                     tableState={tableState}
                     setTableState={setTableState}
+                    keyStrokeBuffer={keyStrokeBuffer}
+                    setKeyStrokeBuffer={setKeyStrokeBuffer}
                     showStandardAnswers={checkboxesState.showStandardAnswers}
                     refresh={refresh}
                     refreshLoading={refreshLoading}
@@ -336,8 +339,11 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             setValueInFocusCell('')
             setTableState(prev => ({...prev, inputFocus: true}))
         } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !inputFocus && focusLine && focusField) {
-            setValueInFocusCell(e.key)
+            // alert(`Inizio modifica della cella. Premi ESC per annullare.`)
+            setKeyStrokeBuffer(buffer => buffer + e.key)
             setTableState(prev => ({...prev, inputFocus: true}))
+            e.preventDefault();
+            e.stopPropagation();
         } else if (e.key === "Escape" && focusField && inputFocus) {
             e.preventDefault();
             e.stopPropagation();
@@ -410,6 +416,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     }
 
     function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
+        console.log("cellKeyDownHandler called");
         const key = e.key;
         const input = e.currentTarget
 

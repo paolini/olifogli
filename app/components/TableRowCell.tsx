@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import type { ChangeEvent, FocusEvent, KeyboardEvent, RefObject } from "react"
+import type { ChangeEvent, Dispatch, FocusEvent, KeyboardEvent, RefObject, SetStateAction } from "react"
 import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
@@ -38,13 +38,15 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, showStandardAnswers, onClick, cellKeyDownHandler}:{
+export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, keyStrokeBuffer, setKeyStrokeBuffer, showStandardAnswers, onClick, cellKeyDownHandler}:{
   hasFocus: boolean,
   inputFocus: boolean,
   field: Field,
   oldValue: string, // valore originale
   newValue: string, // valore eventualmente modificato
   setNewValue: (newValue: string|undefined) => void,
+  keyStrokeBuffer: string,
+  setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
   showStandardAnswers: boolean,
   onClick: () => void,
   cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
@@ -53,13 +55,17 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   const inputRef = useRef<HTMLInputElement>(null);
     
   useEffect(() => {
+    if (!hasFocus) return;
     if (inputRef.current && inputFocus) {
         inputRef.current.focus();
         inputRef.current.select();
-    } else if (hasFocus && tdRef.current) {
+    } 
+    if (tdRef.current && !inputFocus) {
         tdRef.current?.focus();
     }
   }, [inputFocus, hasFocus, tdRef]);
+
+  // useEffect(() => {}, [inputRef.currentkeyStrokeBuffer,setKeyStrokeBuffer]);
   
   let extra_css="";
   let correct_value = undefined;
@@ -102,6 +108,8 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
             field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
+            keyStrokeBuffer={keyStrokeBuffer}
+            setKeyStrokeBuffer={setKeyStrokeBuffer} 
             cellKeyDownHandler={cellKeyDownHandler}
             inputRef={inputRef}
           />
@@ -109,19 +117,16 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   </td>
 }
 
-export default function TableCellInput({field, value, setValue, oldValue, cellKeyDownHandler, inputRef}:{
+export default function TableCellInput({field, value, setValue, oldValue, keyStrokeBuffer, setKeyStrokeBuffer, cellKeyDownHandler, inputRef}:{
     field: Field,
     value: string,
     oldValue: string,
-    setValue: (newValue: string|undefined) => void
+    setValue: (newValue: string|undefined) => void,
+    keyStrokeBuffer: string,
+    setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     inputRef: RefObject<HTMLInputElement|null>
 }) {
-    const lastValueRef = useRef(value);
-
-    useEffect(() => {
-        lastValueRef.current = value;
-    }, [value]);
 
     return <input                       
         className="table-row" 
