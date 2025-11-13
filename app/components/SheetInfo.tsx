@@ -10,7 +10,6 @@ import { Data } from '../lib/models'
 import { myTimestamp, pluralize } from '../lib/util'
 import { schemas } from '../lib/schema'
 
-
 export default function SheetInfo({sheet,data,profile}:{
     sheet: Sheet
     data?: {rows: Row[]}
