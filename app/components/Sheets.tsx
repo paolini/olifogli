@@ -202,14 +202,17 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={updateSheetError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
-                <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={deleteEmptySheets}>
+                <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={() => deleteEmptySheets()}>
                     Elimina {pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}
                 </Button> 
-                <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={deleteSelectedSheets}>
+                <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={() => deleteSelectedSheets()}>
                     Elimina {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
-                <Button disabled={selectedIds.length === 0 || validatingRows} onClick={validateSelectedSheets}>
+                <Button disabled={selectedIds.length === 0 || validatingRows} onClick={() => validateSelectedSheets()}>
                     Rivalida {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                </Button>
+                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => lockSelectedSheets()}>
+                    Blocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     Elimina raccolta
@@ -300,6 +303,16 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
       }
       console.log('validateSelectedSheets: refetching data')
       refetch()
+    }
+
+    async function lockSelectedSheets() {
+        if (!confirm(`Sei sicuro di voler bloccare ${selectedIds.length} fogli selezionati?`)) return
+        const updates = selectedIds.map(id => ({
+            _id: new ObjectId(id),
+            locked: true
+        }))
+        await updateSheets({ variables: { sheets: updates } })
+        refetch()
     }
 
     async function onDelete() {

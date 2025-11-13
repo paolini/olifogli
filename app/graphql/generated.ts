@@ -426,6 +426,7 @@ export type SheetInput = {
 export type UpdateSheetInput = {
   _id: Scalars['ObjectId']['input'];
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  locked?: InputMaybe<Scalars['Boolean']['input']>;
   permissions?: InputMaybe<Array<PermissionInput>>;
 };
 
@@ -455,6 +456,21 @@ export type AddRowsMutationVariables = Exact<{
 
 
 export type AddRowsMutation = { __typename?: 'Mutation', addRows?: number | null };
+
+export type GetSettingQueryVariables = Exact<{
+  key: Scalars['String']['input'];
+}>;
+
+
+export type GetSettingQuery = { __typename?: 'Query', getSetting?: { __typename?: 'Setting', _id: ObjectId, key: string, value: string, updatedBy: string, updatedOn: Date } | null };
+
+export type UpdateSettingMutationVariables = Exact<{
+  key: Scalars['String']['input'];
+  value: Scalars['String']['input'];
+}>;
+
+
+export type UpdateSettingMutation = { __typename?: 'Mutation', updateSetting: { __typename?: 'Setting', _id: ObjectId, key: string, value: string, updatedBy: string, updatedOn: Date } };
 
 export type AppInstanceQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -763,6 +779,88 @@ export function useAddRowsMutation(baseOptions?: Apollo.MutationHookOptions<AddR
 export type AddRowsMutationHookResult = ReturnType<typeof useAddRowsMutation>;
 export type AddRowsMutationResult = Apollo.MutationResult<AddRowsMutation>;
 export type AddRowsMutationOptions = Apollo.BaseMutationOptions<AddRowsMutation, AddRowsMutationVariables>;
+export const GetSettingDocument = gql`
+    query GetSetting($key: String!) {
+  getSetting(key: $key) {
+    _id
+    key
+    value
+    updatedBy
+    updatedOn
+  }
+}
+    `;
+
+/**
+ * __useGetSettingQuery__
+ *
+ * To run a query within a React component, call `useGetSettingQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSettingQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSettingQuery({
+ *   variables: {
+ *      key: // value for 'key'
+ *   },
+ * });
+ */
+export function useGetSettingQuery(baseOptions: Apollo.QueryHookOptions<GetSettingQuery, GetSettingQueryVariables> & ({ variables: GetSettingQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSettingQuery, GetSettingQueryVariables>(GetSettingDocument, options);
+      }
+export function useGetSettingLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSettingQuery, GetSettingQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSettingQuery, GetSettingQueryVariables>(GetSettingDocument, options);
+        }
+export function useGetSettingSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSettingQuery, GetSettingQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSettingQuery, GetSettingQueryVariables>(GetSettingDocument, options);
+        }
+export type GetSettingQueryHookResult = ReturnType<typeof useGetSettingQuery>;
+export type GetSettingLazyQueryHookResult = ReturnType<typeof useGetSettingLazyQuery>;
+export type GetSettingSuspenseQueryHookResult = ReturnType<typeof useGetSettingSuspenseQuery>;
+export type GetSettingQueryResult = Apollo.QueryResult<GetSettingQuery, GetSettingQueryVariables>;
+export const UpdateSettingDocument = gql`
+    mutation UpdateSetting($key: String!, $value: String!) {
+  updateSetting(key: $key, value: $value) {
+    _id
+    key
+    value
+    updatedBy
+    updatedOn
+  }
+}
+    `;
+export type UpdateSettingMutationFn = Apollo.MutationFunction<UpdateSettingMutation, UpdateSettingMutationVariables>;
+
+/**
+ * __useUpdateSettingMutation__
+ *
+ * To run a mutation, you first call `useUpdateSettingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSettingMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSettingMutation, { data, loading, error }] = useUpdateSettingMutation({
+ *   variables: {
+ *      key: // value for 'key'
+ *      value: // value for 'value'
+ *   },
+ * });
+ */
+export function useUpdateSettingMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSettingMutation, UpdateSettingMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateSettingMutation, UpdateSettingMutationVariables>(UpdateSettingDocument, options);
+      }
+export type UpdateSettingMutationHookResult = ReturnType<typeof useUpdateSettingMutation>;
+export type UpdateSettingMutationResult = Apollo.MutationResult<UpdateSettingMutation>;
+export type UpdateSettingMutationOptions = Apollo.BaseMutationOptions<UpdateSettingMutation, UpdateSettingMutationVariables>;
 export const AppInstanceDocument = gql`
     query AppInstance {
   appInstance
@@ -1675,7 +1773,7 @@ export type PatchRowMutationHookResult = ReturnType<typeof usePatchRowMutation>;
 export type PatchRowMutationResult = Apollo.MutationResult<PatchRowMutation>;
 export type PatchRowMutationOptions = Apollo.BaseMutationOptions<PatchRowMutation, PatchRowMutationVariables>;
 export const DeleteRowDocument = gql`
-    mutation deleteRow($_id: ObjectId!) {
+    mutation DeleteRow($_id: ObjectId!) {
   deleteRow(_id: $_id)
 }
     `;
@@ -1706,7 +1804,7 @@ export type DeleteRowMutationHookResult = ReturnType<typeof useDeleteRowMutation
 export type DeleteRowMutationResult = Apollo.MutationResult<DeleteRowMutation>;
 export type DeleteRowMutationOptions = Apollo.BaseMutationOptions<DeleteRowMutation, DeleteRowMutationVariables>;
 export const DeleteRowsDocument = gql`
-    mutation deleteRows($ids: [ObjectId!]!) {
+    mutation DeleteRows($ids: [ObjectId!]!) {
   deleteRows(ids: $ids)
 }
     `;

@@ -143,12 +143,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
 
     return <div className="table-container">
         <div className="table-header">
-            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload}/>
+            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload} profile={profile||undefined}/>
         </div>
-        focusLineKey: {tableState.focusLineKey}
-        {} |
-        focusFieldName: {tableState.focusFieldName}
-        {} | inputFocus: {tableState.inputFocus ? "on" : "off"}
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             <table className="my-table">
                 <TableHeader 
@@ -555,15 +551,30 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         setTableState(prev => stateMoveFocusTo(prev, line, column.name))
     }
 
+    function columnCanReceiveFocus(column: Column): boolean {
+        const showHiddenColumns = checkboxesState.showHiddenColumns
+        if (column instanceof Field) {
+            return showHiddenColumns || !column.hidden
+        } else return false
+    }
+
+    function columnIsEditable(column: Column): boolean {
+        const showHiddenColumns = checkboxesState.showHiddenColumns
+        if (column instanceof Field) {
+            return column.editable && (showHiddenColumns || !column.hidden)
+        } else return false
+    }
+
     // aggiunge una nuova riga vuota in fondo alla tabella
     // e ci mette il focus
     function addNewRow() {
+        const showHiddenColumns = checkboxesState.showHiddenColumns
         saveLineIfNeeded(focusLine)
         
         setTableState(prev => {
             // aggiungi una nuova riga
             const line = newLine()
-            const firstEditableColumn = columns.find(col => (col instanceof Field && !col.hidden && col.editable)) as Field | undefined
+            const firstEditableColumn = columns.find(columnIsEditable) as Field | undefined
             const focusFieldName = firstEditableColumn?.name || ''
             const state = {
                 ...prev,
@@ -611,7 +622,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         const lines = tableState.lines
         const row_index = lines.indexOf(focusLine)
         if (row_index < 0) return // non dovrebbe succedere!
-        const visible_columns = columns.filter(col => (col instanceof Field && !col.hidden))
+        const visible_columns = columns.filter(columnCanReceiveFocus)
         if (row_index + 1 === lines.length) {
             // era l'ultima riga della tabella
             if (visible_columns.length >0) {
