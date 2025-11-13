@@ -12,7 +12,6 @@ import Button from "./Button"
 export default function TableActions(input: TableActionInput) {
     const ctx = useTableActionsContext(input)
     return <>
-        {JSON.stringify({profile: input.profile})}
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
