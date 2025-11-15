@@ -8,7 +8,7 @@ import { Data } from '@/app/lib/models'
 import Button from "./Button"
 import ErrorElement from "./Error"
 import Loading from "./Loading"
-import { myTimestamp } from "../lib/util"
+import { myTimestamp, pluralize } from "../lib/util"
 import { schemas } from "../lib/schema"
 
 export default function ScansImport({sheet, data_rows}:{
@@ -59,7 +59,7 @@ export default function ScansImport({sheet, data_rows}:{
 
         if (!response.ok) {
             const data = await response.json()
-            setError(data?.error || "upload failed")
+            setError(data?.error || "caricamento fallito")
         }
     }
 }
@@ -190,10 +190,10 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     if (rows.length === 0) return <p>Nessun dato acquisito</p>
     
     return <>
-        <span><b>{rows.length}</b> righe </span>
-        <Button disabled={showRaw || selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
-            importa {selected.length} righe selezionate
-        </Button> {}
+        <span><b>{pluralize(rows.length, 'riga', 'righe')}</b> </span>
+            <Button disabled={showRaw || selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
+                importa {pluralize(selected.length, 'riga selezionata', 'righe selezionate')}
+            </Button> {}
         { (addLoading || patchLoading) && <Loading /> }
         {showRaw 
             ? <RawResultsTable job={job} rows={rows}/>
