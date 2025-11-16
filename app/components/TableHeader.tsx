@@ -16,13 +16,13 @@ export default function TableHeader({schema, columns, allSelected, selectAll, se
 }) {
   return <>
       <colgroup>
-        <col className="checkbox-cell" />
-            { columns.map(col => <col key={col.name} className={col instanceof Field ? col.css_class : col.name } />) }
-        <col className="actions-cell" />
+        <col className="checkbox-cell hide-print" />
+        { columns.map(col => <col key={col.name} className={col instanceof Field ? col.css_class : col.name } />) }
+        <col className="actions-cell hide-print" />
       </colgroup>
       <thead>
         <tr>
-          <th scope="col" className="checkbox-cell">
+          <th scope="col" className="checkbox-cell hide-print">
             <input 
               type="checkbox" 
               checked={allSelected}
@@ -41,7 +41,7 @@ export default function TableHeader({schema, columns, allSelected, selectAll, se
                 <SortIcon direction={sortCriterium.field === col.name ? sortCriterium.direction : 0} doSort={(direction) => doSortRows(col.name, direction)} />
              </th>
           )}
-          <th scope="col" className="actions-cell">
+          <th scope="col" className="actions-cell hide-print">
                 <SortIcon direction={sortCriterium.field === 'error' ? sortCriterium.direction : 0} doSort={(direction) => doSortRows('error', direction)} />
           </th>
         </tr>

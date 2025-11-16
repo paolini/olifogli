@@ -9,7 +9,7 @@ export function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
 }) {
     const { isSelected, doSelect, doDeselect } = selectionState;
-    return <td className="checkbox-cell">
+    return <td className="checkbox-cell hide-print">
       <input 
         type="checkbox" 
         checked={isSelected}

@@ -74,8 +74,8 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
-        { (line?.row?.error || line?.row?.olimanager?.error) && <td className="alert">{line.row?.error || line.row?.olimanager?.error}</td>}
-        { line.row && line?.row?.olimanager?.participantId && <td className="olimanager-participant-id">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
+        { (line?.row?.error || line?.row?.olimanager?.error) && <td className="alert hide-print">{line.row?.error || line.row?.olimanager?.error}</td>}
+        { line.row && line?.row?.olimanager?.participantId && <td className="olimanager-participant-id hide-print">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
     </tr>
 
     function computeRecentFadeStyling() {

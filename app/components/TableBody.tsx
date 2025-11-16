@@ -51,7 +51,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
               />
             }
         )}
-        <tr><td></td><td colSpan={columns.length}>
+        <tr className="hide-print"><td></td><td colSpan={columns.length}>
         { edit && (!tableState.focusLineKey || focusLine?.row) && 
           <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
             aggiungi nuova riga

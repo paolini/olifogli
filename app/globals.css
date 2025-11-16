@@ -33,6 +33,12 @@
 }
 */
 
+@media print {
+  .hide-print {
+    display: none !important;
+  }
+}
+
 html, body {
   height: 100%;
   margin: 0;
@@ -58,6 +64,12 @@ body {
   flex-direction: column;
   height: 100vh; /* Fissa l'altezza alla viewport height */
   background-color: var(--nav-background);
+}
+
+@media print {
+  .page-wrapper {
+    height: auto !important;
+  }
 }
 
 .page-content {
@@ -263,10 +275,24 @@ table.commondata {
   margin-bottom: 12px  ;
 }
 
+@media print {
+  table.commondata {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 2px !important;
+  }
+}
+
 table.commondata th {
   padding: 4px 8px;
   background-color: rgb(200, 200, 200);
   text-align: right;
+}
+
+@media print {
+  table.commondata th, table.commondata td {
+    padding: 0px 0px !important;
+  } 
 }
 
 table.commondata td {
@@ -284,6 +310,13 @@ table.my-table {
     border-collapse: separate;
     border-spacing: 0;
     font-size: 12px;
+}
+
+@media print {
+  table.my-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
 }
 
 /* Media queries per font-size responsive */
@@ -370,10 +403,27 @@ input.table-row {
   padding: 4px;
 }
 
+@media print {
+  .my-table td {
+    border-bottom: none !important;
+    border-top: none !important;
+    border-left: 1px solid gray !important;
+    border-right: 1px solid gray !important;
+    padding: 1px !important;
+  }
+}
+
 td.focus {
   outline: 2px solid #0078ff;
   outline-offset: -2px;
   box-shadow: 0 0 4px rgba(0,120,255,0.3);
+}
+
+@media print {
+  td.focus {
+    outline: none;
+    box-shadow: none;
+  }
 }
 
 td.input-focus {
@@ -422,6 +472,13 @@ col.field-name {
   min-width: 20ex;
 }
 
+@media print {
+  col.field-name, col.field-surname {
+    min-width: auto;
+    width: 15ex;
+  }
+}
+
 col.field-birthDate {
   min-width: 14ex;
 }
@@ -430,8 +487,22 @@ td.field-birthDate, td.field-birthDate input {
   text-align: center;
 }
 
+@media print {
+  col.field-birthDate {
+    min-width: auto;
+    width: 10ex;
+  }
+}
+
 col.field-classYear {
   min-width: 11ex;
+}
+
+@media print {
+  col.field-classYear {
+    min-width: auto;
+    width: 4ex;
+  }
 }
 
 td.field-classYear, td.field-classYear input {
@@ -440,6 +511,13 @@ td.field-classYear, td.field-classYear input {
 
 col.field-classSection {
   min-width: 12ex;
+}
+
+@media print {
+  col.field-classSection {
+    min-width: auto;
+    width: 4ex;
+  }
 }
 
 td.field-classSection, td.field-classSection input {
@@ -452,6 +530,13 @@ col.field-school {
 
 col.field-variant {
   min-width: 12ex;
+}
+
+@media print {
+  col.field-variant, td.field-variant {
+    min-width: auto;
+    width: 6ex;
+  }
 }
 
 td.field-variant, td.field-variant input {
@@ -468,12 +553,26 @@ td.field-ChoiceAnswer input {
   text-align: center; 
 }
 
+@media print {
+  th.field-ChoiceAnswer, td.field-ChoiceAnswer {
+    width: 0.5ex;
+    font-size: 75%;
+  }
+}
+
 col.field-NumberAnswer {
   min-width: 5ex;
 }
 
 col.field-score {
   min-width: 8ex;
+}
+
+@media print {
+  col.field-score {
+    min-width: auto;
+    width: 3ex;
+  }
 }
 
 td.field-score {
