@@ -117,7 +117,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-    const [keyStrokeBuffer, setKeyStrokeBuffer] = useState<string>('')
+    const [directInput, setDirectInput] = useState<boolean>(false);
 
     useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
     useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
@@ -147,6 +147,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload} setCsvImport={setCsvImport} edit={edit} profile={profile||undefined}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
+            direct={directInput?"true": "false"}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}
@@ -161,8 +162,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                     columns={columns}
                     tableState={tableState}
                     setTableState={setTableState}
-                    keyStrokeBuffer={keyStrokeBuffer}
-                    setKeyStrokeBuffer={setKeyStrokeBuffer}
+                    directInput={directInput} setDirectInput={setDirectInput}
                     showStandardAnswers={checkboxesState.showStandardAnswers}
                     refresh={refresh}
                     refreshLoading={refreshLoading}
@@ -340,8 +340,15 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             setTableState(prev => ({...prev, inputFocus: true}))
         } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !inputFocus && focusLine && focusField) {
             // alert(`Inizio modifica della cella. Premi ESC per annullare.`)
-            setKeyStrokeBuffer(buffer => buffer + e.key)
             setTableState(prev => ({...prev, inputFocus: true}))
+            let char = e.key
+            if (focusField.type === 'choice-answer') {
+                char = choiceAnswerCharacterTransform(char)
+                setTimeout(() => moveRightOrLeft(1), 0);      
+            }
+            setValueInFocusCell(char)
+            setDirectInput(true);
+            // cellKeyDownHandler(e);
             e.preventDefault();
             e.stopPropagation();
         } else if (e.key === "Escape" && focusField && inputFocus) {
@@ -412,11 +419,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                 setLineData(focusLine, focusField.name, s)
             }
         }
-
     }
 
-    function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
-        console.log("cellKeyDownHandler called");
+    function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>|KeyboardEvent<HTMLTableSectionElement>) {
+        // console.log("cellKeyDownHandler called");
         const key = e.key;
         const input = e.currentTarget
 
@@ -458,10 +464,14 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             // viene gestito dall'handler superiore in Table
             return
         }
-        const cursorPos = input.selectionStart || 0
-        const cursorEnd = input.selectionEnd || 0
-        const isAtStart = cursorPos === 0 && cursorEnd === 0
-        const isAtEnd = cursorPos === input?.value.length && cursorEnd === input.value.length
+        let isAtStart = true
+        let isAtEnd = true
+        if (input instanceof HTMLInputElement) {
+            const cursorPos = input.selectionStart || 0
+            const cursorEnd = input.selectionEnd || 0
+            isAtStart = cursorPos === 0 && cursorEnd === 0
+            isAtEnd = cursorPos === input?.value.length && cursorEnd === input.value.length
+        }
 
         if (field.type === 'choice-answer') {
             const newValue = choiceAnswerKeyDownHandler(e);
@@ -489,47 +499,51 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     }
 
     // handler specifico per i campi di tipo 'date'
-    function dateKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
+    function dateKeyDownHandler(e: KeyboardEvent<HTMLInputElement>|KeyboardEvent<HTMLTableSectionElement>) {
         let key = e.key
         const input = e.currentTarget
         if (key === ' ' || key==='.') key = '/'
 
-        if (key >= '0' && key <= '9' || key === '/') {      
-        let cursorPos = input?.selectionStart || 0
-        const cursorEnd = input?.selectionEnd || 0
-        let value = input?.value || ''
-        // rimpiazza eventuali '|' con '/'
-        value = value.replace(/\|/g, '/')
+        if (key >= '0' && key <= '9' || key === '/') { 
+        let cursorPos = 0
+        let cursorEnd = 0
+        if (input instanceof HTMLInputElement) {
+            cursorPos = input?.selectionStart || 0    
+            cursorEnd = input?.selectionEnd || 0
+            let value = input?.value || ''
+                // rimpiazza eventuali '|' con '/'
+                value = value.replace(/\|/g, '/')
 
-        // inserisci carattere e '|' come cursore
-        value = value.slice(0, cursorPos) + key + '|' + value.slice(cursorEnd)
+                // inserisci carattere e '|' come cursore
+                value = value.slice(0, cursorPos) + key + '|' + value.slice(cursorEnd)
 
-        // sostituisci eventuali doppie barre con una sola barra
-        value = value.replace(/\/+/g, '/')
-        value = value.replace(/\/\|\//g, '/|')
+                // sostituisci eventuali doppie barre con una sola barra
+                value = value.replace(/\/+/g, '/')
+                value = value.replace(/\/\|\//g, '/|')
 
-        // Aggiungi una barra se value = "gg|" o "gg/mm|"
-        if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
-            value = value.replace('|', '/|')
-        }
+                // Aggiungi una barra se value = "gg|" o "gg/mm|"
+                if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
+                    value = value.replace('|', '/|')
+                }
 
-        cursorPos = value.indexOf('|')
-        value = value.replace('|', '')
+                cursorPos = value.indexOf('|')
+                value = value.replace('|', '')
 
-        // Imposta la posizione del cursore
-        setTimeout(() => {
-            const input = document.activeElement as HTMLInputElement
-            if (input) {
-            input.setSelectionRange(cursorPos, cursorPos)
+            // Imposta la posizione del cursore
+            setTimeout(() => {
+                const input = document.activeElement as HTMLInputElement
+                if (input) {
+                    input.setSelectionRange(cursorPos, cursorPos)
+                }
+            }, 0)
+                return value
             }
-        }, 0)
-        return value
         }
         return undefined
     }
 
     // handler specifico per i campi di tipo 'choice-answer' (singolo carattere)
-    function choiceAnswerKeyDownHandler(e: KeyboardEvent<HTMLInputElement>) {
+    function choiceAnswerKeyDownHandler(e: KeyboardEvent<HTMLInputElement>|KeyboardEvent<HTMLTableSectionElement>) {
         const key = e.key
         if (key === "ArrowLeft" || key === "ArrowRight") {
             // lascia che il movimento venga gestito da TableRow
@@ -542,20 +556,26 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             return ''
         } else if (key.length === 1) {
             // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
-            let char = key.toUpperCase()
-            if (char === '0' || char === ' ') char = '-'
-            else if (char === '1') char = 'A'
-            else if (char === '2') char = 'B'
-            else if (char === '3') char = 'C'
-            else if (char === '4') char = 'D'
-            else if (char === '5') char = 'E'
-            else if (char === '9') char = 'X'
-            if (! "ABCDEX-".includes(char)) char = ' '
             setTimeout(() => moveRightOrLeft(1), 0);      
+            let char = choiceAnswerCharacterTransform(key)
             return char // Sostituisci il valore
         } else {
             return undefined;
         }
+    }
+
+    function choiceAnswerCharacterTransform(char:string) {
+        char = char.toUpperCase()
+        if (char === '0' || char === ' ') char = '-'
+        else if (char === '1') char = 'A'
+        else if (char === '2') char = 'B'
+        else if (char === '3') char = 'C'
+        else if (char === '4') char = 'D'
+        else if (char === '5') char = 'E'
+        else if (char === '9') char = 'X'
+        if (! "ABCDEX-".includes(char)) char = ' '
+        setTimeout(() => moveRightOrLeft(1), 0);      
+        return char // Sostituisci il valore
     }
 
     function moveFocusTo(column: Column, line: Line) {

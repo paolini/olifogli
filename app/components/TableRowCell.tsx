@@ -4,7 +4,6 @@ import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
 import { RowSelectionState } from "./TableRow";
-import { table } from "console";
 
 export function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
@@ -38,15 +37,15 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, keyStrokeBuffer, setKeyStrokeBuffer, showStandardAnswers, onClick, cellKeyDownHandler}:{
+export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, directInput, setDirectInput, showStandardAnswers, onClick, cellKeyDownHandler}:{
   hasFocus: boolean,
   inputFocus: boolean,
   field: Field,
   oldValue: string, // valore originale
   newValue: string, // valore eventualmente modificato
   setNewValue: (newValue: string|undefined) => void,
-  keyStrokeBuffer: string,
-  setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
+  directInput: boolean,
+  setDirectInput: Dispatch<SetStateAction<boolean>>,
   showStandardAnswers: boolean,
   onClick: () => void,
   cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
@@ -58,12 +57,23 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
     if (!hasFocus) return;
     if (inputRef.current && inputFocus) {
         inputRef.current.focus();
+        // console.log(`DataCell: focusing input for field ${field.name} with directInput=${directInput} value=${inputRef.current.value}`);
         inputRef.current.select();
     } 
     if (tdRef.current && !inputFocus) {
         tdRef.current?.focus();
     }
   }, [inputFocus, hasFocus, tdRef]);
+
+  useEffect(() => {
+    if (hasFocus && directInput && inputRef.current) {
+        // console.log(`DataCell: directInput effect focusing input for field ${field.name}`);
+        inputRef.current.focus();
+        // rimuovi la selezione:
+        inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+        setDirectInput(false);
+    }
+  }, [hasFocus, directInput, setDirectInput]);
 
   // useEffect(() => {}, [inputRef.currentkeyStrokeBuffer,setKeyStrokeBuffer]);
   
@@ -108,8 +118,6 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
             field={field}
             value={value} setValue={setNewValue} 
             oldValue={oldValue}
-            keyStrokeBuffer={keyStrokeBuffer}
-            setKeyStrokeBuffer={setKeyStrokeBuffer} 
             cellKeyDownHandler={cellKeyDownHandler}
             inputRef={inputRef}
           />
@@ -117,13 +125,11 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   </td>
 }
 
-export default function TableCellInput({field, value, setValue, oldValue, keyStrokeBuffer, setKeyStrokeBuffer, cellKeyDownHandler, inputRef}:{
+export default function TableCellInput({field, value, setValue, oldValue, cellKeyDownHandler, inputRef}:{
     field: Field,
     value: string,
     oldValue: string,
     setValue: (newValue: string|undefined) => void,
-    keyStrokeBuffer: string,
-    setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     inputRef: RefObject<HTMLInputElement|null>
 }) {

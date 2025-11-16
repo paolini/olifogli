@@ -10,15 +10,15 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, keyStrokeBuffer, setKeyStrokeBuffer, showStandardAnswers, onCellClick, cellKeyDownHandler, moveRightOrLeft}:{
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, moveRightOrLeft}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
     selectionState: RowSelectionState,
     focusColumnName: string,
     inputFocus: boolean,
-    keyStrokeBuffer: string,
-    setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
+    directInput: boolean,
+    setDirectInput: Dispatch<SetStateAction<boolean>>,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
@@ -65,9 +65,9 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             hasFocus={focusColumnName === column.name} 
             inputFocus={inputFocus}
             newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
-            setNewValue={setters[column.name]}  
-            keyStrokeBuffer={keyStrokeBuffer}
-            setKeyStrokeBuffer={setKeyStrokeBuffer}
+            setNewValue={setters[column.name]}
+            directInput={directInput}
+            setDirectInput={setDirectInput}
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
             cellKeyDownHandler={cellKeyDownHandler}
@@ -89,11 +89,6 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             '--fade-delay': `-${elapsedTime}s` 
         } as React.CSSProperties : undefined
         return { className, style }
-    }
-
-    function onKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>) { 
-        // console.log(`TableRow onKeyDown: key=${e.key} focusColumn=${focusColumnName}`);  
-        if (!focusColumnName) return;
     }
 }
 
