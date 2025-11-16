@@ -116,7 +116,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     const loading = addLoading || patchLoading || deleteLoading
     const error = addError || patchError || deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
-    const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date()) // ultima sincronizzazione con il server
+    const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
     const [directInput, setDirectInput] = useState<boolean>(false);
 
     useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
@@ -137,6 +138,19 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         [focusLine, columns, tableState.focusFieldName]
     );
     const focusField = focusColumn instanceof Field ? focusColumn : undefined
+
+    useEffect(() => {
+        // avvia un timer per il salvataggio automatico della riga in modifica
+        const intervalId = setInterval(() => {
+            setTableState(prev => {
+                console.log(`automatic save...`);
+                saveLineIfNeeded(focusLine)
+                return prev
+        })
+        }, 5000)
+        return () => clearInterval(intervalId);
+    }, [focusLine,lastAlive,setTableState]);
+
 
     if (!schema) {
         return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
@@ -328,6 +342,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         // console.log(`Table onKeyDown for key: ${e.key}`);
         const focusLineKey = tableState.focusLineKey
         const inputFocus = tableState.inputFocus
+        setLastAlive(new Date())
         if (!edit) return
         // salva cella in modifica
         if (e.key === "Enter" && focusField && inputFocus) {
