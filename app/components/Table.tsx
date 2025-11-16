@@ -161,8 +161,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload} setCsvImport={setCsvImport} edit={edit} profile={profile||undefined}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
-            direct={directInput?"true": "false"}
-            {} data={JSON.stringify(focusLine?.data)}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}

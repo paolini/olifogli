@@ -84,7 +84,7 @@ export default function GlobalMessage({name, title, description, collapsed}: {na
     }
     
     return (
-        <div className="mx-4 my-4 max-w-4xl">
+        <div className="mx-4 my-4 max-w-4xl message">
             {editing ? (
                 <div className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm">
                     <div className="mb-4">
