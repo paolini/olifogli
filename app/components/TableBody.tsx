@@ -5,7 +5,7 @@ import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 import { pluralize } from "../lib/util"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, keyStrokeBuffer, setKeyStrokeBuffer, cellKeyDownHandler, moveRightOrLeft, polling, setPolling} : {
+export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, moveRightOrLeft, polling, setPolling} : {
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -19,8 +19,8 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     onCellClick: (column: Column, line: Line) => void,
     addNewRow: () => void,
     setLineData: (line: Line, field: string, value: string | undefined) => void,
-    keyStrokeBuffer: string,
-    setKeyStrokeBuffer: Dispatch<SetStateAction<string>>,
+    directInput: boolean,
+    setDirectInput: Dispatch<SetStateAction<boolean>>,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     moveRightOrLeft: (n: number) => boolean,
     polling: boolean,
@@ -41,8 +41,8 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
                   columns={columns}
                   focusColumnName={focusColumnName}
                   inputFocus={!!(focusColumnName && tableState.inputFocus)}
-                  keyStrokeBuffer={keyStrokeBuffer}
-                  setKeyStrokeBuffer={setKeyStrokeBuffer}
+                  directInput={directInput}
+                  setDirectInput={setDirectInput}
                   selectionState={compute_selection_state_for_row(line.key)}
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
