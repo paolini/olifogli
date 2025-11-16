@@ -558,7 +558,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         } else if (key.length === 1) {
             // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
             setTimeout(() => moveRightOrLeft(1), 0);      
-            let char = choiceAnswerCharacterTransform(key)
+            const char = choiceAnswerCharacterTransform(key)
             return char // Sostituisci il valore
         } else {
             return undefined;
