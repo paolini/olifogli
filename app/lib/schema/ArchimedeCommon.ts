@@ -138,7 +138,7 @@ export default class ArchimedeCommon extends Competition {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
         data = validated.data
         data = {...data, score:''}
-        if (validated.error) return validated
+        // if (validated.error) return validated
         const variant = data['variant'] || ''
         if (!variant) return {
             error: 'variante mancante',
@@ -153,7 +153,7 @@ export default class ArchimedeCommon extends Competition {
                 data[item.name] = extended_answers[i] || ''
             })
             return {
-                error,
+                error: validated.error || error,
                 data
             }
         } catch (e) {

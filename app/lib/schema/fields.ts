@@ -180,6 +180,7 @@ export class DateField extends Field {
 
         value = parts.join('/')
 
+        if (value === '/' || value === '//') value=''
         return value
     }
 
