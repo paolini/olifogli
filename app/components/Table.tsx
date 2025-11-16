@@ -338,7 +338,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             setTableState(prev => ({...prev, inputFocus: true}))
         } else if ((e.key === "Delete" || e.key === "Backspace") && !inputFocus && focusLine) {
             setValueInFocusCell('')
-            setTableState(prev => ({...prev, inputFocus: true}))
+            // setTableState(prev => ({...prev, inputFocus: true}))
         } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !inputFocus && focusLine && focusField) {
             // alert(`Inizio modifica della cella. Premi ESC per annullare.`)
             setTableState(prev => ({...prev, inputFocus: true}))
@@ -357,12 +357,18 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             e.stopPropagation();
             // esco dalla modalità modifica
             const focusLine = tableState.lines.find(l => l.key === focusLineKey)
+            // salvo contenuto della riga
+            saveLineIfNeeded(focusLine);
+            // esco dalla modalità modifica
+            setTableState(prev => ({...prev, inputFocus: false}))
+            /*
             if (focusLine && Object.keys(focusLine.data).length > 0) {
                 if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) {
                     return
                 }
             } 
             cancelUnsavedModification(inputFocus);
+            */
         } else if (e.key === "ArrowDown" && focusLine) {
             e.preventDefault();
             e.stopPropagation();
@@ -481,6 +487,10 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                 setValue(newValue === oldValue ? undefined : newValue)
                 return
             }
+        } else if (key === "Backspace" && isAtStart) {
+            moveRightOrLeft(-1)
+            e.stopPropagation()
+            return
         } else if ((key === "ArrowLeft" && isAtStart)
             || (key === "ArrowRight" && isAtEnd)) {
             // fai gestire il movimento di focus alla tabella
