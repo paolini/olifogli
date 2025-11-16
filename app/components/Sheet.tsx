@@ -131,7 +131,7 @@ function SheetBody({sheet,profile}: {
     const schema = schemas[sheet.schema]
 
     return <div className="sheet-body-wrapper">
-        <div className="tab-container">
+        <div className="tab-container hide-print">
             <button
                 className={`tab-button ${tab === 'info' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('info')}
