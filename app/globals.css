@@ -69,6 +69,14 @@ body {
   background-color: var(--background);
 }
 
+.message ul li {
+  list-style-type: disc;
+}
+
+.message ol li {
+  list-style-type: decimal;
+}
+
 .sheet-wrapper {
   display: flex;
   flex-direction: column;
