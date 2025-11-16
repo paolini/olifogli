@@ -148,6 +148,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             direct={directInput?"true": "false"}
+            {} data={JSON.stringify(focusLine?.data)}
             <table className="my-table">
                 <TableHeader 
                     schema={schema}
@@ -794,7 +795,8 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     function clean(line: Line, fieldName: string) {
         const field = columns.find(c => c.name === fieldName)
         if (field instanceof Field) {
-            let value = line.data[field.name] 
+            let value = line.data[field.name]
+            if (value === undefined) value = line.row?.data[field.name] || ''
             value = field.clean(value || '')
             setLineData(line, field.name, value)
         }
