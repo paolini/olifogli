@@ -143,7 +143,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         // avvia un timer per il salvataggio automatico della riga in modifica
         const intervalId = setInterval(() => {
             setTableState(prev => {
-                console.log(`automatic save...`);
+                // console.log(`automatic save...`);
                 saveLineIfNeeded(focusLine)
                 return prev
         })
