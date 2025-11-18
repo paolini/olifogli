@@ -36,6 +36,7 @@ import addWorkbook from './resolvers/addWorkbook'
 import deleteWorkbook from './resolvers/deleteWorkbook'
 import updateWorkbook from './resolvers/updateWorkbook'
 import updateSheet from './resolvers/updateSheet'
+import updateUserAdmin from './resolvers/updateUserAdmin'
 import closeSheet from './resolvers/closeSheet'
 import openSheet from './resolvers/openSheet'
 import lockSheet from './resolvers/lockSheet'
@@ -114,7 +115,8 @@ export const resolvers: Resolvers = {
     addWorkbook,
     deleteWorkbook,
     updateWorkbook,
-    updateSheet,
+  updateSheet,
+  updateUserAdmin,
     closeSheet,
     openSheet,
     lockSheet,
