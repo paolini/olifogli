@@ -48,10 +48,9 @@ export default function TableActions(input: TableActionInput) {
             </option>
             })}
       </select>
-      {ctx.edit && <Button onClick={() => ctx.setCsvImport(true)} className="px-4">
+      {ctx.edit && <Button onClick={() => ctx.setCsvImport(true)} className="ml-4 px-4">
         Importa CSV
       </Button>}
-      <span className="px-1"/>
       {ctx.csvDownload && <Button onClick={() => ctx.csvDownload()} className="ml-4 px-4">
         Scarica CSV
       </Button>}
