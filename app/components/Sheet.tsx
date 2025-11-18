@@ -112,7 +112,7 @@ function SheetBody({sheet,profile}: {
     }
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
-    const canEdit: boolean = (profile && (profile._id === sheet.ownerId || profile.isAdmin || sheet.permissions?.some(p => p.userId === profile._id && (p.role === 'editor' || p.role === 'admin')))) || false;
+    const canEdit: boolean = profile && (profile.isAdmin || profile._id.toString() === sheet.ownerId.toString() || sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin'))) || false;
     const [polling, setPolling ] = useState<boolean>(!(tab === 'table' && canEdit));
     const { loading, error, data, refetch, stopPolling, startPolling } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
