@@ -141,7 +141,7 @@ export default class ArchimedeCommon extends Competition {
         // if (validated.error) return validated
         const variant = data['variant'] || ''
         if (!variant) return {
-            error: 'variante mancante',
+            error: 'codice compito mancante',
             data,
         }
         const answer_items = this.extractAnswerItems(data)
