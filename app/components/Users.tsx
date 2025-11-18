@@ -145,16 +145,14 @@ export default function Users() {
                     <td>{user.email}</td>
                     <td>{user.name}</td>
                     <td>
-                        {user._id.toString() === String(currentUserId)
-                            ? (user.isAdmin ? '✓' : '')
-                            : <input
-                                type="checkbox"
-                                checked={!!user.isAdmin}
-                                onChange={e => {
-                                    updateUserAdmin({ variables: { userId: user._id, isAdmin: e.target.checked } })
-                                }}
-                            />
-                        }
+                       <input
+                            disabled={user._id.toString() === String(currentUserId)}
+                            type="checkbox"
+                            checked={!!user.isAdmin}
+                            onChange={e => {
+                                updateUserAdmin({ variables: { userId: user._id, isAdmin: e.target.checked } })
+                            }}
+                        />
                     </td>
                 </tr>)}
             </tbody>

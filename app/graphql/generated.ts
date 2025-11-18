@@ -656,6 +656,11 @@ export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null, name?: string | null } | null> | null };
 
+export type MeQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null } | null };
+
 export type UpdateUserAdminMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
   isAdmin: Scalars['Boolean']['input'];
@@ -724,6 +729,32 @@ export type AddWorkbookMutationVariables = Exact<{
 
 export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
 
+export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
+  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
+  password: Scalars['String']['input'];
+}>;
+
+
+export type OlimanagerBulkUpdateResultsMutation = { __typename?: 'Mutation', olimanagerBulkUpdateResults: boolean };
+
+export type OlimanagerCreateParticipantMutationVariables = Exact<{
+  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
+  password: Scalars['String']['input'];
+}>;
+
+
+export type OlimanagerCreateParticipantMutation = { __typename?: 'Mutation', olimanagerCreateParticipant: Array<boolean> };
+
+export type RequestScanSheetGenerationMutationVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+  selectedRowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+}>;
+
+
+export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
+
 export type GetProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -733,11 +764,6 @@ export type GetConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetConfigQuery = { __typename?: 'Query', config?: { __typename?: 'Config', OLIMANAGER_URL?: string | null } | null };
-
-export type MeQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null } | null };
 
 
 export const AddRowsDocument = gql`
@@ -1764,6 +1790,47 @@ export type GetUsersQueryHookResult = ReturnType<typeof useGetUsersQuery>;
 export type GetUsersLazyQueryHookResult = ReturnType<typeof useGetUsersLazyQuery>;
 export type GetUsersSuspenseQueryHookResult = ReturnType<typeof useGetUsersSuspenseQuery>;
 export type GetUsersQueryResult = Apollo.QueryResult<GetUsersQuery, GetUsersQueryVariables>;
+export const MeDocument = gql`
+    query Me {
+  me {
+    _id
+    email
+    isAdmin
+  }
+}
+    `;
+
+/**
+ * __useMeQuery__
+ *
+ * To run a query within a React component, call `useMeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMeQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMeQuery(baseOptions?: Apollo.QueryHookOptions<MeQuery, MeQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MeQuery, MeQueryVariables>(MeDocument, options);
+      }
+export function useMeLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MeQuery, MeQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, options);
+        }
+export function useMeSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<MeQuery, MeQueryVariables>(MeDocument, options);
+        }
+export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
+export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
+export type MeSuspenseQueryHookResult = ReturnType<typeof useMeSuspenseQuery>;
+export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const UpdateUserAdminDocument = gql`
     mutation UpdateUserAdmin($userId: ID!, $isAdmin: Boolean!) {
   updateUserAdmin(userId: $userId, isAdmin: $isAdmin) {
@@ -2152,6 +2219,112 @@ export function useAddWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<
 export type AddWorkbookMutationHookResult = ReturnType<typeof useAddWorkbookMutation>;
 export type AddWorkbookMutationResult = Apollo.MutationResult<AddWorkbookMutation>;
 export type AddWorkbookMutationOptions = Apollo.BaseMutationOptions<AddWorkbookMutation, AddWorkbookMutationVariables>;
+export const OlimanagerBulkUpdateResultsDocument = gql`
+    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+  olimanagerBulkUpdateResults(
+    rowIds: $rowIds
+    username: $username
+    password: $password
+  )
+}
+    `;
+export type OlimanagerBulkUpdateResultsMutationFn = Apollo.MutationFunction<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
+
+/**
+ * __useOlimanagerBulkUpdateResultsMutation__
+ *
+ * To run a mutation, you first call `useOlimanagerBulkUpdateResultsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerBulkUpdateResultsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [olimanagerBulkUpdateResultsMutation, { data, loading, error }] = useOlimanagerBulkUpdateResultsMutation({
+ *   variables: {
+ *      rowIds: // value for 'rowIds'
+ *      username: // value for 'username'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useOlimanagerBulkUpdateResultsMutation(baseOptions?: Apollo.MutationHookOptions<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>(OlimanagerBulkUpdateResultsDocument, options);
+      }
+export type OlimanagerBulkUpdateResultsMutationHookResult = ReturnType<typeof useOlimanagerBulkUpdateResultsMutation>;
+export type OlimanagerBulkUpdateResultsMutationResult = Apollo.MutationResult<OlimanagerBulkUpdateResultsMutation>;
+export type OlimanagerBulkUpdateResultsMutationOptions = Apollo.BaseMutationOptions<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
+export const OlimanagerCreateParticipantDocument = gql`
+    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+  olimanagerCreateParticipant(
+    rowIds: $rowIds
+    username: $username
+    password: $password
+  )
+}
+    `;
+export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
+
+/**
+ * __useOlimanagerCreateParticipantMutation__
+ *
+ * To run a mutation, you first call `useOlimanagerCreateParticipantMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerCreateParticipantMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [olimanagerCreateParticipantMutation, { data, loading, error }] = useOlimanagerCreateParticipantMutation({
+ *   variables: {
+ *      rowIds: // value for 'rowIds'
+ *      username: // value for 'username'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useOlimanagerCreateParticipantMutation(baseOptions?: Apollo.MutationHookOptions<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>(OlimanagerCreateParticipantDocument, options);
+      }
+export type OlimanagerCreateParticipantMutationHookResult = ReturnType<typeof useOlimanagerCreateParticipantMutation>;
+export type OlimanagerCreateParticipantMutationResult = Apollo.MutationResult<OlimanagerCreateParticipantMutation>;
+export type OlimanagerCreateParticipantMutationOptions = Apollo.BaseMutationOptions<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
+export const RequestScanSheetGenerationDocument = gql`
+    mutation RequestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
+  requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
+}
+    `;
+export type RequestScanSheetGenerationMutationFn = Apollo.MutationFunction<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
+
+/**
+ * __useRequestScanSheetGenerationMutation__
+ *
+ * To run a mutation, you first call `useRequestScanSheetGenerationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestScanSheetGenerationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestScanSheetGenerationMutation, { data, loading, error }] = useRequestScanSheetGenerationMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *      selectedRowIds: // value for 'selectedRowIds'
+ *   },
+ * });
+ */
+export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.MutationHookOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>(RequestScanSheetGenerationDocument, options);
+      }
+export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
+export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
+export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
 export const GetProfileDocument = gql`
     query GetProfile {
   me {
@@ -2233,47 +2406,6 @@ export type GetConfigQueryHookResult = ReturnType<typeof useGetConfigQuery>;
 export type GetConfigLazyQueryHookResult = ReturnType<typeof useGetConfigLazyQuery>;
 export type GetConfigSuspenseQueryHookResult = ReturnType<typeof useGetConfigSuspenseQuery>;
 export type GetConfigQueryResult = Apollo.QueryResult<GetConfigQuery, GetConfigQueryVariables>;
-export const MeDocument = gql`
-    query Me {
-  me {
-    _id
-    email
-    isAdmin
-  }
-}
-    `;
-
-/**
- * __useMeQuery__
- *
- * To run a query within a React component, call `useMeQuery` and pass it any options that fit your needs.
- * When your component renders, `useMeQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMeQuery({
- *   variables: {
- *   },
- * });
- */
-export function useMeQuery(baseOptions?: Apollo.QueryHookOptions<MeQuery, MeQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-      }
-export function useMeLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MeQuery, MeQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-        }
-export function useMeSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-        }
-export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
-export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
-export type MeSuspenseQueryHookResult = ReturnType<typeof useMeSuspenseQuery>;
-export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;

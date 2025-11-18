@@ -1,0 +1,19 @@
+import { gql } from '@apollo/client';
+
+export const OLIMANAGER_BULK_UPDATE_RESULTS_MUTATION = gql`
+  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    olimanagerBulkUpdateResults(rowIds: $rowIds, username: $username, password: $password)
+  }
+`;
+
+export const OLIMANAGER_CREATE_PARTICIPANT_MUTATION = gql`
+  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    olimanagerCreateParticipant(rowIds: $rowIds, username: $username, password: $password)
+  }
+`;
+
+export const REQUEST_SCAN_SHEET_GENERATION_MUTATION = gql`
+  mutation RequestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
+    requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
+  }
+`;
