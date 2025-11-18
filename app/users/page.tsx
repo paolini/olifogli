@@ -1,58 +1,17 @@
 "use client"
-import { gql, useQuery } from '@apollo/client'
+import { gql } from '@apollo/client'
 import ApolloProviderClient from '@/app/ApolloProviderClient'
-import Link from "next/link"
 
-import { User } from "@/app/lib/models"
 import NavBar from "../components/NavBar"
-import Loading from "../components/Loading"
-import Error from "../components/Error"
 import { BreadcrumbsProvider } from '@/app/components/BreadcrumbsProvider'
-
-const USERS_QUERY = gql`
-    query GetUsers {
-        users {
-            _id
-            email
-            isAdmin
-        }
-    }
-`
+import Users from '@/app/components/Users'
 
 export default function Page() {
-      return <ApolloProviderClient>
+    return <ApolloProviderClient>
         <BreadcrumbsProvider>
-          <NavBar />
-          <Users />
+            <NavBar />
+            <Users />
         </BreadcrumbsProvider>
-      </ApolloProviderClient>
+    </ApolloProviderClient>
 }
 
-function Users() {
-    const { data, loading, error } = useQuery<{ users: User[] }>(USERS_QUERY)
-
-    if (loading) return <Loading />
-    if (error) return <Error error={error} />
-
-    const users = data?.users || []
-
-    return <>
-        <h1>utenti</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>email</th>
-                    <th>nome</th>
-                    <th>⚙</th>
-                </tr>
-            </thead>
-            <tbody>
-                {users.map(user => <tr key={user._id.toString()}>
-                    <td>{user.email}</td>
-                    <td>{user.name}</td>
-                    <td>{user?.isAdmin ? '✓' : ''}</td>
-                </tr>)}
-            </tbody>
-        </table>
-    </>
-}
