@@ -87,11 +87,11 @@ function providers() {
         // verrà passato alla callback signIn
         return {
           id: profile.sub,
-          name: `${profile?.name} ${profile?.surname}`,
+          name: profile.surname ? `${profile.name} ${profile.surname}` : profile.name,
           email: profile.email,
           school: profile?.school || null,
           roles: profile?.roles || [],
-        }        
+        }
       },
     })
   }
