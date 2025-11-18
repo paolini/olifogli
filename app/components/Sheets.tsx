@@ -163,7 +163,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                             <Th key={header} field={header} header={header} />
                         )}
                         <Th field="##nRows" header="righe" />
-                        <Th field="##validRows" header="valide" />
+                        <Th field="##nValidRows" header="valide" />
                         <th>stato</th>
                     </tr>
                 </thead>
