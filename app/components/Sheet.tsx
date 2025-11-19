@@ -17,6 +17,7 @@ import {Row, Sheet, User, useGetSheetQuery} from '@/app/graphql/generated'
 import { useBreadcrumbs } from './BreadcrumbsProvider'
 import SheetInfo from './SheetInfo'
 import ScansSheetExport from './ScansSheetExport'
+import GlobalMessage from './GlobalMessage'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -197,6 +198,7 @@ function SheetBody({sheet,profile}: {
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setCsvImport(false)}/>
         }
         { tab === 'scans' && <div className="mx-2">
+            <GlobalMessage name="scan_info"/>
             <ScansSheetExport sheet={sheet} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
