@@ -16,6 +16,7 @@ type FieldOptions = {
     type?: FieldType
     titleCase?: boolean
     options?: string[]
+    precompileValue?: boolean
 }
 
 export class Field {
@@ -30,8 +31,9 @@ export class Field {
     type: FieldType = 'text'
     titleCase: boolean = false
     options: string[]|undefined = undefined
+    precompileValue: boolean = false
 
-    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, options}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, options, precompileValue}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_class = `field-${this.name}`
@@ -46,6 +48,7 @@ export class Field {
         this.required = required !== undefined ? required : true
         this.titleCase = titleCase || false
         this.options = options || undefined
+        this.precompileValue = precompileValue || false
     }
 
     // Get all possible names for this field (main name + alternatives)

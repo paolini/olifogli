@@ -639,6 +639,17 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             const line = newLine()
             const firstEditableColumn = columns.find(columnIsEditable) as Field | undefined
             const focusFieldName = firstEditableColumn?.name || ''
+            if (focusLine) {
+                // inserisci campi precompilati
+                for (const col of columns) {
+                    if (col instanceof Field && col?.precompileValue) {
+                        const value = focusLine?.data[col.name] || focusLine?.row?.data[col.name] || ''
+                        if (value) {
+                            line.data[col.name] = value
+                        }
+                    }
+                }
+            }
             const state = {
                 ...prev,
                 lines: [...prev.lines, line]
