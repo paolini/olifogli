@@ -2,7 +2,7 @@ import { Data, Row, ScanResults } from '../models'
 import Competition, { OlimanagerProblemResult } from './Competition'
 import { Field, ChoiceAnswerField, DateField, OptionsField } from './fields'
 import {decodePermutations, buildPermutationsObject, computeScores} from './PERMUTATIONS'
-import Schema, { DerivedData } from './Schema'
+import { DerivedData } from './Schema'
 
 export function score_to_color_style(value: string): React.CSSProperties {
     const numericValue = parseFloat(value);
@@ -100,8 +100,8 @@ export default class ArchimedeCommon extends Competition {
             new Field('surname',{header: "Cognome", titleCase: true}),
             new Field('name',{header: "Nome", titleCase: true}),
             new DateField('birthDate',{header: 'Data di nascita'}),
-            new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno']}),
-            new Field('classSection',{header:'Sezione'}),
+            new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno'], precompileValue: true}),
+            new Field('classSection',{header:'Sezione', precompileValue: true}),
             new Field('variant',{header: "Codice compito", additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r02', {header: '2'}),
