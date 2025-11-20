@@ -350,7 +350,14 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
           </tr>
         </tbody>
         </table>
-
+        <div className="mb-4">
+            Legenda:
+            <ul className="list-disc list-inside">
+                <li><b>responsabile</b>: può dare/togliere i permessi di accesso e chiudere il foglio</li>
+                <li><b>aiutante</b>: può aggiungere/modificare/rimuovere righe nel foglio</li>
+                <li><b>supervisore</b>: può solo visualizzare le righe del foglio</li>
+            </ul>
+        </div>
         <div>
         { canModifySensibleData && 
             <Button className="mx-2" variant="danger" disabled={clearingSheet || sheet.nRows===0 || !!sheet.closed || !!sheet.locked} onClick={() => {
@@ -395,7 +402,8 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     }
 
     async function removePermission(index: number) {
-      await persistPermissions(permissions.filter((_, i) => i !== index))
+        if (!confirm(`Sei sicuro di voler rimuovere i permessi per ${permissions[index].email || `ID: ${permissions[index].userId}`}?`)) return
+        await persistPermissions(permissions.filter((_, i) => i !== index))
     }
 
     async function doDelete() {
