@@ -25,7 +25,7 @@ export default function ScansImport({sheet, data_rows}:{
     }
 
     return <>
-        <h2>Caricamento scansioni OMR</h2>
+        <h2>Caricamento scansioni</h2>
         <div className="flex flex-col gap-4">
             { error && <ErrorElement error={error} dismiss={()=>setError('')}/> }
             <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />

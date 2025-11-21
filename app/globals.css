@@ -83,10 +83,14 @@ body {
 
 .message ul li {
   list-style-type: disc;
+  list-style-position: inside;
+  padding-left: 1em;
 }
 
 .message ol li {
   list-style-type: decimal;
+  list-style-position: inside;
+  padding-left: 1em;
 }
 
 .sheet-wrapper {
