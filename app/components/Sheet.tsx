@@ -198,7 +198,7 @@ function SheetBody({sheet,profile}: {
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setCsvImport(false)}/>
         }
         { tab === 'scans' && <div className="mx-2">
-            <GlobalMessage name="scan_info"/>
+            <GlobalMessage name="scan_info" title="instructions" collapsed={true} />
             <ScansSheetExport sheet={sheet} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
