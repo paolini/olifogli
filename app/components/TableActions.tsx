@@ -206,11 +206,6 @@ function handleGenerateScanSheet(ctx: TableActionContext) {
       .filter(line => (selectedLineKeys.size === 0 || selectedLineKeys.has(line.key)) && line.row?._id)
       .map(line => line.row?._id as ObjectId)
 
-  if (ctx?.profile?.email !== 'ginnasta@mailinator.com') {
-    alert(`La generazione dei fogli risposte è temporaneamente disabilitata. Stiamo aggiornando il modello.`)
-    return
-  }
-
   if (selectedRowIds.length === 0) {
       alert('Nessuna riga valida selezionata per la generazione dei fogli risposte.')
       return

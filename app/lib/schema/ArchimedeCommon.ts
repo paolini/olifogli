@@ -166,9 +166,9 @@ export default class ArchimedeCommon extends Competition {
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
         const existing_data_dict = Object.fromEntries(rows
-            .map(row => [parseInt(row.data.id) % 1000, row] as [number,Row])
-            .filter(([short_id,_]) => !isNaN(short_id))
-            .map(([short_id, data]) => [short_id.toString().padStart(3, '0'), data] as [string,Row])
+            .map(row => [parseInt(row.data.id), row] as [number,Row])
+            .filter(([id,_]) => !isNaN(id))
+            .map(([id, data]) => [id.toString().padStart(4, '0'), data] as [string,Row])
         )
 
         return Object.fromEntries(scan.map(scan => {
@@ -177,7 +177,9 @@ export default class ArchimedeCommon extends Competition {
             const row = existing_data_dict[id]
             const data: Data = {...(row?.data || {})}
             data.id = id
-            data.variant = raw?.TestCode || ''
+            if (raw["TestCode"]) data['variant'] = raw["TestCode"]
+            if (raw["StudentYear"]) data['classYear'] = raw["StudentYear"]
+            if (raw["Section"]) data['classSection'] = raw["Section"]
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
