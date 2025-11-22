@@ -194,7 +194,7 @@ export default class ArchimedeCommon extends Competition {
 
             // riempi i dati in uscita
             const data: Data = {...(row?.data || {})}
-            data.id = StudentCode
+            data.id = `${parseInt(StudentCode,10)}`
             if (TestCode) data['variant'] = TestCode
             if (StudentYear) data['classYear'] = `${parseInt(StudentYear,10)}`
             if (Section) data['classSection'] = Section
