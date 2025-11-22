@@ -174,6 +174,7 @@ export default class ArchimedeCommon extends Competition {
         return Object.fromEntries(scan.map(scan => {
             // estraggo i dati dalla scansione
             const raw = scan.rawData || {}
+            
             let {
                 StudentCode,
                 TestCode,
@@ -186,6 +187,7 @@ export default class ArchimedeCommon extends Competition {
             StudentCode = (StudentCode || '').replaceAll('X','').trim().padStart(4,'0')
             Section = Section.replaceAll('X','').trim()
             TestCode = TestCode.replaceAll('X','').trim()
+            StudentYear = StudentYear.replaceAll('X','').trim()
 
             // trova una eventuale riga già esistente
             const row = existing_data_dict[StudentCode]
@@ -194,7 +196,7 @@ export default class ArchimedeCommon extends Competition {
             const data: Data = {...(row?.data || {})}
             data.id = StudentCode
             if (TestCode) data['variant'] = TestCode
-            if (StudentYear) data['classYear'] = StudentYear
+            if (StudentYear) data['classYear'] = `${parseInt(StudentYear,10)}`
             if (Section) data['classSection'] = Section
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
