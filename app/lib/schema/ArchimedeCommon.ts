@@ -172,14 +172,30 @@ export default class ArchimedeCommon extends Competition {
         )
 
         return Object.fromEntries(scan.map(scan => {
+            // estraggo i dati dalla scansione
             const raw = scan.rawData || {}
-            const id = raw?.StudentCode || ''
-            const row = existing_data_dict[id]
+            let {
+                StudentCode,
+                TestCode,
+                StudentYear,
+                Section,
+            } = raw
+
+            // pulisco i dati
+            // le X sono usate per i campi non compilati
+            StudentCode = (StudentCode || '').replaceAll('X','').trim().padStart(4,'0')
+            Section = Section.replaceAll('X','').trim()
+            TestCode = TestCode.replaceAll('X','').trim()
+
+            // trova una eventuale riga già esistente
+            const row = existing_data_dict[StudentCode]
+
+            // riempi i dati in uscita
             const data: Data = {...(row?.data || {})}
-            data.id = id
-            if (raw["TestCode"]) data['variant'] = raw["TestCode"]
-            if (raw["StudentYear"]) data['classYear'] = raw["StudentYear"]
-            if (raw["Section"]) data['classSection'] = raw["Section"]
+            data.id = StudentCode
+            if (TestCode) data['variant'] = TestCode
+            if (StudentYear) data['classYear'] = StudentYear
+            if (Section) data['classSection'] = Section
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
@@ -189,8 +205,8 @@ export default class ArchimedeCommon extends Competition {
 
         function convert_answer(s: string) {
             return {
-                '': '-',
-                'X': 'X',
+                '': '-', // in realtà sembra non succeda mai: i campi vuoti diventano 'X' in ingresso
+                'X': '-', // in ingresso la X viene messa sulle risposte vuote
                 'A': 'A',
                 'B': 'B',
                 'C': 'C',
