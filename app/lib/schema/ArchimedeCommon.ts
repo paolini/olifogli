@@ -166,18 +166,38 @@ export default class ArchimedeCommon extends Competition {
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
         const existing_data_dict = Object.fromEntries(rows
-            .map(row => [parseInt(row.data.id) % 1000, row] as [number,Row])
-            .filter(([short_id,_]) => !isNaN(short_id))
-            .map(([short_id, data]) => [short_id.toString().padStart(3, '0'), data] as [string,Row])
+            .map(row => [parseInt(row.data.id), row] as [number,Row])
+            .filter(([id,_]) => !isNaN(id))
+            .map(([id, data]) => [id.toString().padStart(4, '0'), data] as [string,Row])
         )
 
         return Object.fromEntries(scan.map(scan => {
+            // estraggo i dati dalla scansione
             const raw = scan.rawData || {}
-            const id = raw?.StudentCode || ''
-            const row = existing_data_dict[id]
+            
+            let {
+                StudentCode,
+                TestCode,
+                StudentYear,
+                Section,
+            } = raw
+
+            // pulisco i dati
+            // le X sono usate per i campi non compilati
+            StudentCode = (StudentCode || '').replaceAll('X','').trim().padStart(4,'0')
+            Section = Section.replaceAll('X','').trim()
+            TestCode = TestCode.replaceAll('X','').trim()
+            StudentYear = StudentYear.replaceAll('X','').trim()
+
+            // trova una eventuale riga già esistente
+            const row = existing_data_dict[StudentCode]
+
+            // riempi i dati in uscita
             const data: Data = {...(row?.data || {})}
-            data.id = id
-            data.variant = raw?.TestCode || ''
+            data.id = `${parseInt(StudentCode,10)}`
+            if (TestCode) data['variant'] = TestCode
+            if (StudentYear) data['classYear'] = `${parseInt(StudentYear,10)}`
+            if (Section) data['classSection'] = Section
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
@@ -187,8 +207,8 @@ export default class ArchimedeCommon extends Competition {
 
         function convert_answer(s: string) {
             return {
-                '': '-',
-                'X': 'X',
+                '': '-', // in realtà sembra non succeda mai: i campi vuoti diventano 'X' in ingresso
+                'X': '-', // in ingresso la X viene messa sulle risposte vuote
                 'A': 'A',
                 'B': 'B',
                 'C': 'C',
