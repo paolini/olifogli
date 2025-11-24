@@ -9,6 +9,7 @@ import {Row, Sheet, User, useDeleteSheetMutation } from '@/app/graphql/generated
 import { Data } from '../lib/models'
 import { myTimestamp, pluralize } from '../lib/util'
 import { schemas } from '../lib/schema'
+import GlobalMessage from './GlobalMessage'
 
 export default function SheetInfo({sheet,data,profile}:{
     sheet: Sheet
@@ -23,6 +24,7 @@ export default function SheetInfo({sheet,data,profile}:{
 
     return <>
         <SheetInfoPanel sheet={sheet} profile={profile} />
+        <GlobalMessage name="panel_instructions" title="istruzioni" collapsed={true} />
         <div>
               <span><b>{pluralize(rows.length, "riga", "righe")}</b></span>
               {' • '}
