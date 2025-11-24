@@ -12,7 +12,8 @@ export default async function scans (_: unknown, { sheetId, userId }: QueryScanJ
     const sheet = await sheets.findOne({_id: sheetId })
     check_user_can_view_sheet(user, sheet)
     const collection = await getScanJobsCollection()
-    const match: {sheetId: ObjectId,userId?: ObjectId} = { sheetId }
+    const match: {sheetId: ObjectId, userId?: ObjectId} = { sheetId }
+    /*
     if (user?.isAdmin || sheet.ownerId.equals(user._id)) {
         // questi utenti possono vedere tutti i job
         // e filtrarli per userId se specificato
@@ -21,6 +22,7 @@ export default async function scans (_: unknown, { sheetId, userId }: QueryScanJ
         // gli altri utenti vedono solo i job che hanno creato
         match.userId = user._id
     }
+    */
     const jobs: ScanJob[] = (await collection
         .find(match)
         .sort({ timestamp: -1 })
