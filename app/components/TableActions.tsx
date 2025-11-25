@@ -210,7 +210,13 @@ function handleGenerateScanSheet(ctx: TableActionContext) {
       alert('Nessuna riga valida selezionata per la generazione dei fogli risposte.')
       return
   }
-  
+
+  if (ctx.tableState.lines.filter(line => selectedLineKeys.has(line.key) && !line?.row?.data["id"]).length > 0) {
+      if (!confirm('Alcune righe selezionate non hanno un ID studente valido. Vuoi comunque procedere?')) {
+          return
+      }
+  }
+
   ctx.mutations.requestScanSheetGeneration({variables: {sheetId, selectedRowIds}})
 
   alert(`Hai richiesto la generazione di ${selectedRowIds.length === 1 ? 'un foglio' : `${selectedRowIds.length} fogli`} risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.`)
