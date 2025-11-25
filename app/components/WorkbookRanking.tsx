@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
 import { RankingReport, useGetSheetsQuery, useGetSheetsRankingReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
-import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter'
+import SheetsFilter, { filterSheets } from './SheetsFilter'
+import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 
 const _ = gql`
@@ -37,7 +37,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
-    const filterState = useSheetsFilterState({ schema: 'archimede_biennio' })
+    const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
     const sheets = (sheetsData?.sheets || [])
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
