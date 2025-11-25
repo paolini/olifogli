@@ -58,68 +58,62 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         function addJob(job: Job) {
             const id = job.name + '-' + job.schema
             const existing = jobs[id]
-            const DEBUG_CODE = 'FEPS01000N'
-            const shouldLog = job.name.includes(DEBUG_CODE)
             
             if (!existing) {
                 // Nuovo job: viene creato
                 jobs[id] = {
                     ...job,
-                    action: 'crea',
-                    selected: job.permissions.length > 0,
+                    action: job.rowId ? 'crea' : 'rimuovi',
+                    selected: !!job.rowId && job.permissions.length > 0,
                     messages: []
                 }
-                if (shouldLog) console.log(`[${job.name}] ${job.schema}: crea (nuovo)`, {permissions: job.permissions, commonData: job.commonData, hasSheet: !!job.sheet})
             } else {
-                if (existing.action === 'crea') {
-                    let modified = false
-                    const modifications: string[] = []
-                    // Il job esiste ed è in stato "crea": lo aggiorniamo
-                    existing.rowId = job.rowId
-                    // Merge permissions avoiding duplicates
-                    const mergedPermissions = [...existing.permissions]
-                    for (const p of existing.permissions) {
-                        const match = job.permissions.find(np => 
-                            (p.email && np.email && p.email === np.email) ||
-                            (p.userId && np.userId && p.userId.equals(np.userId))
-                        )
-                        if (!match) {
-                            modifications.push(`(!) rimosso permesso ${p.email || p.userId} (${p.role})`)
-                        }
+                let modified = false
+                const modifications: string[] = []
+                // Il job esiste ed è in stato "crea": lo aggiorniamo
+                existing.rowId = job.rowId
+                // Merge permissions avoiding duplicates
+                const mergedPermissions = [...existing.permissions]
+                for (const p of existing.permissions) {
+                    const match = job.permissions.find(np => 
+                        (p.email && np.email && p.email === np.email) ||
+                        (p.userId && np.userId && p.userId.equals(np.userId))
+                    )
+                    if (!match) {
+                        modifications.push(`(!) rimosso permesso ${p.email || p.userId} (${p.role})`)
                     }
-                    for (const newPerm of job.permissions) {
-                        const exists = mergedPermissions.some(p => 
-                            (p.email && newPerm.email && p.email === newPerm.email) ||
-                            (p.userId && newPerm.userId && p.userId.equals(newPerm.userId))
-                        )
-                        if (!exists) {
-                            mergedPermissions.push(newPerm)
-                            modified = true
-                            modifications.push(`aggiunto permesso ${newPerm.email || newPerm.userId} (${newPerm.role})`)
-                        }
+                }
+                for (const newPerm of job.permissions) {
+                    const exists = mergedPermissions.some(p => 
+                        (p.email && newPerm.email && p.email === newPerm.email) ||
+                        (p.userId && newPerm.userId && p.userId.equals(newPerm.userId))
+                    )
+                    if (!exists) {
+                        mergedPermissions.push(newPerm)
+                        modified = true
+                        modifications.push(`aggiunto permesso ${newPerm.email || newPerm.userId} (${newPerm.role})`)
                     }
-                    existing.permissions = mergedPermissions
+                }
+                existing.permissions = mergedPermissions
 
-                    for (const [k, v] of Object.entries(job.commonData)) {
-                        if (existing.commonData[k] !== v) {
-                            existing.commonData[k] = v
-                            modified = true
-                            modifications.push(`commonData.${k} cambiato da "${existing.commonData[k]}" a "${v}"`)
-                        }
+                for (const [k, v] of Object.entries(job.commonData)) {
+                    if (existing.commonData[k] !== v) {
+                        existing.commonData[k] = v
+                        modified = true
+                        modifications.push(`commonData.${k} cambiato da "${existing.commonData[k]}" a "${v}"`)
                     }
-                    if (modified) {    
-                        existing.action = 'aggiorna'
-                    } else {
-                        existing.action = 'immutato'
-                        existing.selected = false
+                }
+                if (job.rowId !== null) {
+                    if (existing.action === 'rimuovi' || existing.action === 'immutato') {
+                        if (modified) {
+                            existing.action = 'aggiorna'
+                            existing.selected = true
+                        } else {
+                            existing.action = 'immutato'
+                            existing.selected = false
+                        }
                     }
                     existing.messages = [...existing.messages || [], ...modifications]
-                    if (shouldLog) console.log(`[${job.name}] ${job.schema}: aggiorna (era "crea")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
-                } else {
-                    // Il job esiste ed è già stato aggiornato: duplicato
-                    existing.action = 'duplicato'
-                    existing.selected = false
-                    if (shouldLog) console.log(`[${job.name}] ${job.schema}: duplicato (era "${existing.action}")`, {permissions: job.permissions, hasSheet: !!job.sheet, rowId: job.rowId})
                 }
             }
         }
@@ -208,9 +202,10 @@ function Process({jobsCallback, workbookId, done}: {
         </Button>
         {} crea {pluralize(Object.values(jobs).filter(job => job.selected && job.action === 'crea').length,"foglio","fogli")},
         {} aggiorna {pluralize(Object.values(jobs).filter(job => job.selected && job.action === 'aggiorna').length,"foglio","fogli")}
+        {} rimuovi {pluralize(Object.values(jobs).filter(job => job.selected && job.action === 'rimuovi').length,"foglio","fogli")}
         <label className="mx-4">
             <input type="checkbox" checked={filterUnchanged} onChange={() => setFilterUnchanged(v => !v)}/>
-            {} nascondi immutati/duplicati
+            {} nascondi immutati
         </label>
         <Error error={error}/>
         <table>
@@ -229,7 +224,7 @@ function Process({jobsCallback, workbookId, done}: {
             </thead>
             <tbody>
                 {Object.values(jobs)
-                    .filter(job => (!filterUnchanged || !["immutato","duplicato"].includes(job.action || '')))
+                    .filter(job => (!filterUnchanged || job.action!=='immutato'))
                     .map(job => 
                 <tr key={job.name+'-'+job.schema}>
                 <td>
@@ -299,10 +294,20 @@ function Process({jobsCallback, workbookId, done}: {
         const sheetsToUpdate = jobsList
             .filter(job => job.action === 'aggiorna' && job.sheet?._id)
             .map(update_info_from_job)
-        
+
+        const sheetsToDelete = jobsList
+            .filter(job => job.action === 'rimuovi' && job.sheet?._id)
+            .map(job => job.sheet!._id!)
+
         console.log('Sheets to create:', sheetsToCreate)
         console.log('Sheets to update:', sheetsToUpdate)
+        console.log('Sheets to delete:', sheetsToDelete)
         
+        if (sheetsToDelete.length > 0) {
+            alert('La funzionalità di rimozione dei fogli non è ancora implementata. Non faccio niente.')
+            return
+        }
+
         try {
             // Crea nuovi fogli
             if (sheetsToCreate.length > 0) {
