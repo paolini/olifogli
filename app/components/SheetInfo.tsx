@@ -23,8 +23,8 @@ export default function SheetInfo({sheet,data,profile}:{
     const sheetContainsErrors = !!(data?.rows.filter(row => row.error!=='').length)
 
     return <>
-        <SheetInfoPanel sheet={sheet} profile={profile} />
         <GlobalMessage name="panel_instructions" title="istruzioni" collapsed={true} />
+        <SheetInfoPanel sheet={sheet} profile={profile} />
         <div>
               <span><b>{pluralize(rows.length, "riga", "righe")}</b></span>
               {' • '}
