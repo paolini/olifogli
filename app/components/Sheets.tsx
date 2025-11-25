@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, usePathname } from 'next/navigation';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
@@ -17,7 +18,7 @@ import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
 import { pluralize } from '../lib/util';
-// removed unused font import
+import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
 
 const DELETE_WORKBOOK = gql`
     mutation DeleteWorkbook($_id: ObjectId!) {
@@ -56,30 +57,23 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     refetch: () => void
 }) {
     const [creationId, setCreationId] = useState<ObjectId|null>(null)
-    // Stato ordinamento colonne
-    const [sort, setSort] = useState<{ field: string, direction: number } | null>(null)
     const router = useRouter()
     const [deleteSheets, {loading: deletingSheets, error: deleteSheetsError }] = useDeleteSheetsMutation()
     const [deleteWorkbook, { loading: deletingWorkbook, error: deleteWorkbookError }] = useMutation(DELETE_WORKBOOK)
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
     const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
     const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET_PERMISSIONS)
-    // Stato per la selezione delle righe
     const [selectedIds, setSelectedIds] = useState<string[]>([])
-    // Ultimo id cliccato per supportare la selezione con Shift in modo robusto a riordinamenti
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
-    // Stato per la paginazione
     const [displayLimit, setDisplayLimit] = useState(20)
-    const filterState = useSheetsFilterState()
-    // Stato filtro per colonne dinamiche
-    const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
     const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
+    const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring();
 
     type Sheet = GetSheetsQuery['sheets'][number]
 
     const allSheets: Sheet[] = sheets;
     // Applica filtro per colonne dinamiche
-    let filteredSheets = filterSheets(filterState, allSheets);
+    let filteredSheets = filterSheets(filterState, sheets);
     Object.entries(columnFilters).forEach(([col, val]) => {
         if (!val) return
         if (col.startsWith('__')) {
@@ -90,8 +84,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     })
     let sortedSheets = filteredSheets;
     if (sort) {
-        type Sheet = GetSheetsQuery['sheets'][number]
-
         // sort.field può avere tre varianti:
         // "__field": è un attributo di sheet
         // "##field": è un attributo numerico di sheet
@@ -150,7 +142,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
-            <SheetsFilter filterState={filterState} sheets={allSheets} filteredSheets={filteredSheets}/>
+            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets}/>
             <table>
                 <thead>
                     <tr>

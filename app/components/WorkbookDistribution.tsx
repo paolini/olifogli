@@ -7,7 +7,8 @@ import Error from './Error'
 import Loading from './Loading'
 import { DistributionReport as DistributionReport, useGetSheetsQuery, useGetSheetsDistributionReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
-import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter'
+import SheetsFilter, { filterSheets } from './SheetsFilter'
+import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 
 const _ = gql`
     query GetSheetsDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
@@ -27,16 +28,16 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
-    const filterState = useSheetsFilterState({ schema: 'archimede_biennio' })
+    const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
     const sheets = (sheetsData?.sheets || [])
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
-    
+
     const { loading, error, data } = useGetSheetsDistributionReportQuery({
         variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
         skip: filterState?.schemaFilter === '',
         pollInterval: 10000, // millisecondi
-    })    
+    })
 
     if (loading || loadingSheets) return <Loading />
     if (error) return <Error error={error} />
