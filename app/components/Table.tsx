@@ -358,7 +358,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             let char = e.key
             if (focusField.type === 'choice-answer') {
                 char = choiceAnswerCharacterTransform(char)
-                setTimeout(() => moveRightOrLeft(1), 0);      
             }
             setValueInFocusCell(char)
             setDirectInput(true);
@@ -580,7 +579,6 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
             return ''
         } else if (key.length === 1) {
             // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
-            setTimeout(() => moveRightOrLeft(1), 0);      
             const char = choiceAnswerCharacterTransform(key)
             return char // Sostituisci il valore
         } else {
@@ -598,7 +596,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
         else if (char === '5') char = 'E'
         else if (char === '9') char = 'X'
         if (! "ABCDEX-".includes(char)) char = ' '
-        setTimeout(() => moveRightOrLeft(1), 0);      
+        else setTimeout(() => moveRightOrLeft(1), 0);      
         return char // Sostituisci il valore
     }
 
