@@ -93,6 +93,10 @@ body {
   padding-left: 1em;
 }
 
+.table-header .message {
+  margin: 0px;
+}
+
 .sheet-wrapper {
   display: flex;
   flex-direction: column;
