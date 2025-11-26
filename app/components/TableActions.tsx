@@ -8,6 +8,7 @@ import { ApolloError } from "@apollo/client"
 import Error from "./Error"
 import { pluralize } from "../lib/util"
 import Button from "./Button"
+import GlobalMessage from "./GlobalMessage"
 
 type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
@@ -27,6 +28,7 @@ export default function TableActions(input: TableActionInput) {
     const ctx = useTableActionsContext(input)
 
     return <>
+        <GlobalMessage title="istruzioni" name="table_instructions" collapsed={true} />
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
