@@ -15,10 +15,10 @@
   --tabs-inactive-border: green;
   --recent-highlight: #fbe6a3;
   --recent-highlight-darker: #fbe6a3;
-  --correct-color: transparent; /* #bbd6ab;*/
-  --incorrect-color: transparent; /* #de9d9b;*/
+  --correct-color: #bbd6ab;
+  --incorrect-color: #de9d9b;
   --empty-color: transparent;
-  --invalid-color: transparent; /* #e6b8af;*/
+  --invalid-color: #e6b8af;
 }
 
 /*
