@@ -134,11 +134,11 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
         console.log('--- Processing rows CSV ---')
         for (const row of rows || []) {
             const codice_meccanografico = row.data?.Codice_meccanografico || ''
-            const email = row.data?.Email_referente || ''
+            const email = row.data?.Email_referente?.toLowerCase() || ''
             // Coordinatori: stringa singola con email separati da virgola
             let coordinatori: string[] = [];
             const rawCoordinatori = row.data?.Email_coordinatori || '';
-            coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim());
+            coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim().toLowerCase());
             const permissions: Permission[] = [];
             if (email) permissions.push({ email, role: 'admin' });
             for (const coord of coordinatori) {
