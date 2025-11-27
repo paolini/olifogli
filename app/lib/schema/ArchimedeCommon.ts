@@ -138,6 +138,7 @@ export default class ArchimedeCommon extends Competition {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
         data = validated.data
         data = {...data, score:''}
+        return {data, error: ''}
         // if (validated.error) return validated
         const variant = data['variant'] || ''
         if (!variant) return {
