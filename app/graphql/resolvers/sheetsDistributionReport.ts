@@ -58,9 +58,6 @@ async function generateDistributionReport(sheets: WithId<Sheet>[]) {
         error: ""
     }).toArray()
 
-    // Mappa con info dei fogli per riferimento veloce
-    const sheetMap = new Map(sheets.map(s => [s._id.toString(), s]))
-
     // Prepara le entry con punteggio
     const scores = rows.map(row => parseFloat(row.data?.score))
 
