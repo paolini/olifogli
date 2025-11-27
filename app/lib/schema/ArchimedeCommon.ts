@@ -138,7 +138,6 @@ export default class ArchimedeCommon extends Competition {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
         data = validated.data
         data = {...data, score:''}
-        return {data, error: ''}
         // if (validated.error) return validated
         const variant = data['variant'] || ''
         if (!variant) return {
@@ -149,6 +148,7 @@ export default class ArchimedeCommon extends Competition {
         try {
             const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
             const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
+            console.log(JSON.stringify({score,error,extended_answers}))
             data.score = `${score}`
             answer_items.forEach((item, i) => {
                 data[item.name] = extended_answers[i] || ''
