@@ -136,15 +136,17 @@ export default class ArchimedeCommon extends Competition {
 
     computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
+        console.log("computeDerivedData",JSON.stringify({validated}))
         data = validated.data
         data = {...data, score:''}
-        // if (validated.error) return validated
+        if (validated.error) return validated
         const variant = data['variant'] || ''
         if (!variant) return {
             error: validated.error || 'codice compito mancante',
             data,
         }
         const answer_items = this.extractAnswerItems(data)
+        console.log(JSON.stringify({answer_items}))
         try {
             const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
             const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
