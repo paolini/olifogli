@@ -223,7 +223,7 @@ export function decodePermutations(variantCode: string, answers: string[], permu
 
 export function computeScores(extended_answers: string[], permutations_data: PermutationsObject) {
     return extended_answers.map(s => {
-        if (!s.match(/^[A-EX\-] \[[A-EX\-][A-EX\-][A-EX\-]\]$/)) {
+        if (!s.match(/^[A-EX?\-] \[[A-EX\-][A-EX?\-][A-EX\-]\]$/)) {
             throw new Error(`Formato di risposta estesa non valido: "${s}"`);
         }
         const answer = s.charAt(4);
