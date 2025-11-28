@@ -28,7 +28,7 @@ export default function TableActions(input: TableActionInput) {
     const ctx = useTableActionsContext(input)
 
     return <>
-        <GlobalMessage title="istruzioni" name="table_instructions" collapsed={false} />
+        <GlobalMessage className="table-message" title="istruzioni" name="table_instructions" collapsed={false} />
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
