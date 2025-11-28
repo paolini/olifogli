@@ -257,7 +257,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
     // questi utenti possono aprire/chiudere ma non bloccare.
     // possono anche gestire i permessi di acceso al foglio (altri utenti)
-    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => p.userId === profile._id && p.role === 'admin'))
+    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.userId && p.userId === profile._id || p.email && p.email === profile.email) && p.role === 'admin'))
 
     const schema = schemas[sheet.schema]
 
@@ -292,7 +292,9 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                 { !sheet.locked && sheet.closed &&
                     <>
                     <td><span className="text-orange-600 font-semibold">chiuso</span></td>
-                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>apri</Button></td>
+                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>
+                        apri
+                    </Button></td>
                     {profile?.isAdmin && <td>
                         ⚙ <span className="text-sm text-gray-600 ml-2">
                         chiuso da {sheet.closedBy || 'sconosciuto'} 
