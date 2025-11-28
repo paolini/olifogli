@@ -1,4 +1,4 @@
-import { getSheetsCollection, getRowsCollection, withTransaction } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, withTransaction, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { WithoutId } from 'mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
@@ -22,10 +22,16 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
         const obj = Object.fromEntries(columns.map((column,i)=>[column,row[i]]));
         return obj
     })
+
+    const workbookCollection = await getWorkbooksCollection()
+    const workbook = await workbookCollection.findOne({_id: sheet.workbookId})
+
+    if (!workbook) throw new Error(`cannot find collection ${sheet.workbookId}`)
+
     const validatedRows: WithoutId<Row>[] = objectRows
         .map(row => schema.clean(row as Data))
         .map(data => ({
-            ...schema.computeDerivedData(data),
+            ...schema.computeDerivedData(data,sheet.commonData,workbook.commonData),
             sheetId,
             createdBy,
             createdOn,
