@@ -113,7 +113,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${inputFocus && hasFocus ? 'input-focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
 
   return <td className={className} tabIndex={1} title={title} onClick={onClick} style={style} ref={tdRef}>
-      {(hasFocus && field.editable && inputFocus)
+      {(hasFocus && field.editable && inputFocus && !(showStandardAnswers && field instanceof ChoiceAnswerField))
         ? <TableCellInput 
             field={field}
             value={value} setValue={setNewValue} 
