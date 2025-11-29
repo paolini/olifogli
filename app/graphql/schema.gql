@@ -165,6 +165,11 @@ type ExerciseDistributionItem {
   wrong: Int!
   empty: Int!
   invalid: Int!
+  A: Int!
+  B: Int!
+  C: Int!
+  D: Int!
+  E: Int!
 }
 
 type ExerciseReport {
