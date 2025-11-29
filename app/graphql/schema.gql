@@ -159,6 +159,20 @@ type RankingReport {
   ranking: [ReportEntry!]!
 }
 
+type ExerciseDistributionItem {
+  exercise: String!
+  correct: Int!
+  wrong: Int!
+  empty: Int!
+  invalid: Int!
+}
+
+type ExerciseReport {
+  schema: String!
+  totalStudents: Int!
+  exerciseDistribution: [ExerciseDistributionItem!]!
+}
+
 type Query {
   hello: String
   me: User
@@ -173,6 +187,7 @@ type Query {
   appInstance: String # istanza runtime
   sheetsDistributionReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data): DistributionReport!
   sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int): RankingReport!
+  sheetsExerciseReport(sheetIds: [ObjectId!]!, schema: String!): ExerciseReport!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!

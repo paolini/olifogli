@@ -8,6 +8,7 @@ import Loading from '@/app/components/Loading'
 import WorkbookSheets from '@/app/components/WorkbookSheets'
 import WorkbookRanking from '@/app/components/WorkbookRanking'
 import WorkbookDistribution from '@/app/components/WorkbookDistribution'
+import WorkbookExerciseDistribution from '@/app/components/WorkbookExerciseDistribution'
 import WorkbookConfigure from '@/app/components/WorkbookConfigure'
 import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
 import { useGetWorkbookQuery } from '../graphql/generated'
@@ -44,7 +45,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const { setBreadcrumbs } = useBreadcrumbs()
     
     const tabParam = searchParams.get('tab')
-    const validTabs = ['fogli', 'list', 'distribuzione', 'configura'] as const
+    const validTabs = ['fogli', 'list', 'distribuzione', 'esercizi', 'configura'] as const
     type TabType = typeof validTabs[number]
     
     function isTabType(tab: string | null): tab is TabType {
@@ -103,6 +104,12 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
             >
                 Distribuzione Punteggi
             </button>
+            <button
+                onClick={() => setActiveTab('esercizi')}
+                className={`tab-button ${activeTab === 'esercizi' ? 'tab-button-active' : 'tab-button-inactive'}`}
+            >
+                Distribuzione Esercizi
+            </button>
             { profile?.isAdmin &&
             <button
                 onClick={() => setActiveTab('configura')}
@@ -116,6 +123,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
         {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} profile={profile}/>}
         {activeTab === 'list' && <WorkbookRanking workbookId={workbookId} />}
         {activeTab === 'distribuzione' && <WorkbookDistribution workbookId={workbookId} />}
+        {activeTab === 'esercizi' && <WorkbookExerciseDistribution workbookId={workbookId} />}
         {activeTab === 'configura' && workbook && <WorkbookConfigure workbook={workbook} profile={profile || null} sheetsCount={sheetsCount} />}
     </div>
 }

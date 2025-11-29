@@ -37,6 +37,22 @@ export type DistributionReport = {
   totalStudents: Scalars['Int']['output'];
 };
 
+export type ExerciseDistributionItem = {
+  __typename?: 'ExerciseDistributionItem';
+  correct: Scalars['Int']['output'];
+  empty: Scalars['Int']['output'];
+  exercise: Scalars['String']['output'];
+  invalid: Scalars['Int']['output'];
+  wrong: Scalars['Int']['output'];
+};
+
+export type ExerciseReport = {
+  __typename?: 'ExerciseReport';
+  exerciseDistribution: Array<ExerciseDistributionItem>;
+  schema: Scalars['String']['output'];
+  totalStudents: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addRow?: Maybe<Row>;
@@ -255,6 +271,7 @@ export type Query = {
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
   sheetsDistributionReport: DistributionReport;
+  sheetsExerciseReport: ExerciseReport;
   sheetsRankingReport: RankingReport;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
@@ -300,6 +317,12 @@ export type QuerySheetsArgs = {
 
 export type QuerySheetsDistributionReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  schema: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
+export type QuerySheetsExerciseReportArgs = {
   schema: Scalars['String']['input'];
   sheetIds: Array<Scalars['ObjectId']['input']>;
 };
@@ -692,6 +715,14 @@ export type GetSheetsDistributionReportQueryVariables = Exact<{
 
 
 export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDistributionReport: { __typename?: 'DistributionReport', schema: string, totalStudents: number, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> } };
+
+export type GetSheetsExerciseReportQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  schema: Scalars['String']['input'];
+}>;
+
+
+export type GetSheetsExerciseReportQuery = { __typename?: 'Query', sheetsExerciseReport: { __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number }> } };
 
 export type GetSheetsRankingReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -1999,6 +2030,55 @@ export type GetSheetsDistributionReportQueryHookResult = ReturnType<typeof useGe
 export type GetSheetsDistributionReportLazyQueryHookResult = ReturnType<typeof useGetSheetsDistributionReportLazyQuery>;
 export type GetSheetsDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsDistributionReportSuspenseQuery>;
 export type GetSheetsDistributionReportQueryResult = Apollo.QueryResult<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>;
+export const GetSheetsExerciseReportDocument = gql`
+    query GetSheetsExerciseReport($sheetIds: [ObjectId!]!, $schema: String!) {
+  sheetsExerciseReport(sheetIds: $sheetIds, schema: $schema) {
+    schema
+    totalStudents
+    exerciseDistribution {
+      exercise
+      correct
+      wrong
+      empty
+      invalid
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetSheetsExerciseReportQuery__
+ *
+ * To run a query within a React component, call `useGetSheetsExerciseReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsExerciseReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSheetsExerciseReportQuery({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      schema: // value for 'schema'
+ *   },
+ * });
+ */
+export function useGetSheetsExerciseReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables> & ({ variables: GetSheetsExerciseReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>(GetSheetsExerciseReportDocument, options);
+      }
+export function useGetSheetsExerciseReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>(GetSheetsExerciseReportDocument, options);
+        }
+export function useGetSheetsExerciseReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>(GetSheetsExerciseReportDocument, options);
+        }
+export type GetSheetsExerciseReportQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportQuery>;
+export type GetSheetsExerciseReportLazyQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportLazyQuery>;
+export type GetSheetsExerciseReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportSuspenseQuery>;
+export type GetSheetsExerciseReportQueryResult = Apollo.QueryResult<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>;
 export const GetSheetsRankingReportDocument = gql`
     query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
   sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
@@ -2484,6 +2564,8 @@ export type ResolversTypes = {
   Config: ResolverTypeWrapper<Config>;
   Data: ResolverTypeWrapper<Scalars['Data']['output']>;
   DistributionReport: ResolverTypeWrapper<DistributionReport>;
+  ExerciseDistributionItem: ResolverTypeWrapper<ExerciseDistributionItem>;
+  ExerciseReport: ResolverTypeWrapper<ExerciseReport>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -2519,6 +2601,8 @@ export type ResolversParentTypes = {
   Config: Config;
   Data: Scalars['Data']['output'];
   DistributionReport: DistributionReport;
+  ExerciseDistributionItem: ExerciseDistributionItem;
+  ExerciseReport: ExerciseReport;
   Float: Scalars['Float']['output'];
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
@@ -2560,6 +2644,22 @@ export interface DataScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
 export type DistributionReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['DistributionReport'] = ResolversParentTypes['DistributionReport']> = {
   schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   scoreDistribution?: Resolver<Array<ResolversTypes['ScoreDistributionItem']>, ParentType, ContextType>;
+  totalStudents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ExerciseDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['ExerciseDistributionItem'] = ResolversParentTypes['ExerciseDistributionItem']> = {
+  correct?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  empty?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  exercise?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  invalid?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  wrong?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ExerciseReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['ExerciseReport'] = ResolversParentTypes['ExerciseReport']> = {
+  exerciseDistribution?: Resolver<Array<ResolversTypes['ExerciseDistributionItem']>, ParentType, ContextType>;
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   totalStudents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2631,6 +2731,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
   sheetsDistributionReport?: Resolver<ResolversTypes['DistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsDistributionReportArgs, 'schema' | 'sheetIds'>>;
+  sheetsExerciseReport?: Resolver<ResolversTypes['ExerciseReport'], ParentType, ContextType, RequireFields<QuerySheetsExerciseReportArgs, 'schema' | 'sheetIds'>>;
   sheetsRankingReport?: Resolver<ResolversTypes['RankingReport'], ParentType, ContextType, RequireFields<QuerySheetsRankingReportArgs, 'schema' | 'sheetIds'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
@@ -2769,6 +2870,8 @@ export type Resolvers<ContextType = any> = {
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
   DistributionReport?: DistributionReportResolvers<ContextType>;
+  ExerciseDistributionItem?: ExerciseDistributionItemResolvers<ContextType>;
+  ExerciseReport?: ExerciseReportResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   ObjectId?: GraphQLScalarType;
