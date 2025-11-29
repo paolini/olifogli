@@ -11,10 +11,10 @@ import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 
 const CHART_LABELS = {
-    correct: 'Corrette',
-    wrong: 'Sbagliate',
-    empty: 'Vuote',
-    invalid: 'Invalide'
+    correct: 'giuste',
+    wrong: 'sbagliate',
+    empty: 'vuote',
+    invalid: 'nulle'
 }
 
 const _ = gql`
