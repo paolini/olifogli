@@ -40,7 +40,7 @@ async function generateRankingReport(
     const sheetMap = new Map(sheets.map(s => [s._id.toString(), s]))
 
     // Prepara le entry con punteggio
-    let entries: Array<{
+    const entries: Array<{
         sheetId: ObjectId
         sheetName: string
         studentName: string
