@@ -39,6 +39,11 @@ export type DistributionReport = {
 
 export type ExerciseDistributionItem = {
   __typename?: 'ExerciseDistributionItem';
+  A: Scalars['Int']['output'];
+  B: Scalars['Int']['output'];
+  C: Scalars['Int']['output'];
+  D: Scalars['Int']['output'];
+  E: Scalars['Int']['output'];
   correct: Scalars['Int']['output'];
   empty: Scalars['Int']['output'];
   exercise: Scalars['String']['output'];
@@ -730,7 +735,7 @@ export type GetSheetsExerciseReportQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsExerciseReportQuery = { __typename?: 'Query', sheetsExerciseReport: { __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number }> } };
+export type GetSheetsExerciseReportQuery = { __typename?: 'Query', sheetsExerciseReport: { __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, A: number, B: number, C: number, D: number, E: number }> } };
 
 export type GetSheetsRankingReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -2050,6 +2055,11 @@ export const GetSheetsExerciseReportDocument = gql`
       wrong
       empty
       invalid
+      A
+      B
+      C
+      D
+      E
     }
   }
 }
@@ -2666,6 +2676,11 @@ export type DistributionReportResolvers<ContextType = any, ParentType extends Re
 };
 
 export type ExerciseDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['ExerciseDistributionItem'] = ResolversParentTypes['ExerciseDistributionItem']> = {
+  A?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  B?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  C?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  D?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  E?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   correct?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   empty?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   exercise?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

@@ -66,10 +66,18 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
         error: ""
     }).toArray()
 
+    type AnswerKey = 'A' | 'B' | 'C' | 'D' | 'E';
+    type Counts = {
+        correct: number;
+        wrong: number;
+        empty: number;
+        invalid: number;
+    } & Record<AnswerKey, number>;
+
     // Prepara le entry con conteggi per esercizio
-    const exerciseCounts = new Map<string, {correct: number, wrong: number, empty: number, invalid: number}>()
+    const exerciseCounts = new Map<string, Counts>()
     for (const field of fields) {
-        exerciseCounts.set(field.name, {correct: 0, wrong: 0, empty: 0, invalid: 0})
+        exerciseCounts.set(field.name, {correct: 0, wrong: 0, empty: 0, invalid: 0, A: 0, B: 0, C: 0, D: 0, E: 0})
     }
 
     for (const row of rows) {
@@ -84,6 +92,10 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
             }
             const given = value.charAt(4) // Z
             const correct = value.charAt(5) // W
+
+            if (given !== correct && ['A','B','C','D','E'].includes(given)) {
+                counts[given as AnswerKey] ++;
+            }
 
             if (given === '-') {
                 counts.empty++
