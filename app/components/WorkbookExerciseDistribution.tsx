@@ -10,6 +10,13 @@ import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 
+const CHART_LABELS = {
+    correct: 'Corrette',
+    wrong: 'Sbagliate',
+    empty: 'Vuote',
+    invalid: 'Invalide'
+}
+
 const _ = gql`
     query GetSheetsExerciseReport($sheetIds: [ObjectId!]!, $schema: String!) {
         sheetsExerciseReport(sheetIds: $sheetIds, schema: $schema) {
@@ -80,11 +87,11 @@ function ExerciseDistributionChart({ distribution }: { distribution: ExerciseRep
 
     // Trasforma i dati nel formato richiesto da Recharts
     const chartData = distribution.map(item => ({
-        esercizio: item.exercise,
-        corrette: item.correct,
-        sbagliate: item.wrong,
-        vuote: item.empty,
-        invalide: item.invalid
+        exercise: item.exercise,
+        correct: item.correct,
+        wrong: item.wrong,
+        empty: item.empty,
+        invalid: item.invalid
     }))
 
     const numExercises = distribution.length
@@ -95,7 +102,7 @@ function ExerciseDistributionChart({ distribution }: { distribution: ExerciseRep
             <BarChart width={chartWidth} height={400} data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
-                    dataKey="esercizio" 
+                    dataKey="exercise" 
                     label={{ value: 'Esercizio', position: 'insideBottom', offset: -5 }}
                 />
                 <YAxis 
@@ -103,21 +110,15 @@ function ExerciseDistributionChart({ distribution }: { distribution: ExerciseRep
                 />
                 <Tooltip 
                     formatter={(value: number, name: string) => {
-                        const labels = {
-                            corrette: 'Corrette',
-                            sbagliate: 'Sbagliate',
-                            vuote: 'Vuote',
-                            invalide: 'Invalide'
-                        }
-                        return [`${value} risposte`, labels[name as keyof typeof labels] || name]
+                        return [`${value} risposte`, CHART_LABELS[name as keyof typeof CHART_LABELS] || name]
                     }}
                     labelFormatter={(label) => `Esercizio ${label}`}
                 />
                 <Legend />
-                <Bar dataKey="corrette" stackId="a" fill="#10b981" name="Corrette" />
-                <Bar dataKey="sbagliate" stackId="a" fill="#ef4444" name="Sbagliate" />
-                <Bar dataKey="vuote" stackId="a" fill="#6b7280" name="Vuote" />
-                <Bar dataKey="invalide" stackId="a" fill="#f59e0b" name="Invalide" />
+                <Bar dataKey="correct" stackId="a" fill="#10b981" name={CHART_LABELS.correct} />
+                <Bar dataKey="wrong" stackId="a" fill="#ef4444" name={CHART_LABELS.wrong} />
+                <Bar dataKey="empty" stackId="a" fill="#6b7280" name={CHART_LABELS.empty} />
+                <Bar dataKey="invalid" stackId="a" fill="#f59e0b" name={CHART_LABELS.invalid} />
             </BarChart>
         </div>
     )
