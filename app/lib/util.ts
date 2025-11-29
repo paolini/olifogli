@@ -13,5 +13,10 @@ export function myTimestamp(date: string | Date | undefined | null): string {
 }
 
 export function pluralize(count: number, singular: string, plural: string): string {
+    if (plural.includes('%')) {
+        return count === 1 
+            ? singular.replace('%', '1')
+            : plural.replace('%', String(count));
+    }
     return count === 1 ? `${count} ${singular}` : `${count} ${plural}`;
 }

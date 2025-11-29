@@ -7,8 +7,12 @@ export const OLIMANAGER_BULK_UPDATE_RESULTS_MUTATION = gql`
 `;
 
 export const OLIMANAGER_CREATE_PARTICIPANT_MUTATION = gql`
-  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
-    olimanagerCreateParticipant(rowIds: $rowIds, username: $username, password: $password)
+  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
+    olimanagerCreateParticipant(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password) {
+      success
+      error
+      participantId
+    }
   }
 `;
 

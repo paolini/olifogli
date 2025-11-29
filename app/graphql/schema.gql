@@ -194,6 +194,12 @@ type Query {
   getSetting(key: String!): Setting
 }
 
+type OlimanagerCreateResult {
+  success: Boolean!
+  error: String
+  participantId: String
+}
+
 type Mutation {
   updateUserAdmin(userId: ID!, isAdmin: Boolean!): User
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId
@@ -238,10 +244,11 @@ type Mutation {
   unlockSheet(_id: ObjectId!): Boolean
 
   olimanagerCreateParticipant(
-    rowIds: [ObjectId!]!
+    rowIds: [ObjectId!]
+    sheetIds: [ObjectId!]
     username: String
     password: String!
-  ): [Boolean!]!
+  ): [OlimanagerCreateResult!]!
 
   olimanagerBulkUpdateResults(
     rowIds: [ObjectId!]!
