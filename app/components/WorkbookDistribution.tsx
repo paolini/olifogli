@@ -19,6 +19,8 @@ const _ = gql`
                 score
                 count
             }
+            mean
+            variance
         }
     }
 `
@@ -62,7 +64,15 @@ function DistributionSection({ report }: { report: DistributionReport }) {
         <div className="border rounded-lg p-4 space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold">{schemaName}</h3>
-                <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
+                <div className="text-gray-600 text-right">
+                    <div>Totale studenti: {report.totalStudents}</div>
+                    {report.mean !== null && report.mean !== undefined && (
+                        <div>μ: {report.mean.toFixed(2)}</div>
+                    )}
+                    {report.variance !== null && report.variance !== undefined && (
+                        <div>σ: {Math.sqrt(report.variance).toFixed(2)}</div>
+                    )}
+                </div>
             </div>
 
             <ScoreDistributionChart distribution={report.scoreDistribution} />

@@ -61,6 +61,10 @@ async function generateDistributionReport(sheets: WithId<Sheet>[]) {
     // Prepara le entry con punteggio
     const scores = rows.map(row => parseFloat(row.data?.score))
 
+    // Calcola media e varianza
+    const mean = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0
+    const variance = scores.length > 0 ? scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length : 0
+
     // Ordina per punteggio decrescente
     scores.sort((a, b) => b - a)
 
@@ -79,6 +83,8 @@ async function generateDistributionReport(sheets: WithId<Sheet>[]) {
 
     return {
         totalStudents: scores.length,
-        scoreDistribution
+        scoreDistribution,
+        mean,
+        variance
     }
 }
