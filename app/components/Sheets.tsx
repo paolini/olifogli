@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, usePathname } from 'next/navigation';
+import React, { useState } from 'react';
 import { ObjectId } from 'bson';
 
 import Button from './Button'
@@ -8,7 +7,7 @@ import FilterIcon from './FilterIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { Sheet, useDeleteSheetsMutation, GetSheetsQuery } from '../graphql/generated';
+import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
@@ -63,6 +62,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
     const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
     const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET_PERMISSIONS)
+    const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [displayLimit, setDisplayLimit] = useState(20)
@@ -192,6 +192,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={deleteSheetsError} />
         <Error error={validateRowsError} />
         <Error error={updateSheetError} />
+        <Error error={olimanagerCreateParticipantError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={() => deleteEmptySheets()}>
@@ -205,6 +206,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => lockSelectedSheets()}>
                     ⚙ Blocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                </Button>
+                <Button disabled={selectedIds.length === 0 || olimanagerCreateParticipantLoading} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
+                    ⚙ Crea/abbina partecipanti (Olimanager)
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta
@@ -273,20 +277,20 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     }
 
     async function deleteEmptySheets() {
-      if (!confirm(`Sei sicuro di voler eliminare ${emptySheetIds.length} fogli vuoti?`)) return
+      if (!confirm(`Sei sicuro di voler eliminare ${pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}?`)) return
       await deleteSheets({ variables: { ids: emptySheetIds } })
       refetch() 
     }
 
     async function deleteSelectedSheets() {
-      if (!confirm(`Sei sicuro di voler eliminare ${selectedIds.length} fogli selezionati?`)) return
+      if (!confirm(`Sei sicuro di voler eliminare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
       await deleteSheets({ variables: { ids: selectedIds.map(id => new ObjectId(id)) } })
       setSelectedIds([])
       refetch()
     }
 
     async function validateSelectedSheets() {
-      if (!confirm(`Sei sicuro di voler validare ${selectedIds.length} fogli selezionati?`)) return
+      if (!confirm(`Sei sicuro di voler validare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
       console.log('validateSelectedSheets: validating', selectedIds.length, 'sheets')
       for (const id of selectedIds) {
         console.log('validateSelectedSheets: validating sheet', id)
@@ -298,7 +302,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     }
 
     async function lockSelectedSheets() {
-        if (!confirm(`Sei sicuro di voler bloccare ${selectedIds.length} fogli selezionati?`)) return
+        if (!confirm(`Sei sicuro di voler bloccare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
         const updates = selectedIds.map(id => ({
             _id: new ObjectId(id),
             locked: true
@@ -354,6 +358,26 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             }))
             await updateSheetSingle({ variables: { _id: sheet._id, permissions: cleanPermissions } })
         }))
+        refetch()
+    }
+
+    function askOlimanagerCredentials(): {username: string, password: string} {
+        const username = prompt('Username olimanager (email)', '') ?? ''
+        const password = prompt('Password', '') ?? ''
+        return {username, password}
+    }
+
+    async function handleOlimanagerCreateParticipantsForSheets() {
+        if (!confirm(`Inviare tutti i partecipanti ${pluralize(selectedIds.length, 'del foglio selezionato', 'dei % fogli selezionati')} a Olimanager per creazione/abbinamento?`)) {
+            return
+        }
+        const {username, password} = askOlimanagerCredentials()
+        const res = await olimanagerCreateParticipant({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), username, password } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string}[]}}
+        const arr = res.data?.olimanagerCreateParticipant || []
+        const ok = arr.filter(r => r.success).length
+        const ko = arr.length - ok
+        const errorMessages = arr.filter(r => !r.success).map(r => r.error).filter(Boolean)
+        alert(`Esito Olimanager: ${ok} ok, ${ko} errori${errorMessages.length > 0 ? '\n\nErrori:\n' + errorMessages.join('\n') : ''}`)
         refetch()
     }
 

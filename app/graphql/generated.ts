@@ -70,7 +70,7 @@ export type Mutation = {
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
   olimanagerBulkUpdateResults: Scalars['Boolean']['output'];
-  olimanagerCreateParticipant: Array<Scalars['Boolean']['output']>;
+  olimanagerCreateParticipant: Array<OlimanagerCreateResult>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
@@ -169,7 +169,8 @@ export type MutationOlimanagerBulkUpdateResultsArgs = {
 
 export type MutationOlimanagerCreateParticipantArgs = {
   password: Scalars['String']['input'];
-  rowIds: Array<Scalars['ObjectId']['input']>;
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   username?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -232,6 +233,13 @@ export type MutationUpdateWorkbookArgs = {
 
 export type MutationValidateRowsArgs = {
   sheetId: Scalars['ObjectId']['input'];
+};
+
+export type OlimanagerCreateResult = {
+  __typename?: 'OlimanagerCreateResult';
+  error?: Maybe<Scalars['String']['output']>;
+  participantId?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
 };
 
 export type OlimanagerRowData = {
@@ -772,13 +780,14 @@ export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
 export type OlimanagerBulkUpdateResultsMutation = { __typename?: 'Mutation', olimanagerBulkUpdateResults: boolean };
 
 export type OlimanagerCreateParticipantMutationVariables = Exact<{
-  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
   username?: InputMaybe<Scalars['String']['input']>;
   password: Scalars['String']['input'];
 }>;
 
 
-export type OlimanagerCreateParticipantMutation = { __typename?: 'Mutation', olimanagerCreateParticipant: Array<boolean> };
+export type OlimanagerCreateParticipantMutation = { __typename?: 'Mutation', olimanagerCreateParticipant: Array<{ __typename?: 'OlimanagerCreateResult', success: boolean, error?: string | null, participantId?: string | null }> };
 
 export type RequestScanSheetGenerationMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -2340,12 +2349,17 @@ export type OlimanagerBulkUpdateResultsMutationHookResult = ReturnType<typeof us
 export type OlimanagerBulkUpdateResultsMutationResult = Apollo.MutationResult<OlimanagerBulkUpdateResultsMutation>;
 export type OlimanagerBulkUpdateResultsMutationOptions = Apollo.BaseMutationOptions<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
 export const OlimanagerCreateParticipantDocument = gql`
-    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
   olimanagerCreateParticipant(
     rowIds: $rowIds
+    sheetIds: $sheetIds
     username: $username
     password: $password
-  )
+  ) {
+    success
+    error
+    participantId
+  }
 }
     `;
 export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
@@ -2364,6 +2378,7 @@ export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<Olim
  * const [olimanagerCreateParticipantMutation, { data, loading, error }] = useOlimanagerCreateParticipantMutation({
  *   variables: {
  *      rowIds: // value for 'rowIds'
+ *      sheetIds: // value for 'sheetIds'
  *      username: // value for 'username'
  *      password: // value for 'password'
  *   },
@@ -2572,6 +2587,7 @@ export type ResolversTypes = {
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectId: ResolverTypeWrapper<ObjectId>;
+  OlimanagerCreateResult: ResolverTypeWrapper<OlimanagerCreateResult>;
   OlimanagerRowData: ResolverTypeWrapper<OlimanagerRowData>;
   Permission: ResolverTypeWrapper<Omit<Permission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
   PermissionInput: PermissionInput;
@@ -2609,6 +2625,7 @@ export type ResolversParentTypes = {
   JSON: Scalars['JSON']['output'];
   Mutation: {};
   ObjectId: ObjectId;
+  OlimanagerCreateResult: OlimanagerCreateResult;
   OlimanagerRowData: OlimanagerRowData;
   Permission: Omit<Permission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
   PermissionInput: PermissionInput;
@@ -2684,7 +2701,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password' | 'rowIds'>>;
-  olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password' | 'rowIds'>>;
+  olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['OlimanagerCreateResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
@@ -2700,6 +2717,13 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['ObjectId'], any> {
   name: 'ObjectId';
 }
+
+export type OlimanagerCreateResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerCreateResult'] = ResolversParentTypes['OlimanagerCreateResult']> = {
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerRowData'] = ResolversParentTypes['OlimanagerRowData']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2875,6 +2899,7 @@ export type Resolvers<ContextType = any> = {
   JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   ObjectId?: GraphQLScalarType;
+  OlimanagerCreateResult?: OlimanagerCreateResultResolvers<ContextType>;
   OlimanagerRowData?: OlimanagerRowDataResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
