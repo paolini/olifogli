@@ -28,7 +28,12 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXTAUTH_SECRET=dummysecret
+# Create a dummy .env file for build
+RUN echo "MONGODB_URI=mongodb://dummy:27017/dummy" > .env && \
+    echo "NEXTAUTH_SECRET=dummysecret" >> .env && \
+    echo "NEXTAUTH_URL=http://localhost:3000" >> .env && \
+    echo "OLIMANAGER_URL=https://olimpiadi-scientifiche.it" >> .env && \
+    echo "NEXT_PUBLIC_APP_INSTANCE=docker-build" >> .env
 RUN npm run build 
 
 # Production image, copy all the files and run next
