@@ -3,6 +3,7 @@
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
 import { DistributionReport as DistributionReport, useGetSheetsQuery, useGetSheetsDistributionReportQuery } from '../graphql/generated'
@@ -35,6 +36,8 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
+    const [useBinning, setUseBinning] = useState(false)
+
     const { loading, error, data } = useGetSheetsDistributionReportQuery({
         variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
         skip: filterState?.schemaFilter === '',
@@ -50,15 +53,33 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
             <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+            <label className="flex items-center space-x-2">
+                <input
+                    type="checkbox"
+                    checked={useBinning}
+                    onChange={e => setUseBinning(e.target.checked)}
+                />
+                <span>Raggruppa punteggi</span>
+            </label>
             {report && (
-                <DistributionSection key={report.schema} report={report} />
+                <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
             )}
         </div>
     )
 }
 
-function DistributionSection({ report }: { report: DistributionReport }) {
+function DistributionSection({ report, useBinning }: { report: DistributionReport, useBinning: boolean }) {
     const schemaName = schemas[report.schema].header
+
+    let processedDistribution = report.scoreDistribution
+    if (useBinning) {
+        const binMap = new Map<number, number>()
+        for (const item of report.scoreDistribution) {
+            const bin = Math.floor(item.score / 5) * 5
+            binMap.set(bin, (binMap.get(bin) || 0) + item.count)
+        }
+        processedDistribution = Array.from(binMap.entries()).map(([score, count]) => ({ score, count })).sort((a, b) => a.score - b.score)
+    }
 
     return (
         <div className="border rounded-lg p-4 space-y-4">
@@ -75,7 +96,7 @@ function DistributionSection({ report }: { report: DistributionReport }) {
                 </div>
             </div>
 
-            <ScoreDistributionChart distribution={report.scoreDistribution} />
+            <ScoreDistributionChart distribution={processedDistribution} />
         </div>
     )
 }
