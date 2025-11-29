@@ -44,6 +44,7 @@ import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
+import sheetsExerciseReport from './resolvers/sheetsExerciseReport'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -68,6 +69,7 @@ export const resolvers: Resolvers = {
     scanResults,
     sheetsDistributionReport,
     sheetsRankingReport,
+    sheetsExerciseReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
     getSetting: settingsResolvers.Query.getSetting,
   },
