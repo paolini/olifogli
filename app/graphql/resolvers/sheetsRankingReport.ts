@@ -7,7 +7,7 @@ import { sheetsReportHelper } from './sheetsDistributionReport'
 
 export default async function sheetsRankingReport(
     _: unknown, 
-    { sheetIds, schema }: QuerySheetsRankingReportArgs, 
+    { sheetIds, schema, limit }: QuerySheetsRankingReportArgs, 
     context: Context
 ): Promise<RankingReport> {
     const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
@@ -15,7 +15,7 @@ export default async function sheetsRankingReport(
     // Separa per schema
     const sheets = allSheets.filter(s => s.schema === schema)
 
-    const report = await generateRankingReport(sheets)
+    const report = await generateRankingReport(sheets, limit ?? undefined)
 
     return {
         schema,
@@ -25,6 +25,7 @@ export default async function sheetsRankingReport(
 
 async function generateRankingReport(
     sheets: WithId<Sheet>[],
+    limit?: number
 ) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
@@ -39,7 +40,7 @@ async function generateRankingReport(
     const sheetMap = new Map(sheets.map(s => [s._id.toString(), s]))
 
     // Prepara le entry con punteggio
-    const entries: Array<{
+    let entries: Array<{
         sheetId: ObjectId
         sheetName: string
         studentName: string
@@ -71,8 +72,12 @@ async function generateRankingReport(
     // Ordina per punteggio decrescente
     entries.sort((a, b) => b.score - a.score)
 
-    // Prendi i primi 100 e aggiungi il rank
-    const ranking: ReportEntry[] = entries.slice(0, 100).map((entry, index) => ({
+    // Se limit è definito, prendi solo i primi 'limit', altrimenti tutti
+    let rankingEntries = entries;
+    if (typeof limit === 'number') {
+        rankingEntries = entries.slice(0, limit);
+    }
+    const ranking: ReportEntry[] = rankingEntries.map((entry, index) => ({
         ...entry,
         rank: index + 1,
         sheet: sheetMap.get(entry.sheetId.toString())!

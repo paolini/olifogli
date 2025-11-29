@@ -1,5 +1,6 @@
-'use client'
+"use client"
 
+import { useState } from 'react'
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
@@ -11,8 +12,8 @@ import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 
 const _ = gql`
-    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!) {
-        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
+        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
             schema
             totalStudents
             ranking {
@@ -33,19 +34,20 @@ const _ = gql`
 `
 
 export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }) {
-    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch } = useGetSheetsQuery({
+    const [limit, setLimit] = useState<number>(100);
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
-    })
+    });
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
-    const filteredSheets = filterSheets(filterState, sheets)
+        .filter(s => ["archimede_biennio", "archimede_triennio"].includes(s.schema));
+    const filteredSheets = filterSheets(filterState, sheets);
 
     const { loading, error, data } = useGetSheetsRankingReportQuery({
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
+        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit },
         pollInterval: 10000, // millisecondi
-    })
+    });
     
     if (loading) return <Loading />
     if (error) return <Error error={error} />
@@ -55,21 +57,27 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
 
     if (!report) return null
 
+    const handleShowMore = () => setLimit(limit => limit * 2);
+
     return (
         <div className="p-4 space-y-6 max-w-6xl">
             <div className="flex items-center gap-3">
                 <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
             </div>
-            <RankingSection key={report.schema} report={report} />
+            <RankingSection
+                key={report.schema}
+                report={report}
+                onShowMore={handleShowMore}
+                canShowMore={limit !== undefined && report.ranking.length === limit}
+            />
         </div>
-    )
-}
+    );
 
-function RankingSection({ report }: { report: RankingReport }) {
-    const schema = report.schema
-    const schemaName = schemas[schema]?.header
+function RankingSection({ report, onShowMore, canShowMore }: { report: RankingReport, onShowMore: () => void, canShowMore: boolean }) {
+    const schema = report.schema;
+    const schemaName = schemas[schema]?.header;
 
-    if (!schemaName) return <Error error={"Schema non selezionato"} />
+    if (!schemaName) return <Error error={"Schema non selezionato"} />;
 
     return (
         <div className="border rounded-lg p-4 space-y-4">
@@ -77,17 +85,25 @@ function RankingSection({ report }: { report: RankingReport }) {
                 <h3 className="text-xl font-semibold">{schemaName}</h3>
                 <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
             </div>
-
             <TopRanking ranking={report.ranking} />
+            {canShowMore && (
+                <div className="flex justify-center mt-4">
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                        onClick={onShowMore}
+                    >
+                        Carica altri
+                    </button>
+                </div>
+            )}
         </div>
-    )
+    );
 }
 
 function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
     if (ranking.length === 0) {
-        return <p className="text-gray-600">Nessun dato disponibile</p>
+        return <p className="text-gray-600">Nessun dato disponibile</p>;
     }
-
     return (
         <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -117,6 +133,7 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
                 </tbody>
             </table>
         </div>
-    )
+    );
+}
 }
 

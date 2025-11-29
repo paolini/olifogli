@@ -307,6 +307,7 @@ export type QuerySheetsDistributionReportArgs = {
 
 export type QuerySheetsRankingReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
   schema: Scalars['String']['input'];
   sheetIds: Array<Scalars['ObjectId']['input']>;
 };
@@ -695,6 +696,7 @@ export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDis
 export type GetSheetsRankingReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
   schema: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -1998,8 +2000,8 @@ export type GetSheetsDistributionReportLazyQueryHookResult = ReturnType<typeof u
 export type GetSheetsDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsDistributionReportSuspenseQuery>;
 export type GetSheetsDistributionReportQueryResult = Apollo.QueryResult<GetSheetsDistributionReportQuery, GetSheetsDistributionReportQueryVariables>;
 export const GetSheetsRankingReportDocument = gql`
-    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!) {
-  sheetsRankingReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
+  sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
     schema
     totalStudents
     ranking {
@@ -2033,6 +2035,7 @@ export const GetSheetsRankingReportDocument = gql`
  *   variables: {
  *      sheetIds: // value for 'sheetIds'
  *      schema: // value for 'schema'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
