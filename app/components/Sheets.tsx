@@ -421,9 +421,9 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         <td>{sheet.nValidRows}</td>
         <td className=""><span className="flex">
             {sheet.locked 
-                ? <><Lock size={16} className="text-red-600" />&nbsp;chiuso</> 
+                ? <><Lock size={16} className="text-red-600" />&nbsp;bloccato</> 
                 : sheet.closed 
-                    ? <><Archive size={16} className="text-orange-500" />&nbsp;bloccato</> 
+                    ? <><Archive size={16} className="text-orange-500" />&nbsp;chiuso</> 
                     : <><Unlock size={16} className="text-green-600" />&nbsp;aperto</>}
             </span>
         </td>
