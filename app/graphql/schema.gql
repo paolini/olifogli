@@ -151,6 +151,8 @@ type DistributionReport {
   schema: String!
   totalStudents: Int!
   scoreDistribution: [ScoreDistributionItem!]!
+  mean: Float
+  variance: Float
 }
 
 type RankingReport {

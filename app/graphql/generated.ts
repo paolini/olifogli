@@ -32,9 +32,11 @@ export type Config = {
 
 export type DistributionReport = {
   __typename?: 'DistributionReport';
+  mean?: Maybe<Scalars['Float']['output']>;
   schema: Scalars['String']['output'];
   scoreDistribution: Array<ScoreDistributionItem>;
   totalStudents: Scalars['Int']['output'];
+  variance?: Maybe<Scalars['Float']['output']>;
 };
 
 export type ExerciseDistributionItem = {
@@ -329,6 +331,7 @@ export type QuerySheetsArgs = {
 
 
 export type QuerySheetsDistributionReportArgs = {
+  binSize?: InputMaybe<Scalars['Int']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   schema: Scalars['String']['input'];
   sheetIds: Array<Scalars['ObjectId']['input']>;
@@ -727,7 +730,7 @@ export type GetSheetsDistributionReportQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDistributionReport: { __typename?: 'DistributionReport', schema: string, totalStudents: number, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> } };
+export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDistributionReport: { __typename?: 'DistributionReport', schema: string, totalStudents: number, mean?: number | null, variance?: number | null, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> } };
 
 export type GetSheetsExerciseReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -2007,6 +2010,8 @@ export const GetSheetsDistributionReportDocument = gql`
       score
       count
     }
+    mean
+    variance
   }
 }
     `;
@@ -2669,9 +2674,11 @@ export interface DataScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
 }
 
 export type DistributionReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['DistributionReport'] = ResolversParentTypes['DistributionReport']> = {
+  mean?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   scoreDistribution?: Resolver<Array<ResolversTypes['ScoreDistributionItem']>, ParentType, ContextType>;
   totalStudents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  variance?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
