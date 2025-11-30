@@ -99,12 +99,12 @@ function ExerciseDistributionSection({ report, viewMode }: { report: ExerciseRep
                 <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
             </div>
 
-            <ExerciseDistributionChart distribution={report.exerciseDistribution} viewMode={viewMode} />
+            <ExerciseDistributionChart distribution={report.exerciseDistribution} viewMode={viewMode} totalStudents={report.totalStudents} />
         </div>
     )
 }
 
-function ExerciseDistributionChart({ distribution, viewMode }: { distribution: ExerciseReport['exerciseDistribution'], viewMode: 'choices' | 'correctness' }) {
+function ExerciseDistributionChart({ distribution, viewMode, totalStudents }: { distribution: ExerciseReport['exerciseDistribution'], viewMode: 'choices' | 'correctness', totalStudents: number }) {
     if (distribution.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
@@ -141,7 +141,8 @@ function ExerciseDistributionChart({ distribution, viewMode }: { distribution: E
                 />
                 <Tooltip 
                     formatter={(value: number, name: string) => {
-                        return [`${value} risposte`, labels[name as keyof typeof labels] || name]
+                        const percentage = ((value / totalStudents) * 100).toFixed(1)
+                        return [`${value} risposte (${percentage}%)`, labels[name as keyof typeof labels] || name]
                     }}
                     labelFormatter={(label) => `Esercizio ${label}`}
                 />
