@@ -300,11 +300,12 @@ async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
   }
 
   const {username, password} = askOlimanagerCredentials(ctx)
-  const res = await ctx.mutations.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: boolean[]}}
+  const res = await ctx.mutations.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string}[]}}
   const arr = res.data?.olimanagerCreateParticipant || []
-  const ok = arr.filter(Boolean).length
+  const ok = arr.filter(r => r.success).length
   const ko = arr.length - ok
-  alert(`Esito Olimanager: ${ok} ok, ${ko} errori`)
+  const errorMessages = arr.filter(r => !r.success).map(r => r.error).filter(Boolean)
+  alert(`Esito Olimanager: ${ok} ok, ${ko} errori${errorMessages.length > 0 ? '\n\nErrori:\n' + errorMessages.join('\n') : ''}`)
   if (ctx.refresh) await ctx.refresh()
 }
 
