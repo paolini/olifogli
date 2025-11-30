@@ -64,6 +64,10 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
             .map(s => s.commonData!.Distretto as string)
     )).sort()
 
+    // Calcola il totale delle righe
+    const totalRows = sheets.reduce((sum, s) => sum + s.nRows, 0)
+    const filteredRows = filteredSheets.reduce((sum, s) => sum + s.nRows, 0)
+
 
     return <div className="mb-2 flex items-center gap-3">
         <select value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)} className="border rounded px-2 py-1">
@@ -88,7 +92,7 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
             <option value="chiuso_o_bloccato">Chiusi o bloccati</option>
             <option value="chiuso_non_bloccato">Chiusi ma non bloccati</option>
         </select>
-        <span>{pluralize(filteredSheets.length, "foglio", "fogli")} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${sheets.length})`}</span>
+        <span>{pluralize(filteredSheets.length, "foglio", "fogli")} con {pluralize(filteredRows, "riga", "righe")} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${sheets.length} fogli e ${totalRows} righe)`}</span>
     </div>
     }   
 
