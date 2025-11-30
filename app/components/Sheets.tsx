@@ -16,7 +16,7 @@ import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
-import { pluralize } from '../lib/util';
+import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
 
 const DELETE_WORKBOOK = gql`
@@ -156,6 +156,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         )}
                         <Th field="##nRows" header="righe" />
                         <Th field="##nValidRows" header="valide" />
+                        <Th field="__updatedAt" header="aggiornato" />
                         <th>stato</th>
                     </tr>
                 </thead>
@@ -443,6 +444,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         )}
         <td>{sheet.nRows}</td>
         <td>{sheet.nValidRows}</td>
+        <td>{sheet.updatedAt ? myTimestamp(sheet.updatedAt) : ''}</td>
         <td className=""><span className="flex">
             {sheet.locked 
                 ? <><Lock size={16} className="text-red-600" />&nbsp;bloccato</> 

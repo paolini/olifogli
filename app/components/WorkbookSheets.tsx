@@ -21,6 +21,7 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
                 userId
                 role
             }
+            updatedAt
             nRows
             nValidRows
             closed

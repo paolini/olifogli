@@ -48,14 +48,27 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
             // La riga è diventata invalida
             await sheetsCollection.updateOne(
                 { _id: row.sheetId },
-                { $inc: { nValidRows: -1 } },
+                { 
+                    $inc: { nValidRows: -1 },
+                    $set: { updatedAt: new Date() }
+                },
                 { session }
             )
         } else if (!wasValid && isValid) {
             // La riga è diventata valida
             await sheetsCollection.updateOne(
                 { _id: row.sheetId },
-                { $inc: { nValidRows: 1 } },
+                { 
+                    $inc: { nValidRows: 1 },
+                    $set: { updatedAt: new Date() }
+                },
+                { session }
+            )
+        } else {
+            // Anche se la validità non cambia, aggiorna updatedAt perché la riga è stata modificata
+            await sheetsCollection.updateOne(
+                { _id: row.sheetId },
+                { $set: { updatedAt: new Date() } },
                 { session }
             )
         }

@@ -48,7 +48,10 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
         
         await sheetsCollection.updateOne(
             { _id: args.sheetId },
-            { $inc: updateFields },
+            { 
+                $inc: updateFields,
+                $set: { updatedAt: updatedOn }
+            },
             { session }
         )
         

@@ -50,7 +50,10 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
         // Aggiorna i contatori dello sheet
         await sheetsCollection.updateOne(
             { _id: sheetId },
-            { $inc: { nRows: res.insertedCount, nValidRows } },
+            { 
+                $inc: { nRows: res.insertedCount, nValidRows },
+                $set: { updatedAt: updatedOn }
+            },
             { session }
         )
         

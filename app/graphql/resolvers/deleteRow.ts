@@ -36,7 +36,10 @@ export default async function deleteRow(_: unknown, {_id}: {
         
         await sheetsCollection.updateOne(
             { _id: row.sheetId },
-            { $inc: updateFields },
+            { 
+                $inc: updateFields,
+                $set: { updatedAt: new Date() }
+            },
             { session }
         )
     })

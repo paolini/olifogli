@@ -27,6 +27,7 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
         workbookId,
         ownerId: user._id, 
         createdAt: now,
+        updatedAt: now,
         permissions,
         commonData: {},
         nRows: 0,

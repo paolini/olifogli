@@ -56,7 +56,10 @@ export default async function deleteRows(_: unknown, {ids}: {
             
             await sheetsCollection.updateOne(
                 { _id: new ObjectId(sheetIdStr) },
-                { $inc: { nRows, nValidRows } },
+                { 
+                    $inc: { nRows, nValidRows },
+                    $set: { updatedAt: new Date() }
+                },
                 { session }
             )
         }

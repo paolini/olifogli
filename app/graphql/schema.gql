@@ -41,6 +41,7 @@ type Sheet {
   commonData: Data!
   nRows: Int!
   nValidRows: Int!
+  updatedAt: Timestamp
   closed: Boolean
   closedBy: String
   closedOn: Timestamp
