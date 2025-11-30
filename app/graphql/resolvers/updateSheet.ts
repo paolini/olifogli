@@ -24,8 +24,11 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
     check_admin(user)
     update.commonData = args.commonData
   }
-
+  
   if (Object.keys(update).length === 0) return true
+  
+  // Sempre aggiorna updatedAt quando il sheet viene modificato
+  update.updatedAt = new Date()
 
   const res = await sheets.updateOne({ _id: args._id }, { $set: update })
   if (!res.acknowledged) throw new Error('update failed')

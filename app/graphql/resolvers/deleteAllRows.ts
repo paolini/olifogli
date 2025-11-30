@@ -38,7 +38,7 @@ export default async function deleteAllRows (_: unknown, { sheetId }: { sheetId:
         // Azzera i contatori dello sheet
         await sheetsCollection.updateOne(
             { _id: sheetId },
-            { $set: { nRows: 0, nValidRows: 0 } },
+            { $set: { nRows: 0, nValidRows: 0, updatedAt: new Date() } },
             { session }
         )
     })

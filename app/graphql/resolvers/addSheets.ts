@@ -25,6 +25,7 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
             ownerId: user._id,
             permissions,
             createdAt: now,
+            updatedAt: now,
         }
     }))
     if (!result.acknowledged) throw new Error("Failed to add sheets")

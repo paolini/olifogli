@@ -331,7 +331,6 @@ export type QuerySheetsArgs = {
 
 
 export type QuerySheetsDistributionReportArgs = {
-  binSize?: InputMaybe<Scalars['Int']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   schema: Scalars['String']['input'];
   sheetIds: Array<Scalars['ObjectId']['input']>;
@@ -459,6 +458,7 @@ export type Sheet = {
   ownerId: Scalars['ObjectId']['output'];
   permissions: Array<Permission>;
   schema: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['Timestamp']['output']>;
   workbook: Workbook;
 };
 
@@ -754,7 +754,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, nValidRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -2171,6 +2171,7 @@ export const GetSheetsDocument = gql`
       userId
       role
     }
+    updatedAt
     nRows
     nValidRows
     closed
@@ -2886,6 +2887,7 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;
   schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   workbook?: Resolver<ResolversTypes['Workbook'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
