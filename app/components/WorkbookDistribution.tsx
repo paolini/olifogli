@@ -2,7 +2,7 @@
 
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
@@ -37,6 +37,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     const filteredSheets = filterSheets(filterState, sheets)
 
     const [useBinning, setUseBinning] = useState(false)
+    const [showPercentiles, setShowPercentiles] = useState(false)
 
     const { loading, error, data } = useGetSheetsDistributionReportQuery({
         variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
@@ -53,22 +54,32 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
             <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
-            <label className="flex items-center space-x-2">
-                <input
-                    type="checkbox"
-                    checked={useBinning}
-                    onChange={e => setUseBinning(e.target.checked)}
-                />
-                <span>Raggruppa punteggi</span>
-            </label>
+            <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        checked={useBinning}
+                        onChange={e => setUseBinning(e.target.checked)}
+                    />
+                    <span>Raggruppa punteggi</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        checked={showPercentiles}
+                        onChange={e => setShowPercentiles(e.target.checked)}
+                    />
+                    <span>Mostra percentili</span>
+                </label>
+            </div>
             {report && (
-                <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
+                <DistributionSection key={report.schema} report={report} useBinning={useBinning} showPercentiles={showPercentiles} />
             )}
         </div>
     )
 }
 
-function DistributionSection({ report, useBinning }: { report: DistributionReport, useBinning: boolean }) {
+function DistributionSection({ report, useBinning, showPercentiles }: { report: DistributionReport, useBinning: boolean, showPercentiles: boolean }) {
     const schemaName = schemas[report.schema].header
 
     let processedDistribution = report.scoreDistribution
@@ -96,12 +107,12 @@ function DistributionSection({ report, useBinning }: { report: DistributionRepor
                 </div>
             </div>
 
-            <ScoreDistributionChart distribution={processedDistribution} />
+            <ScoreDistributionChart distribution={processedDistribution} showPercentiles={showPercentiles} />
         </div>
     )
 }
 
-function ScoreDistributionChart({ distribution }: { distribution: DistributionReport['scoreDistribution'] }) {
+function ScoreDistributionChart({ distribution, showPercentiles }: { distribution: DistributionReport['scoreDistribution'], showPercentiles: boolean }) {
     if (distribution.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
@@ -109,10 +120,18 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
     // Trasforma i dati nel formato richiesto da Recharts
     const chartData = distribution.map(item => ({
         punteggio: item.score,
-        studenti: item.count
+        studenti: item.count,
+        cumulativa: 0
     }))
 
     const totalStudents = distribution.reduce((sum, d) => sum + d.count, 0)
+
+    // Calcola la cumulativa: percentuale di studenti con punteggio <= corrente
+    let cum = 0
+    for (let i = 0; i < chartData.length; i++) {
+        cum += chartData[i].studenti
+        chartData[i].cumulativa = (cum / totalStudents) * 100
+    }
 
     // Calcola la larghezza in base al numero di barre
     // Minimo 400px, massimo 1200px, circa 30px per barra
@@ -128,19 +147,46 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
                     label={{ value: 'Punteggio', position: 'insideBottom', offset: -5 }}
                 />
                 <YAxis 
+                    yAxisId="left"
                     label={{ value: 'Numero di studenti', angle: -90, position: 'insideLeft' }}
                 />
+                {showPercentiles && (
+                    <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        label={{ value: 'Percentile (%)', angle: 90, position: 'insideRight' }}
+                    />
+                )}
                 <Tooltip 
-                    formatter={(value: number) => [`${value} studenti`, 'Frequenza']}
+                    formatter={(value: number, name: string) => {
+                        if (name === 'Studenti') {
+                            return [`${value} studenti`, 'Frequenza']
+                        } else {
+                            return [`${value.toFixed(1)}%`, 'Percentile']
+                        }
+                    }}
                     labelFormatter={(label) => `Punteggio: ${label}`}
                 />
                 <Legend />
                 <Bar 
+                    yAxisId="left"
                     dataKey="studenti" 
                     fill="#3b82f6" 
                     name="Studenti"
                     radius={[8, 8, 0, 0]}
                 />
+                {showPercentiles && (
+                    <Line 
+                        yAxisId="right"
+                        type="monotone" 
+                        dataKey="cumulativa" 
+                        stroke="#ff7300" 
+                        strokeWidth={2}
+                        strokeOpacity={0.7}
+                        name="Percentile"
+                        dot={{ r: 4 }}
+                    />
+                )}
             </BarChart>
         </div>
     )
