@@ -32,7 +32,7 @@ export default function TableActions(input: TableActionInput) {
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
-            className="ml-2 border rounded px-2 py-1"
+            className={`ml-2 border rounded px-2 py-1 ${ctx.tableState.selectedLineKeys.size > 0 ? 'bg-yellow-200' : ''}`}
             onChange={(e) => actions[e.target.value].handler(ctx)}
             value="none"
         >
