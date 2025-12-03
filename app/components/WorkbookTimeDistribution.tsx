@@ -91,7 +91,7 @@ function TimeDistributionSection({ report }:
 
     // Stati per la visibilità delle linee (inizialmente tutte visibili)
     const [visibleLines, setVisibleLines] = useState<Set<string>>(new Set([
-        'Righe aggiornate', 'Righe valide aggiornate', 'Cumulativo righe', 'Cumulativo righe valide', 'Sheet chiusi', 'Cumulativo sheet chiusi'
+        'Righe aggiornate', 'Righe valide aggiornate', 'Cumulativo righe', 'Cumulativo righe valide', 'Fogli chiusi', 'Cumulativo fogli chiusi'
     ]))
 
     const toggleLineVisibility = (dataKey: string) => {
@@ -178,23 +178,23 @@ function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }:
                 yAxisID: 'y',
             },
             {
-                label: 'Sheet chiusi',
+                label: 'Fogli chiusi',
                 data: data.map(item => item.closedSheets),
                 borderColor: '#8b5cf6',
                 backgroundColor: '#8b5cf6',
                 borderWidth: 2,
                 tension: 0.4,
-                hidden: !visibleLines.has('Sheet chiusi'),
+                hidden: !visibleLines.has('Fogli chiusi'),
                 yAxisID: 'y2',
             },
             {
-                label: 'Cumulativo sheet chiusi',
+                label: 'Cumulativo fogli chiusi',
                 data: data.map(item => item.cumulativeClosedSheets),
                 borderColor: '#06b6d4',
                 backgroundColor: '#06b6d4',
                 borderWidth: 2,
                 tension: 0.4,
-                hidden: !visibleLines.has('Cumulativo sheet chiusi'),
+                hidden: !visibleLines.has('Cumulativo fogli chiusi'),
                 yAxisID: 'y2',
             },
         ],
@@ -255,7 +255,7 @@ function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }:
                 beginAtZero: true,
                 title: {
                     display: true,
-                    text: 'Sheet',
+                    text: 'Fogli',
                 },
                 grid: {
                     drawOnChartArea: false,
