@@ -2,8 +2,19 @@
 
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import 'recharts-scale'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale,
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
+import 'chartjs-adapter-date-fns'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
@@ -11,6 +22,18 @@ import { useGetSheetsQuery, useGetSheetsTimeDistributionReportQuery, TimeDistrib
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale
+)
 
 const _ = gql`
     query GetSheetsTimeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
@@ -111,53 +134,141 @@ function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }:
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
 
+    const chartData = {
+        labels: data.map(item => new Date(item.hourTimestamp)),
+        datasets: [
+            {
+                label: 'Righe aggiornate',
+                data: data.map(item => item.rows),
+                borderColor: '#3b82f6',
+                backgroundColor: '#3b82f6',
+                borderWidth: 2,
+                tension: 0.4,
+                hidden: !visibleLines.has('Righe aggiornate'),
+                yAxisID: 'y',
+            },
+            {
+                label: 'Righe valide aggiornate',
+                data: data.map(item => item.validRows),
+                borderColor: '#10b981',
+                backgroundColor: '#10b981',
+                borderWidth: 2,
+                tension: 0.4,
+                hidden: !visibleLines.has('Righe valide aggiornate'),
+                yAxisID: 'y',
+            },
+            {
+                label: 'Cumulativo righe',
+                data: data.map(item => item.cumulativeRows),
+                borderColor: '#f59e0b',
+                backgroundColor: '#f59e0b',
+                borderWidth: 2,
+                tension: 0.4,
+                hidden: !visibleLines.has('Cumulativo righe'),
+                yAxisID: 'y',
+            },
+            {
+                label: 'Cumulativo righe valide',
+                data: data.map(item => item.cumulativeValidRows),
+                borderColor: '#ef4444',
+                backgroundColor: '#ef4444',
+                borderWidth: 2,
+                tension: 0.4,
+                hidden: !visibleLines.has('Cumulativo righe valide'),
+                yAxisID: 'y',
+            },
+            {
+                label: 'Sheet chiusi',
+                data: data.map(item => item.closedSheets),
+                borderColor: '#8b5cf6',
+                backgroundColor: '#8b5cf6',
+                borderWidth: 2,
+                tension: 0.4,
+                hidden: !visibleLines.has('Sheet chiusi'),
+                yAxisID: 'y2',
+            },
+            {
+                label: 'Cumulativo sheet chiusi',
+                data: data.map(item => item.cumulativeClosedSheets),
+                borderColor: '#06b6d4',
+                backgroundColor: '#06b6d4',
+                borderWidth: 2,
+                tension: 0.4,
+                hidden: !visibleLines.has('Cumulativo sheet chiusi'),
+                yAxisID: 'y2',
+            },
+        ],
+    }
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index' as const,
+            intersect: false,
+        },
+        plugins: {
+            legend: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onClick: (event: any, legendItem: any, legend: any) => {
+                    toggleLineVisibility(legendItem.text)
+                },
+                labels: {
+                    usePointStyle: true,
+                },
+            },
+            tooltip: {
+                callbacks: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    title: (context: any) => {
+                        const date = new Date(context[0].parsed.x)
+                        const yy = date.getFullYear().toString().slice(-2)
+                        const mm = (date.getMonth() + 1).toString().padStart(2, '0')
+                        const dd = date.getDate().toString().padStart(2, '0')
+                        const hh = date.getHours().toString().padStart(2, '0')
+                        return `Ora: ${yy}-${mm}-${dd} ${hh}`
+                    },
+                },
+            },
+        },
+        scales: {
+            x: {
+                type: 'time' as const,
+                time: {
+                    unit: 'day' as const,
+                },
+            },
+            y: {
+                type: 'linear' as const,
+                display: true,
+                position: 'left' as const,
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Righe',
+                },
+            },
+            y2: {
+                type: 'linear' as const,
+                display: true,
+                position: 'right' as const,
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Sheet',
+                },
+                grid: {
+                    drawOnChartArea: false,
+                },
+            },
+        },
+    }
+
     return (
         <div className="space-y-4">
-            <ResponsiveContainer width="100%" height={600}>
-                <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                        dataKey="hourTimestamp" 
-                        type="number"
-                        scale="time"
-                        domain={['dataMin', 'dataMax']}
-                        angle={-90}
-                        textAnchor="end"
-                        height={120}
-                        tick={{ fontSize: 10 }}
-                        tickFormatter={(timestamp) => {
-                            const date = new Date(timestamp)
-                            const dd = date.getDate().toString().padStart(2, '0')
-                            const hh = date.getHours().toString().padStart(2, '0')
-                            return `${dd} ${hh}h`
-                        }}
-                    />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip 
-                        labelFormatter={(timestamp) => {
-                            const date = new Date(timestamp)
-                            const yy = date.getFullYear().toString().slice(-2)
-                            const mm = (date.getMonth() + 1).toString().padStart(2, '0')
-                            const dd = date.getDate().toString().padStart(2, '0')
-                            const hh = date.getHours().toString().padStart(2, '0')
-                            return `Ora: ${yy}-${mm}-${dd} ${hh}`
-                        }}
-                        formatter={(value: number, name: string) => [`${value}`, name]}
-                    />
-                    <Legend 
-                        onClick={(entry) => entry.value && toggleLineVisibility(entry.value)}
-                        wrapperStyle={{ cursor: 'pointer' }}
-                        iconType="line"
-                    />
-                    <Line yAxisId="left" type="monotone" dataKey="rows" stroke="#3b82f6" strokeWidth={2} name="Righe aggiornate" hide={!visibleLines.has('Righe aggiornate')} />
-                    <Line yAxisId="left" type="monotone" dataKey="validRows" stroke="#10b981" strokeWidth={2} name="Righe valide aggiornate" hide={!visibleLines.has('Righe valide aggiornate')} />
-                    <Line yAxisId="left" type="monotone" dataKey="cumulativeRows" stroke="#f59e0b" strokeWidth={2} name="Cumulativo righe" hide={!visibleLines.has('Cumulativo righe')} />
-                    <Line yAxisId="left" type="monotone" dataKey="cumulativeValidRows" stroke="#ef4444" strokeWidth={2} name="Cumulativo righe valide" hide={!visibleLines.has('Cumulativo righe valide')} />
-                    <Line yAxisId="right" type="monotone" dataKey="closedSheets" stroke="#8b5cf6" strokeWidth={2} name="Sheet chiusi" hide={!visibleLines.has('Sheet chiusi')} />
-                    <Line yAxisId="right" type="monotone" dataKey="cumulativeClosedSheets" stroke="#06b6d4" strokeWidth={2} name="Cumulativo sheet chiusi" hide={!visibleLines.has('Cumulativo sheet chiusi')} />
-                </LineChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: '600px', minHeight: '600px', minWidth: '400px' }}>
+                <Line data={chartData} options={options} />
+            </div>
         </div>
     )
 }
