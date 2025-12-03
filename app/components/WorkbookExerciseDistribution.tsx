@@ -2,7 +2,16 @@
 
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
@@ -10,6 +19,16 @@ import { useGetSheetsQuery, useGetSheetsExerciseReportQuery, ExerciseReport } fr
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const CHOICE_LABELS = {
     A: 'A',
@@ -109,64 +128,144 @@ function ExerciseDistributionChart({ distribution, viewMode, totalStudents }: { 
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
 
-    const labels = viewMode === 'choices' ? CHOICE_LABELS : CORRECTNESS_LABELS
-
-    // Trasforma i dati nel formato richiesto da Recharts
-    const chartData = distribution.map(item => ({
-        exercise: item.exercise,
-        A: item.A,
-        B: item.B,
-        C: item.C,
-        D: item.D,
-        E: item.E,
-        correct: item.correct,
-        wrong: item.wrong,
-        empty: item.empty,
-        invalid: item.invalid
-    }))
-
     const numExercises = distribution.length
     const chartWidth = Math.min(Math.max(numExercises * 60 + 100, 400), 1200)
 
+    // Prepare data for Chart.js
+    const labels = distribution.map(item => item.exercise.toString())
+    
+    const datasets = viewMode === 'choices' ? [
+        {
+            label: CHOICE_LABELS.A,
+            data: distribution.map(item => item.A),
+            backgroundColor: '#4f2a0aff',
+            stack: 'stack1'
+        },
+        {
+            label: CHOICE_LABELS.B,
+            data: distribution.map(item => item.B),
+            backgroundColor: '#3b82f6',
+            stack: 'stack1'
+        },
+        {
+            label: CHOICE_LABELS.C,
+            data: distribution.map(item => item.C),
+            backgroundColor: '#ef4444',
+            stack: 'stack1'
+        },
+        {
+            label: CHOICE_LABELS.D,
+            data: distribution.map(item => item.D),
+            backgroundColor: '#f59e0b',
+            stack: 'stack1'
+        },
+        {
+            label: CHOICE_LABELS.E,
+            data: distribution.map(item => item.E),
+            backgroundColor: '#8b5cf6',
+            stack: 'stack1'
+        },
+        {
+            label: CORRECTNESS_LABELS.correct,
+            data: distribution.map(item => item.correct),
+            backgroundColor: '#10b981',
+            stack: 'stack1'
+        },
+       {
+            label: CORRECTNESS_LABELS.empty,
+            data: distribution.map(item => item.empty),
+            backgroundColor: '#6b7280',
+            stack: 'stack1'
+        },
+        {
+            label: CORRECTNESS_LABELS.invalid,
+            data: distribution.map(item => item.invalid),
+            backgroundColor: '#000000ff',
+            stack: 'stack1'
+        }
+
+    ] : [
+        {
+            label: CORRECTNESS_LABELS.correct,
+            data: distribution.map(item => item.correct),
+            backgroundColor: '#10b981',
+            stack: 'stack1'
+        },
+        {
+            label: CORRECTNESS_LABELS.wrong,
+            data: distribution.map(item => item.wrong),
+            backgroundColor: '#ef4444',
+            stack: 'stack1'
+        },
+        {
+            label: CORRECTNESS_LABELS.empty,
+            data: distribution.map(item => item.empty),
+            backgroundColor: '#6b7280',
+            stack: 'stack1'
+        },
+        {
+            label: CORRECTNESS_LABELS.invalid,
+            data: distribution.map(item => item.invalid),
+            backgroundColor: '#000000ff',
+            stack: 'stack1'
+        }
+    ]
+
+    const chartData = {
+        labels,
+        datasets
+    }
+
+    const options = {
+        responsive: false,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top' as const,
+            },
+            title: {
+                display: false,
+            },
+            tooltip: {
+                callbacks: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    label: function(context: any) {
+                        const value = context.parsed.y
+                        const item = distribution[context.dataIndex]
+                        const total = viewMode === 'choices' 
+                            ? item.A + item.B + item.C + item.D + item.E
+                            : item.correct + item.wrong + item.empty + item.invalid
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+                        return `${context.dataset.label}: ${value} risposte (${percentage}%)`
+                    },
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    title: function(context: any) {
+                        return `Esercizio ${context[0].label}`
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Esercizio'
+                },
+                stacked: true
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Numero di risposte'
+                },
+                stacked: true
+            }
+        }
+    }
+
     return (
         <div className="space-y-4">
-            <BarChart width={chartWidth} height={400} data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                    dataKey="exercise" 
-                    label={{ value: 'Esercizio', position: 'insideBottom', offset: -5 }}
-                />
-                <YAxis 
-                    label={{ value: 'Numero di risposte', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip 
-                    formatter={(value: number, name: string) => {
-                        const percentage = ((value / totalStudents) * 100).toFixed(1)
-                        return [`${value} risposte (${percentage}%)`, labels[name as keyof typeof labels] || name]
-                    }}
-                    labelFormatter={(label) => `Esercizio ${label}`}
-                />
-                <Legend />
-                {viewMode === 'choices' ? (
-                    <>
-                        <Bar dataKey="A" stackId="a" fill="#4f2a0aff" name={CHOICE_LABELS.A} />
-                        <Bar dataKey="B" stackId="a" fill="#3b82f6" name={CHOICE_LABELS.B} />
-                        <Bar dataKey="C" stackId="a" fill="#ef4444" name={CHOICE_LABELS.C} />
-                        <Bar dataKey="D" stackId="a" fill="#f59e0b" name={CHOICE_LABELS.D} />
-                        <Bar dataKey="E" stackId="a" fill="#8b5cf6" name={CHOICE_LABELS.E} />                        
-                        <Bar dataKey="correct" stackId="a" fill="#10b981" name={CORRECTNESS_LABELS.correct} />
-                        <Bar dataKey="empty" stackId="a" fill="#6b7280" name={CORRECTNESS_LABELS.empty} />
-                        <Bar dataKey="invalid" stackId="a" fill="#f59e0b" name={CORRECTNESS_LABELS.invalid} />
-                    </>
-                ) : (
-                    <>
-                        <Bar dataKey="correct" stackId="a" fill="#10b981" name={CORRECTNESS_LABELS.correct} />
-                        <Bar dataKey="wrong" stackId="a" fill="#ef4444" name={CORRECTNESS_LABELS.wrong} />
-                        <Bar dataKey="empty" stackId="a" fill="#6b7280" name={CORRECTNESS_LABELS.empty} />
-                        <Bar dataKey="invalid" stackId="a" fill="#f59e0b" name={CORRECTNESS_LABELS.invalid} />
-                    </>
-                )}
-            </BarChart>
+            <Bar data={chartData} options={options} width={chartWidth} height={400} />
         </div>
     )
 }

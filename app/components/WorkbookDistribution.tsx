@@ -2,7 +2,20 @@
 
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  BarController,
+  LineController,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Chart } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
@@ -10,6 +23,21 @@ import { DistributionReport as DistributionReport, useGetSheetsQuery, useGetShee
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { zhCN } from 'date-fns/locale'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  BarController,
+  LineController,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const _ = gql`
     query GetSheetsDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
@@ -37,7 +65,6 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     const filteredSheets = filterSheets(filterState, sheets)
 
     const [useBinning, setUseBinning] = useState(false)
-    const [showPercentiles, setShowPercentiles] = useState(false)
 
     const { loading, error, data } = useGetSheetsDistributionReportQuery({
         variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
@@ -63,23 +90,15 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
                     />
                     <span>Raggruppa punteggi</span>
                 </label>
-                <label className="flex items-center space-x-2">
-                    <input
-                        type="checkbox"
-                        checked={showPercentiles}
-                        onChange={e => setShowPercentiles(e.target.checked)}
-                    />
-                    <span>Mostra percentili</span>
-                </label>
             </div>
             {report && (
-                <DistributionSection key={report.schema} report={report} useBinning={useBinning} showPercentiles={showPercentiles} />
+                <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
             )}
         </div>
     )
 }
 
-function DistributionSection({ report, useBinning, showPercentiles }: { report: DistributionReport, useBinning: boolean, showPercentiles: boolean }) {
+function DistributionSection({ report, useBinning }: { report: DistributionReport, useBinning: boolean }) {
     const schemaName = schemas[report.schema].header
 
     let processedDistribution = report.scoreDistribution
@@ -107,87 +126,127 @@ function DistributionSection({ report, useBinning, showPercentiles }: { report: 
                 </div>
             </div>
 
-            <ScoreDistributionChart distribution={processedDistribution} showPercentiles={showPercentiles} />
+            <ScoreDistributionChart distribution={processedDistribution} />
         </div>
     )
 }
 
-function ScoreDistributionChart({ distribution, showPercentiles }: { distribution: DistributionReport['scoreDistribution'], showPercentiles: boolean }) {
+function ScoreDistributionChart({ distribution }: { distribution: DistributionReport['scoreDistribution'] }) {
     if (distribution.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
 
-    // Trasforma i dati nel formato richiesto da Recharts
-    const chartData = distribution.map(item => ({
-        punteggio: item.score,
-        studenti: item.count,
-        cumulativa: 0
-    }))
+    // Trasforma i dati nel formato richiesto da Chart.js
+    const labels = distribution.map(item => item.score.toString())
+    const studentData = distribution.map(item => item.count)
 
     const totalStudents = distribution.reduce((sum, d) => sum + d.count, 0)
 
     // Calcola la cumulativa: percentuale di studenti con punteggio <= corrente
     let cum = 0
-    for (let i = 0; i < chartData.length; i++) {
-        cum += chartData[i].studenti
-        chartData[i].cumulativa = (cum / totalStudents) * 100
+    const percentileData = distribution.map(item => {
+        cum += item.count
+        return (cum / totalStudents) * 100
+    })
+
+    const datasets = [
+        {
+            type: 'line' as const,
+            label: 'Percentile',
+            data: percentileData,
+            borderColor: '#ff7300',
+            backgroundColor: '#ff7300',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y2',
+            tension: 0.1,
+        },        
+        {
+            type: 'bar' as const,
+            label: 'Studenti',
+            data: studentData,
+            backgroundColor: '#3b82f6',
+            borderColor: '#3b82f6',
+            borderWidth: 1,
+            borderRadius: 8,
+            yAxisID: 'y',
+        },
+    ]
+
+    const chartData = {
+        labels,
+        datasets,
     }
 
     // Calcola la larghezza in base al numero di barre
-    // Minimo 400px, massimo 1200px, circa 30px per barra
     const numBars = distribution.length
     const chartWidth = Math.min(Math.max(numBars * 30 + 100, 400), 1200)
 
+    const options = {
+        responsive: true,
+        maintainAspectRatio: true,
+        //width: chartWidth,
+        height: 1200,
+        plugins: {
+            legend: {
+                display: true,
+            },
+            tooltip: {
+                callbacks: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    label: (context: any) => {
+                        if (context.dataset.type === 'bar') {
+                            return `${context.parsed.y} studenti`
+                        } else {
+                            return `${context.parsed.y.toFixed(1)}% percentile`
+                        }
+                    },
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    title: (context: any) => {
+                        return `Punteggio: ${context[0].label}`
+                    },
+                },
+            },
+        },
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Punteggio',
+                },
+            },
+            y: {
+                type: 'linear' as const,
+                display: true,
+                position: 'left' as const,
+                title: {
+                    display: true,
+                    text: 'Numero di studenti',
+                },
+                beginAtZero: true,
+            },
+            y2:{
+                type: 'linear' as const,
+                display: true,
+                position: 'right' as const,
+                title: {
+                    display: true,
+                    text: 'Percentile (%)',
+                },
+                beginAtZero: true,
+                grid: {
+                    drawOnChartArea: false,
+                },
+            },
+        },
+    }
+
     return (
         <div className="space-y-4">
-            <BarChart width={chartWidth} height={400} data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                    dataKey="punteggio" 
-                    label={{ value: 'Punteggio', position: 'insideBottom', offset: -5 }}
-                />
-                <YAxis 
-                    yAxisId="left"
-                    label={{ value: 'Numero di studenti', angle: -90, position: 'insideLeft' }}
-                />
-                {showPercentiles && (
-                    <YAxis 
-                        yAxisId="right"
-                        orientation="right"
-                        label={{ value: 'Percentile (%)', angle: 90, position: 'insideRight' }}
-                    />
-                )}
-                <Tooltip 
-                    formatter={(value: number, name: string) => {
-                        if (name === 'Studenti') {
-                            return [`${value} studenti`, 'Frequenza']
-                        } else {
-                            return [`${value.toFixed(1)}%`, 'Percentile']
-                        }
-                    }}
-                    labelFormatter={(label) => `Punteggio: ${label}`}
-                />
-                <Legend />
-                <Bar 
-                    yAxisId="left"
-                    dataKey="studenti" 
-                    fill="#3b82f6" 
-                    name="Studenti"
-                    radius={[8, 8, 0, 0]}
-                />
-                {showPercentiles && (
-                    <Line 
-                        yAxisId="right"
-                        type="monotone" 
-                        dataKey="cumulativa" 
-                        stroke="#ff7300" 
-                        strokeWidth={2}
-                        strokeOpacity={0.7}
-                        name="Percentile"
-                        dot={{ r: 4 }}
-                    />
-                )}
-            </BarChart>
+            <div>
+                <Chart type="bar" data={chartData} options={options} />
+            </div>
         </div>
     )
 }
