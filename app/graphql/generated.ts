@@ -288,6 +288,7 @@ export type Query = {
   sheetsDistributionReport: DistributionReport;
   sheetsExerciseReport: ExerciseReport;
   sheetsRankingReport: RankingReport;
+  sheetsTimeDistributionReport: TimeDistributionReport;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
   workbooks?: Maybe<Array<Maybe<Workbook>>>;
@@ -346,6 +347,12 @@ export type QuerySheetsExerciseReportArgs = {
 export type QuerySheetsRankingReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  schema: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
+export type QuerySheetsTimeDistributionReportArgs = {
   schema: Scalars['String']['input'];
   sheetIds: Array<Scalars['ObjectId']['input']>;
 };
@@ -468,6 +475,23 @@ export type SheetInput = {
   permissions?: InputMaybe<Array<PermissionInput>>;
   schema: Scalars['String']['input'];
   workbookId: Scalars['ObjectId']['input'];
+};
+
+export type TimeDistributionItem = {
+  __typename?: 'TimeDistributionItem';
+  closedSheets: Scalars['Int']['output'];
+  cumulativeClosedSheets: Scalars['Int']['output'];
+  cumulativeRows: Scalars['Int']['output'];
+  cumulativeValidRows: Scalars['Int']['output'];
+  hour: Scalars['String']['output'];
+  rows: Scalars['Int']['output'];
+  validRows: Scalars['Int']['output'];
+};
+
+export type TimeDistributionReport = {
+  __typename?: 'TimeDistributionReport';
+  schema: Scalars['String']['output'];
+  timeDistribution: Array<TimeDistributionItem>;
 };
 
 export type UpdateSheetInput = {
@@ -765,6 +789,14 @@ export type AddSheetMutationVariables = Exact<{
 
 
 export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: ObjectId | null };
+
+export type GetSheetsTimeDistributionReportQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  schema: Scalars['String']['input'];
+}>;
+
+
+export type GetSheetsTimeDistributionReportQuery = { __typename?: 'Query', sheetsTimeDistributionReport: { __typename?: 'TimeDistributionReport', schema: string, timeDistribution: Array<{ __typename?: 'TimeDistributionItem', hour: string, rows: number, validRows: number, cumulativeRows: number, cumulativeValidRows: number, closedSheets: number, cumulativeClosedSheets: number }> } };
 
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2252,6 +2284,56 @@ export function useAddSheetMutation(baseOptions?: Apollo.MutationHookOptions<Add
 export type AddSheetMutationHookResult = ReturnType<typeof useAddSheetMutation>;
 export type AddSheetMutationResult = Apollo.MutationResult<AddSheetMutation>;
 export type AddSheetMutationOptions = Apollo.BaseMutationOptions<AddSheetMutation, AddSheetMutationVariables>;
+export const GetSheetsTimeDistributionReportDocument = gql`
+    query GetSheetsTimeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
+  sheetsTimeDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+    schema
+    timeDistribution {
+      hour
+      rows
+      validRows
+      cumulativeRows
+      cumulativeValidRows
+      closedSheets
+      cumulativeClosedSheets
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetSheetsTimeDistributionReportQuery__
+ *
+ * To run a query within a React component, call `useGetSheetsTimeDistributionReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsTimeDistributionReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSheetsTimeDistributionReportQuery({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      schema: // value for 'schema'
+ *   },
+ * });
+ */
+export function useGetSheetsTimeDistributionReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables> & ({ variables: GetSheetsTimeDistributionReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables>(GetSheetsTimeDistributionReportDocument, options);
+      }
+export function useGetSheetsTimeDistributionReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables>(GetSheetsTimeDistributionReportDocument, options);
+        }
+export function useGetSheetsTimeDistributionReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables>(GetSheetsTimeDistributionReportDocument, options);
+        }
+export type GetSheetsTimeDistributionReportQueryHookResult = ReturnType<typeof useGetSheetsTimeDistributionReportQuery>;
+export type GetSheetsTimeDistributionReportLazyQueryHookResult = ReturnType<typeof useGetSheetsTimeDistributionReportLazyQuery>;
+export type GetSheetsTimeDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsTimeDistributionReportSuspenseQuery>;
+export type GetSheetsTimeDistributionReportQueryResult = Apollo.QueryResult<GetSheetsTimeDistributionReportQuery, GetSheetsTimeDistributionReportQueryVariables>;
 export const GetWorkbooksDocument = gql`
     query GetWorkbooks {
   workbooks {
@@ -2621,6 +2703,8 @@ export type ResolversTypes = {
   Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  TimeDistributionItem: ResolverTypeWrapper<TimeDistributionItem>;
+  TimeDistributionReport: ResolverTypeWrapper<TimeDistributionReport>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   UpdateSheetInput: UpdateSheetInput;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
@@ -2659,6 +2743,8 @@ export type ResolversParentTypes = {
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
   String: Scalars['String']['output'];
+  TimeDistributionItem: TimeDistributionItem;
+  TimeDistributionReport: TimeDistributionReport;
   Timestamp: Scalars['Timestamp']['output'];
   UpdateSheetInput: UpdateSheetInput;
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
@@ -2780,6 +2866,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   sheetsDistributionReport?: Resolver<ResolversTypes['DistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsDistributionReportArgs, 'schema' | 'sheetIds'>>;
   sheetsExerciseReport?: Resolver<ResolversTypes['ExerciseReport'], ParentType, ContextType, RequireFields<QuerySheetsExerciseReportArgs, 'schema' | 'sheetIds'>>;
   sheetsRankingReport?: Resolver<ResolversTypes['RankingReport'], ParentType, ContextType, RequireFields<QuerySheetsRankingReportArgs, 'schema' | 'sheetIds'>>;
+  sheetsTimeDistributionReport?: Resolver<ResolversTypes['TimeDistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsTimeDistributionReportArgs, 'schema' | 'sheetIds'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
   workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
@@ -2892,6 +2979,23 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type TimeDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['TimeDistributionItem'] = ResolversParentTypes['TimeDistributionItem']> = {
+  closedSheets?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  cumulativeClosedSheets?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  cumulativeRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  cumulativeValidRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  hour?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  rows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  validRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TimeDistributionReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['TimeDistributionReport'] = ResolversParentTypes['TimeDistributionReport']> = {
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  timeDistribution?: Resolver<Array<ResolversTypes['TimeDistributionItem']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export interface TimestampScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Timestamp'], any> {
   name: 'Timestamp';
 }
@@ -2938,6 +3042,8 @@ export type Resolvers<ContextType = any> = {
   ScoreDistributionItem?: ScoreDistributionItemResolvers<ContextType>;
   Setting?: SettingResolvers<ContextType>;
   Sheet?: SheetResolvers<ContextType>;
+  TimeDistributionItem?: TimeDistributionItemResolvers<ContextType>;
+  TimeDistributionReport?: TimeDistributionReportResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
   User?: UserResolvers<ContextType>;
   Workbook?: WorkbookResolvers<ContextType>;

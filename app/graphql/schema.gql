@@ -181,6 +181,21 @@ type ExerciseReport {
   exerciseDistribution: [ExerciseDistributionItem!]!
 }
 
+type TimeDistributionItem {
+  hour: String!
+  rows: Int!
+  validRows: Int!
+  cumulativeRows: Int!
+  cumulativeValidRows: Int!
+  closedSheets: Int!
+  cumulativeClosedSheets: Int!
+}
+
+type TimeDistributionReport {
+  schema: String!
+  timeDistribution: [TimeDistributionItem!]!
+}
+
 type Query {
   hello: String
   me: User
@@ -196,6 +211,7 @@ type Query {
   sheetsDistributionReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data): DistributionReport!
   sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int): RankingReport!
   sheetsExerciseReport(sheetIds: [ObjectId!]!, schema: String!): ExerciseReport!
+  sheetsTimeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): TimeDistributionReport!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!

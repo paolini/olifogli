@@ -18,6 +18,7 @@ import scanResults from './resolvers/scanResults'
 import sheetsDistributionReport from './resolvers/sheetsDistributionReport'
 import sheetsRankingReport from './resolvers/sheetsRankingReport'
 import settingsResolvers from './resolvers/settings'
+import sheetsTimeDistributionReport from './resolvers/sheetsTimeDistributionReport'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -70,6 +71,7 @@ export const resolvers: Resolvers = {
     sheetsDistributionReport,
     sheetsRankingReport,
     sheetsExerciseReport,
+    sheetsTimeDistributionReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
     getSetting: settingsResolvers.Query.getSetting,
   },
