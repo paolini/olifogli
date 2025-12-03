@@ -41,9 +41,7 @@
     "react-dom": "^19.0.0",
     "react-error-boundary": "^5.0.0",
     "react-markdown": "^10.1.0",
-    "react-spinners": "^0.17.0",
-    "recharts": "^3.3.0",
-    "recharts-scale": "^0.4.5"
+    "react-spinners": "^0.17.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
