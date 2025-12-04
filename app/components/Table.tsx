@@ -92,8 +92,9 @@ export const EMPTY_TABLE_STATE: TableState = {
     inputFocus: false,
 }
 
-export default function Table({edit, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload, setCsvImport}: {
+export default function Table({edit, standardAnswers, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload, setCsvImport}: {
     edit: boolean,
+    standardAnswers: boolean,
     rows: Row[],
     sheet: Sheet,
     refresh?: () => Promise<void>,
@@ -101,7 +102,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
     polling: boolean,
     setPolling: Dispatch<SetStateAction<boolean>>,
     lastCsvDownload?: Date,
-    csvDownload: () => void,
+    csvDownload: (rows: Row[], standardAnswers: boolean) => void,
     setCsvImport: Dispatch<SetStateAction<boolean>>,
 }) {
     const schema = schemas[sheet.schema]
@@ -158,7 +159,9 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
 
     return <div className="table-container">
         <div className="table-header hide-print">
-            <TableActions sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} csvDownload={csvDownload} setCsvImport={setCsvImport} edit={edit} profile={profile||undefined}/>
+            <TableActions 
+                sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} 
+                csvDownload={(rows) => csvDownload(rows, standardAnswers)} setCsvImport={setCsvImport} edit={edit} profile={profile||undefined}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
             <table className="my-table">
@@ -176,7 +179,7 @@ export default function Table({edit, rows, sheet, refresh, refreshLoading, polli
                     tableState={tableState}
                     setTableState={setTableState}
                     directInput={directInput} setDirectInput={setDirectInput}
-                    showStandardAnswers={checkboxesState.showStandardAnswers}
+                    showStandardAnswers={standardAnswers}
                     refresh={refresh}
                     refreshLoading={refreshLoading}
                     error={error}

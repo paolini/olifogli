@@ -1,6 +1,6 @@
 import { Data, Row, ScanResults } from '../models'
 import Competition, { OlimanagerProblemResult } from './Competition'
-import { Field, ChoiceAnswerField, DateField, OptionsField } from './fields'
+import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField } from './fields'
 import {decodePermutations, buildPermutationsObject, computeScores} from './PERMUTATIONS'
 import { DerivedData } from './Schema'
 
@@ -102,7 +102,7 @@ export default class ArchimedeCommon extends Competition {
             new DateField('birthDate',{header: 'Data di nascita'}),
             new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno'], precompileValue: true}),
             new Field('classSection',{header:'Sezione', precompileValue: true}),
-            new Field('variant',{header: "Codice compito", additionalCssStyle: 'thick-border-left'}),
+            new VariantField('variant',{header: "Codice compito", additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r02', {header: '2'}),
             new ChoiceAnswerField('r03', {header: '3'}),

@@ -77,11 +77,9 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
 
   // useEffect(() => {}, [inputRef.currentkeyStrokeBuffer,setKeyStrokeBuffer]);
   
-  let extra_css="";
-  let correct_value = undefined;
-  let title = newValue;
-  let value = newValue;
+  let {value, extra_css, title, changed} = field.display(newValue, oldValue, showStandardAnswers);
 
+  /*
   if (field instanceof ChoiceAnswerField) {
     oldValue = oldValue.charAt(0);
     if (value?.length === 7) {
@@ -102,15 +100,16 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   if (showStandardAnswers && field.name === 'variant') {
     if (value.length === 3) {
     // mostra il codice della variante standard
-      value = `›${value.charAt(0)}11‹` 
+      value = `${value.charAt(0)}11` 
     }
   }
+    */
 
   const style = typeof field.css_style === 'function' 
     ? field.css_style(value) 
     : field.css_style;
 
-  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${inputFocus && hasFocus ? 'input-focus' : ''} ${value !== oldValue ? 'modified' : ''}`;
+  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${inputFocus && hasFocus ? 'input-focus' : ''} ${changed ? 'modified' : ''}`;
 
   return <td className={className} tabIndex={1} title={title} onClick={onClick} style={style} ref={tdRef}>
       {(hasFocus && field.editable && inputFocus && !(showStandardAnswers && field instanceof ChoiceAnswerField))
@@ -154,13 +153,15 @@ export default function TableCellInput({field, value, setValue, oldValue, cellKe
     function cleanAndSet(value: string) {
         // console.log(`TableRowInput cleanAndSet for field ${field.name} with value: ${value}`);
         const cleaned = field.clean(value)
-        setValue(cleaned === oldValue ? undefined : cleaned)
+        const {changed} = field.display(cleaned, oldValue, false)
+        setValue(changed ? cleaned : undefined)
     }
 
     function onChange(e: ChangeEvent<HTMLInputElement>) {
         // console.log(`TableRowInput onChange for field ${field.name} with value: ${e.currentTarget.value}`);
         const value = e.currentTarget.value
-        setValue(value === oldValue ? undefined : value)
+        const {changed} = field.display(value, oldValue, false)
+        setValue(changed ? value : undefined)
     }
 
     function onBlur(e: FocusEvent<HTMLInputElement>) {

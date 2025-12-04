@@ -49,8 +49,8 @@ export default class Schema {
         return this.fields.map(field => field.name)
     }
 
-    csv_row(row: Data): string[] {
-        return this.fields.map(field => field.csv(row[field.name]))
+    csv_row(row: Data, standardAnswers: boolean): string[] {
+        return this.fields.map(field => field.display(row[field.name], '', standardAnswers).csv_value)
     }
 
     /*

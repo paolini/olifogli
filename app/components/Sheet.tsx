@@ -106,7 +106,7 @@ function SheetBody({sheet,profile}: {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
-    const validTabs = ['info','table', 'csv', 'scans', 'download'] as const;
+    const validTabs = ['info','table', 'standardAnswers', 'scans'] as const;
     type TabType = typeof validTabs[number];
     function isTabType(tab: string | null): tab is TabType {
         return validTabs.includes(tab as TabType);
@@ -139,32 +139,25 @@ function SheetBody({sheet,profile}: {
             >
                 PANNELLO
             </button>
-            { <button 
+            <button
                 className={`tab-button ${tab === 'table' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('table')}
             >
                 {canEdit && !sheet.closed && !sheet.locked
                 ? "INSERIMENTO DATI"
                 : "VISUALIZZAZIONE DATI"}
-            </button>}
-            { /*
-            <button 
-                className={`tab-button ${tab === 'csv' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                onClick={() => setTab('csv')}>
-                IMPORTA CSV
             </button>
-            */}
+            { sheet.nValidRows>0 && <button 
+                className={`tab-button ${tab === 'standardAnswers' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('standardAnswers')}
+            >
+                RISPOSTE STANDARD
+            </button>}
             <button 
                 className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('scans')}>
                 IMPORTA SCANSIONI
             </button>
-            {/*
-            <button 
-                className={`tab-button ${tab === 'download' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                onClick={() => setTab('download')}>
-                SCARICA CSV
-            </button>*/}
         </div>
         <div className="flex-1 flex flex-col min-h-0 overflow-auto">
         { tab === 'info' && 
@@ -184,17 +177,25 @@ function SheetBody({sheet,profile}: {
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
+                standardAnswers={false}
+            />
+        }
+        { tab === 'standardAnswers' && !csvImport &&
+            <Table 
+                edit={false} 
+                sheet={sheet} 
+                rows={data.rows} 
+                refresh={refresh} 
+                refreshLoading={loading}
+                polling={polling}
+                setPolling={setPolling}
+                lastCsvDownload={lastCsvDownload}
+                csvDownload={csvDownload}
+                setCsvImport={setCsvImport}
+                standardAnswers={true}
             />
         }
         { tab === 'table' && csvImport &&
-            /* ((sheet.closed || sheet.locked) 
-                ? <>
-                    <Error error="Il foglio è chiuso. Non è possibile importare dati." />
-                    <Button onClick={() => setCsvImport(false)}>
-                        Annulla importazione
-                    </Button>
-                </>
-                : */
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setCsvImport(false)}/>
         }
         { tab === 'scans' && <div className="mx-2">
@@ -203,13 +204,6 @@ function SheetBody({sheet,profile}: {
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
           </div>
-        }
-        { tab === 'download' && 
-            <div>
-                <Button onClick={() => csvDownload()}>
-                    Scarica CSV
-                </Button>
-            </div>
         }
         </div>
     </div>
@@ -222,14 +216,14 @@ function SheetBody({sheet,profile}: {
         router.replace('?' + params.toString(), { scroll: false });
     }
 
-    async function csvDownload(rows?: Row[]) {
+    async function csvDownload(rows?: Row[], standardAnswers: boolean = false) {
         if (!rows) rows = data?.rows
         if (!rows) return
         const filename = `${sheet.name}_${schema.name.replace(' ', '_')}_${myTimestamp(new Date()).replace(':', '-').replace(' ', '_')}.csv`
 
         await downloadCSVWithPapa(
             schema.csv_header(),
-            rows.map(row => schema.csv_row(row.data)),
+            rows.map(row => schema.csv_row(row.data, standardAnswers)),
             filename
         )
         setLastCsvDownload(new Date())
