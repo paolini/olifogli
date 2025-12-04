@@ -57,12 +57,25 @@ async function generateTimeDistributionReport(sheets: WithId<Sheet>[]): Promise<
         sheetId: { $in: sheetIds }
     }).toArray()
 
-    // Raggruppa per ora (arrotonda minuti e secondi a zero)
+    // Raggruppa
+    function getHourKey(date: Date): string {
+        // hour
+        // const hourDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), 0, 0, 0)
+
+        // day
+        const hourDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
+
+        // six-hours
+        // const hour = date.getHours()
+        // const sixHourBlock = Math.floor(hour / 6) * 6
+        // const hourDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), sixHourBlock, 0, 0, 0)
+        return hourDate.toISOString()
+    }
+
     const hourMap = new Map<string, { total: number, valid: number }>()
     for (const row of rows) {
         const time = row.updatedOn
-        const hourDate = new Date(time.getFullYear(), time.getMonth(), time.getDate(), time.getHours(), 0, 0, 0)
-        const hour = hourDate.toISOString()
+        const hour = getHourKey(time)
         const isValid = row.error === ''
         const current = hourMap.get(hour) || { total: 0, valid: 0 }
         current.total += 1
@@ -75,8 +88,7 @@ async function generateTimeDistributionReport(sheets: WithId<Sheet>[]): Promise<
     for (const sheet of sheets) {
         if (sheet.closed && sheet.closedOn) {
             const time = sheet.closedOn
-            const hourDate = new Date(time.getFullYear(), time.getMonth(), time.getDate(), time.getHours(), 0, 0, 0)
-            const hour = hourDate.toISOString()
+            const hour = getHourKey(time)
             closedMap.set(hour, (closedMap.get(hour) || 0) + 1)
         }
     }
