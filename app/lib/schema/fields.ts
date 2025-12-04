@@ -19,6 +19,14 @@ type FieldOptions = {
     precompileValue?: boolean
 }
 
+type DisplayValue = {
+    value: string,
+    csv_value: string,
+    extra_css: string,
+    title: string,
+    changed: boolean,
+}
+
 export class Field {
     name: string // used as key in data structures
     header: string // used as human-readable header in UI
@@ -77,8 +85,14 @@ export class Field {
         return true
     }
 
-    csv(value: string): string {
-        return value
+    display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
+        return {
+            value: value,
+            csv_value: value,
+            extra_css: '',
+            title: value,
+            changed: value !== old_value
+        }
     }
 
     compare(value1: string, value2: string): number {
@@ -95,6 +109,21 @@ export class Field {
         }
     }
 }
+
+export class VariantField extends Field {
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
+    }
+
+    display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
+        if (showStandardAnswers && value.length === 3) {
+            // mostra il codice della variante standard
+            // 323 => 311
+            return super.display(`${value.charAt(0)}11`, '', showStandardAnswers)
+        }
+        return super.display(value, old_value, showStandardAnswers)
+    }
+}    
 
 export class OptionsField extends Field {
     choices: string[]
@@ -118,8 +147,34 @@ export class ChoiceAnswerField extends Field {
         this.type = 'choice-answer'
     }
 
-    csv(value: string): string {
-        return value ? value.charAt(0) : ''
+    display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
+        if (value?.length === 7) {
+            const changed = value.charAt(0) !== old_value.charAt(0);
+            // showStandardAnswers decides whether to show 
+            // the corresponding answers in the standard permutation (211/311)
+            let correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
+            value = showStandardAnswers ? value.charAt(4) : value.charAt(0);
+            let extra_css = value === correct_value
+                ? "correct"
+                : value === '-' 
+                ? "empty" 
+                    : ["A", "B", "C", "D", "E"].includes(value) 
+                    ? "incorrect" 
+                    : "invalid";
+            let title = (value === correct_value) ? value : `${value} (invece di ${correct_value})`;
+            return {
+                value: value,
+                csv_value: value,
+                extra_css: extra_css,
+                title: title,
+                changed: changed,
+            }
+        } else {
+            if (showStandardAnswers) {
+                super.display('?', '', showStandardAnswers);
+            }
+            return super.display(value, old_value, showStandardAnswers);
+        }
     }
 }
 

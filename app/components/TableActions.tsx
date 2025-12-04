@@ -5,7 +5,7 @@ import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
 import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
 import { ApolloError } from "@apollo/client"
-import Error from "./Error"
+import ErrorElement from "./Error"
 import { pluralize } from "../lib/util"
 import Button from "./Button"
 import GlobalMessage from "./GlobalMessage"
@@ -20,7 +20,7 @@ type TableActionInput = {
   userHasSheetAdminPrivileges: boolean,
   tableState: TableState,
   setTableState: Dispatch<SetStateAction<TableState>>,
-  csvDownload: (rows?: Row[]) => void,
+  csvDownload: (rows: Row[]) => void, // se rows non specificato, scarica tutte le righe
   setCsvImport: Dispatch<SetStateAction<boolean>>,
 }
 
@@ -53,14 +53,23 @@ export default function TableActions(input: TableActionInput) {
       {ctx.edit && <Button onClick={() => ctx.setCsvImport(true)} className="ml-4 px-4">
         Importa CSV
       </Button>}
-      {ctx.csvDownload && <Button onClick={() => ctx.csvDownload()} className="ml-4 px-4">
+      <Button onClick={() => handleCsvDownload()} className="ml-4 px-4">
         Scarica CSV
-      </Button>}
+      </Button>
     </>
+
+    function handleCsvDownload() {
+        if (!ctx.csvDownload) throw new Error('csvDownload non definito nel contesto TableActions')
+        const rows = ctx.tableState.lines
+            .filter(line => line.row)
+            .map(line => (line.row as Row))
+          
+        ctx.csvDownload(rows)
+    }
 }
 
 export function TableActionsErrors({ctx}: {ctx: TableActionContext}) {
-    return ctx.mutations.errors.map((error,i) => <Error key={i} error={error} />)
+    return ctx.mutations.errors.map((error,i) => <ErrorElement key={i} error={error} />)
 }
 
 type TableActionContext = TableActionInput & {
