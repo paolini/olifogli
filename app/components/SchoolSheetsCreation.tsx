@@ -1,5 +1,5 @@
 import { ObjectId } from 'bson'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useGetSheetsQuery, useGetRowsQuery, Row, Sheet, useAddSheetsMutation, useUpdateSheetsMutation, Permission } from '../graphql/generated'
 import Error from './Error'
 import Button from './Button'
@@ -36,19 +36,7 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
     const sheets: Partial<Sheet>[]|undefined = sheetsData?.sheets
     const rows: Row[]|undefined = rowsData?.rows
 
-    return <div className="space-y-2">
-        { rowsLoading && <div>caricamento righe...</div> }
-        <Error error={rowsError} />
-        { rows && <div>numero righe: {rows.length}</div>}
-        <Button onClick={done}>annulla</Button>
-        { sheetsLoading && <div>caricamento fogli...</div> }
-        <Error error={sheetsError} />
-        { sheets && rows && 
-            <Process jobsCallback={jobs} workbookId={workbookId} done={done}/>
-        }
-    </div>
-
-    async function jobs() {
+    const jobs = useCallback(async () => {
         if (!rows || !sheets) throw "error"
         console.log('=== INIZIO PROCESSING JOBS ===')
         console.log(`Sheets totali: ${sheets.length}`)
@@ -163,7 +151,20 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
             }
         }
         return jobs
-    }
+    }, [rows, sheets])
+
+    return <div className="space-y-2">
+        { rowsLoading && <div>caricamento righe...</div> }
+        <Error error={rowsError} />
+        { rows && <div>numero righe: {rows.length}</div>}
+        <Button onClick={done}>annulla</Button>
+        { sheetsLoading && <div>caricamento fogli...</div> }
+        <Error error={sheetsError} />
+        { sheets && rows && 
+            <Process jobsCallback={jobs} workbookId={workbookId} done={done}/>
+        }
+    </div>
+
 }
 
 export const ADD_SHEETS = gql`
@@ -186,13 +187,17 @@ function Process({jobsCallback, workbookId, done}: {
     const [createSheets, {loading: loadingCreate, error: errorCreate}] = useAddSheetsMutation()
     const [updateSheetsMutation, {loading: loadingUpdate, error: errorUpdate}] = useUpdateSheetsMutation()
     const [jobs, setJobs] = useState<null|Record<string,Job>>(null)
+    const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set())
     const [filterUnchanged, setFilterUnchanged] = useState(false)
     
     const loading = loadingCreate || loadingUpdate
     const error = errorCreate || errorUpdate
     
     useEffect(() => {
-        jobsCallback().then(setJobs)
+        jobsCallback().then(jobs => {
+            setJobs(jobs)
+            setSelectedJobs(new Set(Object.entries(jobs).filter(([_,job]) => job.selected).map(([id,_]) => id)))
+        })
     }, [jobsCallback])
 
     if (jobs === null) return <Loading />

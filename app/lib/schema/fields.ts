@@ -152,16 +152,16 @@ export class ChoiceAnswerField extends Field {
             const changed = value.charAt(0) !== old_value.charAt(0);
             // showStandardAnswers decides whether to show 
             // the corresponding answers in the standard permutation (211/311)
-            let correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
+            const correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
             value = showStandardAnswers ? value.charAt(4) : value.charAt(0);
-            let extra_css = value === correct_value
+            const extra_css = value === correct_value
                 ? "correct"
                 : value === '-' 
                 ? "empty" 
                     : ["A", "B", "C", "D", "E"].includes(value) 
                     ? "incorrect" 
                     : "invalid";
-            let title = (value === correct_value) ? value : `${value} (invece di ${correct_value})`;
+            const title = (value === correct_value) ? value : `${value} (invece di ${correct_value})`;
             return {
                 value: value,
                 csv_value: value,

@@ -51,8 +51,8 @@ export default class AmmissioneSenior extends Schema {
         ]
     }
 
-    csv_row(row: Data): string[] {
-        const baseRow = super.csv_row(row)
+    csv_row(row: Data, standardAnswers: boolean): string[] {
+        const baseRow = super.csv_row(row, standardAnswers)
         const answers = this.fields
             .filter(field => (field instanceof ChoiceAnswerField))
             .map(field => (row[field.name] || 'X').replace('-','V').replace(' ','X'))
