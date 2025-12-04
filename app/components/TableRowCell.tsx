@@ -77,7 +77,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
 
   // useEffect(() => {}, [inputRef.currentkeyStrokeBuffer,setKeyStrokeBuffer]);
   
-  let {value, extra_css, title, changed} = field.display(newValue, oldValue, showStandardAnswers);
+  const {value, extra_css, title, changed} = field.display(newValue, oldValue, showStandardAnswers);
 
   /*
   if (field instanceof ChoiceAnswerField) {
