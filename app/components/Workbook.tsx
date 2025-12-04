@@ -111,12 +111,14 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
             >
                 Distribuzione Esercizi
             </button>
+            { profile?.isAdmin &&
             <button
                 onClick={() => setActiveTab('temporale')}
                 className={`tab-button ${activeTab === 'temporale' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
-                Distribuzione Temporale
+                ⚙ Distribuzione Temporale
             </button>
+            }
             { profile?.isAdmin &&
             <button
                 onClick={() => setActiveTab('configura')}
