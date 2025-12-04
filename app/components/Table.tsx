@@ -161,6 +161,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
         <div className="table-header hide-print">
             <TableActions 
                 sheet={sheet} schema={schema} checkboxesState={checkboxesState} setCheckboxesState={setCheckboxesState} userHasSheetAdminPrivileges={userHasSheetAdminPrivileges} tableState={tableState} setTableState={setTableState} 
+                standardAnswers={standardAnswers}
                 csvDownload={(rows) => csvDownload(rows, standardAnswers)} setCsvImport={setCsvImport} edit={edit} profile={profile||undefined}/>
         </div>
         <div className="table-scroll-container" tabIndex={0} onKeyDown={onKeyDown}>
