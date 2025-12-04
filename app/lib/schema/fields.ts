@@ -119,7 +119,8 @@ export class VariantField extends Field {
         if (showStandardAnswers && value.length === 3) {
             // mostra il codice della variante standard
             // 323 => 311
-            return super.display(`${value.charAt(0)}11`, '', showStandardAnswers)
+            const standard_code = `${value.charAt(0)}11` 
+            return super.display(standard_code, standard_code, showStandardAnswers)
         }
         return super.display(value, old_value, showStandardAnswers)
     }

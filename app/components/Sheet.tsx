@@ -151,7 +151,7 @@ function SheetBody({sheet,profile}: {
                 className={`tab-button ${tab === 'standardAnswers' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('standardAnswers')}
             >
-                RISPOSTE STANDARD
+                RISPOSTE DEPERMUTATE <span style={{background: "yellow"}}>(new!)</span>
             </button>}
             <button 
                 className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}

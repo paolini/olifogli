@@ -14,6 +14,7 @@ type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
   sheet: Sheet,
   edit: boolean,
+  standardAnswers: boolean,
   refresh?: () => Promise<void>,
   schema: Schema,
   checkboxesState: CheckboxesState, setCheckboxesState: Dispatch<SetStateAction<CheckboxesState>>,
@@ -24,11 +25,11 @@ type TableActionInput = {
   setCsvImport: Dispatch<SetStateAction<boolean>>,
 }
 
-export default function TableActions(input: TableActionInput) {
+export default function TableActions(input: TableActionInput,) {
     const ctx = useTableActionsContext(input)
 
     return <>
-        <GlobalMessage className="table-message" title="istruzioni" name="table_instructions" collapsed={true} />
+        <GlobalMessage className={input.standardAnswers ? "table-message-standard": "table-message"} title="istruzioni" name={input.standardAnswers ? "table_instructions_standard" : "table_instructions"} collapsed={true} />
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select
@@ -88,7 +89,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload, setCsvImport, edit}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload, setCsvImport, edit, standardAnswers}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRowsMutation()
   const [patchRow, { loading: patchLoading }] = usePatchRowMutation()
 
@@ -119,6 +120,7 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
         csvDownload,
         setCsvImport,
         edit,
+        standardAnswers,
     }
 }
 
@@ -132,30 +134,30 @@ type Action = {
 const actions: Record<string, Action> = {
   'delete': {
     label: 'Elimina righe selezionate',
-    hidden: ctx => false,
+    hidden: ctx => !ctx.edit,
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleDeleteSelectedRows
   },
   'scan': {
     label: 'Genera fogli risposte',
-    hidden: ctx => false,
+    hidden: ctx => !ctx.edit,
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || !ctx.userHasSheetAdminPrivileges,
     handler: handleGenerateScanSheet
   },
   'gen_ids': {
     label: 'Genera ID studenti',
-    hidden: ctx => !ctx.schema.fields.some(field => field.name === 'id'),
+    hidden: ctx => !ctx.edit || !ctx.schema.fields.some(field => field.name === 'id'),
     disabled: ctx => !ctx.checkboxesState.showHiddenColumns,
     handler: handleGenerateStudentIds
   },
   'olimanager': {
-    hidden: ctx => !ctx.profile?.isAdmin,
+    hidden: ctx => !ctx.edit || !ctx.profile?.isAdmin,
     label: '⚙ Crea/abbina partecipanti (Olimanager)',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerCreateParticipants
   },
   'update_scores': {
-    hidden: ctx => !ctx.profile?.isAdmin,
+    hidden: ctx => !ctx.edit || !ctx.profile?.isAdmin,
     label: '⚙ Aggiorna risultati (Olimanager)',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerUpdateScores
