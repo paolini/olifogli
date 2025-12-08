@@ -293,3 +293,52 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
     return { success: false, error: String((e as Error)?.message || e), input: participantData };
   }
 }
+
+
+/*
+Creazione/abbinamento partecipante per riga 6929aecaffb46aa2834c64a3 (Giordano Alessandro)
+  schoolExternalId: MIPS120003, contestId: 2, classYear: 10, section: P, birthDate: 2010-07-10
+--- matchOrCreateParticipant START ---
+contestId: 2 participantData: {
+  schoolExternalId: 'MIPS120003',
+  name: 'Alessandro',
+  surname: 'Giordano',
+  classYear: 10,
+  section: 'P',
+  birthDate: '2010-07-10'
+}
+GraphQL variables: {
+  contestId: 2,
+  schoolExternalId: 'MIPS120003',
+  name: 'Alessandro',
+  surname: 'Giordano',
+  classYear: 10,
+  section: 'P',
+  birthDate: '2010-07-10'
+}
+GraphQL response: { data: { participants: { matchOrCreateParticipant: [Object] } } }
+Result typename: ParticipantMatchSuccess
+ParticipantMatchSuccess: {
+  participantId: 232,
+  competitorCreated: true,
+  participantCreated: true
+}
+matchOrCreateParticipant result: {
+  success: true,
+  participant: { id: 232, competitor: { id: 236, name: 'Alessandro Giordano' } },
+  competitorCreated: true,
+  participantCreated: true,
+  multipleCompetitorsMatched: false,
+  input: {
+    schoolExternalId: 'MIPS120003',
+    name: 'Alessandro',
+    surname: 'Giordano',
+    classYear: 10,
+    section: 'P',
+    birthDate: '2010-07-10'
+  }
+}
+  SUCCESS: participantId: 232, competitorCreated: true, participantCreated: true
+{"success":true,"participant":{"id":232,"competitor":{"id":236,"name":"Alessandro Giordano"}},"competitorCreated":true,"participantCreated":true,"multipleCompetitorsMatched":false,"input":{"schoolExternalId":"MIPS120003","name":"Alessandro","surname":"Giordano","classYear":10,"section":"P","birthDate":"2010-07-10"}}
+Updating row with participantId: 232
+*/
