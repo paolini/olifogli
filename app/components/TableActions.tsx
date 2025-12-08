@@ -167,6 +167,12 @@ const actions: Record<string, Action> = {
     label: 'scarica CSV righe selezionate',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleCsvDownload
+  },
+  'anonymize': {
+    hidden: ctx => !ctx.edit || !ctx.profile?.isAdmin,
+    label: 'Anonimizza nomi',
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
+    handler: handleAnonymizeNames
   }
 }
 
@@ -341,5 +347,69 @@ async function handleCsvDownload(ctx: TableActionContext) {
     .map(line => (line.row as Row))
   if (ctx.csvDownload) {
     await ctx.csvDownload(rows)
+  }
+}
+
+async function handleAnonymizeNames(ctx: TableActionContext) {
+  const selectedLineKeys = ctx.tableState.selectedLineKeys
+  const rowsToAnonymize = ctx.tableState.lines
+    .filter(line => line.row && selectedLineKeys.has(line.key))
+    .map(line => line.row as Row)
+
+  if (rowsToAnonymize.length === 0) {
+    alert('Nessuna riga selezionata per l\'anonimizzazione.')
+    return
+  }
+
+  const confirmed = confirm(
+    `Sei sicuro di voler anonimizzare i nomi in ${rowsToAnonymize.length} righe? Questa operazione è irreversibile.`
+  )
+
+  if (!confirmed) return
+
+  // Liste di nomi e cognomi italiani comuni
+  const firstNames = [
+    'Marco', 'Giovanni', 'Luca', 'Alessandro', 'Andrea', 'Matteo', 'Davide', 'Simone', 'Federico', 'Antonio',
+    'Francesco', 'Roberto', 'Paolo', 'Mario', 'Luigi', 'Giuseppe', 'Salvatore', 'Vincenzo', 'Angelo', 'Carlo',
+    'Domenico', 'Michele', 'Stefano', 'Nicola', 'Fabio', 'Massimo', 'Giorgio', 'Pietro', 'Enrico', 'Leonardo', 
+    'Johnny',
+  ]
+  const surnames = [
+    'Rossi', 'Bianchi', 'Verdi', 'Russo', 'Ferrari', 'Esposito', 'Romano', 'Colombo', 'Ricci', 'Marino',
+    'Greco', 'Bruno', 'Gallo', 'Conti', 'De Luca', 'Mancini', 'Costa', 'Giordano', 'Rizzo', 'Lombardi',
+    'Moretti', 'Barbieri', 'Fontana', 'Santoro', 'Mariani', 'Rinaldi', 'Caruso', 'Ferrara', 'Galli', 'Martini',
+    'Walker',
+  ]
+
+  try {
+    await Promise.all(
+      rowsToAnonymize.map(row => {
+        const updatedData = { ...row.data }
+        // Trova i campi nome basati sullo schema
+        const nameFields = ctx.schema.fields.filter(field => 
+          ['nome', 'cognome', 'name', 'surname', 'Nome_referente', 'Cognome_referente'].includes(field.name)
+        )
+        nameFields.forEach(field => {
+          if (updatedData[field.name]) {
+            if (['nome', 'name'].includes(field.name)) {
+              updatedData[field.name] = firstNames[Math.floor(Math.random() * firstNames.length)]
+            } else if (['cognome', 'surname'].includes(field.name)) {
+              updatedData[field.name] = surnames[Math.floor(Math.random() * surnames.length)]
+            }
+          }
+        })
+        return ctx.mutations.patchRow({
+          variables: {
+            _id: row._id,
+            updatedOn: row.updatedOn,
+            data: updatedData
+          }
+        })
+      })
+    )
+    alert(`Anonimizzati i nomi in ${rowsToAnonymize.length} righe.`)
+    if (ctx.refresh) await ctx.refresh()
+  } catch (error) {
+    alert(`Errore durante l'anonimizzazione: ${error}`)
   }
 }
