@@ -110,6 +110,7 @@ export default async function olimanagerBulkUpdateResults(
 
     // 5) Eseguo la mutation su Olimanager
     const result = await bulkUpdateResults(api, contestId, allProblemResults);
+    // console.log(JSON.stringify({result}, null, 2));
 
     // 6) Analizzo il risultato
     const data = result?.data?.participants?.bulkUpdateResults;
