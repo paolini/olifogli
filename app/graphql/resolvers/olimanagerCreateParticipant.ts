@@ -18,13 +18,13 @@ export default async function olimanagerCreateParticipant(
 
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
   const user = await get_authenticated_user(context)
-  console.log('Authenticated user:', user?.email, 'isAdmin:', user?.isAdmin)
+  // console.log('Authenticated user:', user?.email, 'isAdmin:', user?.isAdmin)
   check_admin(user)
-  console.log('Admin check passed')
+  // console.log('Admin check passed')
 
   // 2) Raccogli tutti i rowIds da rowIds diretti e/o da sheetIds
   const allRowIds = new Set(rowIds || [])
-  console.log('Initial rowIds from params:', rowIds?.length || 0)
+  // console.log('Initial rowIds from params:', rowIds?.length || 0)
 
   if (sheetIds && sheetIds.length > 0) {
     console.log('Processing sheetIds:', sheetIds.length)
@@ -54,7 +54,7 @@ export default async function olimanagerCreateParticipant(
   const rows = await getRowsCollection()
   const sheets = await getSheetsCollection()
   const workbooks = await getWorkbooksCollection()
-  console.log('Collections initialized')
+  // console.log('Collections initialized')
 
   const api = new OlimanagerApi(username || user.email, password)
   console.log('OlimanagerApi created with username:', username || user.email)
@@ -68,18 +68,18 @@ export default async function olimanagerCreateParticipant(
     console.log(`--- Processing row ${finalRowIds.indexOf(rowId) + 1}/${finalRowIds.length}: ${rowId} ---`)
     try {
       const row = await rows.findOne({ _id: rowId })
-      console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
+      // console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
       if (!row) throw new Error(`Riga non trovata: ${rowId}`)
 
       const sheet = await sheets.findOne({ _id: row.sheetId })
-      console.log('Sheet data:', sheet ? { _id: sheet._id, name: sheet.name, schema: sheet.schema } : 'NOT FOUND')
+      // console.log('Sheet data:', sheet ? { _id: sheet._id, name: sheet.name, schema: sheet.schema } : 'NOT FOUND')
       if (!sheet) throw new Error(`Foglio non trovato per la riga: ${row.sheetId}`)
       const schema = schemas[sheet.schema]
-      console.log('Schema found:', !!schema, 'for schema key:', sheet.schema)
+      // console.log('Schema found:', !!schema, 'for schema key:', sheet.schema)
       if (!schema) throw new Error(`Schema non trovato per il foglio: ${sheet.schema}`)
 
       const workbook = await workbooks.findOne({ _id: sheet.workbookId })
-      console.log('Workbook data:', workbook ? { _id: workbook._id, name: workbook.name } : 'NOT FOUND')
+      // console.log('Workbook data:', workbook ? { _id: workbook._id, name: workbook.name } : 'NOT FOUND')
       if (!workbook) throw new Error(`Workbook non trovato: ${sheet.workbookId}`)
 
       const contestId = schema.get_contest_id(workbook.commonData)
@@ -93,7 +93,7 @@ export default async function olimanagerCreateParticipant(
       const birthDate = row.data.birthDate.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, '$3-$2-$1');
 
       const classYear = parseInt(classYearStr || '0', 10) + 8 // Converto da anno di corso (1-5) a anno scolastico (9-13)
-      console.log('Participant data:', { name, surname, classYearStr, classYear, section, birthDate: row.data.birthDate, birthDateConverted: birthDate })
+      // console.log('Participant data:', { name, surname, classYearStr, classYear, section, birthDate: row.data.birthDate, birthDateConverted: birthDate })
 
 
       console.log(`Creazione/abbinamento partecipante per riga ${rowId} (${surname} ${name})`)
@@ -257,10 +257,10 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
     if (participantData.birthDate) {
       variables.birthDate = participantData.birthDate;
     }
-    console.log('GraphQL variables:', variables)
+    // console.log('GraphQL variables:', variables)
 
     const response = await api.query(mutation_match_or_create, variables);
-    console.log('GraphQL response:', response)
+    // console.log('GraphQL response:', response)
 
     if (response.errors) {
       console.log('GraphQL errors found:', response.errors)
@@ -269,7 +269,7 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
 
     const result = response?.data?.participants?.matchOrCreateParticipant;
     const typename = result?.__typename;
-    console.log('Result typename:', typename)
+    // console.log('Result typename:', typename)
 
     if (typename === 'OperationInfo') {
       console.log('OperationInfo messages:', result.messages)

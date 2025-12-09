@@ -89,23 +89,6 @@ function TimeDistributionSection({ report }:
     
     const schemaName = schemas[report.schema].header
 
-    // Stati per la visibilità delle linee (inizialmente tutte visibili)
-    const [visibleLines, setVisibleLines] = useState<Set<string>>(new Set([
-        'Righe aggiornate', 'Righe valide aggiornate', 'Cumulativo righe', 'Cumulativo righe valide', 'Fogli chiusi', 'Cumulativo fogli chiusi'
-    ]))
-
-    const toggleLineVisibility = (dataKey: string) => {
-        setVisibleLines(prev => {
-            const newSet = new Set(prev)
-            if (newSet.has(dataKey)) {
-                newSet.delete(dataKey)
-            } else {
-                newSet.add(dataKey)
-            }
-            return newSet
-        })
-    }
-
     // Formatta l'ora per il display
     const chartData: (TimeDistributionItem & { hourTimestamp: number })[] = report.timeDistribution.map((item) => {
         const hourTimestamp = new Date(item.hour).getTime()
@@ -120,15 +103,15 @@ function TimeDistributionSection({ report }:
             <h3 className="text-xl font-semibold">{schemaName} - Distribuzione Temporale</h3>
             <TimeDistributionChart 
                 data={chartData}
-                visibleLines={visibleLines}
-                toggleLineVisibility={toggleLineVisibility}
             />
         </div>
     )
 }
 
-function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }: 
-    { data: (TimeDistributionItem & { hourTimestamp: number })[], visibleLines: Set<string>, toggleLineVisibility: (dataKey: string) => void }) {
+function TimeDistributionChart({ data }: 
+    { data: (TimeDistributionItem & { hourTimestamp: number })[]}) {
+    const tension = 0.1
+    const borderWidth = 2
     
     if (data.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
@@ -138,43 +121,21 @@ function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }:
         labels: data.map(item => new Date(item.hourTimestamp)),
         datasets: [
             {
-                label: 'Righe aggiornate',
+                label: 'Righe inserite',
                 data: data.map(item => item.rows),
                 borderColor: '#3b82f6',
                 backgroundColor: '#3b82f6',
-                borderWidth: 2,
-                tension: 0.4,
-                hidden: !visibleLines.has('Righe aggiornate'),
+                borderWidth,
+                tension,
                 yAxisID: 'y',
             },
             {
-                label: 'Righe valide aggiornate',
+                label: 'Righe valide',
                 data: data.map(item => item.validRows),
                 borderColor: '#10b981',
                 backgroundColor: '#10b981',
-                borderWidth: 2,
-                tension: 0.4,
-                hidden: !visibleLines.has('Righe valide aggiornate'),
-                yAxisID: 'y',
-            },
-            {
-                label: 'Cumulativo righe',
-                data: data.map(item => item.cumulativeRows),
-                borderColor: '#f59e0b',
-                backgroundColor: '#f59e0b',
-                borderWidth: 2,
-                tension: 0.4,
-                hidden: !visibleLines.has('Cumulativo righe'),
-                yAxisID: 'y',
-            },
-            {
-                label: 'Cumulativo righe valide',
-                data: data.map(item => item.cumulativeValidRows),
-                borderColor: '#ef4444',
-                backgroundColor: '#ef4444',
-                borderWidth: 2,
-                tension: 0.4,
-                hidden: !visibleLines.has('Cumulativo righe valide'),
+                borderWidth,
+                tension,
                 yAxisID: 'y',
             },
             {
@@ -182,19 +143,35 @@ function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }:
                 data: data.map(item => item.closedSheets),
                 borderColor: '#8b5cf6',
                 backgroundColor: '#8b5cf6',
-                borderWidth: 2,
-                tension: 0.4,
-                hidden: !visibleLines.has('Fogli chiusi'),
+                borderWidth,
+                tension,
                 yAxisID: 'y2',
+            },
+            {
+                label: 'Cumulativo righe inserite',
+                data: data.map(item => item.cumulativeRows),
+                borderColor: '#f59e0b',
+                backgroundColor: '#f59e0b',
+                borderWidth,
+                tension,
+                yAxisID: 'y',
+            },
+            {
+                label: 'Cumulativo righe valide',
+                data: data.map(item => item.cumulativeValidRows),
+                borderColor: '#ef4444',
+                backgroundColor: '#ef4444',
+                borderWidth,
+                tension,
+                yAxisID: 'y',
             },
             {
                 label: 'Cumulativo fogli chiusi',
                 data: data.map(item => item.cumulativeClosedSheets),
                 borderColor: '#06b6d4',
                 backgroundColor: '#06b6d4',
-                borderWidth: 2,
-                tension: 0.4,
-                hidden: !visibleLines.has('Cumulativo fogli chiusi'),
+                borderWidth,
+                tension,
                 yAxisID: 'y2',
             },
         ],
@@ -209,10 +186,6 @@ function TimeDistributionChart({ data, visibleLines, toggleLineVisibility }:
         },
         plugins: {
             legend: {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onClick: (event: any, legendItem: any, legend: any) => {
-                    toggleLineVisibility(legendItem.text)
-                },
                 labels: {
                     usePointStyle: true,
                 },
