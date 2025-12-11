@@ -44,7 +44,9 @@ async function generateAgeDistributionReport(sheets: WithId<Sheet>[]) {
         const birthDateValue = row.data?.birthDate
         const birthDate = new Date(birthDateValue)
         if (isNaN(birthDate.getTime())) continue // Salta date non valide
-        const age = getAge(birthDate)
+        let age = getAge(birthDate)
+        if (age < 0) age = 0;
+        if (age > 100) age = 100; // Limita età massima a 100
         ageMap.set(age, (ageMap.get(age) || 0) + 1)
     }
     // Converti in array e ordina per età
