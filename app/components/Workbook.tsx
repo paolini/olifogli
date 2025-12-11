@@ -46,7 +46,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const { setBreadcrumbs } = useBreadcrumbs()
     
     const tabParam = searchParams.get('tab')
-    const validTabs = ['fogli', 'list', 'distribuzione', 'esercizi', 'temporale', 'configura'] as const
+    const validTabs = ['fogli', 'list', 'distribuzione', 'esercizi', 'età', 'temporale', 'configura'] as const
     type TabType = typeof validTabs[number]
     
     function isTabType(tab: string | null): tab is TabType {
@@ -111,6 +111,12 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
             >
                 Distribuzione Esercizi
             </button>
+            <button
+                onClick={() => setActiveTab('età')}
+                className={`tab-button ${activeTab === 'età' ? 'tab-button-active' : 'tab-button-inactive'}`}
+            >
+                Distribuzione Età
+            </button>
             { profile?.isAdmin &&
             <button
                 onClick={() => setActiveTab('temporale')}
@@ -133,6 +139,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
         {activeTab === 'list' && <WorkbookRanking workbookId={workbookId} />}
         {activeTab === 'distribuzione' && <WorkbookDistribution workbookId={workbookId} />}
         {activeTab === 'esercizi' && <WorkbookExerciseDistribution workbookId={workbookId} />}
+        {activeTab === 'età' && <WorkbookAgeDistribution workbookId={workbookId} />}
         {activeTab === 'temporale' && <WorkbookTimeDistribution workbookId={workbookId} />}
         {activeTab === 'configura' && workbook && <WorkbookConfigure workbook={workbook} profile={profile || null} sheetsCount={sheetsCount} />}
     </div>

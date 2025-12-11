@@ -25,6 +25,21 @@ export type Scalars = {
   Timestamp: { input: Date; output: Date; }
 };
 
+export type AgeDistributionItem = {
+  __typename?: 'AgeDistributionItem';
+  age: Scalars['Int']['output'];
+  rows: Scalars['Int']['output'];
+};
+
+export type AgeDistributionReport = {
+  __typename?: 'AgeDistributionReport';
+  items: Array<AgeDistributionItem>;
+  mean?: Maybe<Scalars['Float']['output']>;
+  schema: Scalars['String']['output'];
+  totalRows: Scalars['Int']['output'];
+  variance?: Maybe<Scalars['Float']['output']>;
+};
+
 export type Config = {
   __typename?: 'Config';
   OLIMANAGER_URL?: Maybe<Scalars['String']['output']>;
@@ -285,6 +300,7 @@ export type Query = {
   scanSheetJobs: Array<ScanSheetJob>;
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
+  sheetsAgeDistributionReport: AgeDistributionReport;
   sheetsDistributionReport: DistributionReport;
   sheetsExerciseReport: ExerciseReport;
   sheetsRankingReport: RankingReport;
@@ -328,6 +344,12 @@ export type QuerySheetArgs = {
 
 export type QuerySheetsArgs = {
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
+};
+
+
+export type QuerySheetsAgeDistributionReportArgs = {
+  schema: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
 };
 
 
@@ -2673,6 +2695,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AgeDistributionItem: ResolverTypeWrapper<AgeDistributionItem>;
+  AgeDistributionReport: ResolverTypeWrapper<AgeDistributionReport>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Config: ResolverTypeWrapper<Config>;
   Data: ResolverTypeWrapper<Scalars['Data']['output']>;
@@ -2713,6 +2737,8 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AgeDistributionItem: AgeDistributionItem;
+  AgeDistributionReport: AgeDistributionReport;
   Boolean: Scalars['Boolean']['output'];
   Config: Config;
   Data: Scalars['Data']['output'];
@@ -2749,6 +2775,21 @@ export type ResolversParentTypes = {
   UpdateSheetInput: UpdateSheetInput;
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
+};
+
+export type AgeDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['AgeDistributionItem'] = ResolversParentTypes['AgeDistributionItem']> = {
+  age?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgeDistributionReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['AgeDistributionReport'] = ResolversParentTypes['AgeDistributionReport']> = {
+  items?: Resolver<Array<ResolversTypes['AgeDistributionItem']>, ParentType, ContextType>;
+  mean?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  variance?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ConfigResolvers<ContextType = any, ParentType extends ResolversParentTypes['Config'] = ResolversParentTypes['Config']> = {
@@ -2863,6 +2904,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   scanSheetJobs?: Resolver<Array<ResolversTypes['ScanSheetJob']>, ParentType, ContextType, RequireFields<QueryScanSheetJobsArgs, 'sheetId'>>;
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
+  sheetsAgeDistributionReport?: Resolver<ResolversTypes['AgeDistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsAgeDistributionReportArgs, 'schema' | 'sheetIds'>>;
   sheetsDistributionReport?: Resolver<ResolversTypes['DistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsDistributionReportArgs, 'schema' | 'sheetIds'>>;
   sheetsExerciseReport?: Resolver<ResolversTypes['ExerciseReport'], ParentType, ContextType, RequireFields<QuerySheetsExerciseReportArgs, 'schema' | 'sheetIds'>>;
   sheetsRankingReport?: Resolver<ResolversTypes['RankingReport'], ParentType, ContextType, RequireFields<QuerySheetsRankingReportArgs, 'schema' | 'sheetIds'>>;
@@ -3019,6 +3061,8 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type Resolvers<ContextType = any> = {
+  AgeDistributionItem?: AgeDistributionItemResolvers<ContextType>;
+  AgeDistributionReport?: AgeDistributionReportResolvers<ContextType>;
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
   DistributionReport?: DistributionReportResolvers<ContextType>;

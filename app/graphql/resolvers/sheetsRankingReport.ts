@@ -3,7 +3,7 @@ import { getRowsCollection } from '@/app/lib/mongodb'
 import { QuerySheetsRankingReportArgs, RankingReport, ReportEntry } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
-import { sheetsReportHelper } from './sheetsDistributionReport'
+import sheetsReportHelper from './sheetsReportHelper'
 
 export default async function sheetsRankingReport(
     _: unknown, 
