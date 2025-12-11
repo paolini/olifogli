@@ -196,6 +196,19 @@ type TimeDistributionReport {
   timeDistribution: [TimeDistributionItem!]!
 }
 
+type AgeDistributionItem {
+  age: Int!
+  rows: Int!
+}
+
+type AgeDistributionReport {
+  schema: String!
+  items: [AgeDistributionItem!]!
+  totalRows: Int!
+  mean: Float
+  variance: Float
+}
+
 type Query {
   hello: String
   me: User
@@ -212,6 +225,7 @@ type Query {
   sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int): RankingReport!
   sheetsExerciseReport(sheetIds: [ObjectId!]!, schema: String!): ExerciseReport!
   sheetsTimeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): TimeDistributionReport!
+  sheetsAgeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): AgeDistributionReport!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!

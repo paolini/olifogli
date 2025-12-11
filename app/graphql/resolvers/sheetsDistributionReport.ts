@@ -1,9 +1,9 @@
 import { Context } from '../types'
-import { get_authenticated_user } from './utils'
-import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
+import { getRowsCollection } from '@/app/lib/mongodb'
 import { QuerySheetsDistributionReportArgs, DistributionReport, ScoreDistributionItem } from '../generated'
-import { ObjectId, WithId, Document } from 'mongodb'
+import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
+import sheetsReportHelper from './sheetsReportHelper'
 
 export default async function sheetsDistributionReport(
     _: unknown, 
@@ -21,31 +21,6 @@ export default async function sheetsDistributionReport(
     }
 }
 
-export async function sheetsReportHelper(
-    sheetIds: ObjectId[], 
-    context: Context
-): Promise<Sheet[]> {
-    const user = await get_authenticated_user(context)
-    if (!user) throw new Error("Not authenticated")
-
-    const sheetsCollection = await getSheetsCollection()
-
-    // restringe gli sheetcon schema archimede_biennio o archimede_triennio
-    // a cui l'utente ha accesso
-    const sheetFilter: Document = { _id: { $in: sheetIds} }
-    
-    if (!user.isAdmin) {
-        sheetFilter.$or = [
-            { ownerId: user._id },
-            { 'permissions.email': user.email },
-            { 'permissions.userId': user._id },
-        ]
-    }
-
-    const allSheets = await sheetsCollection.find(sheetFilter).toArray()
-
-    return allSheets
-}
 
 
 async function generateDistributionReport(sheets: WithId<Sheet>[]) {
