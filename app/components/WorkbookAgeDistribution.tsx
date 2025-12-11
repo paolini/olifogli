@@ -1,147 +1,142 @@
 'use client'
 
-import { gql } from '@apollo/client'
+import { gql, useQuery } from '@apollo/client'
 import { ObjectId } from 'bson'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Chart } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { useGetWorkbookAnomalyReportQuery, WorkbookAnomalyReport } from '../graphql/generated'
+import { useGetSheetsQuery } from '../graphql/generated'
+import { schemas } from '../lib/schema'
+import SheetsFilter, { filterSheets } from './SheetsFilter'
+import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 
-const _ = gql`
-    query GetWorkbookAnomalyReport($workbookId: ObjectId!) {
-        workbookAnomalyReport(workbookId: $workbookId) {
-            statistics {
-                nameLetterDistribution {
-                    letter
-                    count
-                }
-                surnameLetterDistribution {
-                    letter
-                    count
-                }
-                birthDateStats {
-                    mean
-                    stdDev
-                    min
-                    max
-                }
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
+
+const GET_SHEETS_AGE_DISTRIBUTION_REPORT = gql`
+    query GetSheetsAgeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
+        sheetsAgeDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+            items {
+                age
+                rows
             }
-            outliers {
-                row {
-                    _id
-                    data
-                    error
-                }
-                anomalyScore
-            }
+            totalRows
+            mean
+            variance
         }
     }
 `
 
 export default function WorkbookAgeDistribution({ workbookId }: { workbookId: ObjectId }) {
-    const { loading, error, data } = useGetWorkbookAnomalyReportQuery({
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
+    const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
+    const sheets = (sheetsData?.sheets || [])
+        .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
+    const filteredSheets = filterSheets(filterState, sheets)
 
-    if (loading) return <Loading />
+    const { loading, error, data } = useQuery(GET_SHEETS_AGE_DISTRIBUTION_REPORT, {
+        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
+        skip: filterState?.schemaFilter === '',
+        pollInterval: 10000, // millisecondi
+    })
+
+    if (loading || loadingSheets) return <Loading />
     if (error) return <Error error={error} />
+    if (sheetsError) return <Error error={sheetsError} />
 
-    const report = data?.workbookAnomalyReport
+    const report = data?.sheetsAgeDistributionReport
 
-    if (!report) return <p>Nessun dato disponibile</p>
+    if (!report) return <div>Nessun dato disponibile</div>
+
+    const labels = report.items.map((item: { age: number; rows: number }) => item.age.toString())
+    const counts = report.items.map((item: { age: number; rows: number }) => item.rows)
+
+    const chartData = {
+        labels,
+        datasets: [
+            {
+                label: 'Studenti',
+                data: counts,
+                backgroundColor: '#3b82f6',
+                borderColor: '#3b82f6',
+                borderWidth: 1,
+                borderRadius: 8,
+            },
+        ],
+    }
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: true,
+        height: 600,
+        plugins: {
+            legend: {
+                display: true,
+            },
+            tooltip: {
+                callbacks: {
+                    // @ts-expect-error Chart.js tooltip context type
+                    label: (context) => `${context.parsed.y} studenti`,
+                    // @ts-expect-error Chart.js tooltip context type
+                    title: (context) => `Età: ${context[0].label}`,
+                },
+            },
+        },
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Età',
+                },
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Numero di studenti',
+                },
+                beginAtZero: true,
+            },
+        },
+    }
 
     return (
-        <div className="p-4 space-y-6">
-            <AnomalyStatisticsSection statistics={report.statistics} />
-            <OutliersSection outliers={report.outliers} />
-        </div>
-    )
-}
-
-function AnomalyStatisticsSection({ statistics }: { statistics: WorkbookAnomalyReport['statistics'] }) {
-    return (
-        <div className="border rounded-lg p-4 space-y-4">
-            <h3 className="text-xl font-semibold">Statistiche Anomalie</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <LetterDistributionChart title="Distribuzione Lettere Nomi" data={statistics.nameLetterDistribution} />
-                <LetterDistributionChart title="Distribuzione Lettere Cognomi" data={statistics.surnameLetterDistribution} />
-                <BirthDateStats stats={statistics.birthDateStats} />
-            </div>
-        </div>
-    )
-}
-
-function LetterDistributionChart({ title, data }: { title: string, data: { letter: string, count: number }[] }) {
-    const total = data.reduce((sum, item) => sum + item.count, 0)
-    const sortedData = data.sort((a, b) => b.count - a.count)
-
-    return (
-        <div>
-            <h4 className="font-medium mb-2">{title}</h4>
-            <div className="space-y-1">
-                {sortedData.slice(0, 10).map(item => (
-                    <div key={item.letter} className="flex justify-between">
-                        <span>{item.letter}</span>
-                        <span>{item.count} ({((item.count / total) * 100).toFixed(1)}%)</span>
+        <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
+            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+            <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold">Distribuzione per età</h3>
+                    <div className="text-gray-600 text-right">
+                        <div>Totale studenti: {report.totalRows}</div>
+                        {report.mean !== null && report.mean !== undefined && (
+                            <div>μ: {report.mean.toFixed(1)} anni</div>
+                        )}
+                        {report.variance !== null && report.variance !== undefined && (
+                            <div>σ: {Math.sqrt(report.variance).toFixed(1)} anni</div>
+                        )}
                     </div>
-                ))}
+                </div>
+                <Chart type="bar" data={chartData} options={options} />
             </div>
-        </div>
-    )
-}
-
-function BirthDateStats({ stats }: { stats: WorkbookAnomalyReport['statistics']['birthDateStats'] }) {
-    if (!stats) return <div>Nessuna statistica disponibile</div>
-
-    return (
-        <div>
-            <h4 className="font-medium mb-2">Statistiche Date di Nascita</h4>
-            <div className="space-y-1">
-                <div>Media: {new Date(stats.mean).toLocaleDateString()}</div>
-                <div>Deviazione Standard: {Math.round(stats.stdDev / (1000 * 60 * 60 * 24))} giorni</div>
-                <div>Min: {new Date(stats.min).toLocaleDateString()}</div>
-                <div>Max: {new Date(stats.max).toLocaleDateString()}</div>
-            </div>
-        </div>
-    )
-}
-
-function OutliersSection({ outliers }: { outliers: WorkbookAnomalyReport['outliers'] }) {
-    const [showAll, setShowAll] = useState(false)
-    const displayedOutliers = showAll ? outliers : outliers.slice(0, 10)
-
-    return (
-        <div className="border rounded-lg p-4 space-y-4">
-            <h3 className="text-xl font-semibold">Righe con Anomalie più Alte</h3>
-            <table className="w-full table-auto">
-                <thead>
-                    <tr className="border-b">
-                        <th className="text-left p-2">Nome</th>
-                        <th className="text-left p-2">Cognome</th>
-                        <th className="text-left p-2">Data Nascita</th>
-                        <th className="text-left p-2">Punteggio Anomalia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {displayedOutliers.map(outlier => (
-                        <tr key={outlier.row._id.toString()} className="border-b">
-                            <td className="p-2">{outlier.row.data?.name || ''}</td>
-                            <td className="p-2">{outlier.row.data?.surname || ''}</td>
-                            <td className="p-2">{outlier.row.data?.birthDate ? new Date(outlier.row.data.birthDate).toLocaleDateString() : ''}</td>
-                            <td className="p-2">{outlier.anomalyScore.toFixed(2)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            {outliers.length > 10 && (
-                <button 
-                    onClick={() => setShowAll(!showAll)}
-                    className="text-blue-600 hover:text-blue-800"
-                >
-                    {showAll ? 'Mostra meno' : `Mostra tutte (${outliers.length})`}
-                </button>
-            )}
         </div>
     )
 }
