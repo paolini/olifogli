@@ -13,6 +13,7 @@ import WorkbookTimeDistribution from '@/app/components/WorkbookTimeDistribution'
 import WorkbookConfigure from '@/app/components/WorkbookConfigure'
 import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
 import { useGetWorkbookQuery } from '../graphql/generated'
+import WorkbookAgeDistribution from './WorkbookAgeDistribution'
 
 const GET_WORKBOOK = gql`
     query GetWorkbook($workbookId: ObjectId!) {

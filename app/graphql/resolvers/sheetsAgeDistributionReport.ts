@@ -1,13 +1,13 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsTimeDistributionReportArgs, TimeDistributionItem, AgeDistributionReport, AgeDistributionItem } from '../generated'
+import { QuerySheetsAgeDistributionReportArgs, AgeDistributionReport, AgeDistributionItem } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import sheetsReportHelper from './sheetsReportHelper'
 
 export default async function sheetsAgeDistributionReport(
     _: unknown, 
-    { sheetIds, schema }: QuerySheetsTimeDistributionReportArgs, 
+    { sheetIds, schema }: QuerySheetsAgeDistributionReportArgs, 
     context: Context
 ): Promise<AgeDistributionReport> {
     const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
@@ -55,8 +55,8 @@ async function generateAgeDistributionReport(sheets: WithId<Sheet>[]) {
     // Calcola media e varianza
     const ages = Array.from(items)
     const totalRows = ages.reduce((sum, item) => sum + item.rows, 0)
-    const mean = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.age * item.rows), 0) / totalRows : NaN
-    const variance = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.rows * Math.pow(item.age - mean, 2)), 0) / totalRows : NaN
+    const mean = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.age * item.rows), 0) / totalRows : null
+    const variance = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.rows * Math.pow(item.age - (mean as number), 2)), 0) / totalRows : null
     
 
     return {
