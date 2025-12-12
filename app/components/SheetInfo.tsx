@@ -260,6 +260,8 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.userId && p.userId === profile._id || p.email && p.email === profile.email) && p.role === 'admin'))
 
     const schema = schemas[sheet.schema]
+    const countSheetAdmins = sheet.permissions.filter(p => p.role === 'admin').length
+    const myEmail = profile?.email || ''
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
     if (updateError) return <Error error={updateError} dismiss={updateReset }/>
@@ -347,7 +349,9 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
               </select>
             </td>
             <td>
-                <Button disabled={updating || !newEmail || !newEmail.includes('@')} onClick={addPermission}>
+                <Button disabled={updating || !newEmail || !newEmail.includes('@') 
+                    || (newEmail===myEmail && countSheetAdmins===1 && !profile?.isAdmin)} 
+                    onClick={addPermission}>
                     Aggiungi
                 </Button>
             </td>
