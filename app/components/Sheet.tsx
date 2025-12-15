@@ -85,12 +85,13 @@ const GET_ROWS = gql`
     rows(sheetId: $sheetId) {
       _id
       error
+      anomalies
       data
       createdOn
       createdBy
       updatedOn
       updatedBy
-        olimanager {
+      olimanager {
         participantId
         resultsUpdatedOn
         error
