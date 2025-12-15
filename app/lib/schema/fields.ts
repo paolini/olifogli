@@ -108,6 +108,12 @@ export class Field {
             return ((v1 > v2) ? 1 : (v1 < v2) ? -1 : 0)
         }
     }
+
+    // probabilità che questo valore sia anomalo
+    // pur se valido
+    anomalous(value: string): boolean {
+        return false
+    }
 }
 
 export class VariantField extends Field {
@@ -196,10 +202,15 @@ export class ScoreAnswerField extends Field {
 }
 
 export class DateField extends Field {
-    constructor(name: string, options: FieldOptions) {
+    expectedMinAge: number = NaN
+    expectedMaxAge: number = NaN
+
+    constructor(name: string, options: FieldOptions & {expectedMinAge?: number, expectedMaxAge?: number}) {
         super(name, options)
         this.css_class += ` field-Date`
         this.type = 'date'
+        this.expectedMinAge = options.expectedMinAge || Number.NEGATIVE_INFINITY
+        this.expectedMaxAge = options.expectedMaxAge || Number.POSITIVE_INFINITY
     }
 
     // normalizza la data in formato gg/mm/aaaa
@@ -277,5 +288,27 @@ export class DateField extends Field {
             (v1 > v2) ? 1 :
             (v1 < v2) ? -1 : 0
         )
+    }
+
+    anomalous(value: string): boolean {
+        if (this.isValid(value)) {
+            const thisYear = new Date().getFullYear()
+            const year = parseInt(value.substring(6,10), 10)
+            const age = thisYear - year
+            return age < this.expectedMinAge || age > this.expectedMaxAge
+        }
+        return false
+    }
+
+    // Approssimazione della funzione errore (erf) per x >= 0
+    private erf(x: number): number {
+        const a1 = 0.254829592
+        const a2 = -0.284496736
+        const a3 = 1.421413741
+        const a4 = -1.453152027
+        const a5 = 1.061405429
+        const p = 0.3275911
+        const t = 1 / (1 + p * x)
+        return 1 - (a1 * t + a2 * t * t + a3 * t * t * t + a4 * t * t * t * t + a5 * t * t * t * t * t) * Math.exp(-x * x)
     }
 }

@@ -1,8 +1,9 @@
-import { getSheetsCollection, getRowsCollection, getDb, withTransaction } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, getDb, withTransaction, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
+import { schemas } from '@/app/lib/schema'
 
 export default async function deleteRow(_: unknown, {_id}: {
     _id: ObjectId}, context: Context) {
@@ -13,7 +14,12 @@ export default async function deleteRow(_: unknown, {_id}: {
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
     check_user_can_edit_rows(user,sheet)
-    
+        
+    // calcola decrementi nValidRows e anomalies
+    const nRows = -1
+    const nValidRows = -((row.error === '' || !row.error) ? 1 : 0)
+    const anomalies = -(row.anomalies || 0)
+
     // Usa una transazione per garantire la consistenza tra row e sheet
     await withTransaction(async (session) => {
         const db = await getDb();
@@ -28,16 +34,10 @@ export default async function deleteRow(_: unknown, {_id}: {
         // Elimina la riga
         await rowsCollection.deleteOne({ _id }, { session });
         
-        // Decrementa nRows e, se la riga era valida, nValidRows
-        const updateFields: { nRows: number; nValidRows?: number } = { nRows: -1 }
-        if (row.error === '' || !row.error) {
-            updateFields.nValidRows = -1
-        }
-        
         await sheetsCollection.updateOne(
             { _id: row.sheetId },
             { 
-                $inc: updateFields,
+                $inc: { nRows, nValidRows, anomalies },
                 $set: { updatedAt: new Date() }
             },
             { session }

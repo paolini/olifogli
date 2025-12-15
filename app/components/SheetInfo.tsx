@@ -29,6 +29,7 @@ export default function SheetInfo({sheet,data,profile}:{
               <span><b>{pluralize(rows.length, "riga", "righe")}</b></span>
               {' • '}
               <span><b>{pluralize(n_valid_rows, "valida", "valide")}</b></span>
+              {sheet.anomalies > 0 && <>{' • '}<span><b>{pluralize(sheet.anomalies, "anomalia", "anomalie")}</b></span></>}
               {n_valid_rows < rows.length && <>{' • '}<span>non è possibile chiudere il foglio</span></>}
               <br />
         </div>
@@ -427,6 +428,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     }
 
     async function doCloseSheet() {
+        if (sheet.anomalies && !confirm("Ci sono delle anomalie nelle righe valide di questo foglio. Sei sicuro di volerlo chiudere lo stesso?")) return
         if (!confirm("Se chiudi il foglio nessuno potrà modificarne le righe e permetterai la finalizzazione dei dati. Finché non verrà finalizzato dagli amministratori potrai riaprirlo se necessario.")) return
         await closeSheet({
             variables: {_id: sheet._id},

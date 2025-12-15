@@ -24,6 +24,8 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     const derivedData = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
     data = derivedData.data
     const error = derivedData.error || ''
+    const nValidRows = (error === '' ) ? 1 : 0
+    const anomalies = derivedData.anomalies || 0
     
     // Usa una transazione per garantire la consistenza tra row e sheet
     const row = await withTransaction(async (session) => {
@@ -34,16 +36,18 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
             data, 
             sheetId: args.sheetId, 
             error,
+            anomalies,
             updatedOn, 
             updatedBy, 
             createdOn, 
             createdBy
         }, { session })
         
-        // Incrementa nRows e, se la riga è valida, nValidRows
-        const updateFields: { nRows: number; nValidRows?: number } = { nRows: 1 }
-        if (error === '') {
-            updateFields.nValidRows = 1
+        // Incrementa nRows e, se la riga è valida, nValidRows, anomalies
+        const updateFields = { 
+            nRows: 1, 
+            nValidRows, 
+            anomalies
         }
         
         await sheetsCollection.updateOne(

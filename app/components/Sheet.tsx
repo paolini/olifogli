@@ -6,7 +6,6 @@ import { ObjectId } from 'bson'
 
 import Error from './Error'
 import Loading from './Loading'
-import Button from './Button'
 import Table from './Table'
 import CsvImport from './CsvImport'
 import ScansImport from './ScansImport'
@@ -39,6 +38,7 @@ const _ = gql`
             ownerId
             nRows
             nValidRows
+            anomalies
             closed
             closedBy
             closedOn

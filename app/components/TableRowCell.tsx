@@ -109,7 +109,9 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
     ? field.css_style(value) 
     : field.css_style;
 
-  const className = `${field.css_class} ${extra_css} ${hasFocus ? 'focus' : ''} ${inputFocus && hasFocus ? 'input-focus' : ''} ${changed ? 'modified' : ''}`;
+  const anomalous = field.anomalous(value);
+
+  const className = `${field.css_class}${extra_css?` ${extra_css}` : ''}${hasFocus ? ' focus' : ''}${inputFocus && hasFocus ? ' input-focus' : ''}${changed ? ' modified' : ''}${anomalous ? ' anomalous' : ''}`;
 
   return <td className={className} tabIndex={1} title={title} onClick={onClick} style={style} ref={tdRef}>
       {(hasFocus && field.editable && inputFocus && !(showStandardAnswers && field instanceof ChoiceAnswerField))

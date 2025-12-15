@@ -412,6 +412,7 @@ export type ReportEntrySheet = {
 export type Row = {
   __typename?: 'Row';
   _id: Scalars['ObjectId']['output'];
+  anomalies: Scalars['Int']['output'];
   createdBy?: Maybe<Scalars['String']['output']>;
   createdOn?: Maybe<Scalars['Timestamp']['output']>;
   data: Scalars['Data']['output'];
@@ -474,6 +475,7 @@ export type Setting = {
 export type Sheet = {
   __typename?: 'Sheet';
   _id: Scalars['ObjectId']['output'];
+  anomalies: Scalars['Int']['output'];
   closed?: Maybe<Scalars['Boolean']['output']>;
   closedBy?: Maybe<Scalars['String']['output']>;
   closedOn?: Maybe<Scalars['Timestamp']['output']>;
@@ -617,7 +619,7 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -761,6 +763,14 @@ export type GetWorkbookQueryVariables = Exact<{
 
 
 export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, ownerId?: ObjectId | null, commonData?: any | null, sheetsCount?: number | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }>, me?: { __typename?: 'User', _id: ObjectId, email: string, name?: string | null, isAdmin?: boolean | null } | null };
+
+export type GetSheetsAgeDistributionReportQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  schema: Scalars['String']['input'];
+}>;
+
+
+export type GetSheetsAgeDistributionReportQuery = { __typename?: 'Query', sheetsAgeDistributionReport: { __typename?: 'AgeDistributionReport', totalRows: number, mean?: number | null, variance?: number | null, items: Array<{ __typename?: 'AgeDistributionItem', age: number, rows: number }> } };
 
 export type UpdateWorkbookMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -1271,6 +1281,7 @@ export const GetSheetDocument = gql`
     ownerId
     nRows
     nValidRows
+    anomalies
     closed
     closedBy
     closedOn
@@ -2023,6 +2034,53 @@ export type GetWorkbookQueryHookResult = ReturnType<typeof useGetWorkbookQuery>;
 export type GetWorkbookLazyQueryHookResult = ReturnType<typeof useGetWorkbookLazyQuery>;
 export type GetWorkbookSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookSuspenseQuery>;
 export type GetWorkbookQueryResult = Apollo.QueryResult<GetWorkbookQuery, GetWorkbookQueryVariables>;
+export const GetSheetsAgeDistributionReportDocument = gql`
+    query GetSheetsAgeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
+  sheetsAgeDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+    items {
+      age
+      rows
+    }
+    totalRows
+    mean
+    variance
+  }
+}
+    `;
+
+/**
+ * __useGetSheetsAgeDistributionReportQuery__
+ *
+ * To run a query within a React component, call `useGetSheetsAgeDistributionReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsAgeDistributionReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSheetsAgeDistributionReportQuery({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      schema: // value for 'schema'
+ *   },
+ * });
+ */
+export function useGetSheetsAgeDistributionReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables> & ({ variables: GetSheetsAgeDistributionReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables>(GetSheetsAgeDistributionReportDocument, options);
+      }
+export function useGetSheetsAgeDistributionReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables>(GetSheetsAgeDistributionReportDocument, options);
+        }
+export function useGetSheetsAgeDistributionReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables>(GetSheetsAgeDistributionReportDocument, options);
+        }
+export type GetSheetsAgeDistributionReportQueryHookResult = ReturnType<typeof useGetSheetsAgeDistributionReportQuery>;
+export type GetSheetsAgeDistributionReportLazyQueryHookResult = ReturnType<typeof useGetSheetsAgeDistributionReportLazyQuery>;
+export type GetSheetsAgeDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsAgeDistributionReportSuspenseQuery>;
+export type GetSheetsAgeDistributionReportQueryResult = Apollo.QueryResult<GetSheetsAgeDistributionReportQuery, GetSheetsAgeDistributionReportQueryVariables>;
 export const UpdateWorkbookDocument = gql`
     mutation UpdateWorkbook($_id: ObjectId!, $commonData: Data) {
   updateWorkbook(_id: $_id, commonData: $commonData)
@@ -2941,6 +2999,7 @@ export type ReportEntrySheetResolvers<ContextType = any, ParentType extends Reso
 
 export type RowResolvers<ContextType = any, ParentType extends ResolversParentTypes['Row'] = ResolversParentTypes['Row']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  anomalies?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   createdBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   createdOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
@@ -3003,6 +3062,7 @@ export type SettingResolvers<ContextType = any, ParentType extends ResolversPare
 
 export type SheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Sheet'] = ResolversParentTypes['Sheet']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  anomalies?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   closed?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   closedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   closedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
