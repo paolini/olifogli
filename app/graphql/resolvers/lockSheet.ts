@@ -1,6 +1,6 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
-import { get_authenticated_user, check_user_is_sheet_admin } from './utils'
+import { get_authenticated_user } from './utils'
 import { ObjectId } from 'mongodb'
 
 export default async function lockSheet(_: unknown, args: { _id: ObjectId }, context: Context): Promise<boolean> {

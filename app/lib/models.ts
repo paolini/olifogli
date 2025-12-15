@@ -49,6 +49,7 @@ export type Sheet = {
     updatedAt: Date
     nRows: number // Numero di righe collegate (denormalizzato, gestito con transazioni)
     nValidRows: number // Numero di righe valide con error='' (denormalizzato, gestito con transazioni)
+    anomalies: number // Numero totale di anomalie nelle righe valide (denormalizzato, gestito con transazioni)
     closed?: boolean
     closedBy?: string
     closedOn?: Date
@@ -65,6 +66,7 @@ export type Row = {
     _id: ObjectId
     sheetId: ObjectId
     error: string // eventuale errore di validazione
+    anomalies: number // numero di anomalie riscontrate in questa riga
 
     data: Data
 

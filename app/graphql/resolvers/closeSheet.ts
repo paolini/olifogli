@@ -25,7 +25,7 @@ export default async function closeSheet(_: unknown, args: { _id: ObjectId }, co
   const nRows = sheet.nRows
   const nValidRows = sheet.nValidRows
   
-  if (nRows > 0 && nValidRows < nRows) {
+  if (!(user.isAdmin || nValidRows === nRows)) {
     const nInvalidRows = nRows - nValidRows
     throw new Error(
       `Impossibile chiudere il foglio: ci sono ${nInvalidRows} righe non valide. ` +

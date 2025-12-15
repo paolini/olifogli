@@ -26,13 +26,15 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) {
         throw new Error(`La riga è stata modificata da qualcun altro`);
     }
+
+    
     data = {...row.data, ...data} // mantiene i campi non modificati
     data = schema.clean(data)
     const derived_data = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
     
-    // Determina se la validità è cambiata
-    const wasValid = row.error === '' || !row.error
-    const isValid = derived_data.error === '' || !derived_data.error
+    // calcola l'incremento di nValid e anomalies:
+    const nValidRows = (derived_data.error === '' ? 1 : 0) - (row.error === '' ? 1 : 0)
+    const anomalies = derived_data.anomalies - row.anomalies
     
     // Usa una transazione per garantire la consistenza
     const updatedRow = await withTransaction(async (session) => {
@@ -42,36 +44,16 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
             updatedBy: user.email,
         }
         await rowsCollection.updateOne({ _id }, { $set }, { session })
-        
-        // Aggiorna nValidRows dello sheet se la validità è cambiata
-        if (wasValid && !isValid) {
-            // La riga è diventata invalida
-            await sheetsCollection.updateOne(
-                { _id: row.sheetId },
-                { 
-                    $inc: { nValidRows: -1 },
-                    $set: { updatedAt: new Date() }
-                },
-                { session }
-            )
-        } else if (!wasValid && isValid) {
-            // La riga è diventata valida
-            await sheetsCollection.updateOne(
-                { _id: row.sheetId },
-                { 
-                    $inc: { nValidRows: 1 },
-                    $set: { updatedAt: new Date() }
-                },
-                { session }
-            )
-        } else {
-            // Anche se la validità non cambia, aggiorna updatedAt perché la riga è stata modificata
-            await sheetsCollection.updateOne(
-                { _id: row.sheetId },
-                { $set: { updatedAt: new Date() } },
-                { session }
-            )
-        }
+                
+        // Anche se la validità non cambia, aggiorna updatedAt perché la riga è stata modificata
+        await sheetsCollection.updateOne(
+            { _id: row.sheetId },
+            { 
+                $set: { updatedAt: new Date() },
+                $inc: { nValidRows, anomalies }, 
+            },
+            { session }
+        )
         
         const updatedRow = await rowsCollection.findOne({ _id }, { session })
         if (!updatedRow) throw new Error('Row not found after update')

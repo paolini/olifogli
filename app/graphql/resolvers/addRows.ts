@@ -28,7 +28,7 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
 
     if (!workbook) throw new Error(`cannot find collection ${sheet.workbookId}`)
 
-    const validatedRows: WithoutId<Row>[] = objectRows
+    const validatedRows: (WithoutId<Row>)[] = objectRows
         .map(row => schema.clean(row as Data))
         .map(data => ({
             ...schema.computeDerivedData(data,sheet.commonData,workbook.commonData),
@@ -39,19 +39,20 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
             updatedOn,
         }))
     
+    // Calcola quante righe valide e quante anomalie sono state inserite
+    const nValidRows = validatedRows.filter(r => r.error === '' || !r.error).length
+    const anomalies = validatedRows.reduce((sum, r) => sum + r.anomalies, 0)
+
     // Usa una transazione per garantire la consistenza
     const insertedCount = await withTransaction(async (session) => {
         const collection = await getRowsCollection()
         const res = await collection.insertMany(validatedRows, { session })
         
-        // Calcola quante righe valide sono state inserite
-        const nValidRows = validatedRows.filter(r => r.error === '' || !r.error).length
-        
         // Aggiorna i contatori dello sheet
         await sheetsCollection.updateOne(
             { _id: sheetId },
             { 
-                $inc: { nRows: res.insertedCount, nValidRows },
+                $inc: { nRows: res.insertedCount, nValidRows, anomalies },
                 $set: { updatedAt: updatedOn }
             },
             { session }

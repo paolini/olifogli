@@ -1,8 +1,9 @@
-import { getSheetsCollection, getRowsCollection, getDb, withTransaction } from '@/app/lib/mongodb'
+import { getSheetsCollection, getRowsCollection, getDb, withTransaction, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
+import { schemas } from '@/app/lib/schema'
 
 export default async function deleteRows(_: unknown, {ids}: {
     ids: ObjectId[]}, context: Context) {
@@ -17,6 +18,7 @@ export default async function deleteRows(_: unknown, {ids}: {
     }
     
     // Controlla i permessi per ogni sheet (potrebbero essere di sheet diversi)
+    const workbooksCollection = await getWorkbooksCollection();
     const sheetsCollection = await getSheetsCollection();
     const sheetIds = [...new Set(rows.map(row => row.sheetId.toString()))];
     
@@ -51,13 +53,16 @@ export default async function deleteRows(_: unknown, {ids}: {
         
         // Aggiorna ogni sheet
         for (const [sheetIdStr, sheetRows] of Object.entries(rowsBySheet)) {
+            const sheet = await sheetsCollection.findOne({_id: new ObjectId(sheetIdStr)})
+            if (!sheet) throw new Error(`Sheet not found with id ${sheetIdStr}`)
             const nRows = -sheetRows.length
             const nValidRows = -sheetRows.filter(r => r.error === '' || !r.error).length
-            
+            const anomalies = -sheetRows.reduce((acc, row) => { return acc + row.anomalies }, 0)
+
             await sheetsCollection.updateOne(
                 { _id: new ObjectId(sheetIdStr) },
                 { 
-                    $inc: { nRows, nValidRows },
+                    $inc: { nRows, nValidRows, anomalies },
                     $set: { updatedAt: new Date() }
                 },
                 { session }

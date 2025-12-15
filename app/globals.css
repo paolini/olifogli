@@ -209,6 +209,10 @@ td.alert {
   background-color: var(--alert)
 }
 
+td.anomalous {
+  background-color: #ffef5f;
+}
+
 tr.recently-added {
   animation: fadeHighlight 20s ease-out;
   animation-delay: var(--fade-delay, 0s);

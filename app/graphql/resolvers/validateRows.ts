@@ -23,7 +23,8 @@ export default async function validateRows(_: unknown, {sheetId}: MutationValida
     // Usa una transazione per garantire la consistenza
     const updateCount = await withTransaction(async (session) => {
         let count = 0
-        let validityChanges = 0 // Conteggio dei cambi di validità
+        let nValidRows = 0 // Conteggio dei cambi di validità
+        let anomalies = 0
         
         for (const row of objectRows) {
             const wasValid = row.error === '' || !row.error
@@ -32,6 +33,8 @@ export default async function validateRows(_: unknown, {sheetId}: MutationValida
             const derivedData = await schema.computeDerivedData(cleanedData, sheet.commonData, workbook.commonData)
             
             const isValid = derivedData.error === '' || !derivedData.error
+            nValidRows += (isValid ? 1 : 0) - (wasValid ? 1 : 0)
+            anomalies += derivedData.anomalies - row.anomalies
             
             // Aggiorna la riga
             await rowsCollection.updateOne(
@@ -43,24 +46,15 @@ export default async function validateRows(_: unknown, {sheetId}: MutationValida
                 },
                 { session }
             )
-            count++
-            
-            // Traccia il cambio di validità
-            if (wasValid && !isValid) {
-                validityChanges-- // Diventata invalida
-            } else if (!wasValid && isValid) {
-                validityChanges++ // Diventata valida
-            }
+            count++            
         }
         
         // Aggiorna nValidRows dello sheet se ci sono stati cambiamenti
-        if (validityChanges !== 0) {
-            await sheetsCollection.updateOne(
-                { _id: sheetId },
-                { $inc: { nValidRows: validityChanges } },
-                { session }
-            )
-        }
+        await sheetsCollection.updateOne(
+            { _id: sheetId },
+            { $inc: { nValidRows, anomalies } },
+            { session }
+        )
         
         return count
     })

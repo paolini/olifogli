@@ -5,6 +5,7 @@ import { Field } from './fields'
 export type DerivedData = {
     error: string,
     data: Data,
+    anomalies: number,
 }
 
 export default class Schema {
@@ -31,17 +32,22 @@ export default class Schema {
     }
 
     computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
+        let anomalies = 0;
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = data[field.name]
             if (!field.isValid(value)) return {
                 error: `campo "${field.header}" non valido`,
                 data,
+                anomalies: 0,
             }
+            const anomalous = field.anomalous(value);
+            if (anomalous) anomalies++;
         }
         return {
             error: '',
             data,
+            anomalies,
         }
     }
 
@@ -81,4 +87,6 @@ export default class Schema {
         if (!contestId || isNaN(contestId)) throw new Error(`campo "olimanager_contest_id" mancante nei dati della gara`)
         return contestId
     }
+
+    
 }

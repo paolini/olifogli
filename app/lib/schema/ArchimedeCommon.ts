@@ -1,3 +1,4 @@
+import { validate } from 'graphql'
 import { Data, Row, ScanResults } from '../models'
 import Competition, { OlimanagerProblemResult } from './Competition'
 import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField } from './fields'
@@ -94,12 +95,12 @@ const score_colors = [
     ].reverse();
 
 export default class ArchimedeCommon extends Competition {
-    constructor(name: string, description: string) {
+    constructor(name: string, description: string, expectedMinAge: number=Number.NEGATIVE_INFINITY, expectedMaxAge: number=Number.POSITIVE_INFINITY) {
         super(name, description, [
             new Field('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
             new Field('surname',{header: "Cognome", titleCase: true}),
             new Field('name',{header: "Nome", titleCase: true}),
-            new DateField('birthDate',{header: 'Data di nascita'}),
+            new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
             new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno'], precompileValue: true}),
             new Field('classSection',{header:'Sezione', precompileValue: true}),
             new VariantField('variant',{header: "Codice compito", additionalCssStyle: 'thick-border-left'}),
@@ -140,13 +141,15 @@ export default class ArchimedeCommon extends Competition {
         data = validated.data
         data = {...data, score:''}
         if (validated.error) return validated
+        const anomalies = validated.anomalies
         const variant = data['variant'] || ''
         if (!variant) return {
             error: validated.error || 'codice compito mancante',
             data,
+            anomalies,
         }
         const answer_items = this.extractAnswerItems(data)
-        console.log(JSON.stringify({answer_items}))
+        // console.log(JSON.stringify({answer_items}))
         try {
             const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
             const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
@@ -157,12 +160,14 @@ export default class ArchimedeCommon extends Competition {
             })
             return {
                 error: validated.error || error,
-                data
+                data,
+                anomalies,
             }
         } catch (e) {
             return {
                 error: `errore di configurazione della raccolta: ${(e as Error).message}`,
                 data,
+                anomalies,
             }
         }
     }
