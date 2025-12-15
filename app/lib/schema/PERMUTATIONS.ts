@@ -104,7 +104,7 @@ type MappingResult = {
 const variant_to_permutations: {[key:string]: MappingResult} = {}
 
 function computeVariantMappings(variantCode:string, permutations_data: PermutationsObject): MappingResult|string {
-    console.log("computeVariantMappings", JSON.stringify({variantCode, permutations_data}));
+    // console.log("computeVariantMappings", JSON.stringify({variantCode, permutations_data}));
     const cached = variant_to_permutations[variantCode];
     if (cached) return cached;
 
@@ -183,7 +183,7 @@ export function decodePermutations(variantCode: string, answers: string[], permu
         (j,i) => 
             `${answers[i].charAt(0) || '?'} [${answers_inverse_mapping[correct_answers[j]] || '?'}${remapped_answers[i] || '?'}${correct_answers[i] || '?'}]`);
 
-    console.log(JSON.stringify({n_questions, remapped_answers, correct_answers, extended_answers}));
+    // console.log(JSON.stringify({n_questions, remapped_answers, correct_answers, extended_answers}));
 
     let correct_answer_count = 0;
     let wrong_answer_count = 0;

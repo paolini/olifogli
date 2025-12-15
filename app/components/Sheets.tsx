@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
-import SheetsFilter, { filterSheets, useSheetsFilterState } from './SheetsFilter';
+import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
 
@@ -37,7 +37,7 @@ const UPDATE_SHEETS = gql`
     }
 `
 
-const DELETE_SHEETS = gql`
+const _DELETE_SHEETS = gql`
     mutation DeleteSheets($ids: [ObjectId!]!) {
         deleteSheets(ids: $ids)
     }
@@ -156,6 +156,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         )}
                         <Th field="##nRows" header="righe" />
                         <Th field="##nValidRows" header="valide" />
+                        <Th field="##anomalies" header="anomalie" />
                         <Th field="__updatedAt" header="aggiornato" />
                         <th>stato</th>
                     </tr>
@@ -382,12 +383,12 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
-        function handleCheckboxClick(id: ObjectId, e: React.ChangeEvent<HTMLInputElement>) {
-            // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
-            const native = e.nativeEvent
-            const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
-            const checked = e.currentTarget.checked
-            const idStr = id.toString()
+    function handleCheckboxClick(id: ObjectId, e: React.ChangeEvent<HTMLInputElement>) {
+        // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
+        const native = e.nativeEvent
+        const shift = 'shiftKey' in native && typeof native.shiftKey === 'boolean' ? native.shiftKey : false
+        const checked = e.currentTarget.checked
+        const idStr = id.toString()
         setSelectedIds(prev => {
             if (shift && lastClickedId) {
                 const anchorIndex = displayedSheets.findIndex(s => s._id.toString() === lastClickedId)
@@ -414,9 +415,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             }
         })
         setLastClickedId(idStr)
+       }
     }
-
-}
 
 function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHeaders, selected, onCheckboxClick}: {
     sheet: Partial<Sheet> & {_id: ObjectId}, 
@@ -444,6 +444,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         )}
         <td>{sheet.nRows}</td>
         <td>{sheet.nValidRows}</td>
+        <td>{sheet.anomalies}</td>
         <td>{sheet.updatedAt ? myTimestamp(sheet.updatedAt) : ''}</td>
         <td className=""><span className="flex">
             {sheet.locked 
