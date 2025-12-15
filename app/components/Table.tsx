@@ -977,6 +977,7 @@ const __ = gql`
       updatedOn
       updatedBy
       error
+      anomalies
       data
     }
   }

@@ -626,7 +626,7 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, anomalies: number, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -714,7 +714,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, anomalies: number } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -723,7 +723,7 @@ export type PatchRowMutationVariables = Exact<{
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, data: any } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, data: any, anomalies: number } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -1334,6 +1334,7 @@ export const GetRowsDocument = gql`
     createdBy
     updatedOn
     updatedBy
+    anomalies
     olimanager {
       participantId
       resultsUpdatedOn
@@ -1729,6 +1730,7 @@ export const AddRowDocument = gql`
     createdBy
     updatedOn
     updatedBy
+    anomalies
   }
 }
     `;
@@ -1770,6 +1772,7 @@ export const PatchRowDocument = gql`
     updatedBy
     error
     data
+    anomalies
   }
 }
     `;
