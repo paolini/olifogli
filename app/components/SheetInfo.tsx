@@ -303,11 +303,17 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                         chiuso da {sheet.closedBy || 'sconosciuto'} 
                         {} il {myTimestamp(sheet.closedOn)}
                         </span></td>}
+                    {profile?.isAdmin && 
+                    <td>
+                        <Button className="mx-4" variant="danger" disabled={locking} onClick={doLockSheet}>
+                            ⚙ finalizza
+                        </Button>
+                        </td>}
                     </>
                 }
                 { !sheet.locked && !sheet.closed &&<>
                     <td><span className="text-green-600 font-semibold">aperto</span></td>
-                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>
+                    <td><Button className="mx-4" variant="danger" disabled={!(canConfigureSheet && sheet.nValidRows === sheet.nRows || profile?.isAdmin)} onClick={doCloseSheet}>
                         chiudi
                         </Button>
                     </td>

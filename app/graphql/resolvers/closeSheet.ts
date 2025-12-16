@@ -29,7 +29,7 @@ export default async function closeSheet(_: unknown, args: { _id: ObjectId }, co
     const nInvalidRows = nRows - nValidRows
     throw new Error(
       `Impossibile chiudere il foglio: ci sono ${nInvalidRows} righe non valide. ` +
-      `Tutte le ${nRows} righe devono essere valide prima di chiudere il foglio.`
+      `Tutte le righe devono essere valide per poter chiudere il foglio.`
     )
   }
 
