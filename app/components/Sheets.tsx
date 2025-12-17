@@ -18,6 +18,7 @@ import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
+import Papa from 'papaparse';
 
 const DELETE_WORKBOOK = gql`
     mutation DeleteWorkbook($_id: ObjectId!) {
@@ -138,12 +139,40 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     // Escludi colonne non desiderate/duplicate nella tabella dei fogli
     // colonne già calcolate sopra (columns)
 
+    function downloadCSV() {
+        const headers = ['Nome', 'Schema', ...columns, 'righe', 'valide', 'anomalie'];
+        if (profile?.isAdmin) headers.push('sincronizzate');
+        headers.push('aggiornato', 'stato');
+
+        const data = filteredSheets.map(sheet => ({
+            'Nome': sheet.name,
+            'Schema': sheet.schema && schemas[sheet.schema]?.header || 'unknown schema',
+            ...Object.fromEntries(columns.map(col => [col, sheet.commonData?.[col] ?? ''])),
+            'righe': sheet.nRows,
+            'valide': sheet.nValidRows,
+            'anomalie': sheet.anomalies,
+            ...(profile?.isAdmin ? {'sincronizzate': sheet.nSyncedRows ?? '?'} : {}),
+            'aggiornato': sheet.updatedAt ? myTimestamp(sheet.updatedAt) : '',
+            'stato': sheet.locked ? 'bloccato' : sheet.closed ? 'chiuso' : 'aperto'
+        }));
+
+        const csv = Papa.unparse(data);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'sheets.csv';
+        link.click();
+    }
+
     return <>
         {allSheets.length === 0 ? (
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
-            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets}/>
+            <div className="flex justify-between mb-2 items-start">
+                <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets}/>
+                <Button onClick={downloadCSV}>download CSV</Button>
+            </div>
             <table>
                 <thead>
                     <tr>
