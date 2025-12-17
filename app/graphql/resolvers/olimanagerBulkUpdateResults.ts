@@ -62,6 +62,7 @@ export default async function olimanagerBulkUpdateResults(
     // 4) Converto le righe in problemResults
     const allProblemResults: OlimanagerProblemResult[] = [];
     const allRowIds: ObjectId[] = [];
+    const allSheetsSyncIncrement: Record<string, number> = {};
     let contestId: number | null = null;
 
     async function makeRowPusherFunction(sheetId: ObjectId) {
@@ -106,7 +107,11 @@ export default async function olimanagerBulkUpdateResults(
 
           allProblemResults.push(...problemResults);
           allRowIds.push(row._id);
-        }
+          if (!row?.olimanager?.resultsUpdatedOn) {
+            const key = sheetId.toString()
+            allSheetsSyncIncrement[key] = (allSheetsSyncIncrement[key] || 0) + 1;
+          }
+      }
     }
 
     for (const rowId of (rowIds || [])) {
@@ -143,6 +148,13 @@ export default async function olimanagerBulkUpdateResults(
         rows.updateMany(
             { _id: { $in: allRowIds } },
             { $set: { 'olimanager.resultsUpdatedOn': new Date() } })
+        for (const [sheetIdStr, increment] of Object.entries(allSheetsSyncIncrement)) {
+          const sheetId = new ObjectId(sheetIdStr);
+          sheets.updateOne(
+            { _id: sheetId },
+            { $inc: { nSyncedRows: increment } }
+          );
+        }
         return true;
     } else if (typename === "OperationInfo") {
         const messages = data?.messages || [];

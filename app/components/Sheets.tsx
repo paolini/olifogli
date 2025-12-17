@@ -158,6 +158,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         <Th field="##nRows" header="righe" />
                         <Th field="##nValidRows" header="valide" />
                         <Th field="##anomalies" header="anomalie" />
+                        { profile?.isAdmin && <Th field="##nSyncedRows" header="sincronizzate" /> }
                         <Th field="__updatedAt" header="aggiornato" />
                         <th>stato</th>
                     </tr>
@@ -166,7 +167,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     {displayedSheets.map((sheet) => (
                         sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
                         <SheetRow 
-                            key={sheet._id?.toString()} 
+                            key={sheet._id?.toString()}
                             sheet={sheet} 
                             profile={profile}
                             commonDataHeaders={columns}
@@ -462,6 +463,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         <td>{sheet.nRows}</td>
         <td>{sheet.nValidRows}</td>
         <td>{sheet.anomalies}</td>
+        { profile?.isAdmin && <td>{sheet.nSyncedRows ?? '?'}</td> }
         <td>{sheet.updatedAt ? myTimestamp(sheet.updatedAt) : ''}</td>
         <td className=""><span className="flex">
             {sheet.locked 
