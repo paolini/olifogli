@@ -66,9 +66,10 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     function downloadCSV() {
         getFullRanking({
             variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit: undefined }
-        }).then((result: any) => {
-            if (result.data?.sheetsRankingReport) {
-                const data = (result.data.sheetsRankingReport.ranking as RankingReport['ranking']).map((entry: RankingReport['ranking'][0]) => ({
+        }).then((result) => {
+            const data = result.data as { sheetsRankingReport: RankingReport };
+            if (data?.sheetsRankingReport) {
+                const csvData = data.sheetsRankingReport.ranking.map((entry: RankingReport['ranking'][0]) => ({
                     'Posizione': entry.rank,
                     'Punti': Math.round(entry.score),
                     'Cognome': entry.studentSurname,
@@ -77,7 +78,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
                     'Anno': entry.classYear,
                     'Sezione': entry.classSection
                 }));
-                const csv = Papa.unparse(data);
+                const csv = Papa.unparse(csvData);
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
