@@ -184,7 +184,8 @@ export type MutationLockSheetArgs = {
 
 export type MutationOlimanagerBulkUpdateResultsArgs = {
   password: Scalars['String']['input'];
-  rowIds: Array<Scalars['ObjectId']['input']>;
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   username?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -626,7 +627,7 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, anomalies: number, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -714,7 +715,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, anomalies: number } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -723,7 +724,7 @@ export type PatchRowMutationVariables = Exact<{
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, data: any, anomalies: number } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, anomalies: number, data: any } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -843,7 +844,8 @@ export type AddWorkbookMutationVariables = Exact<{
 export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
 
 export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
-  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
   username?: InputMaybe<Scalars['String']['input']>;
   password: Scalars['String']['input'];
 }>;
@@ -1329,12 +1331,12 @@ export const GetRowsDocument = gql`
   rows(sheetId: $sheetId) {
     _id
     error
+    anomalies
     data
     createdOn
     createdBy
     updatedOn
     updatedBy
-    anomalies
     olimanager {
       participantId
       resultsUpdatedOn
@@ -1725,12 +1727,12 @@ export const AddRowDocument = gql`
   addRow(sheetId: $sheetId, data: $data) {
     _id
     error
+    anomalies
     data
     createdOn
     createdBy
     updatedOn
     updatedBy
-    anomalies
   }
 }
     `;
@@ -1771,8 +1773,8 @@ export const PatchRowDocument = gql`
     updatedOn
     updatedBy
     error
-    data
     anomalies
+    data
   }
 }
     `;
@@ -2494,9 +2496,10 @@ export type AddWorkbookMutationHookResult = ReturnType<typeof useAddWorkbookMuta
 export type AddWorkbookMutationResult = Apollo.MutationResult<AddWorkbookMutation>;
 export type AddWorkbookMutationOptions = Apollo.BaseMutationOptions<AddWorkbookMutation, AddWorkbookMutationVariables>;
 export const OlimanagerBulkUpdateResultsDocument = gql`
-    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
   olimanagerBulkUpdateResults(
     rowIds: $rowIds
+    sheetIds: $sheetIds
     username: $username
     password: $password
   )
@@ -2518,6 +2521,7 @@ export type OlimanagerBulkUpdateResultsMutationFn = Apollo.MutationFunction<Olim
  * const [olimanagerBulkUpdateResultsMutation, { data, loading, error }] = useOlimanagerBulkUpdateResultsMutation({
  *   variables: {
  *      rowIds: // value for 'rowIds'
+ *      sheetIds: // value for 'sheetIds'
  *      username: // value for 'username'
  *      password: // value for 'password'
  *   },
@@ -2912,7 +2916,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
-  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password' | 'rowIds'>>;
+  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password'>>;
   olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['OlimanagerCreateResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
