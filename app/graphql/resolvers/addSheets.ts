@@ -22,6 +22,7 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
             nRows: 0,
             nValidRows: 0,
             anomalies: 0,
+            nSyncedRows: 0,
             ...sheet,
             ownerId: user._id,
             permissions,

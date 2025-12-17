@@ -33,6 +33,7 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
         nRows: 0,
         nValidRows: 0,
         anomalies: 0,
+        nSyncedRows: 0,
     })
     if (!result.acknowledged) {
         throw new Error("Failed to create sheet")

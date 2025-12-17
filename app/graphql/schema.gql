@@ -41,6 +41,7 @@ type Sheet {
   commonData: Data!
   nRows: Int!
   nValidRows: Int!
+  nSyncedRows: Int!
   anomalies: Int!
   updatedAt: Timestamp
   closed: Boolean
