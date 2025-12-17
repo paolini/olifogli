@@ -798,15 +798,6 @@ export type GetSheetsExerciseReportQueryVariables = Exact<{
 
 export type GetSheetsExerciseReportQuery = { __typename?: 'Query', sheetsExerciseReport: { __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, A: number, B: number, C: number, D: number, E: number }> } };
 
-export type GetSheetsRankingReportQueryVariables = Exact<{
-  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
-  schema: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
-
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
 }>;
@@ -2222,62 +2213,6 @@ export type GetSheetsExerciseReportQueryHookResult = ReturnType<typeof useGetShe
 export type GetSheetsExerciseReportLazyQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportLazyQuery>;
 export type GetSheetsExerciseReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportSuspenseQuery>;
 export type GetSheetsExerciseReportQueryResult = Apollo.QueryResult<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>;
-export const GetSheetsRankingReportDocument = gql`
-    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
-  sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
-    schema
-    totalStudents
-    ranking {
-      sheetId
-      sheetName
-      studentName
-      studentSurname
-      classYear
-      classSection
-      score
-      rank
-      sheet {
-        commonData
-      }
-    }
-  }
-}
-    `;
-
-/**
- * __useGetSheetsRankingReportQuery__
- *
- * To run a query within a React component, call `useGetSheetsRankingReportQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetSheetsRankingReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetSheetsRankingReportQuery({
- *   variables: {
- *      sheetIds: // value for 'sheetIds'
- *      schema: // value for 'schema'
- *      limit: // value for 'limit'
- *   },
- * });
- */
-export function useGetSheetsRankingReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables> & ({ variables: GetSheetsRankingReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
-      }
-export function useGetSheetsRankingReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
-        }
-export function useGetSheetsRankingReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
-        }
-export type GetSheetsRankingReportQueryHookResult = ReturnType<typeof useGetSheetsRankingReportQuery>;
-export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportLazyQuery>;
-export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
-export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
