@@ -934,7 +934,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
             data: data,
         }})
 
-        const row: Row | undefined | null = res.data?.addRow
+        const row = res.data?.addRow
         const errors = res.errors
         if (errors) {
             updateLineState({saving: false, error: errors.map(e => `${e}`).join(', ') })
@@ -958,6 +958,7 @@ const _ = gql`
     addRow(sheetId: $sheetId, data: $data) {
       _id
       error
+      anomalies
       data
       createdOn
       createdBy

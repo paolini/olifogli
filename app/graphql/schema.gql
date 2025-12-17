@@ -291,7 +291,8 @@ type Mutation {
   ): [OlimanagerCreateResult!]!
 
   olimanagerBulkUpdateResults(
-    rowIds: [ObjectId!]!
+    rowIds: [ObjectId!]
+    sheetIds: [ObjectId!]
     username: String
     password: String!
   ): Boolean!

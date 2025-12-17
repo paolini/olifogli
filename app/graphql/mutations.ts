@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const OLIMANAGER_BULK_UPDATE_RESULTS_MUTATION = gql`
-  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
-    olimanagerBulkUpdateResults(rowIds: $rowIds, username: $username, password: $password)
+  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
+    olimanagerBulkUpdateResults(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password)
   }
 `;
 
