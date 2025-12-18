@@ -24,6 +24,7 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
             updatedAt
             nRows
             nValidRows
+            nSyncedRows
             anomalies
             closed
             locked

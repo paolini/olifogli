@@ -1,17 +1,19 @@
 "use client"
 
 import { useState } from 'react'
-import { gql } from '@apollo/client'
+import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import { RankingReport, useGetSheetsQuery, useGetSheetsRankingReportQuery } from '../graphql/generated'
+import { RankingReport, useGetSheetsQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
+import Papa from 'papaparse'
+import Button from './Button'
 
-const _ = gql`
+const GET_SHEETS_RANKING_REPORT = gql`
     query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
         sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
             schema
@@ -44,10 +46,12 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
         .filter(s => ["archimede_biennio", "archimede_triennio"].includes(s.schema));
     const filteredSheets = filterSheets(filterState, sheets);
 
-    const { loading, error, data } = useGetSheetsRankingReportQuery({
+    const { loading, error, data } = useQuery(GET_SHEETS_RANKING_REPORT, {
         variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit },
         pollInterval: 10000, // millisecondi
     });
+    
+    const [getFullRanking] = useLazyQuery(GET_SHEETS_RANKING_REPORT);
     
     if (loading) return <Loading />
     if (error) return <Error error={error} />
@@ -59,10 +63,36 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
 
     const handleShowMore = () => setLimit(limit => limit * 2);
 
+    function downloadCSV() {
+        getFullRanking({
+            variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit: undefined }
+        }).then((result) => {
+            const data = result.data as { sheetsRankingReport: RankingReport };
+            if (data?.sheetsRankingReport) {
+                const csvData = data.sheetsRankingReport.ranking.map((entry: RankingReport['ranking'][0]) => ({
+                    'Posizione': entry.rank,
+                    'Punti': Math.round(entry.score),
+                    'Cognome': entry.studentSurname,
+                    'Nome': entry.studentName,
+                    'Scuola': entry.sheetName,
+                    'Anno': entry.classYear,
+                    'Sezione': entry.classSection
+                }));
+                const csv = Papa.unparse(csvData);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'ranking.csv';
+                link.click();
+            }
+        });
+    }
+
     return (
         <div className="p-4 space-y-6 max-w-6xl">
-            <div className="flex items-center gap-3">
+            <div className="flex justify-between items-start">
                 <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+                <Button onClick={downloadCSV}>download CSV</Button>
             </div>
             <RankingSection
                 key={report.schema}
