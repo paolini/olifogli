@@ -7,7 +7,7 @@ import FilterIcon from './FilterIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery } from '../graphql/generated';
+import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SchoolSheetsCreation';
@@ -18,6 +18,7 @@ import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
+import Papa from 'papaparse';
 
 const DELETE_WORKBOOK = gql`
     mutation DeleteWorkbook($_id: ObjectId!) {
@@ -63,6 +64,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
     const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET_PERMISSIONS)
     const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
+    const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateResultsLoading, error: olimanagerBulkUpdateResultsError }] = useOlimanagerBulkUpdateResultsMutation()
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [displayLimit, setDisplayLimit] = useState(20)
@@ -137,12 +139,40 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     // Escludi colonne non desiderate/duplicate nella tabella dei fogli
     // colonne già calcolate sopra (columns)
 
+    function downloadCSV() {
+        const headers = ['Nome', 'Schema', ...columns, 'righe', 'valide', 'anomalie'];
+        if (profile?.isAdmin) headers.push('sincronizzate');
+        headers.push('aggiornato', 'stato');
+
+        const data = filteredSheets.map(sheet => ({
+            'Nome': sheet.name,
+            'Schema': sheet.schema && schemas[sheet.schema]?.header || 'unknown schema',
+            ...Object.fromEntries(columns.map(col => [col, sheet.commonData?.[col] ?? ''])),
+            'righe': sheet.nRows,
+            'valide': sheet.nValidRows,
+            'anomalie': sheet.anomalies,
+            ...(profile?.isAdmin ? {'sincronizzate': sheet.nSyncedRows ?? '?'} : {}),
+            'aggiornato': sheet.updatedAt ? myTimestamp(sheet.updatedAt) : '',
+            'stato': sheet.locked ? 'bloccato' : sheet.closed ? 'chiuso' : 'aperto'
+        }));
+
+        const csv = Papa.unparse(data);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'sheets.csv';
+        link.click();
+    }
+
     return <>
         {allSheets.length === 0 ? (
             <div className="bg-alert">Nessun foglio disponibile</div>
         ) : (
             <>
-            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets}/>
+            <div className="flex justify-between mb-2 items-start">
+                <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets}/>
+                <Button onClick={downloadCSV}>download CSV</Button>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -157,6 +187,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         <Th field="##nRows" header="righe" />
                         <Th field="##nValidRows" header="valide" />
                         <Th field="##anomalies" header="anomalie" />
+                        { profile?.isAdmin && <Th field="##nSyncedRows" header="sincronizzate" /> }
                         <Th field="__updatedAt" header="aggiornato" />
                         <th>stato</th>
                     </tr>
@@ -165,7 +196,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     {displayedSheets.map((sheet) => (
                         sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
                         <SheetRow 
-                            key={sheet._id?.toString()} 
+                            key={sheet._id?.toString()}
                             sheet={sheet} 
                             profile={profile}
                             commonDataHeaders={columns}
@@ -195,6 +226,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={validateRowsError} />
         <Error error={updateSheetError} />
         <Error error={olimanagerCreateParticipantError} />
+        <Error error={olimanagerBulkUpdateResultsError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={() => deleteEmptySheets()}>
@@ -211,6 +243,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 </Button>
                 <Button disabled={selectedIds.length === 0 || olimanagerCreateParticipantLoading} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
                     ⚙ Crea/abbina partecipanti (Olimanager)
+                </Button>
+                <Button disabled={selectedIds.length === 0 || olimanagerBulkUpdateResultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
+                    ⚙ Invia risultati (Olimanager)
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta
@@ -383,6 +418,18 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
+    async function handleOlimanagerBulkUpdateResults() {
+        if (!confirm(`Inviare i risultati di tutti i partecipanti ${pluralize(selectedIds.length, 'del foglio selezionato', 'dei % fogli selezionati')} a Olimanager?`)) {
+            return
+        }
+        const {username, password} = askOlimanagerCredentials()
+        const res = await olimanagerBulkUpdateResults({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean, error?: string}[]}}
+        const success = res.data?.olimanagerBulkUpdateResults
+        if (success) alert("Risultati inviati con successo a Olimanager")
+        else alert("Errore durante l'invio dei risultati a Olimanager")
+        refetch()
+    }
+
     function handleCheckboxClick(id: ObjectId, e: React.ChangeEvent<HTMLInputElement>) {
         // nativeEvent può essere MouseEvent o InputEvent, ma shiftKey è solo su MouseEvent
         const native = e.nativeEvent
@@ -445,6 +492,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         <td>{sheet.nRows}</td>
         <td>{sheet.nValidRows}</td>
         <td>{sheet.anomalies}</td>
+        { profile?.isAdmin && <td>{sheet.nSyncedRows ?? '?'}</td> }
         <td>{sheet.updatedAt ? myTimestamp(sheet.updatedAt) : ''}</td>
         <td className=""><span className="flex">
             {sheet.locked 

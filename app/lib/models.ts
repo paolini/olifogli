@@ -49,6 +49,7 @@ export type Sheet = {
     updatedAt: Date
     nRows: number // Numero di righe collegate (denormalizzato, gestito con transazioni)
     nValidRows: number // Numero di righe valide con error='' (denormalizzato, gestito con transazioni)
+    nSyncedRows: number // Numero di righe sincronizzate con Olimanager (denormalizzato, gestito con transazioni)
     anomalies: number // Numero totale di anomalie nelle righe valide (denormalizzato, gestito con transazioni)
     closed?: boolean
     closedBy?: string
@@ -76,8 +77,8 @@ export type Row = {
     updatedBy: string
     olimanager?: {
         participantId?: string
-        createdParticipantOn: Date 
-        updatedResultsOn: Date
+        participantCreatedOn?: Date 
+        resultsUpdatedOn?: Date
         error: string
     }
 }

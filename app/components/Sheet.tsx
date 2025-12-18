@@ -39,6 +39,7 @@ const _ = gql`
             nRows
             nValidRows
             anomalies
+            nSyncedRows
             closed
             closedBy
             closedOn

@@ -184,7 +184,8 @@ export type MutationLockSheetArgs = {
 
 export type MutationOlimanagerBulkUpdateResultsArgs = {
   password: Scalars['String']['input'];
-  rowIds: Array<Scalars['ObjectId']['input']>;
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   username?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -484,6 +485,7 @@ export type Sheet = {
   lockedBy?: Maybe<Scalars['String']['output']>;
   lockedOn?: Maybe<Scalars['Timestamp']['output']>;
   nRows: Scalars['Int']['output'];
+  nSyncedRows: Scalars['Int']['output'];
   nValidRows: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   ownerId: Scalars['ObjectId']['output'];
@@ -619,14 +621,14 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, anomalies: number, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -714,7 +716,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, anomalies: number } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -723,7 +725,7 @@ export type PatchRowMutationVariables = Exact<{
 }>;
 
 
-export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, data: any, anomalies: number } | null };
+export type PatchRowMutation = { __typename?: 'Mutation', patchRow?: { __typename: 'Row', _id: ObjectId, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, error?: string | null, anomalies: number, data: any } | null };
 
 export type DeleteRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -796,21 +798,12 @@ export type GetSheetsExerciseReportQueryVariables = Exact<{
 
 export type GetSheetsExerciseReportQuery = { __typename?: 'Query', sheetsExerciseReport: { __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, A: number, B: number, C: number, D: number, E: number }> } };
 
-export type GetSheetsRankingReportQueryVariables = Exact<{
-  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
-  schema: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
-
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, anomalies: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -843,7 +836,8 @@ export type AddWorkbookMutationVariables = Exact<{
 export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
 
 export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
-  rowIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
   username?: InputMaybe<Scalars['String']['input']>;
   password: Scalars['String']['input'];
 }>;
@@ -1282,6 +1276,7 @@ export const GetSheetDocument = gql`
     nRows
     nValidRows
     anomalies
+    nSyncedRows
     closed
     closedBy
     closedOn
@@ -1329,12 +1324,12 @@ export const GetRowsDocument = gql`
   rows(sheetId: $sheetId) {
     _id
     error
+    anomalies
     data
     createdOn
     createdBy
     updatedOn
     updatedBy
-    anomalies
     olimanager {
       participantId
       resultsUpdatedOn
@@ -1725,12 +1720,12 @@ export const AddRowDocument = gql`
   addRow(sheetId: $sheetId, data: $data) {
     _id
     error
+    anomalies
     data
     createdOn
     createdBy
     updatedOn
     updatedBy
-    anomalies
   }
 }
     `;
@@ -1771,8 +1766,8 @@ export const PatchRowDocument = gql`
     updatedOn
     updatedBy
     error
-    data
     anomalies
+    data
   }
 }
     `;
@@ -2218,62 +2213,6 @@ export type GetSheetsExerciseReportQueryHookResult = ReturnType<typeof useGetShe
 export type GetSheetsExerciseReportLazyQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportLazyQuery>;
 export type GetSheetsExerciseReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportSuspenseQuery>;
 export type GetSheetsExerciseReportQueryResult = Apollo.QueryResult<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>;
-export const GetSheetsRankingReportDocument = gql`
-    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
-  sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
-    schema
-    totalStudents
-    ranking {
-      sheetId
-      sheetName
-      studentName
-      studentSurname
-      classYear
-      classSection
-      score
-      rank
-      sheet {
-        commonData
-      }
-    }
-  }
-}
-    `;
-
-/**
- * __useGetSheetsRankingReportQuery__
- *
- * To run a query within a React component, call `useGetSheetsRankingReportQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetSheetsRankingReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetSheetsRankingReportQuery({
- *   variables: {
- *      sheetIds: // value for 'sheetIds'
- *      schema: // value for 'schema'
- *      limit: // value for 'limit'
- *   },
- * });
- */
-export function useGetSheetsRankingReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables> & ({ variables: GetSheetsRankingReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
-      }
-export function useGetSheetsRankingReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
-        }
-export function useGetSheetsRankingReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
-        }
-export type GetSheetsRankingReportQueryHookResult = ReturnType<typeof useGetSheetsRankingReportQuery>;
-export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportLazyQuery>;
-export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
-export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
@@ -2289,6 +2228,7 @@ export const GetSheetsDocument = gql`
     updatedAt
     nRows
     nValidRows
+    nSyncedRows
     anomalies
     closed
     locked
@@ -2494,9 +2434,10 @@ export type AddWorkbookMutationHookResult = ReturnType<typeof useAddWorkbookMuta
 export type AddWorkbookMutationResult = Apollo.MutationResult<AddWorkbookMutation>;
 export type AddWorkbookMutationOptions = Apollo.BaseMutationOptions<AddWorkbookMutation, AddWorkbookMutationVariables>;
 export const OlimanagerBulkUpdateResultsDocument = gql`
-    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!]!, $username: String, $password: String!) {
+    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
   olimanagerBulkUpdateResults(
     rowIds: $rowIds
+    sheetIds: $sheetIds
     username: $username
     password: $password
   )
@@ -2518,6 +2459,7 @@ export type OlimanagerBulkUpdateResultsMutationFn = Apollo.MutationFunction<Olim
  * const [olimanagerBulkUpdateResultsMutation, { data, loading, error }] = useOlimanagerBulkUpdateResultsMutation({
  *   variables: {
  *      rowIds: // value for 'rowIds'
+ *      sheetIds: // value for 'sheetIds'
  *      username: // value for 'username'
  *      password: // value for 'password'
  *   },
@@ -2912,7 +2854,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
-  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password' | 'rowIds'>>;
+  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password'>>;
   olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['OlimanagerCreateResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password'>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
@@ -3075,6 +3017,7 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   lockedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lockedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   nRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  nSyncedRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   nValidRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
