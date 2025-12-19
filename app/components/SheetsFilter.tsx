@@ -87,10 +87,10 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
             ))}
         </select>
         <select value={statoFilter} onChange={e => setStatoFilter(e.target.value)} className="border rounded px-2 py-1">
-            <option value="">Aperti, chiusi o bloccati</option>
+            <option value="">Aperti, chiusi o finalizzati</option>
             <option value="aperto">Aperti</option>
-            <option value="chiuso_o_bloccato">Chiusi o bloccati</option>
-            <option value="chiuso_non_bloccato">Chiusi ma non bloccati</option>
+            <option value="chiuso_o_bloccato">Chiusi o finalizzati</option>
+            <option value="chiuso_non_bloccato">Chiusi ma non finalizzati</option>
         </select>
         <span>{pluralize(filteredSheets.length, "foglio", "fogli")} con {pluralize(filteredRows, "riga", "righe")} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${sheets.length} fogli e ${totalRows} righe)`}</span>
     </div>

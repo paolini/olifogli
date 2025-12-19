@@ -151,13 +151,13 @@ const actions: Record<string, Action> = {
     handler: handleGenerateStudentIds
   },
   'olimanager': {
-    hidden: ctx => !ctx.edit || !ctx.profile?.isAdmin,
+    hidden: ctx => !ctx.profile?.isAdmin,
     label: '⚙ Crea/abbina partecipanti (Olimanager)',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerCreateParticipants
   },
   'update_scores': {
-    hidden: ctx => !ctx.edit || !ctx.profile?.isAdmin,
+    hidden: ctx => !ctx.profile?.isAdmin,
     label: '⚙ Aggiorna risultati (Olimanager)',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerUpdateScores
