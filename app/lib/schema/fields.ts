@@ -109,8 +109,7 @@ export class Field {
         }
     }
 
-    // probabilità che questo valore sia anomalo
-    // pur se valido
+    // valore anomalo anche se valido
     anomalous(value: string): boolean {
         return false
     }
@@ -292,6 +291,10 @@ export class DateField extends Field {
 
     anomalous(value: string): boolean {
         if (this.isValid(value)) {
+            // TODO:
+            // questo controllo non va bene,
+            // bisogna conoscere l'anno in cui si è svolta 
+            // la gara, non l'anno corrente
             const thisYear = new Date().getFullYear()
             const year = parseInt(value.substring(6,10), 10)
             const age = thisYear - year
