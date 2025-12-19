@@ -278,40 +278,65 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
         'view': 'supervisore'
     }
 
+    const locked = sheet.locked
+    const closed = !sheet.locked && sheet.closed
+    const open = !sheet.locked && !sheet.closed
+
     return <>
             <table className="my-2 commondata"><tbody><tr>
                 <th>Stato del foglio {schema?.header_essential}</th>
-                { sheet.locked && 
-                    <>
-                    <td><span className="text-red-600 font-semibold">finalizzato</span></td>
-                    <td><Button className="mx-4" disabled={!canModifySensibleData}>apri</Button></td>
-                    {profile?.isAdmin && <td>
-                        <span className="text-sm text-gray-600 ml-2">
-                        ⚙ bloccato da {sheet.lockedBy || 'sconosciuto'} 
-                        {} il {myTimestamp(sheet.lockedOn)}
-                        </span></td>}
-                    </>
+                { locked && 
+                    <td><span className="text-red-600 font-semibold">
+                        {sheet.closed && "chiuso e "}
+                        finalizzato    
+                    </span></td>
                 }
-                { !sheet.locked && sheet.closed &&
-                    <>
-                    <td><span className="text-orange-600 font-semibold">chiuso</span></td>
-                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>
-                        apri
-                    </Button></td>
-                    {profile?.isAdmin && <td>
+                { closed &&
+                    <td><span className="text-orange-600 font-semibold">
+                        chiuso
+                    </span></td>
+                }
+                { open &&
+                    <td><span className="text-green-600 font-semibold">
+                        aperto
+                    </span></td>
+                }
+                { closed && profile?.isAdmin && <td>
                         ⚙ <span className="text-sm text-gray-600 ml-2">
                         chiuso da {sheet.closedBy || 'sconosciuto'} 
                         {} il {myTimestamp(sheet.closedOn)}
-                        </span></td>}
-                    </>
+                    </span></td>
                 }
-                { !sheet.locked && !sheet.closed &&<>
-                    <td><span className="text-green-600 font-semibold">aperto</span></td>
-                    <td><Button className="mx-4" variant="danger" disabled={!canConfigureSheet} onClick={doCloseSheet}>
+                { locked && profile?.isAdmin && <td>
+                    <span className="text-sm text-gray-600 ml-2">
+                    ⚙ bloccato da {sheet.lockedBy || 'sconosciuto'} 
+                    {} il {myTimestamp(sheet.lockedOn)}
+                    </span></td> }
+                { closed && 
+                    <td><Button disabled={!canConfigureSheet} className="mx-4" onClick={doOpenSheet}>
+                        apri
+                    </Button></td>
+                }
+                { !locked && profile?.isAdmin && 
+                    <td>
+                        <Button className="mx-4" variant="danger" disabled={locking} onClick={doLockSheet}>
+                            ⚙ finalizza
+                        </Button>
+                    </td>
+                }
+                { locked && profile?.isAdmin && 
+                    <td>
+                        <Button className="mx-4" variant="danger" disabled={locking} onClick={doUnlockSheet}>
+                            ⚙ sblocca
+                        </Button>
+                    </td>
+                }
+                { open &&
+                    <td><Button className="mx-4" variant="danger" disabled={!(canConfigureSheet && sheet.nValidRows === sheet.nRows || profile?.isAdmin)} onClick={doCloseSheet}>
                         chiudi
                         </Button>
                     </td>
-                </>}
+                }
                 </tr></tbody>
             </table>
 
