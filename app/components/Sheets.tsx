@@ -52,7 +52,7 @@ const UPDATE_SHEET_PERMISSIONS = gql`
 
 export default function Sheets({ sheets, profile, workbookId, refetch }: { 
     sheets: GetSheetsQuery['sheets'], 
-    profile?: { isAdmin?: boolean|null } | null,
+    profile?: { isAdmin?: boolean|null, email?: string } | null,
     workbookId: ObjectId,
     refetch: () => void
 }) {
@@ -70,6 +70,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [displayLimit, setDisplayLimit] = useState(20)
     const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring();
+    const [olimanagerEmail, setOlimanagerEmail] = useState(profile?.email || '')
+    const [olimanagerPassword, setOlimanagerPassword] = useState('')
 
     type Sheet = GetSheetsQuery['sheets'][number]
 
@@ -399,8 +401,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     }
 
     function askOlimanagerCredentials(): {username: string, password: string} {
-        const username = prompt('Username olimanager (email)', '') ?? ''
-        const password = prompt('Password', '') ?? ''
+        const username = prompt('Username olimanager (email)', olimanagerEmail) ?? ''
+        const password = prompt('Password', olimanagerPassword) ?? ''
+        setOlimanagerEmail(username)
+        setOlimanagerPassword(password)
         return {username, password}
     }
 
