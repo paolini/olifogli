@@ -309,7 +309,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
                 }
                 { locked && profile?.isAdmin && <td>
                     <span className="text-sm text-gray-600 ml-2">
-                    ⚙ bloccato da {sheet.lockedBy || 'sconosciuto'} 
+                    ⚙ finalizzato da {sheet.lockedBy || 'sconosciuto'} 
                     {} il {myTimestamp(sheet.lockedOn)}
                     </span></td> }
                 { closed && 

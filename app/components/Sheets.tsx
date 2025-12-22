@@ -155,7 +155,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             'anomalie': sheet.anomalies,
             ...(profile?.isAdmin ? {'sincronizzate': sheet.nSyncedRows ?? '?'} : {}),
             'aggiornato': sheet.updatedAt ? myTimestamp(sheet.updatedAt) : '',
-            'stato': sheet.locked ? 'bloccato' : sheet.closed ? 'chiuso' : 'aperto'
+            'stato': sheet.locked ? 'finalizzato' : sheet.closed ? 'chiuso' : 'aperto'
         }));
 
         const csv = Papa.unparse(data);
@@ -241,7 +241,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     ⚙ Rivalida {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => lockSelectedSheets()}>
-                    ⚙ Blocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                    ⚙ Finalizza {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                </Button>
+                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => unlockSelectedSheets()}>
+                    ⚙ Sblocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
                 <Button disabled={selectedIds.length === 0 || olimanagerCreateParticipantLoading} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
                     ⚙ Crea/abbina partecipanti (Olimanager)
@@ -345,6 +348,16 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         const updates = selectedIds.map(id => ({
             _id: new ObjectId(id),
             locked: true
+        }))
+        await updateSheets({ variables: { sheets: updates } })
+        refetch()
+    }
+
+    async function unlockSelectedSheets() {
+        if (!confirm(`Sei sicuro di voler sbloccare (definalizzare) ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
+        const updates = selectedIds.map(id => ({
+            _id: new ObjectId(id),
+            locked: false
         }))
         await updateSheets({ variables: { sheets: updates } })
         refetch()
@@ -500,7 +513,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         <td>{sheet.updatedAt ? myTimestamp(sheet.updatedAt) : ''}</td>
         <td className=""><span className="flex">
             {sheet.locked 
-                ? <><Lock size={16} className="text-red-600" />&nbsp;bloccato</> 
+                ? <><Lock size={16} className="text-red-600" />&nbsp;finalizzato</> 
                 : sheet.closed 
                     ? <><Archive size={16} className="text-orange-500" />&nbsp;chiuso</> 
                     : <><Unlock size={16} className="text-green-600" />&nbsp;aperto</>}

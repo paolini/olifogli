@@ -76,6 +76,8 @@ export function check_user_can_view_sheet(user: User, sheet: Partial<Sheet>|null
 export function check_user_can_edit_rows(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
   if (!sheet) throw new UserInputError('foglio inesistente')
   
+  if (user?.isAdmin) return // gli admin di sistema possono sempre modificare
+
   const permission = getUserPermissionOnSheet(user, sheet)
   if (!permission || permission === 'view') {
     throw new ForbiddenError('non autorizzato')
@@ -83,7 +85,7 @@ export function check_user_can_edit_rows(user: User, sheet: Partial<Sheet>|null)
   
   // Check if sheet is locked (only system admins can edit locked sheets)
   if (sheet.locked) {
-    throw new ForbiddenError('il foglio è bloccato non può essere modificato')
+    throw new ForbiddenError('il foglio è finalizzato non può essere modificato')
   }
   
   // Check if sheet is closed (nobody can edit rows when closed)

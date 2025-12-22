@@ -108,7 +108,7 @@ function SheetBody({sheet,profile}: {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
-    const validTabs = ['info','table', 'standardAnswers', 'scans'] as const;
+    const validTabs = ['info','table', 'standardAnswers', 'scans', 'edit'] as const;
     type TabType = typeof validTabs[number];
     function isTabType(tab: string | null): tab is TabType {
         return validTabs.includes(tab as TabType);
@@ -155,6 +155,12 @@ function SheetBody({sheet,profile}: {
             >
                 RISPOSTE DEPERMUTATE <span style={{background: "yellow"}}>(new!)</span>
             </button>}
+            { profile?.isAdmin && !(canEdit && !sheet.closed && !sheet.locked) && <button
+                className={`tab-button ${tab === 'edit' ? 'tab-button-active' : 'tab-button-inactive'}`}
+                onClick={() => setTab('edit')}
+            >
+                ⚙ MODIFICA DATI
+            </button>}
             <button 
                 className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
                 onClick={() => setTab('scans')}>
@@ -170,6 +176,21 @@ function SheetBody({sheet,profile}: {
         { tab === 'table' && !csvImport &&
             <Table 
                 edit={canEdit} 
+                sheet={sheet} 
+                rows={data.rows} 
+                refresh={refresh} 
+                refreshLoading={loading}
+                polling={polling}
+                setPolling={setPolling}
+                lastCsvDownload={lastCsvDownload}
+                csvDownload={csvDownload}
+                setCsvImport={setCsvImport}
+                standardAnswers={false}
+            />
+        }
+        { tab === 'edit' &&
+            <Table 
+                edit={true} 
                 sheet={sheet} 
                 rows={data.rows} 
                 refresh={refresh} 
