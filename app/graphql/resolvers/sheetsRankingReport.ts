@@ -48,6 +48,8 @@ async function generateRankingReport(
         classYear: string
         classSection: string
         score: number
+        rowId: ObjectId
+        selections: { label: string, selected_by: string, timestamp: Date }[]
     }> = []
 
     for (const row of rows) {
@@ -65,7 +67,9 @@ async function generateRankingReport(
             studentSurname: row.data?.surname || '',
             classYear: row.data?.classYear || '',
             classSection: row.data?.classSection || '',
-            score
+            score,
+            rowId: row._id,
+            selections: row.selections || []
         })
     }
 

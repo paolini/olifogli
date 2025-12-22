@@ -63,6 +63,12 @@ export type Data = {
   [key: string]: string
 }
 
+export type RowSelection = {
+    label: string // etichetta della selezione
+    selected_by: string // email di chi ha selezionato
+    timestamp: Date // data della selezione 
+}
+
 export type Row = {
     _id: ObjectId
     sheetId: ObjectId
@@ -81,6 +87,7 @@ export type Row = {
         resultsUpdatedOn?: Date
         error: string
     }
+    selections?: RowSelection[]
 }
 
 export type Workbook = {

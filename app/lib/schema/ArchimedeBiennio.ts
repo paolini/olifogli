@@ -7,5 +7,8 @@ export default class ArchimedeBiennio extends ArchimedeCommon {
         this.header_essential = 'biennio'
         this.fields.filter(f => f instanceof OptionsField)
             .forEach(f => {f.options = ['1','2']})        
+        this.selections = [
+            { label: "gara_prime", name: "Gara delle prime", color: "gold" }
+        ]
     }
 }
