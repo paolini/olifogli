@@ -28,6 +28,7 @@ import addSheets from './resolvers/addSheets'
 import updateSheets from './resolvers/updateSheets'
 import addRow from './resolvers/addRow'
 import patchRow from './resolvers/patchRow'
+import toggleSelection from './resolvers/toggleSelection'
 import deleteRow from './resolvers/deleteRow'
 import deleteRows from './resolvers/deleteRows'
 import deleteAllRows from './resolvers/deleteAllRows'
@@ -112,6 +113,7 @@ export const resolvers: Resolvers = {
 
     addRow,
     patchRow,
+    toggleSelection,
     deleteRow,
     deleteRows,
     deleteAllRows,

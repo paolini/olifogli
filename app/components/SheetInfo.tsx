@@ -11,11 +11,53 @@ import { myTimestamp, pluralize } from '../lib/util'
 import { schemas } from '../lib/schema'
 import GlobalMessage from './GlobalMessage'
 
+const DELETE_SHEET = gql`
+    mutation DeleteSheet($_id: ObjectId!) {
+        deleteSheet(_id: $_id)
+    }`
+
+const UPDATE_SHEET = gql`
+  mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data, $nRows: Int, $nValidRows: Int, $nSyncedRows: Int, $anomalies: Int) {
+    updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData, nRows: $nRows, nValidRows: $nValidRows, nSyncedRows: $nSyncedRows, anomalies: $anomalies)
+  }
+`
+
+const DELETE_ALL_ROWS = gql`
+  mutation DeleteAllRows($sheetId: ObjectId!) {
+    deleteAllRows(sheetId: $sheetId)
+  }
+`
+
+const CLOSE_SHEET = gql`
+  mutation CloseSheet($_id: ObjectId!) {
+    closeSheet(_id: $_id)
+  }
+`
+
+const OPEN_SHEET = gql`
+  mutation OpenSheet($_id: ObjectId!) {
+    openSheet(_id: $_id)
+  }
+`
+
+const LOCK_SHEET = gql`
+  mutation LockSheet($_id: ObjectId!) {
+    lockSheet(_id: $_id)
+  }
+`
+
+const UNLOCK_SHEET = gql`
+  mutation UnlockSheet($_id: ObjectId!) {
+    unlockSheet(_id: $_id)
+  }
+`
+
 export default function SheetInfo({sheet,data,profile}:{
     sheet: Sheet
     data?: {rows: Row[]}
     profile: User | null
 }) {
+    const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
     const rows = data?.rows
     const n_valid_rows = rows?.filter(r => !r.error).length || 0
     
@@ -32,10 +74,27 @@ export default function SheetInfo({sheet,data,profile}:{
               {sheet.anomalies > 0 && <>{' • '}<span><b>{pluralize(sheet.anomalies, "anomalia", "anomalie")}</b></span></>}
               {n_valid_rows < rows.length && <>{' • '}<span>non è possibile chiudere il foglio</span></>}
               <br />
+              {(sheet.nRows !== rows.length || sheet.nValidRows !== n_valid_rows) && profile?.isAdmin && <>
+                <span className="error">attenzione: dati disallineati: </span>
+                <Button onClick={() => syncNormalizedData()}>⚙ Sincronizza</Button>
+                <br /></>}
         </div>
         
         <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
     </>
+
+    async function syncNormalizedData() {
+        if (!rows) return
+        updateSheet({
+            variables: {
+                _id: sheet._id,
+                nRows: rows.length,
+                nValidRows: n_valid_rows,
+                anomalies: rows.filter(r => !r.error).reduce((sum, r) => sum + r.anomalies, 0)
+            },
+            refetchQueries: ['getSheet']
+        })
+    }
 }
 
 function SheetInfoPanel({sheet,profile}:{
@@ -86,47 +145,6 @@ function PanelDisplay({sheet}: {
         )}
     </>
 }
-
-const DELETE_SHEET = gql`
-    mutation DeleteSheet($_id: ObjectId!) {
-        deleteSheet(_id: $_id)
-    }`
-
-const UPDATE_SHEET = gql`
-  mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data) {
-    updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData)
-  }
-`
-
-const DELETE_ALL_ROWS = gql`
-  mutation DeleteAllRows($sheetId: ObjectId!) {
-    deleteAllRows(sheetId: $sheetId)
-  }
-`
-
-const CLOSE_SHEET = gql`
-  mutation CloseSheet($_id: ObjectId!) {
-    closeSheet(_id: $_id)
-  }
-`
-
-const OPEN_SHEET = gql`
-  mutation OpenSheet($_id: ObjectId!) {
-    openSheet(_id: $_id)
-  }
-`
-
-const LOCK_SHEET = gql`
-  mutation LockSheet($_id: ObjectId!) {
-    lockSheet(_id: $_id)
-  }
-`
-
-const UNLOCK_SHEET = gql`
-  mutation UnlockSheet($_id: ObjectId!) {
-    unlockSheet(_id: $_id)
-  }
-`
 
 function PanelEdit({sheet,profile}: {
     sheet: Sheet

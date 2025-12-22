@@ -96,6 +96,7 @@ export type Mutation = {
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
+  toggleSelection?: Maybe<Row>;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSetting: Setting;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
@@ -216,6 +217,12 @@ export type MutationRequestScanSheetGenerationArgs = {
 };
 
 
+export type MutationToggleSelectionArgs = {
+  label: Scalars['String']['input'];
+  rowId: Scalars['ObjectId']['input'];
+};
+
+
 export type MutationUnlockSheetArgs = {
   _id: Scalars['ObjectId']['input'];
 };
@@ -229,7 +236,11 @@ export type MutationUpdateSettingArgs = {
 
 export type MutationUpdateSheetArgs = {
   _id: Scalars['ObjectId']['input'];
+  anomalies?: InputMaybe<Scalars['Int']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  nRows?: InputMaybe<Scalars['Int']['input']>;
+  nSyncedRows?: InputMaybe<Scalars['Int']['input']>;
+  nValidRows?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   permissions?: InputMaybe<Array<PermissionInput>>;
   schema?: InputMaybe<Scalars['String']['input']>;
@@ -397,7 +408,9 @@ export type ReportEntry = {
   classSection?: Maybe<Scalars['String']['output']>;
   classYear?: Maybe<Scalars['String']['output']>;
   rank: Scalars['Int']['output'];
+  rowId: Scalars['ObjectId']['output'];
   score: Scalars['Float']['output'];
+  selections?: Maybe<Array<Maybe<RowSelection>>>;
   sheet: ReportEntrySheet;
   sheetId: Scalars['ObjectId']['output'];
   sheetName: Scalars['String']['output'];
@@ -419,8 +432,16 @@ export type Row = {
   data: Scalars['Data']['output'];
   error?: Maybe<Scalars['String']['output']>;
   olimanager?: Maybe<OlimanagerRowData>;
+  selections?: Maybe<Array<Maybe<RowSelection>>>;
   updatedBy: Scalars['String']['output'];
   updatedOn: Scalars['Timestamp']['output'];
+};
+
+export type RowSelection = {
+  __typename?: 'RowSelection';
+  label: Scalars['String']['output'];
+  selected_by: Scalars['String']['output'];
+  timestamp: Scalars['Timestamp']['output'];
 };
 
 export type ScanJob = {
@@ -462,6 +483,10 @@ export type ScoreDistributionItem = {
   __typename?: 'ScoreDistributionItem';
   count: Scalars['Int']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type SelectionInput = {
+  label: Scalars['String']['input'];
 };
 
 export type Setting = {
@@ -641,6 +666,10 @@ export type UpdateSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
   permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  nRows?: InputMaybe<Scalars['Int']['input']>;
+  nValidRows?: InputMaybe<Scalars['Int']['input']>;
+  nSyncedRows?: InputMaybe<Scalars['Int']['input']>;
+  anomalies?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -797,6 +826,23 @@ export type GetSheetsExerciseReportQueryVariables = Exact<{
 
 
 export type GetSheetsExerciseReportQuery = { __typename?: 'Query', sheetsExerciseReport: { __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, A: number, B: number, C: number, D: number, E: number }> } };
+
+export type GetSheetsRankingReportQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  schema: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, rowId: ObjectId, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+
+export type ToggleSelectionMutationVariables = Exact<{
+  rowId: Scalars['ObjectId']['input'];
+  label: Scalars['String']['input'];
+}>;
+
+
+export type ToggleSelectionMutation = { __typename?: 'Mutation', toggleSelection?: { __typename?: 'Row', _id: ObjectId, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null } | null };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
@@ -1403,8 +1449,16 @@ export type DeleteSheetMutationHookResult = ReturnType<typeof useDeleteSheetMuta
 export type DeleteSheetMutationResult = Apollo.MutationResult<DeleteSheetMutation>;
 export type DeleteSheetMutationOptions = Apollo.BaseMutationOptions<DeleteSheetMutation, DeleteSheetMutationVariables>;
 export const UpdateSheetDocument = gql`
-    mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data) {
-  updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData)
+    mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data, $nRows: Int, $nValidRows: Int, $nSyncedRows: Int, $anomalies: Int) {
+  updateSheet(
+    _id: $_id
+    permissions: $permissions
+    commonData: $commonData
+    nRows: $nRows
+    nValidRows: $nValidRows
+    nSyncedRows: $nSyncedRows
+    anomalies: $anomalies
+  )
 }
     `;
 export type UpdateSheetMutationFn = Apollo.MutationFunction<UpdateSheetMutation, UpdateSheetMutationVariables>;
@@ -1425,6 +1479,10 @@ export type UpdateSheetMutationFn = Apollo.MutationFunction<UpdateSheetMutation,
  *      _id: // value for '_id'
  *      permissions: // value for 'permissions'
  *      commonData: // value for 'commonData'
+ *      nRows: // value for 'nRows'
+ *      nValidRows: // value for 'nValidRows'
+ *      nSyncedRows: // value for 'nSyncedRows'
+ *      anomalies: // value for 'anomalies'
  *   },
  * });
  */
@@ -2213,6 +2271,107 @@ export type GetSheetsExerciseReportQueryHookResult = ReturnType<typeof useGetShe
 export type GetSheetsExerciseReportLazyQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportLazyQuery>;
 export type GetSheetsExerciseReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsExerciseReportSuspenseQuery>;
 export type GetSheetsExerciseReportQueryResult = Apollo.QueryResult<GetSheetsExerciseReportQuery, GetSheetsExerciseReportQueryVariables>;
+export const GetSheetsRankingReportDocument = gql`
+    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
+  sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
+    schema
+    totalStudents
+    ranking {
+      sheetId
+      sheetName
+      studentName
+      studentSurname
+      classYear
+      classSection
+      score
+      rank
+      rowId
+      selections {
+        label
+        selected_by
+        timestamp
+      }
+      sheet {
+        commonData
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetSheetsRankingReportQuery__
+ *
+ * To run a query within a React component, call `useGetSheetsRankingReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsRankingReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSheetsRankingReportQuery({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      schema: // value for 'schema'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useGetSheetsRankingReportQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables> & ({ variables: GetSheetsRankingReportQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
+      }
+export function useGetSheetsRankingReportLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
+        }
+export function useGetSheetsRankingReportSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>(GetSheetsRankingReportDocument, options);
+        }
+export type GetSheetsRankingReportQueryHookResult = ReturnType<typeof useGetSheetsRankingReportQuery>;
+export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportLazyQuery>;
+export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
+export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
+export const ToggleSelectionDocument = gql`
+    mutation ToggleSelection($rowId: ObjectId!, $label: String!) {
+  toggleSelection(rowId: $rowId, label: $label) {
+    _id
+    selections {
+      label
+      selected_by
+      timestamp
+    }
+  }
+}
+    `;
+export type ToggleSelectionMutationFn = Apollo.MutationFunction<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
+
+/**
+ * __useToggleSelectionMutation__
+ *
+ * To run a mutation, you first call `useToggleSelectionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useToggleSelectionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [toggleSelectionMutation, { data, loading, error }] = useToggleSelectionMutation({
+ *   variables: {
+ *      rowId: // value for 'rowId'
+ *      label: // value for 'label'
+ *   },
+ * });
+ */
+export function useToggleSelectionMutation(baseOptions?: Apollo.MutationHookOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ToggleSelectionMutation, ToggleSelectionMutationVariables>(ToggleSelectionDocument, options);
+      }
+export type ToggleSelectionMutationHookResult = ReturnType<typeof useToggleSelectionMutation>;
+export type ToggleSelectionMutationResult = Apollo.MutationResult<ToggleSelectionMutation>;
+export type ToggleSelectionMutationOptions = Apollo.BaseMutationOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
@@ -2719,14 +2878,16 @@ export type ResolversTypes = {
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
   RankingReport: ResolverTypeWrapper<RankingReport>;
-  ReportEntry: ResolverTypeWrapper<Omit<ReportEntry, 'sheetId'> & { sheetId: ResolversTypes['ObjectId'] }>;
+  ReportEntry: ResolverTypeWrapper<Omit<ReportEntry, 'rowId' | 'sheetId'> & { rowId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ReportEntrySheet: ResolverTypeWrapper<ReportEntrySheet>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
+  RowSelection: ResolverTypeWrapper<RowSelection>;
   ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
   ScanSheetJob: ResolverTypeWrapper<Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScoreDistributionItem: ResolverTypeWrapper<ScoreDistributionItem>;
+  SelectionInput: SelectionInput;
   Setting: ResolverTypeWrapper<Omit<Setting, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
@@ -2761,14 +2922,16 @@ export type ResolversParentTypes = {
   PermissionInput: PermissionInput;
   Query: {};
   RankingReport: RankingReport;
-  ReportEntry: Omit<ReportEntry, 'sheetId'> & { sheetId: ResolversParentTypes['ObjectId'] };
+  ReportEntry: Omit<ReportEntry, 'rowId' | 'sheetId'> & { rowId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ReportEntrySheet: ReportEntrySheet;
   Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
+  RowSelection: RowSelection;
   ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
   ScanSheetJob: Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScoreDistributionItem: ScoreDistributionItem;
+  SelectionInput: SelectionInput;
   Setting: Omit<Setting, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
@@ -2859,6 +3022,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
+  toggleSelection?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationToggleSelectionArgs, 'label' | 'rowId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSetting?: Resolver<ResolversTypes['Setting'], ParentType, ContextType, RequireFields<MutationUpdateSettingArgs, 'key' | 'value'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
@@ -2929,7 +3093,9 @@ export type ReportEntryResolvers<ContextType = any, ParentType extends Resolvers
   classSection?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   classYear?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rank?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rowId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
   sheet?: Resolver<ResolversTypes['ReportEntrySheet'], ParentType, ContextType>;
   sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   sheetName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2951,8 +3117,16 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
   data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['OlimanagerRowData']>, ParentType, ContextType>;
+  selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type RowSelectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['RowSelection'] = ResolversParentTypes['RowSelection']> = {
+  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  selected_by?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3086,6 +3260,7 @@ export type Resolvers<ContextType = any> = {
   ReportEntry?: ReportEntryResolvers<ContextType>;
   ReportEntrySheet?: ReportEntrySheetResolvers<ContextType>;
   Row?: RowResolvers<ContextType>;
+  RowSelection?: RowSelectionResolvers<ContextType>;
   ScanJob?: ScanJobResolvers<ContextType>;
   ScanMessage?: ScanMessageResolvers<ContextType>;
   ScanResults?: ScanResultsResolvers<ContextType>;

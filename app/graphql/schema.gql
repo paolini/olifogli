@@ -75,6 +75,12 @@ type OlimanagerRowData {
   result: JSON
 }
 
+type RowSelection {
+  label: String!
+  selected_by: String!
+  timestamp: Timestamp!
+}
+
 type Row {
   _id: ObjectId!
   error: String
@@ -85,6 +91,7 @@ type Row {
   updatedBy: String!
   data: Data!
   olimanager: OlimanagerRowData
+  selections: [RowSelection]
 }
 
 type User {
@@ -144,6 +151,8 @@ type ReportEntry {
   sheet: ReportEntrySheet!
   score: Float!
   rank: Int!
+  rowId: ObjectId!
+  selections: [RowSelection]
 }
 
 type ScoreDistributionItem {
@@ -251,6 +260,7 @@ type Mutation {
 
   addRow(sheetId: ObjectId!, data: Data!): Row
   patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row
+  toggleSelection(rowId: ObjectId!, label: String!): Row
   deleteRow(_id: ObjectId!): ObjectId
   deleteRows(ids: [ObjectId!]!): Int
   deleteAllRows(sheetId: ObjectId!): Int
@@ -277,6 +287,10 @@ type Mutation {
     schema: String
     permissions: [PermissionInput!]
     commonData: Data
+    nRows: Int
+    nValidRows: Int
+    nSyncedRows: Int
+    anomalies: Int
   ): Boolean
 
   closeSheet(_id: ObjectId!): Boolean

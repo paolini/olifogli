@@ -117,7 +117,7 @@ export function check_user_can_update_sheet(user: User, sheet: Partial<Sheet>|nu
 
   // Editor può modificare solo i dati, non i metadati del foglio
   if (permission === 'editor') {
-    const restrictedFields = ['name', 'schema', 'permissions', 'permittedEmails', 'permittedIds']
+    const restrictedFields = ['name', 'schema', 'permissions', 'permittedEmails', 'permittedIds', 'nRows', 'nValidRows', 'nSyncedRows', 'anomalies']
     const hasRestrictedField = keys.some(key => restrictedFields.includes(key))
     if (hasRestrictedField) {
       throw new UserInputError('puoi modificare solo i dati del foglio, non i metadati')

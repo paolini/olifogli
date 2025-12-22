@@ -11,8 +11,14 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
   check_user_can_update_sheet(user, sheet, args)
 
   const update: Record<string, unknown> = {}
+  
   if (typeof args.name === 'string') update.name = args.name
   if (typeof args.schema === 'string') update.schema = args.schema
+  if (typeof args.nRows === 'number') update.nRows = args.nRows
+  if (typeof args.nValidRows === 'number') update.nValidRows = args.nValidRows
+  if (typeof args.nSyncedRows === 'number') update.nSyncedRows = args.nSyncedRows
+  if (typeof args.anomalies === 'number') update.anomalies = args.anomalies
+  
   if (args.permissions && Array.isArray(args.permissions)) {
     update.permissions = args.permissions.map(p => ({
       email: p.email || undefined,
