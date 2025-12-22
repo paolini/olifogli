@@ -41,9 +41,10 @@ export function filterSheets<Sheet extends FilterSheetsSheet>(filterState: Sheet
     }
     if (statoFilter) {
         sheets = sheets.filter(s => {
-            if (statoFilter === 'aperto') return !s.closed && !s.locked;
-            if (statoFilter === 'chiuso_o_bloccato') return s.closed || s.locked;
-            if (statoFilter === 'chiuso_non_bloccato') return s.closed && !s.locked;
+            if (statoFilter === 'open') return !s.closed && !s.locked;
+            if (statoFilter === 'closed_or_locked') return s.closed || s.locked;
+            if (statoFilter === 'closed_not_locked') return s.closed && !s.locked;
+            if (statoFilter === 'locked') return s.locked;
             return true;
         });
     }
@@ -88,9 +89,10 @@ export default function SheetsFilter({ filterState, sheets, filteredSheets }: { 
         </select>
         <select value={statoFilter} onChange={e => setStatoFilter(e.target.value)} className="border rounded px-2 py-1">
             <option value="">Aperti, chiusi o finalizzati</option>
-            <option value="aperto">Aperti</option>
-            <option value="chiuso_o_bloccato">Chiusi o finalizzati</option>
-            <option value="chiuso_non_bloccato">Chiusi ma non finalizzati</option>
+            <option value="open">Aperti</option>
+            <option value="closed_not_locked">Chiusi</option>
+            <option value="locked">Finalizzati</option>
+            <option value="closed_or_locked">Chiusi o finalizzati</option>
         </select>
         <span>{pluralize(filteredSheets.length, "foglio", "fogli")} con {pluralize(filteredRows, "riga", "righe")} {(schemaFilter || distrettoFilter || statoFilter) && ` (su ${sheets.length} fogli e ${totalRows} righe)`}</span>
     </div>
