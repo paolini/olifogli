@@ -63,7 +63,6 @@ export default async function olimanagerBulkUpdateResults(
     while (remainingRowIds.length>0 || remainingSheetIds.length>0) {
       if (remainingRowIds.length > 0) {
         const batchRowIds = remainingRowIds.splice(0, 50);
-        remainingRowIds.splice(0, batchRowIds.length);
         console.log(`Processing batch of ${batchRowIds.length} rows, remaining rows: ${remainingRowIds.length}`);
         await transferJob(batchRowIds);
       } else if (remainingSheetIds.length > 0) {
