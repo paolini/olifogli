@@ -234,7 +234,7 @@ type Query {
   olimanager: String # testing
   appInstance: String # istanza runtime
   sheetsDistributionReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data): DistributionReport!
-  sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int): RankingReport!
+  sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int, selectionLabel: String): RankingReport!
   sheetsExerciseReport(sheetIds: [ObjectId!]!, schema: String!): ExerciseReport!
   sheetsTimeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): TimeDistributionReport!
   sheetsAgeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): AgeDistributionReport!

@@ -8,7 +8,7 @@ export default class ArchimedeBiennio extends ArchimedeCommon {
         this.fields.filter(f => f instanceof OptionsField)
             .forEach(f => {f.options = ['1','2']})        
         this.selections = [
-            { label: "gara_prime", name: "Gara delle prime", color: "gold" }
+            { label: "gara_prime", name: "Gara delle prime", color: "gold", row_filter: { classYear: "1" } }
         ]
     }
 }
