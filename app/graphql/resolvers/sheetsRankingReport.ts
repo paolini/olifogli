@@ -4,10 +4,11 @@ import { QuerySheetsRankingReportArgs, RankingReport, ReportEntry } from '../gen
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import sheetsReportHelper from './sheetsReportHelper'
+import { schemas } from '@/app/lib/schema'
 
 export default async function sheetsRankingReport(
     _: unknown, 
-    { sheetIds, schema, limit }: QuerySheetsRankingReportArgs, 
+    { sheetIds, schema, limit, selectionLabel }: QuerySheetsRankingReportArgs & { selectionLabel?: string }, 
     context: Context
 ): Promise<RankingReport> {
     const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
@@ -15,7 +16,7 @@ export default async function sheetsRankingReport(
     // Separa per schema
     const sheets = allSheets.filter(s => s.schema === schema)
 
-    const report = await generateRankingReport(sheets, limit ?? undefined)
+    const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel)
 
     return {
         schema,
@@ -25,16 +26,35 @@ export default async function sheetsRankingReport(
 
 async function generateRankingReport(
     sheets: WithId<Sheet>[],
-    limit?: number
+    limit?: number,
+    selectionLabel?: string
 ) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
     
     // Recupera tutte le righe dai fogli
-    const rows = await rowsCollection.find({
+    let rows = await rowsCollection.find({
         sheetId: { $in: sheetIds },
         error: ""
     }).toArray()
+
+    // Applica filtro se selectionLabel è fornito
+    if (selectionLabel) {
+        const schemaObj = schemas[sheets[0]?.schema]; // Assumiamo che tutti i sheets abbiano lo stesso schema
+        const selection = schemaObj?.selections.find(s => s.label === selectionLabel);
+        if (selection?.row_filter) {
+            rows = rows.filter(row => {
+                // row_filter è un oggetto con chiave-valore
+                return Object.entries(selection.row_filter!).every(([key, value]) => {
+                    // I dati della row sono in row.data, ma alcuni campi come classYear sono diretti?
+                    // Dal codice precedente, sembra che classYear sia estratto da row.data
+                    // Devo controllare come vengono estratti i campi
+                    // Per ora, assumo che i campi siano in row.data
+                    return row.data[key] === value;
+                });
+            });
+        }
+    }
 
     // Mappa con info dei fogli per riferimento veloce
     const sheetMap = new Map(sheets.map(s => [s._id.toString(), s]))

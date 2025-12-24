@@ -5,7 +5,7 @@ import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import { RankingReport, useGetSheetsQuery, useToggleSelectionMutation } from '../graphql/generated'
+import { RankingReport, useGetSheetsQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
@@ -28,12 +28,6 @@ const GET_SHEETS_RANKING_REPORT = gql`
                 classSection
                 score
                 rank
-                rowId
-                selections {
-                    label
-                    selected_by
-                    timestamp
-                }
                 sheet {
                     commonData
                 }
@@ -42,23 +36,8 @@ const GET_SHEETS_RANKING_REPORT = gql`
     }
 `
 
-const TOGGLE_SELECTION = gql`
-    mutation ToggleSelection($rowId: ObjectId!, $label: String!) {
-        toggleSelection(rowId: $rowId, label: $label) {
-            _id
-            selections {
-                label
-                selected_by
-                timestamp
-            }
-        }
-    }
-`
-
 export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }) {
     const [limit, setLimit] = useState<number>(100);
-    const [activeSelection, setActiveSelection] = useState<string | null>(null);
-    const [toggleSelection] = useToggleSelectionMutation();
     const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
@@ -68,7 +47,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
         .filter(s => ["archimede_biennio", "archimede_triennio"].includes(s.schema));
     const filteredSheets = filterSheets(filterState, sheets);
 
-    const { loading, error, data, refetch } = useQuery(GET_SHEETS_RANKING_REPORT, {
+    const { loading, error, data } = useQuery(GET_SHEETS_RANKING_REPORT, {
         variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit },
         pollInterval: 10000, // millisecondi
     });
@@ -114,45 +93,18 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
         <div className="p-4 space-y-6 max-w-6xl">
             <div className="flex justify-between items-start">
                 <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
-                <div className="flex space-x-2">
-                    {filterState?.schemaFilter === 'archimede_biennio' && schemas['archimede_biennio'].selections.map(sel => (
-                        <Button
-                            key={sel.label}
-                            onClick={() => setActiveSelection(activeSelection === sel.label ? null : sel.label)}
-                            className={activeSelection === sel.label ? 'bg-blue-600' : ''}
-                        >
-                            {activeSelection === sel.label ? 'Termina' : `Seleziona ${sel.name}`}
-                        </Button>
-                    ))}
-                    <Button onClick={downloadCSV}>download CSV</Button>
-                </div>
+                <Button onClick={downloadCSV}>download CSV</Button>
             </div>
             <RankingSection
                 key={report.schema}
                 report={report}
                 onShowMore={handleShowMore}
                 canShowMore={limit !== undefined && report.ranking.length === limit}
-                activeSelection={activeSelection}
-                onToggleSelection={async (rowId, label) => {
-                    await toggleSelection({
-                        variables: {
-                            rowId: new ObjectId(rowId),
-                            label
-                        }
-                    });
-                    refetch(); // Forza il refetch per aggiornare la classifica
-                }}
             />
         </div>
     );
 
-function RankingSection({ report, onShowMore, canShowMore, activeSelection, onToggleSelection }: { 
-    report: RankingReport, 
-    onShowMore: () => void, 
-    canShowMore: boolean,
-    activeSelection: string | null,
-    onToggleSelection: (rowId: string, label: string) => Promise<void>
-}) {
+function RankingSection({ report, onShowMore, canShowMore }: { report: RankingReport, onShowMore: () => void, canShowMore: boolean }) {
     const schema = report.schema;
     const schemaName = schemas[schema]?.header;
 
@@ -166,9 +118,6 @@ function RankingSection({ report, onShowMore, canShowMore, activeSelection, onTo
             </div>
             <TopRanking 
                 ranking={report.ranking} 
-                schema={report.schema}
-                activeSelection={activeSelection}
-                onToggleSelection={onToggleSelection}
             />
             {canShowMore && (
                 <div className="flex justify-center mt-4">
@@ -184,21 +133,7 @@ function RankingSection({ report, onShowMore, canShowMore, activeSelection, onTo
     );
 }
 
-function renderSelections(selections: (RowSelection | null)[], schemaSelections: { label: string, name: string, color: string }[]) {
-    const validSelections = selections.filter(s => s !== null) as RowSelection[];
-    return schemaSelections.map(sel => {
-        const hasSelection = validSelections.some(s => s.label === sel.label);
-        return hasSelection ? <span key={sel.label} style={{ color: sel.color }} title={sel.name}>★</span> : null;
-    });
-}
-
-function TopRanking({ ranking, schema, activeSelection, onToggleSelection }: { 
-    ranking: RankingReport['ranking'],
-    schema: string,
-    activeSelection: string | null,
-    onToggleSelection: (rowId: string, label: string) => Promise<void>
-}) {
-    const schemaSelections = schemas[schema]?.selections || [];
+function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
     if (ranking.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>;
     }
@@ -214,16 +149,11 @@ function TopRanking({ ranking, schema, activeSelection, onToggleSelection }: {
                         <th className="border p-2 text-center w-48">Scuola</th>
                         <th className="border p-2 text-center w-20">Anno</th>
                         <th className="border p-2 text-center w-20">Sezione</th>
-                        <th className="border p-2 text-center w-24">Selezioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     {ranking.map((entry) => (
-                        <tr 
-                            key={`${entry.sheetId}-${entry.rank}`} 
-                            className={`hover:bg-gray-50 ${activeSelection ? 'cursor-pointer' : ''}`}
-                            onClick={() => activeSelection && entry.rowId && onToggleSelection(entry.rowId.toString(), activeSelection)}
-                        >
+                        <tr key={`${entry.sheetId}-${entry.rank}`} className="hover:bg-gray-50">
                             <td className="border p-2 text-center">{entry.rank}</td>
                             <td className="border p-2 text-center font-semibold" style={score_to_color_style(entry.score.toString())}>{Math.round(entry.score)}</td>
                             <td className="border p-2 text-left w-40 truncate" title={entry.studentSurname}>{entry.studentSurname}</td>
@@ -231,7 +161,6 @@ function TopRanking({ ranking, schema, activeSelection, onToggleSelection }: {
                             <td className="border p-2 text-center w-48 truncate" title={entry.sheetName}>{entry.sheetName}</td>
                             <td className="border p-2 text-center">{entry.classYear}</td>
                             <td className="border p-2 text-center">{entry.classSection}</td>
-                            <td className="border p-2 text-center">{renderSelections(entry.selections || [], schemaSelections)}</td>
                         </tr>
                     ))}
                 </tbody>

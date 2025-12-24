@@ -7,6 +7,7 @@ import Error from '@/app/components/Error'
 import Loading from '@/app/components/Loading'
 import WorkbookSheets from '@/app/components/WorkbookSheets'
 import WorkbookRanking from '@/app/components/WorkbookRanking'
+import WorkbookSelection from '@/app/components/WorkbookSelection'
 import WorkbookDistribution from '@/app/components/WorkbookDistribution'
 import WorkbookExerciseDistribution from '@/app/components/WorkbookExerciseDistribution'
 import WorkbookTimeDistribution from '@/app/components/WorkbookTimeDistribution'
@@ -47,7 +48,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const { setBreadcrumbs } = useBreadcrumbs()
     
     const tabParam = searchParams.get('tab')
-    const validTabs = ['fogli', 'list', 'distribuzione', 'esercizi', 'età', 'temporale', 'configura'] as const
+    const validTabs = ['fogli', 'list', 'selezione', 'distribuzione', 'esercizi', 'età', 'temporale', 'configura'] as const
     type TabType = typeof validTabs[number]
     
     function isTabType(tab: string | null): tab is TabType {
@@ -101,6 +102,12 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
                 Risultati
             </button>
             <button
+                onClick={() => setActiveTab('selezione')}
+                className={`tab-button ${activeTab === 'selezione' ? 'tab-button-active' : 'tab-button-inactive'}`}
+            >
+                Selezione
+            </button>
+            <button
                 onClick={() => setActiveTab('distribuzione')}
                 className={`tab-button ${activeTab === 'distribuzione' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
@@ -138,6 +145,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
 
         {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} profile={profile}/>}
         {activeTab === 'list' && <WorkbookRanking workbookId={workbookId} />}
+        {activeTab === 'selezione' && <WorkbookSelection workbookId={workbookId} />}
         {activeTab === 'distribuzione' && <WorkbookDistribution workbookId={workbookId} />}
         {activeTab === 'esercizi' && <WorkbookExerciseDistribution workbookId={workbookId} />}
         {activeTab === 'età' && <WorkbookAgeDistribution workbookId={workbookId} />}
