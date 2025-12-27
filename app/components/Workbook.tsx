@@ -13,7 +13,7 @@ import WorkbookExerciseDistribution from '@/app/components/WorkbookExerciseDistr
 import WorkbookTimeDistribution from '@/app/components/WorkbookTimeDistribution'
 import WorkbookConfigure from '@/app/components/WorkbookConfigure'
 import { useBreadcrumbs } from '@/app/components/BreadcrumbsProvider'
-import { useGetWorkbookQuery } from '../graphql/generated'
+import { useGetWorkbookQuery, User } from '../graphql/generated'
 import WorkbookAgeDistribution from './WorkbookAgeDistribution'
 
 const GET_WORKBOOK = gql`
@@ -59,7 +59,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     const [activeTab, setActiveTabState] = useState<TabType>(initialTab)
 
     const workbook = data?.workbook
-    const profile = data?.me
+    const profile: User|undefined = data?.me || undefined
     const sheetsCount = data?.sheets?.length || 0
     
     // Imposta i breadcrumbs
@@ -145,7 +145,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
 
         {activeTab === 'fogli' && <WorkbookSheets workbookId={workbookId} profile={profile}/>}
         {activeTab === 'list' && <WorkbookRanking workbookId={workbookId} />}
-        {activeTab === 'selezione' && <WorkbookSelection workbookId={workbookId} />}
+        {activeTab === 'selezione' && <WorkbookSelection workbookId={workbookId} profile={profile}/>}
         {activeTab === 'distribuzione' && <WorkbookDistribution workbookId={workbookId} />}
         {activeTab === 'esercizi' && <WorkbookExerciseDistribution workbookId={workbookId} />}
         {activeTab === 'età' && <WorkbookAgeDistribution workbookId={workbookId} />}

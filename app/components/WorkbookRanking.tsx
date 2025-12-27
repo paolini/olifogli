@@ -12,7 +12,6 @@ import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 import Papa from 'papaparse'
 import Button from './Button'
-import { RowSelection } from '../lib/models'
 
 const GET_SHEETS_RANKING_REPORT = gql`
     query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {

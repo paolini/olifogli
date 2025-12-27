@@ -381,7 +381,9 @@ export type QuerySheetsExerciseReportArgs = {
 export type QuerySheetsRankingReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
   schema: Scalars['String']['input'];
+  selectionLabel?: InputMaybe<Scalars['String']['input']>;
   sheetIds: Array<Scalars['ObjectId']['input']>;
 };
 
@@ -483,10 +485,6 @@ export type ScoreDistributionItem = {
   __typename?: 'ScoreDistributionItem';
   count: Scalars['Int']['output'];
   score: Scalars['Float']['output'];
-};
-
-export type SelectionInput = {
-  label: Scalars['String']['input'];
 };
 
 export type Setting = {
@@ -834,15 +832,17 @@ export type GetSheetsRankingReportQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, rowId: ObjectId, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
 
-export type ToggleSelectionMutationVariables = Exact<{
-  rowId: Scalars['ObjectId']['input'];
-  label: Scalars['String']['input'];
+export type GetSheetsRankingReportWithSelectionsQueryVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  schema: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  selectionLabel?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type ToggleSelectionMutation = { __typename?: 'Mutation', toggleSelection?: { __typename?: 'Row', _id: ObjectId, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null } | null };
+export type GetSheetsRankingReportWithSelectionsQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
@@ -2285,12 +2285,6 @@ export const GetSheetsRankingReportDocument = gql`
       classSection
       score
       rank
-      rowId
-      selections {
-        label
-        selected_by
-        timestamp
-      }
       sheet {
         commonData
       }
@@ -2333,45 +2327,74 @@ export type GetSheetsRankingReportQueryHookResult = ReturnType<typeof useGetShee
 export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportLazyQuery>;
 export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
 export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
-export const ToggleSelectionDocument = gql`
-    mutation ToggleSelection($rowId: ObjectId!, $label: String!) {
-  toggleSelection(rowId: $rowId, label: $label) {
-    _id
-    selections {
-      label
-      selected_by
-      timestamp
+export const GetSheetsRankingReportWithSelectionsDocument = gql`
+    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String) {
+  sheetsRankingReport(
+    sheetIds: $sheetIds
+    schema: $schema
+    limit: $limit
+    selectionLabel: $selectionLabel
+  ) {
+    schema
+    totalStudents
+    ranking {
+      rowId
+      sheetId
+      sheetName
+      studentName
+      studentSurname
+      classYear
+      classSection
+      score
+      rank
+      selections {
+        label
+        selected_by
+        timestamp
+      }
+      sheet {
+        commonData
+      }
     }
   }
 }
     `;
-export type ToggleSelectionMutationFn = Apollo.MutationFunction<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
 
 /**
- * __useToggleSelectionMutation__
+ * __useGetSheetsRankingReportWithSelectionsQuery__
  *
- * To run a mutation, you first call `useToggleSelectionMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useToggleSelectionMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
+ * To run a query within a React component, call `useGetSheetsRankingReportWithSelectionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSheetsRankingReportWithSelectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
  *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const [toggleSelectionMutation, { data, loading, error }] = useToggleSelectionMutation({
+ * const { data, loading, error } = useGetSheetsRankingReportWithSelectionsQuery({
  *   variables: {
- *      rowId: // value for 'rowId'
- *      label: // value for 'label'
+ *      sheetIds: // value for 'sheetIds'
+ *      schema: // value for 'schema'
+ *      limit: // value for 'limit'
+ *      selectionLabel: // value for 'selectionLabel'
  *   },
  * });
  */
-export function useToggleSelectionMutation(baseOptions?: Apollo.MutationHookOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>) {
+export function useGetSheetsRankingReportWithSelectionsQuery(baseOptions: Apollo.QueryHookOptions<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables> & ({ variables: GetSheetsRankingReportWithSelectionsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<ToggleSelectionMutation, ToggleSelectionMutationVariables>(ToggleSelectionDocument, options);
+        return Apollo.useQuery<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>(GetSheetsRankingReportWithSelectionsDocument, options);
       }
-export type ToggleSelectionMutationHookResult = ReturnType<typeof useToggleSelectionMutation>;
-export type ToggleSelectionMutationResult = Apollo.MutationResult<ToggleSelectionMutation>;
-export type ToggleSelectionMutationOptions = Apollo.BaseMutationOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
+export function useGetSheetsRankingReportWithSelectionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>(GetSheetsRankingReportWithSelectionsDocument, options);
+        }
+export function useGetSheetsRankingReportWithSelectionsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>(GetSheetsRankingReportWithSelectionsDocument, options);
+        }
+export type GetSheetsRankingReportWithSelectionsQueryHookResult = ReturnType<typeof useGetSheetsRankingReportWithSelectionsQuery>;
+export type GetSheetsRankingReportWithSelectionsLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportWithSelectionsLazyQuery>;
+export type GetSheetsRankingReportWithSelectionsSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportWithSelectionsSuspenseQuery>;
+export type GetSheetsRankingReportWithSelectionsQueryResult = Apollo.QueryResult<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
@@ -2887,7 +2910,6 @@ export type ResolversTypes = {
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
   ScanSheetJob: ResolverTypeWrapper<Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScoreDistributionItem: ResolverTypeWrapper<ScoreDistributionItem>;
-  SelectionInput: SelectionInput;
   Setting: ResolverTypeWrapper<Omit<Setting, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
@@ -2931,7 +2953,6 @@ export type ResolversParentTypes = {
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
   ScanSheetJob: Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScoreDistributionItem: ScoreDistributionItem;
-  SelectionInput: SelectionInput;
   Setting: Omit<Setting, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;

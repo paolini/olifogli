@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react'
-import { gql, useQuery, ApolloError } from '@apollo/client'
+import { gql, useQuery, useMutation, ApolloError } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import { RankingReport, useGetSheetsQuery, useToggleSelectionMutation } from '../graphql/generated'
+import { RankingReport, useGetSheetsQuery, User } from '../graphql/generated'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 import { schemas } from '../lib/schema'
+import Button from './Button'
 
 const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
     query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String) {
@@ -37,6 +38,15 @@ const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
     }
 `
 
+const TOGGLE_SELECTION = gql`
+    mutation ToggleSelection($rowId: ObjectId!, $label: String!) {
+        toggleSelection(rowId: $rowId, label: $label) {
+            _id
+            selections { label selected_by timestamp }
+        }
+    }
+`
+
 type SelectionOption = {
     label: string
     name: string
@@ -45,7 +55,7 @@ type SelectionOption = {
     row_filter?: Record<string, unknown>
 }
 
-export default function WorkbookSelection({ workbookId }: { workbookId: ObjectId }) {
+export default function WorkbookSelection({ workbookId, profile }: { workbookId: ObjectId, profile?: User }) {
     const [limit, setLimit] = useState<number>(100);
     const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
         variables: { workbookId },
@@ -98,7 +108,7 @@ export default function WorkbookSelection({ workbookId }: { workbookId: ObjectId
         skip: !selectedSelection, // Non eseguire la query se non c'è selezione
     });
 
-    const [toggleSelectionMutation] = useToggleSelectionMutation();
+    const [toggleSelectionMutation] = useMutation(TOGGLE_SELECTION);
 
     if (loadingSheets) return <Loading />
     if (sheetsError) return <Error error={sheetsError} />
@@ -216,6 +226,7 @@ export default function WorkbookSelection({ workbookId }: { workbookId: ObjectId
 
             {selectedSelection && (
                 <SelectionSection
+                    profile={profile}
                     key={`${selectedSelection.schema}-${selectedSelection.label}`}
                     report={data?.sheetsRankingReport}
                     selection={selectedSelection}
@@ -230,6 +241,7 @@ export default function WorkbookSelection({ workbookId }: { workbookId: ObjectId
     );
 
 function SelectionSection({ 
+    profile,
     report, 
     selection, 
     onToggleSelection, 
@@ -238,6 +250,7 @@ function SelectionSection({
     loading, 
     error 
 }: {
+    profile?: User,
     report?: RankingReport,
     selection: SelectionOption,
     onToggleSelection: (rowId: ObjectId, label: string, isSelected: boolean) => void,
@@ -254,7 +267,7 @@ function SelectionSection({
     const schema = report.schema;
     const schemaName = schemas[schema]?.header;
 
-    return (
+    return <>
         <div className="border rounded-lg p-4 space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold">{selection.name} - {schemaName}</h3>
@@ -267,16 +280,14 @@ function SelectionSection({
             />
             {canShowMore && (
                 <div className="flex justify-center mt-4">
-                    <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                        onClick={onShowMore}
-                    >
+                    <Button onClick={onShowMore}>
                         Carica altri
-                    </button>
+                    </Button>
                 </div>
             )}
+        { profile?.isAdmin && <CreateSheets/>}
         </div>
-    );
+    </>
 }
 
 function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
@@ -330,4 +341,29 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
         </div>
     );
 }
+}
+
+function CreateSheets() {
+    const [isActive, setIsActive] = useState(false);
+
+    return (
+        <div className="relative">
+            {!isActive && <Button
+                onClick={() => setIsActive(!isActive)}
+            >
+                ⚙ Crea fogli
+            </Button>}
+            {isActive &&
+                <div className="mt-2 bg-white border rounded shadow-lg p-4 z-10">
+                    <h4 className="font-semibold mb-2">Crea nuovi fogli</h4>
+                    <p className="text-sm text-gray-600">Funzionalità in sviluppo...</p>
+                    <Button
+                        onClick={() => setIsActive(false)}
+                    >
+                        Chiudi
+                    </Button>
+                </div>
+            }
+        </div>
+    );
 }
