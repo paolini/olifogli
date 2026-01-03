@@ -13,8 +13,8 @@ import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 
 const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
-    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String) {
-        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit, selectionLabel: $selectionLabel) {
+    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean) {
+        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit, selectionLabel: $selectionLabel, onlySelected: $onlySelected) {
             schema
             totalStudents
             ranking {
@@ -95,27 +95,29 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
 
     const [selectedSelection, setSelectedSelection] = useState<SelectionOption | null>(null);
 
-    // Imposta la selezione iniziale quando availableSelections è disponibile
-    useEffect(() => {
-        if (availableSelections.length > 0 && !selectedSelection) {
-            setSelectedSelection(availableSelections[0]);
-        }
-    }, [availableSelections, selectedSelection]);
-
     const filteredSheets = selectedSelection ? sheets.filter(s => s.schema === selectedSelection.schema) : [];
+    const [onlySelected, setOnlySelected] = useState<boolean>(false);
 
     const { loading, error, data, refetch } = useQuery(GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS, {
         variables: { 
             sheetIds: filteredSheets.map(s => s._id), 
             schema: selectedSelection?.schema || '', 
             limit,
-            selectionLabel: selectedSelection?.label
+            selectionLabel: selectedSelection?.label,
+            onlySelected,
         },
         pollInterval: 0, // Disabilitato
         skip: !selectedSelection, // Non eseguire la query se non c'è selezione
     });
 
     const [toggleSelectionMutation] = useMutation(TOGGLE_SELECTION);
+
+    // Imposta la selezione iniziale quando availableSelections è disponibile
+    useEffect(() => {
+        if (availableSelections.length > 0 && !selectedSelection) {
+            setSelectedSelection(availableSelections[0]);
+        }
+    }, [availableSelections, selectedSelection]);
 
     if (loadingSheets) return <Loading />
     if (sheetsError) return <Error error={sheetsError} />
@@ -231,6 +233,15 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                         </option>
                     ))}
                 </select>
+                <label className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        checked={onlySelected}
+                        onChange={(e) => setOnlySelected(e.target.checked)}
+                        className="w-4 h-4"
+                    />
+                    <span>Mostra solo selezionati</span>
+                </label>
             </div>}
 
             {selectedSelection && availableSelections.length > 0 && (

@@ -839,10 +839,19 @@ export type GetSheetsRankingReportWithSelectionsQueryVariables = Exact<{
   schema: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   selectionLabel?: InputMaybe<Scalars['String']['input']>;
+  onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
 export type GetSheetsRankingReportWithSelectionsQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+
+export type ToggleSelectionMutationVariables = Exact<{
+  rowId: Scalars['ObjectId']['input'];
+  label: Scalars['String']['input'];
+}>;
+
+
+export type ToggleSelectionMutation = { __typename?: 'Mutation', toggleSelection?: { __typename?: 'Row', _id: ObjectId, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null } | null };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
@@ -2328,12 +2337,13 @@ export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGet
 export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
 export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
 export const GetSheetsRankingReportWithSelectionsDocument = gql`
-    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String) {
+    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean) {
   sheetsRankingReport(
     sheetIds: $sheetIds
     schema: $schema
     limit: $limit
     selectionLabel: $selectionLabel
+    onlySelected: $onlySelected
   ) {
     schema
     totalStudents
@@ -2376,6 +2386,7 @@ export const GetSheetsRankingReportWithSelectionsDocument = gql`
  *      schema: // value for 'schema'
  *      limit: // value for 'limit'
  *      selectionLabel: // value for 'selectionLabel'
+ *      onlySelected: // value for 'onlySelected'
  *   },
  * });
  */
@@ -2395,6 +2406,45 @@ export type GetSheetsRankingReportWithSelectionsQueryHookResult = ReturnType<typ
 export type GetSheetsRankingReportWithSelectionsLazyQueryHookResult = ReturnType<typeof useGetSheetsRankingReportWithSelectionsLazyQuery>;
 export type GetSheetsRankingReportWithSelectionsSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportWithSelectionsSuspenseQuery>;
 export type GetSheetsRankingReportWithSelectionsQueryResult = Apollo.QueryResult<GetSheetsRankingReportWithSelectionsQuery, GetSheetsRankingReportWithSelectionsQueryVariables>;
+export const ToggleSelectionDocument = gql`
+    mutation ToggleSelection($rowId: ObjectId!, $label: String!) {
+  toggleSelection(rowId: $rowId, label: $label) {
+    _id
+    selections {
+      label
+      selected_by
+      timestamp
+    }
+  }
+}
+    `;
+export type ToggleSelectionMutationFn = Apollo.MutationFunction<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
+
+/**
+ * __useToggleSelectionMutation__
+ *
+ * To run a mutation, you first call `useToggleSelectionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useToggleSelectionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [toggleSelectionMutation, { data, loading, error }] = useToggleSelectionMutation({
+ *   variables: {
+ *      rowId: // value for 'rowId'
+ *      label: // value for 'label'
+ *   },
+ * });
+ */
+export function useToggleSelectionMutation(baseOptions?: Apollo.MutationHookOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ToggleSelectionMutation, ToggleSelectionMutationVariables>(ToggleSelectionDocument, options);
+      }
+export type ToggleSelectionMutationHookResult = ReturnType<typeof useToggleSelectionMutation>;
+export type ToggleSelectionMutationResult = Apollo.MutationResult<ToggleSelectionMutation>;
+export type ToggleSelectionMutationOptions = Apollo.BaseMutationOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
