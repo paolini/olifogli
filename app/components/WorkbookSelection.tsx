@@ -305,7 +305,6 @@ function SelectionSection({
                     </Button>
                 </div>
             )}
-        { profile?.isAdmin && <CreateSheets/>}
         </div>
     </>
 }
@@ -361,29 +360,4 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
         </div>
     );
 }
-}
-
-function CreateSheets() {
-    const [isActive, setIsActive] = useState(false);
-
-    return (
-        <div className="relative">
-            {!isActive && <Button
-                onClick={() => setIsActive(!isActive)}
-            >
-                ⚙ Crea fogli
-            </Button>}
-            {isActive &&
-                <div className="mt-2 bg-white border rounded shadow-lg p-4 z-10">
-                    <h4 className="font-semibold mb-2">Crea nuovi fogli</h4>
-                    <p className="text-sm text-gray-600">Funzionalità in sviluppo...</p>
-                    <Button
-                        onClick={() => setIsActive(false)}
-                    >
-                        Chiudi
-                    </Button>
-                </div>
-            }
-        </div>
-    );
 }

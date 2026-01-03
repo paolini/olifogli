@@ -218,7 +218,7 @@ function SheetBody({sheet,profile}: {
                 standardAnswers={true}
             />
         }
-        { tab === 'table' && csvImport &&
+        { (tab === 'table' || tab === 'edit') && csvImport &&
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setCsvImport(false)}/>
         }
         { tab === 'scans' && <div className="mx-2">
