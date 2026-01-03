@@ -149,7 +149,8 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                             sheetIds: filteredSheets.map(s => s._id), 
                             schema: selectedSelection?.schema || '', 
                             limit,
-                            selectionLabel: selectedSelection?.label
+                            selectionLabel: selectedSelection?.label,
+                            onlySelected
                         }
                     };
 
