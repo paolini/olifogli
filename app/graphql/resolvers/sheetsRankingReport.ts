@@ -9,7 +9,7 @@ import { schemas } from '@/app/lib/schema'
 
 export default async function sheetsRankingReport(
     _: unknown, 
-    { sheetIds, schema, limit, selectionLabel, onlySelected }: QuerySheetsRankingReportArgs & { selectionLabel?: string, onlySelected?: boolean }, 
+    { sheetIds, schema, limit, selectionLabel, onlySelected }: QuerySheetsRankingReportArgs & { selectionLabel?: string | null, onlySelected?: boolean | null }, 
     context: Context
 ): Promise<RankingReport> {
     const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
@@ -28,8 +28,8 @@ export default async function sheetsRankingReport(
 async function generateRankingReport(
     sheets: WithId<Sheet>[],
     limit?: number,
-    selectionLabel?: string,
-    onlySelected?: boolean
+    selectionLabel?: string | null,
+    onlySelected?: boolean | null
 ) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
@@ -67,7 +67,7 @@ async function generateRankingReport(
     
     // Recupera tutte le righe dai fogli
     console.log("Filtro per ranking report:", filter)
-    let rows = await rowsCollection.find(filter).toArray()
+    const rows = await rowsCollection.find(filter).toArray()
 
     /*
     // Applica filtro se selectionLabel è fornito
