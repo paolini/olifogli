@@ -61,7 +61,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
 
     if (!report) return null
 
-    const handleShowMore = () => setLimit(limit => limit * 2);
+    const handleShowMore = () => setLimit(limit => limit * 10);
 
     function downloadCSV() {
         getFullRanking({

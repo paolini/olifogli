@@ -9,6 +9,8 @@ import { RankingReport, useGetSheetsQuery, User } from '../graphql/generated'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 import { schemas } from '../lib/schema'
 import Button from './Button'
+import SheetsFilter, { filterSheets } from './SheetsFilter'
+import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 
 const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
     query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String) {
@@ -57,12 +59,17 @@ type SelectionOption = {
 
 export default function WorkbookSelection({ workbookId, profile }: { workbookId: ObjectId, profile?: User }) {
     const [limit, setLimit] = useState<number>(100);
+    const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
     const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     });
 
-    const sheets = (sheetsData?.sheets || [])
+    const querySheets = sheetsData?.sheets || [];
+
+    const filteredSheetsFirst = filterSheets(filterState, querySheets);
+
+    const sheets = filteredSheetsFirst
         .filter(s => ["archimede_biennio", "archimede_triennio"].includes(s.schema));
 
     // Ottieni tutte le selections disponibili
@@ -113,15 +120,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
     if (loadingSheets) return <Loading />
     if (sheetsError) return <Error error={sheetsError} />
 
-    if (availableSelections.length === 0) {
-        return (
-            <div className="p-4">
-                <p className="text-gray-600">Nessuna selezione disponibile per gli schemi presenti.</p>
-            </div>
-        );
-    }
-
-    const handleShowMore = () => setLimit(limit => limit * 2);
+    const handleShowMore = () => setLimit(limit => limit * 10);
 
     const handleToggleSelection = async (rowId: ObjectId, label: string, isSelected: boolean) => {
         // Ottieni i dati attuali per l'update ottimistico
@@ -208,7 +207,17 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
 
     return (
         <div className="p-4 space-y-6 max-w-6xl">
-            <div className="flex items-center space-x-4">
+            <div className="flex justify-between items-start">
+                <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+            </div>
+
+            {availableSelections.length === 0 && 
+                <div className="p-4">
+                    <p className="text-gray-600">Nessuna selezione disponibile per gli schemi presenti.</p>
+                </div>
+            }
+
+            {availableSelections.length > 0 && <div className="flex items-center space-x-4">
                 <label htmlFor="selection-select" className="font-semibold">Seleziona tipo:</label>
                 <select
                     id="selection-select"
@@ -222,9 +231,9 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                         </option>
                     ))}
                 </select>
-            </div>
+            </div>}
 
-            {selectedSelection && (
+            {selectedSelection && availableSelections.length > 0 && (
                 <SelectionSection
                     profile={profile}
                     key={`${selectedSelection.schema}-${selectedSelection.label}`}
