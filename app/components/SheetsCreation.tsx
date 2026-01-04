@@ -12,7 +12,7 @@ type Job = {
     rowId: ObjectId|null,
     sheet: Partial<Sheet>|null,
     name: string,
-    schema: "archimede_biennio"|"archimede_triennio",
+    schema: "archimede_biennio"|"archimede_triennio"|"gara_prime",
     permissions: Permission[],
     commonData: Data,
     action?: string,
@@ -22,15 +22,16 @@ type Job = {
 
 /**
  * Questa componente visualizza le righe del foglio selezionato 
- * e permette di creare nuovi fogli "archimede" a partire dalle righe
+ * e permette di creare nuovi fogli a partire dalle righe
  * stesse. Usa le colonne per dare i permessi agli utenti.
  */
 
-export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
+export default function SheetsCreation({ sheetId, workbookId, done }: {
     sheetId: ObjectId,
     workbookId: ObjectId,
     done: () => void
 }) {
+    const [mode, setMode] = useState<""|"archimede"|"gara_prime">("")
     const { data: sheetsData, loading: sheetsLoading, error: sheetsError } = useGetSheetsQuery({ variables: { workbookId } })
     const { data: rowsData, loading: rowsLoading, error: rowsError } = useGetRowsQuery({ variables: { sheetId } })
     const sheets: Partial<Sheet>[]|undefined = sheetsData?.sheets
@@ -108,50 +109,98 @@ export default function SchoolSheetsCreation({ sheetId, workbookId, done }: {
 
         console.log('--- Processing sheets esistenti ---')
         for (const sheet of sheets) {
-            if (sheet.schema !=='archimede_biennio' && sheet.schema !== 'archimede_triennio') continue
-            addJob({
-                sheet,
-                rowId: null,
-                schema: sheet.schema,
-                name: (sheet.name || ''),
-                permissions: sheet.permissions || [],
-                commonData: {...sheet.commonData}
-            })
+            if (mode === 'archimede' && (sheet.schema ==='archimede_biennio' || sheet.schema === 'archimede_triennio')) {
+                addJob({
+                    sheet,
+                    rowId: null,
+                    schema: sheet.schema,
+                    name: (sheet.name || ''),
+                    permissions: sheet.permissions || [],
+                    commonData: {...sheet.commonData}
+                })
+            } else if (mode === 'gara_prime' && sheet.schema ==='gara_prime') {
+                addJob({
+                    sheet,
+                    rowId: null,
+                    schema: 'gara_prime',
+                    name: (sheet.name || ''),
+                    permissions: sheet.permissions || [],
+                    commonData: {...sheet.commonData}
+                })
+            }
         }
 
-        console.log('--- Processing rows CSV ---')
-        for (const row of rows || []) {
-            const codice_meccanografico = row.data?.Codice_meccanografico || ''
-            const email = row.data?.Email_referente?.toLowerCase() || ''
-            // Coordinatori: stringa singola con email separati da virgola
-            let coordinatori: string[] = [];
-            const rawCoordinatori = row.data?.Email_coordinatori || '';
-            coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim().toLowerCase());
-            const permissions: Permission[] = [];
-            if (email) permissions.push({ email, role: 'admin' });
-            for (const coord of coordinatori) {
-                if (coord && coord !== email) {
-                    permissions.push({ email: coord, role: 'view' });
+        console.log('--- Processing rows ---')
+        if (mode === 'archimede') {
+            for (const row of rows || []) {
+                const codice_meccanografico = row.data?.Codice_meccanografico || ''
+                const email = row.data?.Email_referente?.toLowerCase() || ''
+                // Coordinatori: stringa singola con email separati da virgola
+                let coordinatori: string[] = [];
+                const rawCoordinatori = row.data?.Email_coordinatori || '';
+                coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim().toLowerCase());
+                const permissions: Permission[] = [];
+                if (email) permissions.push({ email, role: 'admin' });
+                for (const coord of coordinatori) {
+                    if (coord && coord !== email) {
+                        permissions.push({ email: coord, role: 'view' });
+                    }
+                }
+                for (const schema of ['archimede_biennio', 'archimede_triennio'] as const) {
+                    addJob({
+                        rowId: row._id,
+                        name: codice_meccanografico,
+                        schema,
+                        permissions,
+                        sheet: null,
+                        commonData: {
+                            Codice_meccanografico: codice_meccanografico || '',
+                            Nome_scuola: row.data?.Nome_scuola || '',
+                            "Città_scuola": row.data["Città_scuola"] || '',
+                            "Distretto":  (row.data["Nome_distretto"] || '').replace('Distretto di ',''),
+                        }
+                    })
                 }
             }
-            for (const schema of ['archimede_biennio', 'archimede_triennio'] as const) {
+        } else if (mode === 'gara_prime') {
+            const distretti = new Map<string, {name: string, permissions: Permission[], rowId: ObjectId}>()
+            for (const row of rows || []) {
+                const nomeDistretto = (row.data["Nome_distretto"] || '').replace('Distretto di ','')
+                const emailCoordinatori = (row.data?.Email_coordinatori || '').toLowerCase().split(',').map((e: string) => e.trim()).filter((e: string) => e)
+                const permissions: Permission[] = []
+                emailCoordinatori.forEach((email: string, i: number) => {
+                    permissions.push({ email: email, role: i===0 ? 'admin' : 'editor' })
+                })
+                if (!distretti.has(nomeDistretto)) {
+                    console.log(`Aggiungo distretto ${nomeDistretto} con referenti: ${permissions.map(p => p.email).join(', ')}`)
+                    distretti.set(nomeDistretto, { name: nomeDistretto, permissions, rowId: row._id })
+                }
+            }
+            for (const [_, distretto] of distretti) {
                 addJob({
-                    rowId: row._id,
-                    name: codice_meccanografico,
-                    schema,
-                    permissions,
+                    rowId: distretto.rowId,
+                    name: distretto.name,
+                    schema: 'gara_prime',
+                    permissions: distretto.permissions,
                     sheet: null,
                     commonData: {
-                        Codice_meccanografico: codice_meccanografico || '',
-                        Nome_scuola: row.data?.Nome_scuola || '',
-                        "Città_scuola": row.data["Città_scuola"] || '',
-                        "Distretto":  (row.data["Nome_distretto"] || '').replace('Distretto di ',''),
+                        Distretto: distretto.name
                     }
                 })
             }
         }
         return jobs
-    }, [rows, sheets])
+    }, [mode, rows, sheets])
+
+    if (mode === "") return <>
+        <select value={mode} onChange={e => setMode(e.target.value as ""|"archimede"|"gara_prime")}>
+            <option value="" disabled>Seleziona il tipo di fogli da creare</option>
+            <option value="archimede" onClick={() => setMode("archimede")}>Fogli Scuole Archimede (biennio e triennio)</option>
+            <option value="gara_prime" onClick={() => setMode("gara_prime")}>Fogli Distretti Gara Prime</option>
+        </select>
+        <br />
+        <Button onClick={() => done()}>Annulla creazione fogli</Button>
+    </>
 
     return <div className="space-y-2">
         { rowsLoading && <div>caricamento righe...</div> }
@@ -220,7 +269,7 @@ function Process({jobsCallback, workbookId, done}: {
                     <th>azione</th>
                     <th>schema</th>
                     <th>codice</th>
-                    <th>referenti</th>
+                    <th>permessi</th>
                     <th>scuola</th>
                     <th>città</th>
                     <th>distretto</th>

@@ -10,7 +10,7 @@ import { gql } from '@apollo/client'
 import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
-import SchoolSheetsCreation from './SchoolSheetsCreation';
+import SchoolSheetsCreation from './SheetsCreation';
 import { useRouter } from 'next/navigation';
 import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
@@ -19,6 +19,7 @@ import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
 import Papa from 'papaparse';
+import SheetFormNew from './SheetFormNew';
 
 const DELETE_WORKBOOK = gql`
     mutation DeleteWorkbook($_id: ObjectId!) {
@@ -166,6 +167,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         link.click();
     }
 
+    if (creationId) return <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />
+
     return <>
         {allSheets.length === 0 ? (
             <div className="bg-alert">Nessun foglio disponibile</div>
@@ -196,8 +199,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 </thead>
                 <tbody>
                     {displayedSheets.map((sheet) => (
-                        sheet && (!creationId || sheet._id.toString() === creationId.toString()) &&
-                        <SheetRow 
+                        sheet &&
+                        <SheetRow
                             key={sheet._id?.toString()}
                             sheet={sheet} 
                             profile={profile}
@@ -269,7 +272,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 onApply={applyBulkPermission}
             />
         }
-        {creationId && <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />}
+        {workbookId && profile?.isAdmin && <SheetFormNew workbookId={workbookId} />}
     </>
 
     function Th({field,header}:{field:string,header:string}) {
@@ -522,7 +525,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         { sheet.schema === 'scuole' && profile?.isAdmin && selected &&
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>
-                    ⚙ crea fogli scuole
+                    ⚙ crea fogli
                 </Button>
             </td>
         }
