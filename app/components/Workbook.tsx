@@ -105,7 +105,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
                 onClick={() => setActiveTab('selezione')}
                 className={`tab-button ${activeTab === 'selezione' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
-                Selezione
+                Segnalazione
             </button>
             <button
                 onClick={() => setActiveTab('distribuzione')}

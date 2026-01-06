@@ -225,7 +225,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
             }
 
             {availableSelections.length > 0 && <div className="flex items-center space-x-4">
-                <label htmlFor="selection-select" className="font-semibold">Seleziona tipo:</label>
+                <label htmlFor="selection-select" className="font-semibold">Seleziona segnalazione:</label>
                 <select
                     id="selection-select"
                     value={selectedSelection ? `${selectedSelection.schema}-${selectedSelection.label}` : ''}
@@ -245,7 +245,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                         onChange={(e) => setOnlySelected(e.target.checked)}
                         className="w-4 h-4"
                     />
-                    <span>Mostra solo selezionati</span>
+                    <span>Mostra solo segnalati</span>
                 </label>
             </div>}
 
