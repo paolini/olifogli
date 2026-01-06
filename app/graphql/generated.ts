@@ -319,7 +319,7 @@ export type Query = {
   sheetsTimeDistributionReport: TimeDistributionReport;
   users?: Maybe<Array<Maybe<User>>>;
   workbook?: Maybe<Workbook>;
-  workbooks?: Maybe<Array<Maybe<Workbook>>>;
+  workbooks: Array<Workbook>;
 };
 
 
@@ -600,6 +600,11 @@ export type AppInstanceQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AppInstanceQuery = { __typename?: 'Query', appInstance?: string | null };
+
+export type BrandingQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BrandingQuery = { __typename?: 'Query', serverName?: { __typename?: 'Setting', value: string } | null, backgroundColor?: { __typename?: 'Setting', value: string } | null };
 
 export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -885,7 +890,7 @@ export type GetSheetsTimeDistributionReportQuery = { __typename?: 'Query', sheet
 export type GetWorkbooksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetWorkbooksQuery = { __typename?: 'Query', workbooks?: Array<{ __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, sheetsCount?: number | null } | null> | null };
+export type GetWorkbooksQuery = { __typename?: 'Query', workbooks: Array<{ __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, sheetsCount?: number | null }> };
 
 export type AddWorkbookMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -1085,6 +1090,48 @@ export type AppInstanceQueryHookResult = ReturnType<typeof useAppInstanceQuery>;
 export type AppInstanceLazyQueryHookResult = ReturnType<typeof useAppInstanceLazyQuery>;
 export type AppInstanceSuspenseQueryHookResult = ReturnType<typeof useAppInstanceSuspenseQuery>;
 export type AppInstanceQueryResult = Apollo.QueryResult<AppInstanceQuery, AppInstanceQueryVariables>;
+export const BrandingDocument = gql`
+    query Branding {
+  serverName: getSetting(key: "server_name") {
+    value
+  }
+  backgroundColor: getSetting(key: "server_background_color") {
+    value
+  }
+}
+    `;
+
+/**
+ * __useBrandingQuery__
+ *
+ * To run a query within a React component, call `useBrandingQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBrandingQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBrandingQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useBrandingQuery(baseOptions?: Apollo.QueryHookOptions<BrandingQuery, BrandingQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<BrandingQuery, BrandingQueryVariables>(BrandingDocument, options);
+      }
+export function useBrandingLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<BrandingQuery, BrandingQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<BrandingQuery, BrandingQueryVariables>(BrandingDocument, options);
+        }
+export function useBrandingSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<BrandingQuery, BrandingQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<BrandingQuery, BrandingQueryVariables>(BrandingDocument, options);
+        }
+export type BrandingQueryHookResult = ReturnType<typeof useBrandingQuery>;
+export type BrandingLazyQueryHookResult = ReturnType<typeof useBrandingLazyQuery>;
+export type BrandingSuspenseQueryHookResult = ReturnType<typeof useBrandingSuspenseQuery>;
+export type BrandingQueryResult = Apollo.QueryResult<BrandingQuery, BrandingQueryVariables>;
 export const ScanJobsDocument = gql`
     query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
@@ -3161,7 +3208,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   sheetsTimeDistributionReport?: Resolver<ResolversTypes['TimeDistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsTimeDistributionReportArgs, 'schema' | 'sheetIds'>>;
   users?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   workbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<QueryWorkbookArgs, 'workbookId'>>;
-  workbooks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Workbook']>>>, ParentType, ContextType>;
+  workbooks?: Resolver<Array<ResolversTypes['Workbook']>, ParentType, ContextType>;
 };
 
 export type RankingReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['RankingReport'] = ResolversParentTypes['RankingReport']> = {
