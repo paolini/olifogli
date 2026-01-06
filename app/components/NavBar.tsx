@@ -13,17 +13,32 @@ const _ = gql`
   }
 `;
 
+const __ = gql`
+  query Branding {
+    serverName: getSetting(key: "server_name") {
+      value
+    }
+    backgroundColor: getSetting(key: "server_background_color") {
+      value
+    }
+  }
+`
+
 export default function Navbar() {
   const profile = useProfile();
   const linkClass = "text-gray-700 hover:text-blue-500";
   const { breadcrumbs } = useBreadcrumbs();
+  const { data } = useQuery(__);
+  
+  const serverName = data?.serverName?.value || "Olifogli";
+  const backgroundColor = data?.backgroundColor?.value;
   
   return (
-    <nav className="navbar">
+    <nav className="navbar" style={{ backgroundColor }}>
       <div className="flex justify-between items-center p-2">
         <div className="flex items-center gap-2">
           <Link href="/" className="mx-2 text-2xl font-bold hover:text-blue-600">
-            Olifogli<sup className="ml-1 text-xs font-normal">{version}</sup>
+            {serverName}<sup className="ml-1 text-xs font-normal">{version}</sup>
           </Link>
           {breadcrumbs.length > 0 && (
             <div className="flex items-center text-2xl font-bold text-gray-600">
