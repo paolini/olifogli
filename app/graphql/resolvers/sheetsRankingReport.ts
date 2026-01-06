@@ -96,6 +96,7 @@ async function generateRankingReport(
         sheetName: string
         studentName: string
         studentSurname: string
+        studentBirthDate: string | undefined
         classYear: string
         classSection: string
         score: number
@@ -116,6 +117,7 @@ async function generateRankingReport(
             sheetName: sheet.name,
             studentName: row.data?.name || '',
             studentSurname: row.data?.surname || '',
+            studentBirthDate: row.data?.birthDate || '',
             classYear: row.data?.classYear || '',
             classSection: row.data?.classSection || '',
             score,

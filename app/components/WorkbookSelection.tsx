@@ -23,6 +23,7 @@ const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
                 sheetName
                 studentName
                 studentSurname
+                studentBirthDate
                 classYear
                 classSection
                 score

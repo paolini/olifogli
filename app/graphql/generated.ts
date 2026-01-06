@@ -416,6 +416,7 @@ export type ReportEntry = {
   sheet: ReportEntrySheet;
   sheetId: Scalars['ObjectId']['output'];
   sheetName: Scalars['String']['output'];
+  studentBirthDate?: Maybe<Scalars['String']['output']>;
   studentName: Scalars['String']['output'];
   studentSurname: Scalars['String']['output'];
 };
@@ -625,20 +626,6 @@ export type ScanSheetJobsQueryVariables = Exact<{
 
 export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string }> };
 
-export type AddSheetsMutationVariables = Exact<{
-  sheets: Array<SheetInput> | SheetInput;
-}>;
-
-
-export type AddSheetsMutation = { __typename?: 'Mutation', addSheets?: boolean | null };
-
-export type UpdateSheetsMutationVariables = Exact<{
-  sheets: Array<UpdateSheetInput> | UpdateSheetInput;
-}>;
-
-
-export type UpdateSheetsMutation = { __typename?: 'Mutation', updateSheets?: boolean | null };
-
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
@@ -652,6 +639,16 @@ export type GetRowsQueryVariables = Exact<{
 
 
 export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
+
+export type AddSheetMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  schema: Scalars['String']['input'];
+  workbookId: Scalars['ObjectId']['input'];
+  permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
+}>;
+
+
+export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: ObjectId | null };
 
 export type DeleteSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -722,6 +719,13 @@ export type ValidateRowsMutationVariables = Exact<{
 
 export type ValidateRowsMutation = { __typename?: 'Mutation', validateRows?: number | null };
 
+export type UpdateSheetsMutationVariables = Exact<{
+  sheets: Array<UpdateSheetInput> | UpdateSheetInput;
+}>;
+
+
+export type UpdateSheetsMutation = { __typename?: 'Mutation', updateSheets?: boolean | null };
+
 export type DeleteSheetsMutationVariables = Exact<{
   ids: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
 }>;
@@ -736,6 +740,13 @@ export type UpdateSheetPermissionsMutationVariables = Exact<{
 
 
 export type UpdateSheetPermissionsMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
+
+export type AddSheetsMutationVariables = Exact<{
+  sheets: Array<SheetInput> | SheetInput;
+}>;
+
+
+export type AddSheetsMutation = { __typename?: 'Mutation', addSheets?: boolean | null };
 
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -843,7 +854,7 @@ export type GetSheetsRankingReportWithSelectionsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsRankingReportWithSelectionsQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+export type GetSheetsRankingReportWithSelectionsQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, studentBirthDate?: string | null, classYear?: string | null, classSection?: string | null, score: number, rank: number, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
 
 export type ToggleSelectionMutationVariables = Exact<{
   rowId: Scalars['ObjectId']['input'];
@@ -859,16 +870,6 @@ export type GetSheetsQueryVariables = Exact<{
 
 
 export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
-
-export type AddSheetMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  schema: Scalars['String']['input'];
-  workbookId: Scalars['ObjectId']['input'];
-  permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
-}>;
-
-
-export type AddSheetMutation = { __typename?: 'Mutation', addSheet?: ObjectId | null };
 
 export type GetSheetsTimeDistributionReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -1248,68 +1249,6 @@ export type ScanSheetJobsQueryHookResult = ReturnType<typeof useScanSheetJobsQue
 export type ScanSheetJobsLazyQueryHookResult = ReturnType<typeof useScanSheetJobsLazyQuery>;
 export type ScanSheetJobsSuspenseQueryHookResult = ReturnType<typeof useScanSheetJobsSuspenseQuery>;
 export type ScanSheetJobsQueryResult = Apollo.QueryResult<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>;
-export const AddSheetsDocument = gql`
-    mutation AddSheets($sheets: [SheetInput!]!) {
-  addSheets(sheets: $sheets)
-}
-    `;
-export type AddSheetsMutationFn = Apollo.MutationFunction<AddSheetsMutation, AddSheetsMutationVariables>;
-
-/**
- * __useAddSheetsMutation__
- *
- * To run a mutation, you first call `useAddSheetsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAddSheetsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [addSheetsMutation, { data, loading, error }] = useAddSheetsMutation({
- *   variables: {
- *      sheets: // value for 'sheets'
- *   },
- * });
- */
-export function useAddSheetsMutation(baseOptions?: Apollo.MutationHookOptions<AddSheetsMutation, AddSheetsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<AddSheetsMutation, AddSheetsMutationVariables>(AddSheetsDocument, options);
-      }
-export type AddSheetsMutationHookResult = ReturnType<typeof useAddSheetsMutation>;
-export type AddSheetsMutationResult = Apollo.MutationResult<AddSheetsMutation>;
-export type AddSheetsMutationOptions = Apollo.BaseMutationOptions<AddSheetsMutation, AddSheetsMutationVariables>;
-export const UpdateSheetsDocument = gql`
-    mutation UpdateSheets($sheets: [UpdateSheetInput!]!) {
-  updateSheets(sheets: $sheets)
-}
-    `;
-export type UpdateSheetsMutationFn = Apollo.MutationFunction<UpdateSheetsMutation, UpdateSheetsMutationVariables>;
-
-/**
- * __useUpdateSheetsMutation__
- *
- * To run a mutation, you first call `useUpdateSheetsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUpdateSheetsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [updateSheetsMutation, { data, loading, error }] = useUpdateSheetsMutation({
- *   variables: {
- *      sheets: // value for 'sheets'
- *   },
- * });
- */
-export function useUpdateSheetsMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSheetsMutation, UpdateSheetsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<UpdateSheetsMutation, UpdateSheetsMutationVariables>(UpdateSheetsDocument, options);
-      }
-export type UpdateSheetsMutationHookResult = ReturnType<typeof useUpdateSheetsMutation>;
-export type UpdateSheetsMutationResult = Apollo.MutationResult<UpdateSheetsMutation>;
-export type UpdateSheetsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetsMutation, UpdateSheetsMutationVariables>;
 export const GetSheetDocument = gql`
     query getSheet($sheetId: ObjectId!) {
   sheet(sheetId: $sheetId) {
@@ -1426,6 +1365,45 @@ export type GetRowsQueryHookResult = ReturnType<typeof useGetRowsQuery>;
 export type GetRowsLazyQueryHookResult = ReturnType<typeof useGetRowsLazyQuery>;
 export type GetRowsSuspenseQueryHookResult = ReturnType<typeof useGetRowsSuspenseQuery>;
 export type GetRowsQueryResult = Apollo.QueryResult<GetRowsQuery, GetRowsQueryVariables>;
+export const AddSheetDocument = gql`
+    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
+  addSheet(
+    name: $name
+    schema: $schema
+    workbookId: $workbookId
+    permissions: $permissions
+  )
+}
+    `;
+export type AddSheetMutationFn = Apollo.MutationFunction<AddSheetMutation, AddSheetMutationVariables>;
+
+/**
+ * __useAddSheetMutation__
+ *
+ * To run a mutation, you first call `useAddSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addSheetMutation, { data, loading, error }] = useAddSheetMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      schema: // value for 'schema'
+ *      workbookId: // value for 'workbookId'
+ *      permissions: // value for 'permissions'
+ *   },
+ * });
+ */
+export function useAddSheetMutation(baseOptions?: Apollo.MutationHookOptions<AddSheetMutation, AddSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddSheetMutation, AddSheetMutationVariables>(AddSheetDocument, options);
+      }
+export type AddSheetMutationHookResult = ReturnType<typeof useAddSheetMutation>;
+export type AddSheetMutationResult = Apollo.MutationResult<AddSheetMutation>;
+export type AddSheetMutationOptions = Apollo.BaseMutationOptions<AddSheetMutation, AddSheetMutationVariables>;
 export const DeleteSheetDocument = gql`
     mutation DeleteSheet($_id: ObjectId!) {
   deleteSheet(_id: $_id)
@@ -1719,6 +1697,37 @@ export function useValidateRowsMutation(baseOptions?: Apollo.MutationHookOptions
 export type ValidateRowsMutationHookResult = ReturnType<typeof useValidateRowsMutation>;
 export type ValidateRowsMutationResult = Apollo.MutationResult<ValidateRowsMutation>;
 export type ValidateRowsMutationOptions = Apollo.BaseMutationOptions<ValidateRowsMutation, ValidateRowsMutationVariables>;
+export const UpdateSheetsDocument = gql`
+    mutation UpdateSheets($sheets: [UpdateSheetInput!]!) {
+  updateSheets(sheets: $sheets)
+}
+    `;
+export type UpdateSheetsMutationFn = Apollo.MutationFunction<UpdateSheetsMutation, UpdateSheetsMutationVariables>;
+
+/**
+ * __useUpdateSheetsMutation__
+ *
+ * To run a mutation, you first call `useUpdateSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSheetsMutation, { data, loading, error }] = useUpdateSheetsMutation({
+ *   variables: {
+ *      sheets: // value for 'sheets'
+ *   },
+ * });
+ */
+export function useUpdateSheetsMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSheetsMutation, UpdateSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateSheetsMutation, UpdateSheetsMutationVariables>(UpdateSheetsDocument, options);
+      }
+export type UpdateSheetsMutationHookResult = ReturnType<typeof useUpdateSheetsMutation>;
+export type UpdateSheetsMutationResult = Apollo.MutationResult<UpdateSheetsMutation>;
+export type UpdateSheetsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetsMutation, UpdateSheetsMutationVariables>;
 export const DeleteSheetsDocument = gql`
     mutation DeleteSheets($ids: [ObjectId!]!) {
   deleteSheets(ids: $ids)
@@ -1782,6 +1791,37 @@ export function useUpdateSheetPermissionsMutation(baseOptions?: Apollo.MutationH
 export type UpdateSheetPermissionsMutationHookResult = ReturnType<typeof useUpdateSheetPermissionsMutation>;
 export type UpdateSheetPermissionsMutationResult = Apollo.MutationResult<UpdateSheetPermissionsMutation>;
 export type UpdateSheetPermissionsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>;
+export const AddSheetsDocument = gql`
+    mutation AddSheets($sheets: [SheetInput!]!) {
+  addSheets(sheets: $sheets)
+}
+    `;
+export type AddSheetsMutationFn = Apollo.MutationFunction<AddSheetsMutation, AddSheetsMutationVariables>;
+
+/**
+ * __useAddSheetsMutation__
+ *
+ * To run a mutation, you first call `useAddSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addSheetsMutation, { data, loading, error }] = useAddSheetsMutation({
+ *   variables: {
+ *      sheets: // value for 'sheets'
+ *   },
+ * });
+ */
+export function useAddSheetsMutation(baseOptions?: Apollo.MutationHookOptions<AddSheetsMutation, AddSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddSheetsMutation, AddSheetsMutationVariables>(AddSheetsDocument, options);
+      }
+export type AddSheetsMutationHookResult = ReturnType<typeof useAddSheetsMutation>;
+export type AddSheetsMutationResult = Apollo.MutationResult<AddSheetsMutation>;
+export type AddSheetsMutationOptions = Apollo.BaseMutationOptions<AddSheetsMutation, AddSheetsMutationVariables>;
 export const AddRowDocument = gql`
     mutation addRow($sheetId: ObjectId!, $data: Data!) {
   addRow(sheetId: $sheetId, data: $data) {
@@ -2353,6 +2393,7 @@ export const GetSheetsRankingReportWithSelectionsDocument = gql`
       sheetName
       studentName
       studentSurname
+      studentBirthDate
       classYear
       classSection
       score
@@ -2501,45 +2542,6 @@ export type GetSheetsQueryHookResult = ReturnType<typeof useGetSheetsQuery>;
 export type GetSheetsLazyQueryHookResult = ReturnType<typeof useGetSheetsLazyQuery>;
 export type GetSheetsSuspenseQueryHookResult = ReturnType<typeof useGetSheetsSuspenseQuery>;
 export type GetSheetsQueryResult = Apollo.QueryResult<GetSheetsQuery, GetSheetsQueryVariables>;
-export const AddSheetDocument = gql`
-    mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
-  addSheet(
-    name: $name
-    schema: $schema
-    workbookId: $workbookId
-    permissions: $permissions
-  )
-}
-    `;
-export type AddSheetMutationFn = Apollo.MutationFunction<AddSheetMutation, AddSheetMutationVariables>;
-
-/**
- * __useAddSheetMutation__
- *
- * To run a mutation, you first call `useAddSheetMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAddSheetMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [addSheetMutation, { data, loading, error }] = useAddSheetMutation({
- *   variables: {
- *      name: // value for 'name'
- *      schema: // value for 'schema'
- *      workbookId: // value for 'workbookId'
- *      permissions: // value for 'permissions'
- *   },
- * });
- */
-export function useAddSheetMutation(baseOptions?: Apollo.MutationHookOptions<AddSheetMutation, AddSheetMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<AddSheetMutation, AddSheetMutationVariables>(AddSheetDocument, options);
-      }
-export type AddSheetMutationHookResult = ReturnType<typeof useAddSheetMutation>;
-export type AddSheetMutationResult = Apollo.MutationResult<AddSheetMutation>;
-export type AddSheetMutationOptions = Apollo.BaseMutationOptions<AddSheetMutation, AddSheetMutationVariables>;
 export const GetSheetsTimeDistributionReportDocument = gql`
     query GetSheetsTimeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
   sheetsTimeDistributionReport(sheetIds: $sheetIds, schema: $schema) {
@@ -3170,6 +3172,7 @@ export type ReportEntryResolvers<ContextType = any, ParentType extends Resolvers
   sheet?: Resolver<ResolversTypes['ReportEntrySheet'], ParentType, ContextType>;
   sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   sheetName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  studentBirthDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   studentName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   studentSurname?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

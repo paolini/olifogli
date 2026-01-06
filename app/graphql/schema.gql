@@ -146,6 +146,7 @@ type ReportEntry {
   sheetName: String!
   studentName: String!
   studentSurname: String!
+  studentBirthDate: String
   classYear: String
   classSection: String
   sheet: ReportEntrySheet!

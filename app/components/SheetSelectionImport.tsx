@@ -1,5 +1,5 @@
 import { ObjectId } from "bson";
-import { RankingReport, Row, Sheet, useGetSheetsQuery, useGetSheetsRankingReportWithSelectionsQuery } from "../graphql/generated";
+import { RankingReport, Row, Sheet, useAddRowsMutation, useGetSheetsQuery, useGetSheetsRankingReportWithSelectionsQuery } from "../graphql/generated";
 import Loading from "./Loading";
 import Error from "./Error";
 import { useState } from "react";
@@ -34,6 +34,8 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
 
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
+    const [addRowsMutation] = useAddRowsMutation();
+
     const toggleRow = (id: string) => {
         setSelectedRows(prev => {
             const newSet = new Set(prev);
@@ -61,7 +63,9 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
     if (sheetsError) return <Error error={sheetsError} />;
 
     return <div>
-        <Button className="my-2" disabled={selectedRows.size === 0}>Importa {pluralize(selectedRows.size,"riga selezionata","righe selezionate")}</Button>
+        <Button className="my-2" disabled={selectedRows.size === 0} onClick={() => executeImport()}>
+            Importa {pluralize(selectedRows.size,"riga selezionata","righe selezionate")}
+        </Button>
         { selectedRows.size === 0  && <span className="mx-2">seleziona le righe da importare</span>}   
         <table>
             <thead>
@@ -69,6 +73,7 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
                     <th><input type="checkbox" checked={allSelected} onChange={(e) => selectAll(e.target.checked)} /></th>
                     <th>Cognome</th>
                     <th>Nome</th>
+                    <th>Data di nascita</th>
                     <th>Foglio</th>
                     <th>Sezione</th>
                     <th>Punteggio</th>
@@ -81,6 +86,26 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
             </tbody>
         </table>
    </div>;
+
+   async function executeImport() {
+        const rowsToImport = rows.filter(r => selectedRows.has(r.rowId.toString()));
+        await addRowsMutation({
+            variables: {
+                sheetId: sheet._id,
+                columns: ["surname", "name", "birthDate", "codice_meccanografico", "nomeScuola", "cittàScuola", "classSection"],
+                rows: rowsToImport.map(r => [
+                    r.studentSurname || '',
+                    r.studentName || '',
+                    r.studentBirthDate || '',
+                    r.sheetName || '',
+                    '',
+                    '',
+                    r.classSection || '',
+                ]),
+            }
+        })
+        setSelectedRows(new Set());
+   }
 }
 
 function TableRow({row, selectedRows, toggleRow}:{row:RankingReport['ranking'][0], selectedRows: Set<string>, toggleRow: (id: string) => void}) {
@@ -88,6 +113,7 @@ function TableRow({row, selectedRows, toggleRow}:{row:RankingReport['ranking'][0
         <td><input type="checkbox" checked={selectedRows.has(row.rowId.toString())} onChange={() => toggleRow(row.rowId.toString())} /></td>
         <td>{row.studentSurname}</td>
         <td>{row.studentName}</td>
+        <td>{row.studentBirthDate || ''}</td>
         <td>{row.sheetName}</td>
         <td>{row.classSection}</td>
         <td>{row.score}</td>
