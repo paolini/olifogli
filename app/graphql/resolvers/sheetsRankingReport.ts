@@ -97,6 +97,9 @@ async function generateRankingReport(
         studentName: string
         studentSurname: string
         studentBirthDate: string | undefined
+        school: string
+        city: string
+        district: string
         classYear: string
         classSection: string
         score: number
@@ -118,6 +121,9 @@ async function generateRankingReport(
             studentName: row.data?.name || '',
             studentSurname: row.data?.surname || '',
             studentBirthDate: row.data?.birthDate || '',
+            school: sheet.commonData?.Nome_scuola || '',
+            city: sheet.commonData?.Città_scuola || '',
+            district: sheet.commonData?.Distretto || '',
             classYear: row.data?.classYear || '',
             classSection: row.data?.classSection || '',
             score,

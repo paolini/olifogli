@@ -407,10 +407,13 @@ export type RankingReport = {
 
 export type ReportEntry = {
   __typename?: 'ReportEntry';
+  city?: Maybe<Scalars['String']['output']>;
   classSection?: Maybe<Scalars['String']['output']>;
   classYear?: Maybe<Scalars['String']['output']>;
+  district?: Maybe<Scalars['String']['output']>;
   rank: Scalars['Int']['output'];
   rowId: Scalars['ObjectId']['output'];
+  school?: Maybe<Scalars['String']['output']>;
   score: Scalars['Float']['output'];
   selections?: Maybe<Array<Maybe<RowSelection>>>;
   sheet: ReportEntrySheet;
@@ -843,7 +846,7 @@ export type GetSheetsRankingReportQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+export type GetSheetsRankingReportQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, school?: string | null, city?: string | null, district?: string | null, classYear?: string | null, classSection?: string | null, score: number, rank: number, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
 
 export type GetSheetsRankingReportWithSelectionsQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -854,7 +857,7 @@ export type GetSheetsRankingReportWithSelectionsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsRankingReportWithSelectionsQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, studentBirthDate?: string | null, classYear?: string | null, classSection?: string | null, score: number, rank: number, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
+export type GetSheetsRankingReportWithSelectionsQuery = { __typename?: 'Query', sheetsRankingReport: { __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, studentBirthDate?: string | null, school?: string | null, city?: string | null, district?: string | null, classYear?: string | null, classSection?: string | null, score: number, rank: number, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> } };
 
 export type ToggleSelectionMutationVariables = Exact<{
   rowId: Scalars['ObjectId']['input'];
@@ -2330,6 +2333,9 @@ export const GetSheetsRankingReportDocument = gql`
       sheetName
       studentName
       studentSurname
+      school
+      city
+      district
       classYear
       classSection
       score
@@ -2394,6 +2400,9 @@ export const GetSheetsRankingReportWithSelectionsDocument = gql`
       studentName
       studentSurname
       studentBirthDate
+      school
+      city
+      district
       classYear
       classSection
       score
@@ -3163,10 +3172,13 @@ export type RankingReportResolvers<ContextType = any, ParentType extends Resolve
 };
 
 export type ReportEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ReportEntry'] = ResolversParentTypes['ReportEntry']> = {
+  city?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   classSection?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   classYear?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  district?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rank?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   rowId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  school?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
   sheet?: Resolver<ResolversTypes['ReportEntrySheet'], ParentType, ContextType>;
