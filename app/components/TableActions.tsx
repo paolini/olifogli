@@ -29,7 +29,7 @@ export default function TableActions(input: TableActionInput,) {
     const ctx = useTableActionsContext(input)
 
     return <>
-        <GlobalMessage className={input.standardAnswers ? "table-message-standard": "table-message"} title="istruzioni" name={input.standardAnswers ? "table_instructions_standard" : "table_instructions"} collapsed={true} />
+        <GlobalMessage className={input.standardAnswers ? `table-message-standard` : `table-message`} title="istruzioni" name={input.standardAnswers ? `table_instructions_standard_${ctx.sheet.schema}` : `table_instructions_${ctx.sheet.schema}`} collapsed={true} />
         <TableActionsErrors ctx={ctx} />
         <Checkboxes schema={ctx.schema} state={ctx.checkboxesState} setState={ctx.setCheckboxesState} />
         <select

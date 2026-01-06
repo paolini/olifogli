@@ -235,14 +235,14 @@ function SheetBody({sheet,profile}: {
             <CsvImport sheetId={sheet._id} schemaName={sheet.schema} done={() => setCsvImport(false)}/>
         }
         { tab === 'scans' && <div className="mx-2">
-            <GlobalMessage name="scan_info" title="istruzioni" collapsed={true} />
+            <GlobalMessage name={`scan_info_${sheet.schema}`} title="istruzioni" collapsed={true} />
             <ScansSheetExport sheet={sheet} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
           </div>
         }
         { tab === 'selection' && selectionWorkbookId && <div className="mx-2">
-            <GlobalMessage name="import_selection_info" title="istruzioni" collapsed={true} />
+            <GlobalMessage name={`import_selection_info_${sheet.schema}`} title="istruzioni" collapsed={true} />
             <SheetSelectionImport sheet={sheet} data_rows={data.rows} selectionWorkbookId={selectionWorkbookId}/>
           </div>
         }
