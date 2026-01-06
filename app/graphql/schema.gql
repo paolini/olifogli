@@ -230,7 +230,7 @@ type Query {
   me: User
   users: [User]
   config: Config
-  workbooks: [Workbook]
+  workbooks: [Workbook!]!
   workbook(workbookId: ObjectId!): Workbook
   sheets(workbookId: ObjectId): [Sheet!]!
   sheet(sheetId: ObjectId!): Sheet

@@ -64,6 +64,8 @@ export default function Workbooks() {
     </div>
   }
 
+  const sortedWorkbooks = [...workbooks].reverse()
+
   return <div className="p-4 space-y-4">
     <h1>Competizioni</h1>
     <table className="table-auto">
@@ -75,7 +77,7 @@ export default function Workbooks() {
         </tr>
       </thead>
       <tbody>
-      {workbooks.map((workbook) => (
+      {sortedWorkbooks.map((workbook) => (
         workbook && (
           <tr key={workbook._id?.toString()}>
             <td className="p-2 pr-8">
