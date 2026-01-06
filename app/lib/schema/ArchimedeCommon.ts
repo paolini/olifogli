@@ -1,4 +1,3 @@
-import { validate } from 'graphql'
 import { Data, Row, ScanResults } from '../models'
 import Competition, { OlimanagerProblemResult } from './Competition'
 import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField } from './fields'
