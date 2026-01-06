@@ -169,7 +169,7 @@ function SheetBody({sheet,profile}: {
                 <button 
                     className={`tab-button ${tab === 'selection' ? 'tab-button-active' : 'tab-button-inactive'}`}
                     onClick={() => setTab('selection')}>
-                    IMPORTA SELEZIONATI
+                    SELEZIONA SEGNALATI
                 </button>
             }
             { (schema instanceof ArchimedeCommon) &&
