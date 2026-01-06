@@ -24,6 +24,9 @@ const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
                 studentName
                 studentSurname
                 studentBirthDate
+                school
+                city
+                district
                 classYear
                 classSection
                 score
@@ -330,6 +333,9 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
                         <th className="border p-2 text-center w-40">Cognome</th>
                         <th className="border p-2 text-center w-40">Nome</th>
                         <th className="border p-2 text-center w-48">Scuola</th>
+                        <th className="border p-2 text-center w-20">Codice</th>
+                        <th className="border p-2 text-center w-20">Città</th>
+                        <th className="border p-2 text-center w-20">Distretto</th>
                         <th className="border p-2 text-center w-20">Anno</th>
                         <th className="border p-2 text-center w-20">Sezione</th>
                     </tr>
@@ -351,7 +357,10 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
                                 <td className="border p-2 text-center font-semibold" style={score_to_color_style(entry.score.toString())}>{Math.round(entry.score)}</td>
                                 <td className="border p-2 text-left w-40 truncate" title={entry.studentSurname}>{entry.studentSurname}</td>
                                 <td className="border p-2 text-left w-40 truncate" title={entry.studentName}>{entry.studentName}</td>
-                                <td className="border p-2 text-center w-48 truncate" title={entry.sheetName}>{entry.sheetName}</td>
+                                <td className="border p-2 text-center max-w-48 truncate" title={entry.school || ''}>{entry.school}</td>
+                                <td className="border p-2 text-center w-20 truncate" title={entry.sheetName}><a href={`/sheet/${entry.sheetId}`}>{entry.sheetName}</a></td>
+                                <td className="border p-2 text-left w-20 truncate">{entry.city}</td>
+                                <td className="border p-2 text-left w-20 truncate">{entry.district}</td>
                                 <td className="border p-2 text-center">{entry.classYear}</td>
                                 <td className="border p-2 text-center">{entry.classSection}</td>
                             </tr>

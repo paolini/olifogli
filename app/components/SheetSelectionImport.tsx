@@ -17,7 +17,7 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
 
     const querySheets = sheetsData?.sheets || [];
 
-    const sheets = querySheets
+    const sheets = querySheets.filter(s => s.commonData?.Distretto === sheet.name)
 
     const filteredSheets = sheets.filter(s => s.schema === 'archimede_biennio')
 
@@ -48,25 +48,35 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
         });
     };
 
+    const alreadyImportedNames = new Set(data_rows.map(r => `${r.data["surname"]}|${r.data["name"]}|${r.data["birthDate"]}`)); // cognome|nome|dataNascita
+    const alreadyImportedRowIds = new Set(rows.filter(r => alreadyImportedNames.has(`${r.studentSurname}|${r.studentName}|${r.studentBirthDate}`)).map(r => r.rowId.toString()));
+    const total = rows.length - alreadyImportedRowIds.size;
+
+    const allSelected = total > 0 && selectedRows.size === total;
     const selectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedRows(new Set(rows.map(row => row.rowId.toString())));
+            setSelectedRows(new Set(rows.filter(r => !alreadyImportedRowIds.has(r.rowId.toString())).map(row => row.rowId.toString())));
         } else {
             setSelectedRows(new Set());
         }
     };
-
-    const allSelected = rows.length > 0 && selectedRows.size === rows.length;
+    
 
     if (loading || loadingSheets) return <Loading />;
     if (error) return <Error error={error} />;
     if (sheetsError) return <Error error={sheetsError} />;
 
     return <div>
+        { (rows.length === 0) &&
+            <div>Nessuna riga è stata selezionata.</div>
+        }
+        <a href={`/workbook/${selectionWorkbookId}?tab=selezione`}>[pagina della selezione]</a>
+        <br />
         <Button className="my-2" disabled={selectedRows.size === 0} onClick={() => executeImport()}>
             Importa {pluralize(selectedRows.size,"riga selezionata","righe selezionate")}
         </Button>
-        { selectedRows.size === 0  && <span className="mx-2">seleziona le righe da importare</span>}   
+        { selectedRows.size === 0  && <span className="ml-2">seleziona le righe da importare,</span>}
+        <span className="ml-2">{pluralize(alreadyImportedRowIds.size,"riga già importata","righe già importate")}</span>
         <table>
             <thead>
                 <tr>
@@ -74,14 +84,17 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
                     <th>Cognome</th>
                     <th>Nome</th>
                     <th>Data di nascita</th>
+                    <th>Scuola</th>
                     <th>Foglio</th>
+                    <th>Città</th>
+                    <th>Distretto</th>
                     <th>Sezione</th>
                     <th>Punteggio</th>
                 </tr>
             </thead>
             <tbody>
                 {rows.map(row => 
-                    <TableRow key={row.rowId.toString()} row={row} selectedRows={selectedRows} toggleRow={toggleRow} />
+                    <TableRow key={row.rowId.toString()} row={row} selectedRows={selectedRows} toggleRow={toggleRow} isAlreadyImported={alreadyImportedRowIds.has(row.rowId.toString())} />
                 )}
             </tbody>
         </table>
@@ -108,13 +121,17 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
    }
 }
 
-function TableRow({row, selectedRows, toggleRow}:{row:RankingReport['ranking'][0], selectedRows: Set<string>, toggleRow: (id: string) => void}) {
-    return <tr style={{ backgroundColor: selectedRows.has(row.rowId.toString()) ? '#f0f0f0' : 'transparent' }}>
-        <td><input type="checkbox" checked={selectedRows.has(row.rowId.toString())} onChange={() => toggleRow(row.rowId.toString())} /></td>
+function TableRow({row, selectedRows, toggleRow, isAlreadyImported}:{row:RankingReport['ranking'][0], selectedRows: Set<string>, toggleRow: (id: string) => void, isAlreadyImported: boolean}) {
+    // const isAlreadyImported = alreadyImportedNames.has(`${row.studentSurname}|${row.studentName}|${row.studentBirthDate}`);
+    return <tr style={{ backgroundColor: isAlreadyImported ? '#c5f3bdff' : selectedRows.has(row.rowId.toString()) ? '#f0f0f0' : 'transparent' }}>
+        <td>{isAlreadyImported ? '✔' : <input type="checkbox" checked={selectedRows.has(row.rowId.toString())} onChange={() => toggleRow(row.rowId.toString())} />}</td>
         <td>{row.studentSurname}</td>
         <td>{row.studentName}</td>
         <td>{row.studentBirthDate || ''}</td>
-        <td>{row.sheetName}</td>
+        <td>{row.school || ''}</td>
+        <td><a href={`/sheet/${row.sheetId}`}>{row.sheetName}</a></td>
+        <td>{row.city}</td>
+        <td>{row.district}</td>
         <td>{row.classSection}</td>
         <td>{row.score}</td>
     </tr>
