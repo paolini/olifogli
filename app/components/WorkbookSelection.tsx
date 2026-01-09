@@ -213,7 +213,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
     };
 
     return (
-        <div className="p-4 space-y-6 max-w-6xl">
+        <div className="p-4 space-y-6">
             <div className="flex justify-between items-start">
                 <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
             </div>
@@ -324,7 +324,7 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
     }
     return (
         <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="border-collapse">
                 <thead>
                     <tr className="my-table">
                         <th className="border p-2 text-center w-16">Seleziona</th>
