@@ -111,8 +111,8 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
                     r.studentName || '',
                     r.studentBirthDate || '',
                     r.sheetName || '',
-                    '',
-                    '',
+                    r.school || '',
+                    r.city || '',
                     r.classSection || '',
                 ]),
             }
