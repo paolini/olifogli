@@ -34,7 +34,7 @@ export default async function sheets(_: unknown, { workbookId }: QuerySheetsArgs
         pipeline.push({ $match: { workbookId } })
     }
 
-    if (!user.isAdmin) {
+    if (!(user.isAdmin || user.isSupervisor)) {
         pipeline.push({ $match: { $or: [
             { ownerId: user._id },
             { 'permissions.email': user.email },

@@ -14,6 +14,7 @@ const USERS_QUERY = gql`
             _id
             email
             isAdmin
+            isSupervisor
             name
         }
     }
@@ -29,11 +30,12 @@ const ME_QUERY = gql`
     }
 `
 
-const UPDATE_ADMIN_MUTATION = gql`
-    mutation UpdateUserAdmin($userId: ID!, $isAdmin: Boolean!) {
-        updateUserAdmin(userId: $userId, isAdmin: $isAdmin) {
+const UPDATE_USER_ROLE_MUTATION = gql`
+    mutation UpdateUserRole($userId: ID!, $isAdmin: Boolean!, $isSupervisor: Boolean!) {
+        updateUserRole(userId: $userId, isAdmin: $isAdmin, isSupervisor: $isSupervisor) {
             _id
             isAdmin
+            isSupervisor
         }
     }
 `
@@ -41,7 +43,7 @@ const UPDATE_ADMIN_MUTATION = gql`
 export default function Users() {
     const { data: usersData, loading, error } = useQuery<{ users: User[] }>(USERS_QUERY)
     const { data: meData, loading: meLoading, error: meError } = useQuery(ME_QUERY)
-    const [updateUserAdmin] = useMutation(UPDATE_ADMIN_MUTATION, {
+    const [updateUserRole] = useMutation(UPDATE_USER_ROLE_MUTATION, {
         refetchQueries: [{ query: USERS_QUERY }],
     })
 
@@ -63,7 +65,11 @@ export default function Users() {
             let v = ''
             if (col === 'email') v = u.email ?? ''
             else if (col === 'name') v = u.name ?? ''
-            else if (col === 'isAdmin') v = u.isAdmin ? '✓' : ''
+            else if (col === 'role') {
+                if (u.isAdmin) v = 'admin'
+                else if (u.isSupervisor) v = 'supervisor'
+                else v = ''
+            }
             return v.toString().toLowerCase().includes(val.toLowerCase())
         })
     })
@@ -78,8 +84,13 @@ export default function Users() {
             } else if (sort.field === 'name') {
                 av = a.name ?? ''
                 bv = b.name ?? ''
-            } else if (sort.field === 'isAdmin') {
-                return (b.isAdmin === a.isAdmin ? 0 : b.isAdmin ? sort.direction : -sort.direction)
+            } else if (sort.field === 'role') {
+                if (a.isAdmin) av = 'admin'
+                else if (a.isSupervisor) av = 'supervisor'
+                else av = ''
+                if (b.isAdmin) bv = 'admin'
+                else if (b.isSupervisor) bv = 'supervisor'
+                else bv = ''
             }
             return av.localeCompare(bv, 'it', { sensitivity: 'base' }) * sort.direction
         })
@@ -137,24 +148,36 @@ export default function Users() {
                 <tr>
                     <Th field="email" header="email" />
                     <Th field="name" header="nome" />
-                    <Th field="isAdmin" header="⚙" />
+                    <Th field="role" header="ruolo" />
                 </tr>
             </thead>
             <tbody>
-                {users.map(user => <tr key={user._id.toString()}>
-                    <td>{user.email}</td>
-                    <td>{user.name}</td>
-                    <td>
-                       <input
-                            disabled={user._id.toString() === String(currentUserId)}
-                            type="checkbox"
-                            checked={!!user.isAdmin}
-                            onChange={e => {
-                                updateUserAdmin({ variables: { userId: user._id, isAdmin: e.target.checked } })
-                            }}
-                        />
-                    </td>
-                </tr>)}
+                {users.map(user => {
+                    let role = ''
+                    if (user.isAdmin) role = 'admin'
+                    else if (user.isSupervisor) role = 'supervisor'
+                    else role = ''
+                    return <tr key={user._id.toString()}>
+                        <td>{user.email}</td>
+                        <td>{user.name}</td>
+                        <td>
+                            <select
+                                disabled={user._id.toString() === String(currentUserId)}
+                                value={role}
+                                onChange={e => {
+                                    const value = e.target.value
+                                    const isAdmin = value === 'admin'
+                                    const isSupervisor = value === 'supervisor'
+                                    updateUserRole({ variables: { userId: user._id, isAdmin, isSupervisor } })
+                                }}
+                            >
+                                <option value=""></option>
+                                <option value="admin">admin</option>
+                                <option value="supervisor">supervisor</option>
+                            </select>
+                        </td>
+                    </tr>
+                })}
             </tbody>
         </table>
     </>

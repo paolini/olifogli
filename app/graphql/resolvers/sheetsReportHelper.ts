@@ -17,7 +17,7 @@ export default async function sheetsReportHelper(
     // a cui l'utente ha accesso
     const sheetFilter: Document = { _id: { $in: sheetIds} }
     
-    if (!user.isAdmin) {
+    if (!(user.isAdmin || user.isSupervisor)) {
         sheetFilter.$or = [
             { ownerId: user._id },
             { 'permissions.email': user.email },

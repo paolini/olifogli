@@ -100,6 +100,7 @@ type User {
   email: String!
   name: String
   isAdmin: Boolean
+  isSupervisor: Boolean
 }
 
 type Config {
@@ -255,7 +256,7 @@ type OlimanagerCreateResult {
 }
 
 type Mutation {
-  updateUserAdmin(userId: ID!, isAdmin: Boolean!): User
+  updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId
   deleteSheet(_id: ObjectId!): Boolean
   addSheets(sheets: [SheetInput!]!): Boolean

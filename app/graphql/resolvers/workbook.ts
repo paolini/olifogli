@@ -14,8 +14,8 @@ export default async function workbook(_: unknown, { workbookId }: QueryWorkbook
         _id: new ObjectId(workbookId),
     });
     if (!workbook) return null;
-    // se non è admin restituisce tutte le informazioni
-    if (user.isAdmin) return workbook;
+    // se è admin o supervisore restituisce tutte le informazioni
+    if (user.isAdmin || user.isSupervisor) return workbook;
     // altrimenti limita i dati al nome 
     return {
         _id: workbook._id,

@@ -7,6 +7,7 @@ const GET_PROFILE = gql`
         me {
             _id
             isAdmin
+            isSupervisor
             email
             name
         }
@@ -18,6 +19,7 @@ export default function useProfile(): {
     email: string
     name: string
     isAdmin: boolean
+    isSupervisor: boolean
 } | null | undefined {
     const { data: session } = useSession()
     const { data, loading, error } = useQuery(GET_PROFILE, {

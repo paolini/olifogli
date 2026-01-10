@@ -7,7 +7,7 @@ import { getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
 export default async function workbooks(_: unknown, __: unknown, context: Context): Promise<WithId<Workbook>[]> {
     const user = await get_authenticated_user(context)
     if (!user) throw new Error("Not authenticated")
-    if (user.isAdmin) {
+    if (user.isAdmin || user.isSupervisor) {
         const collection = await getWorkbooksCollection()
         const workbooks = await collection.find({}).toArray();
 
