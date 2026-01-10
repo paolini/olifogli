@@ -101,7 +101,7 @@ export type Mutation = {
   updateSetting: Setting;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSheets?: Maybe<Scalars['Boolean']['output']>;
-  updateUserAdmin?: Maybe<User>;
+  updateUserRole?: Maybe<User>;
   updateWorkbook?: Maybe<Scalars['Boolean']['output']>;
   validateRows?: Maybe<Scalars['Int']['output']>;
 };
@@ -252,8 +252,9 @@ export type MutationUpdateSheetsArgs = {
 };
 
 
-export type MutationUpdateUserAdminArgs = {
+export type MutationUpdateUserRoleArgs = {
   isAdmin: Scalars['Boolean']['input'];
+  isSupervisor: Scalars['Boolean']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -559,6 +560,7 @@ export type User = {
   _id: Scalars['ObjectId']['output'];
   email: Scalars['String']['output'];
   isAdmin?: Maybe<Scalars['Boolean']['output']>;
+  isSupervisor?: Maybe<Scalars['Boolean']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   uid?: Maybe<Scalars['Int']['output']>;
 };
@@ -790,20 +792,21 @@ export type DeleteRowsMutation = { __typename?: 'Mutation', deleteRows?: number 
 export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null, name?: string | null } | null> | null };
+export type GetUsersQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null, isSupervisor?: boolean | null, name?: string | null } | null> | null };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, email: string, isAdmin?: boolean | null } | null };
 
-export type UpdateUserAdminMutationVariables = Exact<{
+export type UpdateUserRoleMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
   isAdmin: Scalars['Boolean']['input'];
+  isSupervisor: Scalars['Boolean']['input'];
 }>;
 
 
-export type UpdateUserAdminMutation = { __typename?: 'Mutation', updateUserAdmin?: { __typename?: 'User', _id: ObjectId, isAdmin?: boolean | null } | null };
+export type UpdateUserRoleMutation = { __typename?: 'Mutation', updateUserRole?: { __typename?: 'User', _id: ObjectId, isAdmin?: boolean | null, isSupervisor?: boolean | null } | null };
 
 export type GetWorkbookQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -930,7 +933,7 @@ export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requ
 export type GetProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, isAdmin?: boolean | null, email: string, name?: string | null } | null };
+export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, isAdmin?: boolean | null, isSupervisor?: boolean | null, email: string, name?: string | null } | null };
 
 export type GetConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2024,6 +2027,7 @@ export const GetUsersDocument = gql`
     _id
     email
     isAdmin
+    isSupervisor
     name
   }
 }
@@ -2101,41 +2105,43 @@ export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
 export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
 export type MeSuspenseQueryHookResult = ReturnType<typeof useMeSuspenseQuery>;
 export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
-export const UpdateUserAdminDocument = gql`
-    mutation UpdateUserAdmin($userId: ID!, $isAdmin: Boolean!) {
-  updateUserAdmin(userId: $userId, isAdmin: $isAdmin) {
+export const UpdateUserRoleDocument = gql`
+    mutation UpdateUserRole($userId: ID!, $isAdmin: Boolean!, $isSupervisor: Boolean!) {
+  updateUserRole(userId: $userId, isAdmin: $isAdmin, isSupervisor: $isSupervisor) {
     _id
     isAdmin
+    isSupervisor
   }
 }
     `;
-export type UpdateUserAdminMutationFn = Apollo.MutationFunction<UpdateUserAdminMutation, UpdateUserAdminMutationVariables>;
+export type UpdateUserRoleMutationFn = Apollo.MutationFunction<UpdateUserRoleMutation, UpdateUserRoleMutationVariables>;
 
 /**
- * __useUpdateUserAdminMutation__
+ * __useUpdateUserRoleMutation__
  *
- * To run a mutation, you first call `useUpdateUserAdminMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUpdateUserAdminMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useUpdateUserRoleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateUserRoleMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [updateUserAdminMutation, { data, loading, error }] = useUpdateUserAdminMutation({
+ * const [updateUserRoleMutation, { data, loading, error }] = useUpdateUserRoleMutation({
  *   variables: {
  *      userId: // value for 'userId'
  *      isAdmin: // value for 'isAdmin'
+ *      isSupervisor: // value for 'isSupervisor'
  *   },
  * });
  */
-export function useUpdateUserAdminMutation(baseOptions?: Apollo.MutationHookOptions<UpdateUserAdminMutation, UpdateUserAdminMutationVariables>) {
+export function useUpdateUserRoleMutation(baseOptions?: Apollo.MutationHookOptions<UpdateUserRoleMutation, UpdateUserRoleMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<UpdateUserAdminMutation, UpdateUserAdminMutationVariables>(UpdateUserAdminDocument, options);
+        return Apollo.useMutation<UpdateUserRoleMutation, UpdateUserRoleMutationVariables>(UpdateUserRoleDocument, options);
       }
-export type UpdateUserAdminMutationHookResult = ReturnType<typeof useUpdateUserAdminMutation>;
-export type UpdateUserAdminMutationResult = Apollo.MutationResult<UpdateUserAdminMutation>;
-export type UpdateUserAdminMutationOptions = Apollo.BaseMutationOptions<UpdateUserAdminMutation, UpdateUserAdminMutationVariables>;
+export type UpdateUserRoleMutationHookResult = ReturnType<typeof useUpdateUserRoleMutation>;
+export type UpdateUserRoleMutationResult = Apollo.MutationResult<UpdateUserRoleMutation>;
+export type UpdateUserRoleMutationOptions = Apollo.BaseMutationOptions<UpdateUserRoleMutation, UpdateUserRoleMutationVariables>;
 export const GetWorkbookDocument = gql`
     query GetWorkbook($workbookId: ObjectId!) {
   workbook(workbookId: $workbookId) {
@@ -2842,6 +2848,7 @@ export const GetProfileDocument = gql`
   me {
     _id
     isAdmin
+    isSupervisor
     email
     name
   }
@@ -3156,7 +3163,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateSetting?: Resolver<ResolversTypes['Setting'], ParentType, ContextType, RequireFields<MutationUpdateSettingArgs, 'key' | 'value'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
   updateSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetsArgs, 'sheets'>>;
-  updateUserAdmin?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<MutationUpdateUserAdminArgs, 'isAdmin' | 'userId'>>;
+  updateUserRole?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<MutationUpdateUserRoleArgs, 'isAdmin' | 'isSupervisor' | 'userId'>>;
   updateWorkbook?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateWorkbookArgs, '_id'>>;
   validateRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationValidateRowsArgs, 'sheetId'>>;
 };
@@ -3360,6 +3367,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   isAdmin?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  isSupervisor?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   uid?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

@@ -29,5 +29,8 @@ export default function Splash() {
       collapsed={true}
     />
     <Workbooks />
+    <GlobalMessage name="home_footer_message"
+      description="Messaggio a piè di pagina della home page"
+    />
   </div>
 }

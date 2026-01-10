@@ -32,7 +32,7 @@ export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): She
   
   // L'amministratore globale ha sempre accesso completo
   if (user?.isAdmin) return 'owner'
-  
+
   // Il proprietario ha sempre controllo completo
   if (sheet?.ownerId && sheet.ownerId.equals(user._id)) return 'owner'
 
@@ -53,6 +53,9 @@ export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): She
     }
   }
 
+  // Il supervisore globale ha sempre accesso di sola lettura
+  if (user?.isSupervisor) return 'view'
+  
   return null
 }
 
@@ -130,7 +133,7 @@ export function check_user_can_update_sheet(user: User, sheet: Partial<Sheet>|nu
 
 export function check_user_can_view_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
     if (!job) throw new UserInputError('job inesistente')
-    if (user?.isAdmin) return
+    if (user?.isAdmin || user?.isSupervisor) return
     if (job.ownerId?.equals(user._id)) return
     throw new ForbiddenError('non autorizzato')
 }

@@ -39,7 +39,7 @@ import addWorkbook from './resolvers/addWorkbook'
 import deleteWorkbook from './resolvers/deleteWorkbook'
 import updateWorkbook from './resolvers/updateWorkbook'
 import updateSheet from './resolvers/updateSheet'
-import updateUserAdmin from './resolvers/updateUserAdmin'
+import updateUserRole from './resolvers/updateUserRole'
 import closeSheet from './resolvers/closeSheet'
 import openSheet from './resolvers/openSheet'
 import lockSheet from './resolvers/lockSheet'
@@ -87,7 +87,7 @@ export const resolvers: Resolvers = {
 
       const collection = await getSheetsCollection()
       
-      if (user.isAdmin) {
+      if (user.isAdmin || user.isSupervisor) {
         // Admin can see all sheets
         return await collection.countDocuments({ workbookId: parent._id })
       } else {
@@ -124,7 +124,7 @@ export const resolvers: Resolvers = {
     deleteWorkbook,
     updateWorkbook,
   updateSheet,
-  updateUserAdmin,
+  updateUserRole,
     closeSheet,
     openSheet,
     lockSheet,

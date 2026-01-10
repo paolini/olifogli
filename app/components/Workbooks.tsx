@@ -73,7 +73,7 @@ export default function Workbooks() {
         <tr className="border-b">
           <th className="text-left p-2 pr-8">Nome</th>
           <th className="text-left p-2">Fogli</th>
-          <th className="text-left p-2">Azioni</th>
+          { profile?.isAdmin && <th className="text-left p-2">Azioni</th>}
         </tr>
       </thead>
       <tbody>
@@ -88,6 +88,7 @@ export default function Workbooks() {
             <td className="p-2 text-gray-600 text-center">
               {workbook.sheetsCount}
             </td>
+            { profile?.isAdmin && 
             <td className="p-2">
               {workbook.sheetsCount === 0 && workbook._id && workbook.name && (
                 <Button 
@@ -97,7 +98,7 @@ export default function Workbooks() {
                   Elimina
                 </Button>
               )}
-            </td>
+            </td>}
           </tr>
         )
       ))}

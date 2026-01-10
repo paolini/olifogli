@@ -16,7 +16,8 @@ export type User = {
     _id: ObjectId
     name: string
     email: string
-    isAdmin?: boolean
+    isAdmin?: boolean // può fare tutto
+    isSupervisor?: boolean // può vedere tutto, ma non modificare
     createdAt?: Date
     lastLogin?: Date
 }
