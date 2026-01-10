@@ -102,7 +102,6 @@ export default class GaraPrime extends Competition {
     }
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
-        throw new Error(`scan_to_data_dict not yet implemented`)
         const existing_data_dict = Object.fromEntries(rows
             .map(row => [parseInt(row.data.id), row] as [number,Row])
             .filter(([id,_]) => !isNaN(id))
