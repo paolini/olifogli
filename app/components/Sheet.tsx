@@ -43,6 +43,8 @@ const _ = gql`
             nValidRows
             anomalies
             nSyncedRows
+            nScanJobs
+            nScanSheetJobs
             closed
             closedBy
             closedOn

@@ -23,6 +23,8 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
             nValidRows: 0,
             anomalies: 0,
             nSyncedRows: 0,
+            nScanJobs: 0,
+            nScanSheetJobs: 0,
             ...sheet,
             ownerId: user._id,
             permissions,

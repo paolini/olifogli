@@ -6,7 +6,7 @@ import { existsSync } from 'fs'
 import { ObjectId } from 'mongodb'
 
 import { get_context } from '@/app/graphql/types'
-import { getScanJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getScanJobsCollection, getSheetsCollection, withTransaction } from '@/app/lib/mongodb'
 import { check_user_can_edit_rows, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { schemas } from '@/app/lib/schema'
 
@@ -68,20 +68,34 @@ export async function POST(req: NextRequest) {
 
         const now = new Date()
         const jobsCollection = await getScanJobsCollection()
-        const insertion = await jobsCollection.insertOne({
-            sheetId: new ObjectId(sheetId),
-            timestamp: now,
-            messages: [{  
-                status: 'uploading',
-                message: 'caricamento PDF',
-                timestamp: now}],
-            ownerId: user._id,
+
+        // Usa una transazione per garantire la consistenza tra job e sheet
+        const job = await withTransaction(async (session) => {
+            const insertion = await jobsCollection.insertOne({
+                sheetId: new ObjectId(sheetId),
+                timestamp: now,
+                messages: [{  
+                    status: 'uploading',
+                    message: 'caricamento PDF',
+                    timestamp: now}],
+                ownerId: user._id,
+            }, { session })
+
+            if (!insertion.acknowledged) {
+                throw new Error('Failed to create scan job')
+            }
+
+            // Incrementa nScanJobs nel sheet
+            await sheetsCollection.updateOne(
+                { _id: sheetId },
+                { $inc: { nScanJobs: 1 } },
+                { session }
+            )
+
+            return insertion.insertedId.toString()
         })
 
-        if (!insertion.acknowledged) {
-            return NextResponse.json({ error: 'Failed to create scan job' }, { status: 500 });
-        }
-        const job_id = insertion.insertedId.toString()
+        const job_id = job
 
         // Define upload path
         const filePath = path.join(SCANS_SPOOL_DIR, `${schema.name}-${job_id}.pdf`)

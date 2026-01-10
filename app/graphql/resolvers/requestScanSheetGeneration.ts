@@ -1,4 +1,4 @@
-import { getRowsCollection, getScanSheetJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getRowsCollection, getScanSheetJobsCollection, getSheetsCollection, withTransaction } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { get_authenticated_user, check_user_is_sheet_admin, check_user_can_update_sheet } from './utils'
 import { ObjectId } from 'mongodb'
@@ -42,14 +42,27 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   const now = new Date();
 
   const scanSheetJobsCollection = await getScanSheetJobsCollection()
-  const result = await scanSheetJobsCollection.insertOne({
-      sheetId: sheet._id,
-      timestamp: now,
-      status: 'pending',
-      message: 'submitting job',
-      createdBy: user.email
+  const sheetsCollection = await getSheetsCollection()
+
+  // Usa una transazione per garantire la consistenza tra job e sheet
+  const job_id = await withTransaction(async (session) => {
+      const result = await scanSheetJobsCollection.insertOne({
+          sheetId: sheet._id,
+          timestamp: now,
+          status: 'pending',
+          message: 'submitting job',
+          createdBy: user.email
+      }, { session })
+
+      // Incrementa nScanSheetJobs nel sheet
+      await sheetsCollection.updateOne(
+          { _id: sheet._id },
+          { $inc: { nScanSheetJobs: 1 } },
+          { session }
+      )
+
+      return result.insertedId
   })
-  const job_id = result.insertedId
 
   const filename = `${schema.name}-${job_id.toString()}.jsonl`
   const filePath = path.join(SPOOL_DIR, filename)
