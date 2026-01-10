@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { User } from "@/app/lib/models"
 import Loading from "../components/Loading"
 import Error from "../components/Error"
+import useProfile from '../lib/useProfile'
 
 const USERS_QUERY = gql`
     query GetUsers {
@@ -41,6 +42,7 @@ const UPDATE_USER_ROLE_MUTATION = gql`
 `
 
 export default function Users() {
+    const profile = useProfile()
     const { data: usersData, loading, error } = useQuery<{ users: User[] }>(USERS_QUERY)
     const { data: meData, loading: meLoading, error: meError } = useQuery(ME_QUERY)
     const [updateUserRole] = useMutation(UPDATE_USER_ROLE_MUTATION, {
@@ -161,7 +163,8 @@ export default function Users() {
                         <td>{user.email}</td>
                         <td>{user.name}</td>
                         <td>
-                            <select
+                            {profile?.isAdmin  
+                            ? <select
                                 disabled={user._id.toString() === String(currentUserId)}
                                 value={role}
                                 onChange={e => {
@@ -175,6 +178,8 @@ export default function Users() {
                                 <option value="admin">admin</option>
                                 <option value="supervisor">supervisor</option>
                             </select>
+                            : role
+                            }
                         </td>
                     </tr>
                 })}
