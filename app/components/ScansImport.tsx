@@ -120,6 +120,9 @@ function ScansJob({sheet, data_rows, job}: {
             <b className={{'completed': 'text-green-700','error': 'text-red-500'}[message.status] || ''}>
                 {message.message}
             </b> {}
+            <a href={`/scan/${job._id}/pdf`} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 underline">
+                scarica PDF
+            </a>
             </>
         }
         { done && 
@@ -139,7 +142,8 @@ function ScansJob({sheet, data_rows, job}: {
                 </Button> }
                 {deleteError && <ErrorElement error={deleteError}/>}
             </span>
-        }   
+        }
+
         <br />
         { done && 
             <ScanResultsTable 

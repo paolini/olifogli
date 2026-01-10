@@ -143,7 +143,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     // colonne già calcolate sopra (columns)
 
     function downloadCSV() {
-        const headers = ['Nome', 'Schema', ...columns, 'righe', 'valide', 'anomalie'];
+        const headers = ['Nome', 'Schema', ...columns, 'righe', 'valide', 'anomalie', 'scansioni', 'scan sheets'];
         if (profile?.isAdmin) headers.push('sincronizzate');
         headers.push('aggiornato', 'stato');
 
@@ -154,6 +154,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             'righe': sheet.nRows,
             'valide': sheet.nValidRows,
             'anomalie': sheet.anomalies,
+            'scansioni': sheet.nScanJobs,
+            'scan sheets': sheet.nScanSheetJobs,
             ...(profile?.isAdmin ? {'sincronizzate': sheet.nSyncedRows ?? '?'} : {}),
             'aggiornato': sheet.updatedAt ? myTimestamp(sheet.updatedAt) : '',
             'stato': sheet.locked ? 'finalizzato' : sheet.closed ? 'chiuso' : 'aperto'
@@ -192,6 +194,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         <Th field="##nRows" header="righe" />
                         <Th field="##nValidRows" header="valide" />
                         <Th field="##anomalies" header="anomalie" />
+                        <Th field="##nScanJobs" header="scansioni" />
+                        <Th field="##nScanSheetJobs" header="scan sheets" />
                         { profile?.isAdmin && <Th field="##nSyncedRows" header="sincronizzate" /> }
                         <Th field="__updatedAt" header="aggiornato" />
                         <th>stato</th>
@@ -512,6 +516,8 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
         <td>{sheet.nRows}</td>
         <td>{sheet.nValidRows}</td>
         <td>{sheet.anomalies}</td>
+        <td>{sheet.nScanJobs}</td>
+        <td>{sheet.nScanSheetJobs}</td>
         { profile?.isAdmin && <td>{sheet.nSyncedRows ?? '?'}</td> }
         <td>{sheet.updatedAt ? myTimestamp(sheet.updatedAt) : ''}</td>
         <td className=""><span className="flex">

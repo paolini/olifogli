@@ -48,10 +48,15 @@ export type Sheet = {
     commonData: Record<string, string>
     createdAt: Date
     updatedAt: Date
+
+    // denormalized statistics
     nRows: number // Numero di righe collegate (denormalizzato, gestito con transazioni)
     nValidRows: number // Numero di righe valide con error='' (denormalizzato, gestito con transazioni)
     nSyncedRows: number // Numero di righe sincronizzate con Olimanager (denormalizzato, gestito con transazioni)
     anomalies: number // Numero totale di anomalie nelle righe valide (denormalizzato, gestito con transazioni)
+    nScanJobs: number // Numero di ScanJobs associati a questo foglio (denormalizzato, gestito con transazioni)
+    nScanSheetJobs: number // Numero di ScanSheetJobs associati a questo foglio (denormalizzato, gestito con transazioni)
+
     closed?: boolean
     closedBy?: string
     closedOn?: Date

@@ -43,6 +43,8 @@ type Sheet {
   nValidRows: Int!
   nSyncedRows: Int!
   anomalies: Int!
+  nScanJobs: Int!
+  nScanSheetJobs: Int!
   updatedAt: Timestamp
   closed: Boolean
   closedBy: String

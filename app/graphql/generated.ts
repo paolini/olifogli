@@ -513,6 +513,8 @@ export type Sheet = {
   lockedBy?: Maybe<Scalars['String']['output']>;
   lockedOn?: Maybe<Scalars['Timestamp']['output']>;
   nRows: Scalars['Int']['output'];
+  nScanJobs: Scalars['Int']['output'];
+  nScanSheetJobs: Scalars['Int']['output'];
   nSyncedRows: Scalars['Int']['output'];
   nValidRows: Scalars['Int']['output'];
   name: Scalars['String']['output'];
@@ -641,7 +643,7 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -880,7 +882,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
 
 export type GetSheetsTimeDistributionReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -1324,6 +1326,8 @@ export const GetSheetDocument = gql`
     nValidRows
     anomalies
     nSyncedRows
+    nScanJobs
+    nScanSheetJobs
     closed
     closedBy
     closedOn
@@ -2565,6 +2569,8 @@ export const GetSheetsDocument = gql`
     nValidRows
     nSyncedRows
     anomalies
+    nScanJobs
+    nScanSheetJobs
     closed
     locked
     ownerId
@@ -3331,6 +3337,8 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   lockedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lockedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   nRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  nScanJobs?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  nScanSheetJobs?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   nSyncedRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   nValidRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

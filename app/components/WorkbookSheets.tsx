@@ -23,6 +23,8 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
             nValidRows
             nSyncedRows
             anomalies
+            nScanJobs
+            nScanSheetJobs
             closed
             locked
             ownerId
