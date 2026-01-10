@@ -13,8 +13,12 @@ export function check_authenticated({user_id}: Context): ObjectId {
   }
   
 export function check_admin(user: User) {
-    if (!user?.isAdmin) throw new ForbiddenError('non autorizzato')
-  }
+  if (!user?.isAdmin) throw new ForbiddenError('non autorizzato')
+}
+
+export function check_admin_or_supervisor(user: User) {
+  if (!user?.isAdmin && !user?.isSupervisor) throw new ForbiddenError('non autorizzato')
+}
   
 export async function get_authenticated_user(context: Context) {
     const user_id = check_authenticated(context)
