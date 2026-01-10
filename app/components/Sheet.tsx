@@ -172,7 +172,7 @@ function SheetBody({sheet,profile}: {
                     SELEZIONA SEGNALATI
                 </button>
             }
-            { (schema instanceof ArchimedeCommon) &&
+            { schema.has_scan_functionality() &&
                 <button 
                     className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
                     onClick={() => setTab('scans')}>

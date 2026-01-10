@@ -76,6 +76,15 @@ export default class Schema {
         throw new Error(`scan_to_data not implemented for schema "${this.name}"`)
     }
 
+    has_scan_functionality(): boolean {
+        try {
+            this.scans_to_data_dict([], [])
+            return true
+        } catch {
+            return false
+        }
+    }
+
     row_to_sheet_data(row: Row): Partial<Sheet> {
         throw new Error(`row_to_sheet_data not implemented for schema "${this.name}"`)
     }
