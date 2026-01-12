@@ -137,7 +137,7 @@ async function generateRankingReport(
     // Ordina
     if (orderBy) {
         entries.sort((a, b) => {
-            let aVal: any, bVal: any;
+            let aVal: unknown, bVal: unknown;
             switch (orderBy) {
                 case 'rank':
                     // Rank non calcolato, ordina per score
