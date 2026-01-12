@@ -327,7 +327,7 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection, sortRankin
     selectionLabel: string,
     onToggleSelection: (rowId: ObjectId, label: string, isSelected: boolean) => void,
     sortRanking: {field: string, direction: number} | null,
-    setSortRanking: any
+    setSortRanking: React.Dispatch<React.SetStateAction<{field: string, direction: number} | null>>
 }) {
     if (ranking.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>;
@@ -383,7 +383,7 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection, sortRankin
 }
 }
 
-function Th({ field, header, sortRanking, setSortRanking }: { field: string, header: string, sortRanking: {field: string, direction: number} | null, setSortRanking: any }) {
+function Th({ field, header, sortRanking, setSortRanking }: { field: string, header: string, sortRanking: {field: string, direction: number} | null, setSortRanking: React.Dispatch<React.SetStateAction<{field: string, direction: number} | null>> }) {
     return <th className="border p-2 text-center" style={{ position: 'relative' }}>
         <span className="flex items-center justify-between gap-2">
             <span>{header}</span>

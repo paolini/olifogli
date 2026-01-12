@@ -184,7 +184,7 @@ function TopRanking({ ranking, sortRanking, setSortRanking }: { ranking: Ranking
 }
 }
 
-function Th({ field, header, sortRanking, setSortRanking }: { field: string, header: string, sortRanking: {field: string, direction: number} | null, setSortRanking: any }) {
+function Th({ field, header, sortRanking, setSortRanking }: { field: string, header: string, sortRanking: {field: string, direction: number} | null, setSortRanking: React.Dispatch<React.SetStateAction<{field: string, direction: number} | null>> }) {
     return <th className="border p-2 text-center" style={{ position: 'relative' }}>
         <span className="flex items-center justify-between gap-2">
             <span>{header}</span>
