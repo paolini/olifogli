@@ -11,11 +11,12 @@ import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 import Papa from 'papaparse'
+import SheetsSortIcon from './SheetsSortIcon'
 import Button from './Button'
 
 const GET_SHEETS_RANKING_REPORT = gql`
-    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int) {
-        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit) {
+    query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $orderBy: String, $orderDirection: Int) {
+        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit, orderBy: $orderBy, orderDirection: $orderDirection) {
             schema
             totalStudents
             ranking {
@@ -40,6 +41,7 @@ const GET_SHEETS_RANKING_REPORT = gql`
 
 export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }) {
     const [limit, setLimit] = useState<number>(100);
+    const [sortRanking, setSortRanking] = useState<{field: string, direction: number} | null>(null);
     const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
@@ -50,7 +52,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     const filteredSheets = filterSheets(filterState, sheets);
 
     const { loading, error, data } = useQuery(GET_SHEETS_RANKING_REPORT, {
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit },
+        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit, orderBy: sortRanking?.field, orderDirection: sortRanking?.direction },
         pollInterval: 10000, // millisecondi
     });
     
@@ -68,7 +70,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
 
     function downloadCSV() {
         getFullRanking({
-            variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit: undefined }
+            variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter, limit: undefined, orderBy: null, orderDirection: null }
         }).then((result) => {
             const data = result.data as { sheetsRankingReport: RankingReport };
             if (data?.sheetsRankingReport) {
@@ -121,7 +123,9 @@ function RankingSection({ report, onShowMore, canShowMore }: { report: RankingRe
                 <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
             </div>
             <TopRanking 
-                ranking={report.ranking} 
+                ranking={report.ranking}
+                sortRanking={sortRanking}
+                setSortRanking={setSortRanking}
             />
             {canShowMore && (
                 <div className="flex justify-center mt-4">
@@ -137,7 +141,7 @@ function RankingSection({ report, onShowMore, canShowMore }: { report: RankingRe
     );
 }
 
-function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
+function TopRanking({ ranking, sortRanking, setSortRanking }: { ranking: RankingReport['ranking'], sortRanking: {field: string, direction: number} | null, setSortRanking: any }) {
     if (ranking.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>;
     }
@@ -146,16 +150,16 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
             <table className="border-collapse">
                 <thead>
                     <tr className="my-table">
-                        <th className="border p-2 text-center w-16">Pos.</th>
-                        <th className="border p-2 text-center w-24">Punti</th>
-                        <th className="border p-2 text-center w-40">Cognome</th>
-                        <th className="border p-2 text-center w-40">Nome</th>
-                        <th className="border p-2 text-center max-w-48">Scuola</th>
-                        <th className="border p-2 text-center w-20">Codice</th>
-                        <th className="border p-2 text-center w-20">Città</th>
-                        <th className="border p-2 text-center w-20">Distretto</th>
-                        <th className="border p-2 text-center w-20">Anno</th>
-                        <th className="border p-2 text-center w-20">Sezione</th>
+                        <Th field="rank" header="Pos." sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="score" header="Punti" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="studentSurname" header="Cognome" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="studentName" header="Nome" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="school" header="Scuola" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="sheetName" header="Codice" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="city" header="Città" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="district" header="Distretto" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="classYear" header="Anno" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="classSection" header="Sezione" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                     </tr>
                 </thead>
                 <tbody>
@@ -178,5 +182,22 @@ function TopRanking({ ranking }: { ranking: RankingReport['ranking'] }) {
         </div>
     );
 }
+}
+
+function Th({ field, header, sortRanking, setSortRanking }: { field: string, header: string, sortRanking: {field: string, direction: number} | null, setSortRanking: any }) {
+    return <th className="border p-2 text-center" style={{ position: 'relative' }}>
+        <span className="flex items-center justify-between gap-2">
+            <span>{header}</span>
+            <span style={{ cursor: 'pointer' }} onClick={() => {
+                setSortRanking((s: any) => {
+                    if (!s || s.field !== field) return { field: field, direction: 1 };
+                    if (s.direction === 1) return { field: field, direction: -1 };
+                    return null;
+                });
+            }}>
+                <SheetsSortIcon direction={sortRanking?.field === field ? sortRanking.direction : undefined} />
+            </span>
+        </span>
+    </th>;
 }
 

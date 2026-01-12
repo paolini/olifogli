@@ -9,7 +9,7 @@ import { schemas } from '@/app/lib/schema'
 
 export default async function sheetsRankingReport(
     _: unknown, 
-    { sheetIds, schema, limit, selectionLabel, onlySelected }: QuerySheetsRankingReportArgs & { selectionLabel?: string | null, onlySelected?: boolean | null }, 
+    { sheetIds, schema, limit, selectionLabel, onlySelected, orderBy, orderDirection }: QuerySheetsRankingReportArgs & { selectionLabel?: string | null, onlySelected?: boolean | null, orderBy?: string | null, orderDirection?: number | null }, 
     context: Context
 ): Promise<RankingReport> {
     const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
@@ -17,7 +17,7 @@ export default async function sheetsRankingReport(
     // Separa per schema
     const sheets = allSheets.filter(s => s.schema === schema)
 
-    const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel, onlySelected)
+    const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel, onlySelected, orderBy, orderDirection)
 
     return {
         schema,
@@ -29,7 +29,9 @@ async function generateRankingReport(
     sheets: WithId<Sheet>[],
     limit?: number,
     selectionLabel?: string | null,
-    onlySelected?: boolean | null
+    onlySelected?: boolean | null,
+    orderBy?: string | null,
+    orderDirection?: number | null
 ) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
@@ -132,8 +134,68 @@ async function generateRankingReport(
         })
     }
 
-    // Ordina per punteggio decrescente
-    entries.sort((a, b) => b.score - a.score)
+    // Ordina
+    if (orderBy) {
+        entries.sort((a, b) => {
+            let aVal: any, bVal: any;
+            switch (orderBy) {
+                case 'rank':
+                    // Rank non calcolato, ordina per score
+                    aVal = a.score;
+                    bVal = b.score;
+                    break;
+                case 'score':
+                    aVal = a.score;
+                    bVal = b.score;
+                    break;
+                case 'studentSurname':
+                    aVal = a.studentSurname;
+                    bVal = b.studentSurname;
+                    break;
+                case 'studentName':
+                    aVal = a.studentName;
+                    bVal = b.studentName;
+                    break;
+                case 'school':
+                    aVal = a.school;
+                    bVal = b.school;
+                    break;
+                case 'sheetName':
+                    aVal = a.sheetName;
+                    bVal = b.sheetName;
+                    break;
+                case 'city':
+                    aVal = a.city;
+                    bVal = b.city;
+                    break;
+                case 'district':
+                    aVal = a.district;
+                    bVal = b.district;
+                    break;
+                case 'classYear':
+                    aVal = a.classYear;
+                    bVal = b.classYear;
+                    break;
+                case 'classSection':
+                    aVal = a.classSection;
+                    bVal = b.classSection;
+                    break;
+                default:
+                    aVal = a[orderBy as keyof typeof a];
+                    bVal = b[orderBy as keyof typeof b];
+            }
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return (aVal - bVal) * (orderDirection || 1);
+            } else {
+                const aStr = String(aVal || '');
+                const bStr = String(bVal || '');
+                return aStr.localeCompare(bStr, 'it', { sensitivity: 'base' }) * (orderDirection || 1);
+            }
+        });
+    } else {
+        // Default: ordina per punteggio decrescente
+        entries.sort((a, b) => b.score - a.score);
+    }
 
     // Se limit è definito, prendi solo i primi 'limit', altrimenti tutti
     let rankingEntries = entries;

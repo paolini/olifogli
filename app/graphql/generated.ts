@@ -383,6 +383,8 @@ export type QuerySheetsRankingReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
+  orderBy?: InputMaybe<Scalars['String']['input']>;
+  orderDirection?: InputMaybe<Scalars['Int']['input']>;
   schema: Scalars['String']['input'];
   selectionLabel?: InputMaybe<Scalars['String']['input']>;
   sheetIds: Array<Scalars['ObjectId']['input']>;
@@ -864,6 +866,8 @@ export type GetSheetsRankingReportWithSelectionsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;
   selectionLabel?: InputMaybe<Scalars['String']['input']>;
   onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
+  orderBy?: InputMaybe<Scalars['String']['input']>;
+  orderDirection?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -2440,13 +2444,15 @@ export type GetSheetsRankingReportLazyQueryHookResult = ReturnType<typeof useGet
 export type GetSheetsRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetSheetsRankingReportSuspenseQuery>;
 export type GetSheetsRankingReportQueryResult = Apollo.QueryResult<GetSheetsRankingReportQuery, GetSheetsRankingReportQueryVariables>;
 export const GetSheetsRankingReportWithSelectionsDocument = gql`
-    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean) {
+    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
   sheetsRankingReport(
     sheetIds: $sheetIds
     schema: $schema
     limit: $limit
     selectionLabel: $selectionLabel
     onlySelected: $onlySelected
+    orderBy: $orderBy
+    orderDirection: $orderDirection
   ) {
     schema
     totalStudents
@@ -2494,6 +2500,8 @@ export const GetSheetsRankingReportWithSelectionsDocument = gql`
  *      limit: // value for 'limit'
  *      selectionLabel: // value for 'selectionLabel'
  *      onlySelected: // value for 'onlySelected'
+ *      orderBy: // value for 'orderBy'
+ *      orderDirection: // value for 'orderDirection'
  *   },
  * });
  */
