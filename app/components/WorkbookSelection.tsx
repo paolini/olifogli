@@ -388,7 +388,7 @@ function Th({ field, header, sortRanking, setSortRanking }: { field: string, hea
         <span className="flex items-center justify-between gap-2">
             <span>{header}</span>
             <span style={{ cursor: 'pointer' }} onClick={() => {
-                setSortRanking((s: any) => {
+                setSortRanking((s) => {
                     if (!s || s.field !== field) return { field: field, direction: 1 };
                     if (s.direction === 1) return { field: field, direction: -1 };
                     return null;
