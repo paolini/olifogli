@@ -11,10 +11,11 @@ import { schemas } from '../lib/schema'
 import Button from './Button'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import SheetsSortIcon from './SheetsSortIcon'
 
 const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
-    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean) {
-        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit, selectionLabel: $selectionLabel, onlySelected: $onlySelected) {
+    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
+        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit, selectionLabel: $selectionLabel, onlySelected: $onlySelected, orderBy: $orderBy, orderDirection: $orderDirection) {
             schema
             totalStudents
             ranking {
@@ -101,6 +102,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
 
     const filteredSheets = selectedSelection ? sheets.filter(s => s.schema === selectedSelection.schema) : [];
     const [onlySelected, setOnlySelected] = useState<boolean>(false);
+    const [sortRanking, setSortRanking] = useState<{field: string, direction: number} | null>(null);
 
     const { loading, error, data, refetch } = useQuery(GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS, {
         variables: { 
@@ -109,6 +111,8 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
             limit,
             selectionLabel: selectedSelection?.label,
             onlySelected,
+            orderBy: sortRanking?.field,
+            orderDirection: sortRanking?.direction,
         },
         pollInterval: 0, // Disabilitato
         skip: !selectedSelection, // Non eseguire la query se non c'è selezione
@@ -154,7 +158,9 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                             schema: selectedSelection?.schema || '', 
                             limit,
                             selectionLabel: selectedSelection?.label,
-                            onlySelected
+                            onlySelected,
+                            orderBy: sortRanking?.field,
+                            orderDirection: sortRanking?.direction,
                         }
                     };
 
@@ -302,6 +308,8 @@ function SelectionSection({
                 ranking={report.ranking}
                 selectionLabel={selection.label}
                 onToggleSelection={onToggleSelection}
+                sortRanking={sortRanking}
+                setSortRanking={setSortRanking}
             />
             {canShowMore && (
                 <div className="flex justify-center mt-4">
@@ -314,10 +322,12 @@ function SelectionSection({
     </>
 }
 
-function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
+function SelectionTable({ ranking, selectionLabel, onToggleSelection, sortRanking, setSortRanking }: {
     ranking: RankingReport['ranking'],
     selectionLabel: string,
-    onToggleSelection: (rowId: ObjectId, label: string, isSelected: boolean) => void
+    onToggleSelection: (rowId: ObjectId, label: string, isSelected: boolean) => void,
+    sortRanking: {field: string, direction: number} | null,
+    setSortRanking: any
 }) {
     if (ranking.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>;
@@ -328,16 +338,16 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
                 <thead>
                     <tr className="my-table">
                         <th className="border p-2 text-center w-16">Seleziona</th>
-                        <th className="border p-2 text-center w-16">Pos.</th>
-                        <th className="border p-2 text-center w-24">Punti</th>
-                        <th className="border p-2 text-center w-40">Cognome</th>
-                        <th className="border p-2 text-center w-40">Nome</th>
-                        <th className="border p-2 text-center w-48">Scuola</th>
-                        <th className="border p-2 text-center w-20">Codice</th>
-                        <th className="border p-2 text-center w-20">Città</th>
-                        <th className="border p-2 text-center w-20">Distretto</th>
-                        <th className="border p-2 text-center w-20">Anno</th>
-                        <th className="border p-2 text-center w-20">Sezione</th>
+                        <Th field="rank" header="Pos." sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="score" header="Punti" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="studentSurname" header="Cognome" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="studentName" header="Nome" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="school" header="Scuola" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="sheetName" header="Codice" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="city" header="Città" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="district" header="Distretto" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="classYear" header="Anno" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                        <Th field="classSection" header="Sezione" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                     </tr>
                 </thead>
                 <tbody>
@@ -371,4 +381,21 @@ function SelectionTable({ ranking, selectionLabel, onToggleSelection }: {
         </div>
     );
 }
+}
+
+function Th({ field, header, sortRanking, setSortRanking }: { field: string, header: string, sortRanking: {field: string, direction: number} | null, setSortRanking: any }) {
+    return <th className="border p-2 text-center" style={{ position: 'relative' }}>
+        <span className="flex items-center justify-between gap-2">
+            <span>{header}</span>
+            <span style={{ cursor: 'pointer' }} onClick={() => {
+                setSortRanking((s: any) => {
+                    if (!s || s.field !== field) return { field: field, direction: 1 };
+                    if (s.direction === 1) return { field: field, direction: -1 };
+                    return null;
+                });
+            }}>
+                <SheetsSortIcon direction={sortRanking?.field === field ? sortRanking.direction : undefined} />
+            </span>
+        </span>
+    </th>;
 }
