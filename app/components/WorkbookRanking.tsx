@@ -141,7 +141,7 @@ function RankingSection({ report, onShowMore, canShowMore }: { report: RankingRe
     );
 }
 
-function TopRanking({ ranking, sortRanking, setSortRanking }: { ranking: RankingReport['ranking'], sortRanking: {field: string, direction: number} | null, setSortRanking: any }) {
+function TopRanking({ ranking, sortRanking, setSortRanking }: { ranking: RankingReport['ranking'], sortRanking: {field: string, direction: number} | null, setSortRanking: React.Dispatch<React.SetStateAction<{field: string, direction: number} | null>> }) {
     if (ranking.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>;
     }
@@ -189,7 +189,7 @@ function Th({ field, header, sortRanking, setSortRanking }: { field: string, hea
         <span className="flex items-center justify-between gap-2">
             <span>{header}</span>
             <span style={{ cursor: 'pointer' }} onClick={() => {
-                setSortRanking((s: any) => {
+                setSortRanking((s) => {
                     if (!s || s.field !== field) return { field: field, direction: 1 };
                     if (s.direction === 1) return { field: field, direction: -1 };
                     return null;
