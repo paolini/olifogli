@@ -160,6 +160,7 @@ type ReportEntry {
   rank: Int!
   rowId: ObjectId!
   selections: [RowSelection]
+  participantId: String
 }
 
 type ScoreDistributionItem {

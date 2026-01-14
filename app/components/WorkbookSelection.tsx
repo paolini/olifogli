@@ -32,6 +32,7 @@ const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
                 classSection
                 score
                 rank
+                participantId
                 selections {
                     label
                     selected_by

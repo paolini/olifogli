@@ -17,11 +17,33 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     const createdBy = user.email
     const updatedOn = createdOn
     const updatedBy = createdBy
-    // Applica filtro permission: forza tutti i campi filterField ai rispettivi filterValue
-    const objectRows = rows.map(row => {
-        const obj = Object.fromEntries(columns.map((column,i)=>[column,row[i]]));
-        return obj
-    })
+
+    type Olimanager = {
+        error: string,
+        participantId?: string,
+    }
+
+    const objectRows: Array<{data: Record<string, string>, olimanager?: Olimanager}> = rows.map(row => {
+        const data: Record<string, string> = {};
+        let olimanager: Olimanager | undefined;
+        columns.forEach((column, i) => {
+            const value = row[i];
+            if (column.startsWith('olimanager.')) {
+                if (!olimanager) olimanager = {
+                    error: ''
+                };
+                const field = column.substring('olimanager.'.length);
+                if (field !== 'participantId') throw new Error(`invalid column: ${column}`);
+                olimanager[field] = value;
+            } else {
+                if (column.startsWith('data.')) {
+                    column = column.substring('data.'.length);
+                }
+                data[column] = value;
+            }
+        });
+        return { data: data, olimanager };
+    });
 
     const workbookCollection = await getWorkbooksCollection()
     const workbook = await workbookCollection.findOne({_id: sheet.workbookId})
@@ -29,15 +51,21 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     if (!workbook) throw new Error(`cannot find collection ${sheet.workbookId}`)
 
     const validatedRows: (WithoutId<Row>)[] = objectRows
-        .map(row => schema.clean(row as Data))
-        .map(data => ({
-            ...schema.computeDerivedData(data,sheet.commonData,workbook.commonData),
-            sheetId,
-            createdBy,
-            createdOn,
-            updatedBy,
-            updatedOn,
-        }))
+        .map(({data, olimanager}) => {
+            const validated = schema.clean(data as Data)
+            const derived = schema.computeDerivedData(validated,sheet.commonData,workbook.commonData)
+            return {
+                data: derived.data,
+                sheetId,
+                createdBy,
+                createdOn,
+                updatedBy,
+                updatedOn,
+                error: derived.error,
+                anomalies: derived.anomalies,
+                ...olimanager?{olimanager}:{}
+            }
+        })
     
     // Calcola quante righe valide e quante anomalie sono state inserite
     const nValidRows = validatedRows.filter(r => r.error === '' || !r.error).length
