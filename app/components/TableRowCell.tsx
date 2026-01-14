@@ -43,7 +43,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   field: Field,
   oldValue: string, // valore originale
   newValue: string, // valore eventualmente modificato
-  setNewValue: (newValue: string|undefined) => void,
+  setNewValue: null|((newValue: string|undefined) => void), // può essere null se il campo non è modificabile
   directInput: boolean,
   setDirectInput: Dispatch<SetStateAction<boolean>>,
   showStandardAnswers: boolean,
@@ -114,7 +114,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   const className = `${field.css_class}${extra_css?` ${extra_css}` : ''}${hasFocus ? ' focus' : ''}${inputFocus && hasFocus ? ' input-focus' : ''}${changed ? ' modified' : ''}${anomalous ? ' anomalous' : ''}`;
 
   return <td className={className} tabIndex={1} title={title} onClick={onClick} style={style} ref={tdRef}>
-      {(hasFocus && field.editable && inputFocus && !(showStandardAnswers && field instanceof ChoiceAnswerField))
+      {(hasFocus && field.editable && inputFocus && setNewValue)
         ? <TableCellInput 
             field={field}
             value={value} setValue={setNewValue} 
