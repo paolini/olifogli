@@ -1,5 +1,5 @@
 import { Dispatch, KeyboardEvent, RefObject, SetStateAction, useMemo } from "react"
-import { Field } from "../lib/schema/fields"
+import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
 import { Line } from "./Table"
@@ -28,11 +28,19 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     // evita che il setter venga ricreato ad ogni render
     // e rende stabile il riferimento della colonna
     const setters = useMemo(() => {
-      const map: Record<string, (v: string | undefined) => void> = {};
+      const map: Record<string, null | ((v: string | undefined) => void)> = {};
       for (const field of columns.filter(col => col instanceof Field)) {
-        map[field.name] = (newValue) => {
-          // console.log(`setter for field ${field.name} called with value ${newValue}`);
-          return setLineData(field.name, newValue) 
+        if (line?.row?.olimanager?.participantId && ["name","surname","birthDate","classYear","classSection"].includes(field.name)) {
+            // campo non modificabile perché già sincronizzato da Olimanager
+            map[field.name] = null
+        } else if (showStandardAnswers && field instanceof ChoiceAnswerField) {
+            // campo non modificabile in modalità showStandardAnswers
+            map[field.name] = null
+        } else {
+            map[field.name] = (newValue) => {
+            // console.log(`setter for field ${field.name} called with value ${newValue}`);
+            return setLineData(field.name, newValue) 
+            }
         }
       }
       return map;
@@ -75,7 +83,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
         { (line?.row?.error || line?.row?.olimanager?.error) && <td className="alert hide-print">{line.row?.error || line.row?.olimanager?.error}</td>}
-        { line.row && line?.row?.olimanager?.participantId && <td className="olimanager-participant-id hide-print">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
+        { line.row && line?.row?.olimanager?.participantId && <td title={`Olimanager participant_id: ${line.row.olimanager.participantId}, results_updated_on: ${line.row.olimanager.resultsUpdatedOn}`} className="olimanager-participant-id hide-print">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
     </tr>
 
     function computeRecentFadeStyling() {

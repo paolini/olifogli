@@ -14,6 +14,15 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const rowsCollection = await getRowsCollection();
     const row = await rowsCollection.findOne({ _id });
     if (!row) throw new Error('Row not found');
+    
+    if (row?.olimanager?.participantId) {
+        ["name","surname","birthDate","classYear","classSection"].forEach(field => {
+            if (data[field]) {
+                throw new Error(`Non è possibile modificare il campo ${field} di una riga importata da Olimanager`);
+            }
+        });
+    }
+    
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
     check_user_can_edit_rows(user,sheet)
