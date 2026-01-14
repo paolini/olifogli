@@ -105,7 +105,7 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
         await addRowsMutation({
             variables: {
                 sheetId: sheet._id,
-                columns: ["surname", "name", "birthDate", "codice_meccanografico", "nome_scuola", "città_scuola", "classSection"],
+                columns: ["surname", "name", "birthDate", "codice_meccanografico", "nome_scuola", "città_scuola", "classSection", "olimanager.participantId"],
                 rows: rowsToImport.map(r => [
                     r.studentSurname || '',
                     r.studentName || '',
@@ -114,6 +114,7 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
                     r.school || '',
                     r.city || '',
                     r.classSection || '',
+                    r.participantId || '',
                 ]),
             }
         })

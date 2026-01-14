@@ -107,6 +107,7 @@ async function generateRankingReport(
         score: number
         rowId: ObjectId
         selections: { label: string, selected_by: string, timestamp: Date }[]
+        participantId: string | undefined
     }> = []
 
     for (const row of rows) {
@@ -130,7 +131,8 @@ async function generateRankingReport(
             classSection: row.data?.classSection || '',
             score,
             rowId: row._id,
-            selections: row.selections || []
+            selections: row.selections || [],
+            participantId: row.olimanager?.participantId
         })
     }
 
