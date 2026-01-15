@@ -1,5 +1,6 @@
 import { __EnumValue } from "graphql"
 import { CSSProperties } from "react"
+import { Data } from "../models"
 
 type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
 
@@ -79,7 +80,7 @@ export class Field {
         return value
     }
 
-    isValid(value: string): boolean {
+    isValid(value: string, data?: Data): boolean {
         if (this.required && !value) return false
         if (this.options && !this.options.includes(value) && value !=='') return false
         return true
@@ -151,6 +152,16 @@ export class ChoiceAnswerField extends Field {
         super(name, options)
         this.css_class += ` field-ChoiceAnswer`
         this.type = 'choice-answer'
+    }
+
+    isValid(value: string, data: Data): boolean {
+        console.log(`Validating ChoiceAnswerField ${this.name} with value "${value}" and data:`, data)
+        if (data && data['variant']==='000') {
+            console.log(`Variant is 000, so value must be empty`)
+            return value==='' // se variante 000, deve essere vuoto
+        } else {
+            return super.isValid(value)
+        }
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
@@ -314,4 +325,42 @@ export class DateField extends Field {
         const t = 1 / (1 + p * x)
         return 1 - (a1 * t + a2 * t * t + a3 * t * t * t + a4 * t * t * t * t + a5 * t * t * t * t * t) * Math.exp(-x * x)
     }
+}
+
+export class ScoreField extends Field {
+    max_score: number
+    
+    constructor(name: string, max_score: number, options: FieldOptions = {}) {
+        super(name, {header: 'Punti', type: 'number', editable: false, required: false, css_style: (scoreStr: string) => score_to_color_style(scoreStr, max_score), ...options})
+        this.max_score = max_score
+        this.css_class += ` field-Score`
+        this.type = 'number'
+    }
+}
+
+export function score_to_color_style(scoreStr: string, max_score: number = 80): React.CSSProperties {
+    // Clamp del valore tra 0 e 80
+    let score = parseFloat(scoreStr)
+    if (isNaN(score) || score < 0) return {}
+    score = score / max_score
+
+    let r, g, b;
+
+    if (score <= 0.5) {
+        // Fase 1: Da Rosso (#DE9D9B) a Giallo (#FBE6A3)
+        // Score 0 -> 40
+        const t = 2*score;
+        r = Math.round(0xDE + (0xFB - 0xDE) * t);
+        g = Math.round(0x9D + (0xE6 - 0x9D) * t);
+        b = Math.round(0x9B + (0xA3 - 0x9B) * t);
+    } else {
+        // Fase 2: Da Giallo (#FBE6A3) a Verde (#BBD6AB)
+        // Score 40 -> 80
+        const t = (score - 0.5) * 2;
+        r = Math.round(0xFB + (0xBB - 0xFB) * t);
+        g = Math.round(0xE6 + (0xD6 - 0xE6) * t);
+        b = Math.round(0xA3 + (0xAB - 0xA3) * t);
+    }
+
+    return { backgroundColor: `rgb(${r},${g},${b})` };
 }
