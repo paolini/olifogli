@@ -1,26 +1,8 @@
 import { Data, Row, ScanResults } from '../models'
-import Competition from './Competition'
-import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField } from './fields'
-import {decodePermutations, buildPermutationsObject, computeScores} from './PERMUTATIONS'
-import { DerivedData } from './Schema'
+import CompetitionWithVariants from './CompetitionWithVariants'
+import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField } from './fields'
 
-function score_to_color_style(value: string): React.CSSProperties {
-    const numericValue = parseFloat(value);
-    // Definisci i colori in base al punteggio
-    const minScore = 0;
-    const maxScore = 90;
-    const green = { r: 0, g: 200, b: 0 };
-    const red = { r: 200, g: 0, b: 0 };
-    function interpolateColor(color1: {r: number, g: number, b: number}, color2: {r: number, g: number, b: number}, factor: number) {
-        const r = Math.round(color1.r + factor * (color2.r - color1.r));
-        const g = Math.round(color1.g + factor * (color2.g - color1.g));
-        const b = Math.round(color1.b + factor * (color2.b - color1.b));
-        return { r, g, b };
-    }
-    return { backgroundColor: `rgb(${Object.values(interpolateColor(red, green, (numericValue - minScore) / (maxScore - minScore))).join(',')})` };
-}
-
-export default class GaraPrime extends Competition {
+export default class GaraPrime extends CompetitionWithVariants {
     constructor() {
         const expectedMinAge = 10
         const expectedMaxAge = 16
@@ -52,53 +34,8 @@ export default class GaraPrime extends Competition {
             new ChoiceAnswerField('r16', {header: '16'}),
             new ChoiceAnswerField('r17', {header: '17'}),
             new ChoiceAnswerField('r18', {header: '18', additionalCssStyle: 'thick-border-right'}),
-            new Field('score', {header: 'Punti', type: 'number', editable: false, required: false, additionalCssStyle: 'thick-border-right', css_style: score_to_color_style}),
+            new ScoreField('score', 90, {additionalCssStyle: 'thick-border-right'}),
         ])
-    }
-
-    extractAnswerItems(data: Data) {
-        const choice_fields = this.fields.filter(f => f instanceof ChoiceAnswerField)
-        return choice_fields.map(f => ({
-            name: f.name,
-            answer: data[f.name] || ''
-        }))
-    }
-
-    computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
-        const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
-        // console.log("computeDerivedData",JSON.stringify({validated}))
-        data = validated.data
-        data = {...data, score:''}
-        if (validated.error) return validated
-        const anomalies = validated.anomalies
-        const variant = data['variant'] || ''
-        if (!variant) return {
-            error: validated.error || 'codice compito mancante',
-            data,
-            anomalies,
-        }
-        const answer_items = this.extractAnswerItems(data)
-        // console.log(JSON.stringify({answer_items}))
-        try {
-            const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
-            const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
-            // console.log(JSON.stringify({score,error,extended_answers}))
-            data.score = `${score}`
-            answer_items.forEach((item, i) => {
-                data[item.name] = extended_answers[i] || ''
-            })
-            return {
-                error: validated.error || error,
-                data,
-                anomalies,
-            }
-        } catch (e) {
-            return {
-                error: `errore di configurazione della raccolta: ${(e as Error).message}`,
-                data,
-                anomalies,
-            }
-        }
     }
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {

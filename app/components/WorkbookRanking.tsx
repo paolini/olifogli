@@ -9,10 +9,10 @@ import { RankingReport, useGetSheetsQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
-import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 import Papa from 'papaparse'
 import SheetsSortIcon from './SheetsSortIcon'
 import Button from './Button'
+import { score_to_color_style } from '../lib/schema/fields'
 
 const GET_SHEETS_RANKING_REPORT = gql`
     query GetSheetsRankingReport($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $orderBy: String, $orderDirection: Int) {

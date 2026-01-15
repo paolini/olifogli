@@ -6,12 +6,12 @@ import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
 import { RankingReport, useGetSheetsQuery, User } from '../graphql/generated'
-import { score_to_color_style } from '../lib/schema/ArchimedeCommon'
 import { schemas } from '../lib/schema'
 import Button from './Button'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import SheetsSortIcon from './SheetsSortIcon'
+import { score_to_color_style } from '../lib/schema/fields'
 
 const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
     query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {

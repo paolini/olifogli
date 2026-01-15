@@ -44,7 +44,7 @@ export default class Schema {
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = data[field.name]
-            if (!field.isValid(value)) return {
+            if (!field.isValid(value, data)) return {
                 error: `campo "${field.header}" non valido`,
                 data,
                 anomalies: 0,
@@ -103,7 +103,5 @@ export default class Schema {
         const contestId = parseInt(data["olimanager_contest_id"], 10)
         if (!contestId || isNaN(contestId)) throw new Error(`campo "olimanager_contest_id" mancante nei dati della gara`)
         return contestId
-    }
-
-    
+    }   
 }
