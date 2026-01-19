@@ -57,9 +57,9 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
             // pulisco i dati
             // le X sono usate per i campi non compilati
             StudentCode = (StudentCode || '').replaceAll('X','').trim().padStart(4,'0')
-            Section = Section.replaceAll('X','').trim()
-            TestCode = TestCode.replaceAll('X','').trim()
-            StudentYear = StudentYear.replaceAll('X','').trim()
+            Section = (Section || '').replaceAll('X','').trim()
+            TestCode = (TestCode || '').replaceAll('X','').trim()
+            StudentYear = (StudentYear || '').replaceAll('X','').trim()
 
             // trova una eventuale riga già esistente
             const row = existing_data_dict[StudentCode]
