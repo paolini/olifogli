@@ -274,7 +274,6 @@ async function handleGenerateStudentIds(ctx: TableActionContext) {
             _id: line.row._id,
             updatedOn: line.row.updatedOn,
             data: {
-              ...line.row.data,
               id: id.toString()
             }
           }
