@@ -27,4 +27,11 @@ eslintConfig.push({
   },
 });
 
+eslintConfig.push({
+  files: ['app/lib/schema/CompetitionWithVariants.ts'],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
+  },
+});
+
 export default eslintConfig;
