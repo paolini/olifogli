@@ -1,11 +1,11 @@
 import { Data } from "../models";
 import Competition from "./Competition";
-import { ChoiceAnswerField } from "./fields";
+import { ChoiceAnswerField, Field } from "./fields";
 import { buildPermutationsObject, decodePermutations } from "./PERMUTATIONS";
 import { DerivedData } from "./Schema";
 
 export default class CompetitionWithVariants extends Competition {
-    constructor(name: string, header: string, fields: any[]) {
+    constructor(name: string, header: string, fields: Field[]) {
         super(name, header, fields)
         if (!this.fields.find(f => f.name === 'variant')) {
             throw new Error("CompetitionWithVariants requires a 'variant' field")
