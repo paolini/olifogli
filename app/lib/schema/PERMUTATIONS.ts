@@ -58,14 +58,14 @@ export function buildPermutationsObject(sheetCommonData?: Data, workbookCommonDa
             empty = false;
             const value = commonData[key];
             const parts = key.split('_');
-            if (parts.length !== 3) {
+            if (parts.length > 3) {
                 throw new Error(`Invalid permutation key format: ${key}`);
             }
 
             const [, type, index] = parts;
 
             if (type === 'correct') {
-                permutations.correct[index] = value;
+                permutations.correct[index || ''] = value;
             } else if (type === 'questions') {
                 const value_array = JSON.parse(value);
                 if (!Array.isArray(value_array)) {
@@ -108,13 +108,19 @@ function computeVariantMappings(variantCode:string, permutations_data: Permutati
     const cached = variant_to_permutations[variantCode];
     if (cached) return cached;
 
-    if (variantCode.length !== 3) {
-        return "codice compito non valido (3 cifre)";
-    }
+    let year, answerCode, questionCode;
 
-    const year = variantCode.charAt(0);
-    const answerCode = variantCode.charAt(1);
-    const questionCode = variantCode.charAt(2);
+    if (variantCode.length === 3) {
+        year = variantCode.charAt(0);
+        answerCode = variantCode.charAt(1);
+        questionCode = variantCode.charAt(2);
+    } else if (variantCode.length === 1) {
+        year = '';
+        answerCode = variantCode
+        questionCode = variantCode
+    } else {
+        return "codice compito non valido (lunghezza errata)";
+    }
 
     const questions_permutation = permutations_data.questions[questionCode]?.map((i:number) => i-1);
     if (!questions_permutation) {
