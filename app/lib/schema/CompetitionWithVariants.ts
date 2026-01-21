@@ -22,7 +22,6 @@ export default class CompetitionWithVariants extends Competition {
 
     computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
-        // console.log("computeDerivedData",JSON.stringify({validated}))
         data = validated.data
         data = {...data, score:''}
         if (validated.error) return validated
@@ -33,18 +32,15 @@ export default class CompetitionWithVariants extends Competition {
             data,
             anomalies,
         }
-        console.log(`computeDerivedData variant=${variant}`)
-        if (variant === '000') return {
+        if (variant === '000' || variant === '0') return {
             error: '',
             data,
             anomalies,
         }
         const answer_items = this.extractAnswerItems(data)
-        // console.log(JSON.stringify({answer_items}))
         try {
             const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
             const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
-            // console.log(JSON.stringify({score,error,extended_answers}))
             data.score = `${score}`
             answer_items.forEach((item, i) => {
                 data[item.name] = extended_answers[i] || ''
