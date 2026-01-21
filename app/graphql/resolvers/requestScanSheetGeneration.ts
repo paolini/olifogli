@@ -30,7 +30,10 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   
   const rows = await rowsCollection.find($match).toArray()
   
-  const payload = rows.map(row => JSON.stringify(row.data)).join('\n')
+  const payload = rows.map(row => JSON.stringify({
+    sheet_name: sheet.name,
+    ...row.data
+  })).join('\n')
   
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 
