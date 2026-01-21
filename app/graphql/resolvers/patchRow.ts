@@ -15,14 +15,6 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const row = await rowsCollection.findOne({ _id });
     if (!row) throw new Error('Row not found');
     
-    if (row?.olimanager?.participantId) {
-        ["name","surname","birthDate","classYear","classSection"].forEach(field => {
-            if (data[field]) {
-                throw new Error(`Non è possibile modificare il campo ${field} di una riga importata da Olimanager`);
-            }
-        });
-    }
-    
     const sheetsCollection = await getSheetsCollection();
     const sheet = await sheetsCollection.findOne({_id: row.sheetId})
     check_user_can_edit_rows(user,sheet)
@@ -31,6 +23,14 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     const workbook = await workbooksCollection.findOne({_id: sheet.workbookId})
     if (!workbook) throw new Error('Workbook not found for sheet')
 
+    if (row?.olimanager?.participantId && !user.isAdmin) {
+        ["name","surname","birthDate","classYear","classSection"].forEach(field => {
+            if (data[field]) {
+                throw new Error(`Non è possibile modificare il campo ${field} di una riga importata da Olimanager`);
+            }
+        });
+    }
+    
     const schema = schemas[sheet.schema]
     if (row.updatedOn && row.updatedOn.getTime() !== updatedOn.getTime()) {
         throw new Error(`La riga è stata modificata da qualcun altro`);

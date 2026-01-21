@@ -17,7 +17,6 @@ import { useBreadcrumbs } from './BreadcrumbsProvider'
 import SheetInfo from './SheetInfo'
 import ScansSheetExport from './ScansSheetExport'
 import GlobalMessage from './GlobalMessage'
-import ArchimedeCommon from '../lib/schema/ArchimedeCommon'
 import GaraPrime from '../lib/schema/GaraPrime'
 import SheetSelectionImport from './SheetSelectionImport'
 
@@ -201,6 +200,7 @@ function SheetBody({sheet,profile}: {
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
                 standardAnswers={false}
+                adminEditMode={false}
             />
         }
         { tab === 'edit' &&
@@ -216,6 +216,7 @@ function SheetBody({sheet,profile}: {
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
                 standardAnswers={false}
+                adminEditMode={true}
             />
         }
         { tab === 'standardAnswers' && !csvImport &&
@@ -231,6 +232,7 @@ function SheetBody({sheet,profile}: {
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
                 standardAnswers={true}
+                adminEditMode={false}
             />
         }
         { (tab === 'table' || tab === 'edit') && csvImport &&
