@@ -1,6 +1,6 @@
 'use client'
 
-import { gql, useQuery } from '@apollo/client'
+import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import {
   Chart as ChartJS,
@@ -12,13 +12,12 @@ import {
   Legend,
 } from 'chart.js'
 import { Chart } from 'react-chartjs-2'
-import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { useGetSheetsQuery } from '../graphql/generated'
-import { schemas } from '../lib/schema'
+import { AgeDistributionReport, SheetState, useGetSheetsQuery, useGetWorkbookAgeDistributionReportQuery } from '../graphql/generated'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { schemas } from '../lib/schema'
 
 // Register Chart.js components
 ChartJS.register(
@@ -30,9 +29,10 @@ ChartJS.register(
   Legend
 )
 
-const GET_SHEETS_AGE_DISTRIBUTION_REPORT = gql`
-    query GetSheetsAgeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
-        sheetsAgeDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+const _ = gql`
+    query GetWorkbookAgeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+        workbookAgeDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
+            schema
             items {
                 age
                 rows
@@ -54,9 +54,8 @@ export default function WorkbookAgeDistribution({ workbookId }: { workbookId: Ob
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
-    const { loading, error, data } = useQuery(GET_SHEETS_AGE_DISTRIBUTION_REPORT, {
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
-        skip: filterState?.schemaFilter === '',
+    const { loading, error, data } = useGetWorkbookAgeDistributionReportQuery({
+        variables: { workbookId, schema: filterState?.schemaFilter, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
         pollInterval: 10000, // millisecondi
     })
 
@@ -64,12 +63,22 @@ export default function WorkbookAgeDistribution({ workbookId }: { workbookId: Ob
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
 
-    const report = data?.sheetsAgeDistributionReport
+    const reports = data?.workbookAgeDistributionReport
 
-    if (!report) return <div>Nessun dato disponibile</div>
+    if (reports?.length === 0) return <div>Nessun dato disponibile</div>
 
+    return <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
+        <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+        {reports?.map(report => (
+            <AgeDistributionSection key={report.schema} report={report} viewMode={'summary'} />
+        ))}
+    </div>
+}
+
+function AgeDistributionSection({ report, viewMode }: { report: AgeDistributionReport, viewMode: 'summary' | 'distractors' }) {
     const labels = report.items.map((item: { age: number; rows: number }) => item.age.toString())
     const counts = report.items.map((item: { age: number; rows: number }) => item.rows)
+    const schema = schemas[report.schema];
 
     const chartData = {
         labels,
@@ -119,24 +128,19 @@ export default function WorkbookAgeDistribution({ workbookId }: { workbookId: Ob
         },
     }
 
-    return (
-        <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
-            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
-            <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold">Distribuzione per età</h3>
-                    <div className="text-gray-600 text-right">
-                        <div>Totale studenti: {report.totalRows}</div>
-                        {report.mean !== null && report.mean !== undefined && (
-                            <div>μ: {report.mean.toFixed(1)} anni</div>
-                        )}
-                        {report.variance !== null && report.variance !== undefined && (
-                            <div>σ: {Math.sqrt(report.variance).toFixed(1)} anni</div>
-                        )}
-                    </div>
-                </div>
-                <Chart type="bar" data={chartData} options={options} />
+    return <div className="border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold">Distribuzione per età - {schema.header}</h3>
+            <div className="text-gray-600 text-right">
+                <div>Totale studenti: {report.totalRows}</div>
+                {report.mean !== null && report.mean !== undefined && (
+                    <div>μ: {report.mean.toFixed(1)} anni</div>
+                )}
+                {report.variance !== null && report.variance !== undefined && (
+                    <div>σ: {Math.sqrt(report.variance).toFixed(1)} anni</div>
+                )}
             </div>
         </div>
-    )
+        <Chart type="bar" data={chartData} options={options} />
+    </div>
 }
