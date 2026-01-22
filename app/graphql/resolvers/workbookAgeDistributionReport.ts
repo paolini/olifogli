@@ -1,24 +1,33 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsAgeDistributionReportArgs, AgeDistributionReport, AgeDistributionItem } from '../generated'
+import { QueryWorkbookAgeDistributionReportArgs, AgeDistributionReport, AgeDistributionItem } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
-import sheetsReportHelper from './sheetsReportHelper'
+import { getAllSheets } from './sheetsReportHelper'
+import Competition from '@/app/lib/schema/Competition'
+import { schemas } from '@/app/lib/schema'
 
-export default async function sheetsAgeDistributionReport(
+export default async function workbookAgeDistributionReport(
     _: unknown, 
-    { sheetIds, schema }: QuerySheetsAgeDistributionReportArgs, 
+    { workbookId, schema, commonData, state }: QueryWorkbookAgeDistributionReportArgs, 
     context: Context
-): Promise<AgeDistributionReport> {
-    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
+): Promise<AgeDistributionReport[]> {
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
 
-    // Separa per schema
-    const sheets = allSheets.filter(s => s.schema === schema)
+    const reports: AgeDistributionReport[] = []
 
-    return {
-        schema,
-        ...await generateAgeDistributionReport(sheets)
+    for (const schema of allSchemas) {  
+        if (schemas[schema] instanceof Competition) {
+            const sheets = allSheets.filter(s => s.schema === schema)
+            reports.push({
+                schema,
+                ...await generateAgeDistributionReport(sheets)
+            })
+        }
     }
+
+    return reports
 }
 
 async function generateAgeDistributionReport(sheets: WithId<Sheet>[]) {

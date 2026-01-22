@@ -1,5 +1,5 @@
 import { ObjectId } from "bson";
-import { RankingReport, Row, Sheet, useAddRowsMutation, useGetSheetsQuery, useGetSheetsRankingReportWithSelectionsQuery } from "../graphql/generated";
+import { RankingReport, Row, Sheet, useAddRowsMutation, useGetSheetsQuery, useGetWorkbookRankingReportWithSelectionsQuery } from "../graphql/generated";
 import Loading from "./Loading";
 import Error from "./Error";
 import { useState } from "react";
@@ -21,16 +21,19 @@ export default function SheetSelectionImport({sheet, data_rows, selectionWorkboo
 
     const filteredSheets = sheets.filter(s => s.schema === 'archimede_biennio')
 
-    const { loading, error, data, refetch } = useGetSheetsRankingReportWithSelectionsQuery({
+    const { loading, error, data, refetch } = useGetWorkbookRankingReportWithSelectionsQuery({
         variables: { 
-            sheetIds: filteredSheets.map(s => s._id), 
+            workbookId: new ObjectId(selectionWorkbookId), 
             schema: 'archimede_biennio',
+            commonData: {},
             selectionLabel: 'gara_prime',
             onlySelected: true,
         }
     });
 
-    const rows = data?.sheetsRankingReport.ranking || [];
+    const reports = data?.workbookRankingReport || [];
+
+    const rows = reports?.length === 1 ? reports[0].ranking : [];
 
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 

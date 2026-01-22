@@ -16,10 +16,10 @@ import scanJobs from './resolvers/scanJobs'
 import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
 import workbookDistributionReport from './resolvers/workbookDistributionReport'
-import sheetsRankingReport from './resolvers/sheetsRankingReport'
+import workbookRankingReport from './resolvers/workbookRankingReport'
 import settingsResolvers from './resolvers/settings'
-import sheetsTimeDistributionReport from './resolvers/sheetsTimeDistributionReport'
-import sheetsAgeDistributionReport from './resolvers/sheetsAgeDistributionReport'
+import workbookTimeDistributionReport from './resolvers/workbookTimeDistributionReport'
+import workbookAgeDistributionReport from './resolvers/workbookAgeDistributionReport'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -47,7 +47,7 @@ import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
-import sheetsExerciseReport from './resolvers/sheetsExerciseReport'
+import workbookExerciseReport from './resolvers/workbookExerciseReport'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -71,10 +71,10 @@ export const resolvers: Resolvers = {
     scanSheetJobs,
     scanResults,
     workbookDistributionReport,
-    sheetsRankingReport,
-    sheetsExerciseReport,
-    sheetsTimeDistributionReport,
-    sheetsAgeDistributionReport,
+    workbookRankingReport,
+    workbookExerciseReport,
+    workbookTimeDistributionReport,
+    workbookAgeDistributionReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
     getSetting: settingsResolvers.Query.getSetting,
   },

@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react'
-import { gql, useQuery, useMutation, ApolloError } from '@apollo/client'
+import { gql, useMutation, ApolloError } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
-import { RankingReport, useGetSheetsQuery, User } from '../graphql/generated'
+import { RankingReport, useGetSheetsQuery, User, useGetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsDocument } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import Button from './Button'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
@@ -13,9 +13,9 @@ import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import SheetsSortIcon from './SheetsSortIcon'
 import { score_to_color_style } from '../lib/schema/fields'
 
-const GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS = gql`
-    query GetSheetsRankingReportWithSelections($sheetIds: [ObjectId!]!, $schema: String!, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
-        sheetsRankingReport(sheetIds: $sheetIds, schema: $schema, limit: $limit, selectionLabel: $selectionLabel, onlySelected: $onlySelected, orderBy: $orderBy, orderDirection: $orderDirection) {
+const _ = gql`
+    query GetWorkbookRankingReportWithSelections($workbookId: ObjectId!, $schema: String, $state: SheetState, $commonData: Data, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
+        workbookRankingReport(workbookId: $workbookId, schema: $schema, state: $state, commonData: $commonData, limit: $limit, selectionLabel: $selectionLabel, onlySelected: $onlySelected, orderBy: $orderBy, orderDirection: $orderDirection) {
             schema
             totalStudents
             ranking {
@@ -105,10 +105,11 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
     const [onlySelected, setOnlySelected] = useState<boolean>(false);
     const [sortRanking, setSortRanking] = useState<{field: string, direction: number} | null>(null);
 
-    const { loading, error, data, refetch } = useQuery(GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS, {
+    const { loading, error, data, refetch } = useGetWorkbookRankingReportWithSelectionsQuery({
         variables: { 
-            sheetIds: filteredSheets.map(s => s._id), 
+            workbookId, 
             schema: selectedSelection?.schema || '', 
+            commonData: {},
             limit,
             selectionLabel: selectedSelection?.label,
             onlySelected,
@@ -131,11 +132,13 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
     if (loadingSheets) return <Loading />
     if (sheetsError) return <Error error={sheetsError} />
 
+    const report = data?.workbookRankingReport[0];
+
     const handleShowMore = () => setLimit(limit => limit * 10);
 
     const handleToggleSelection = async (rowId: ObjectId, label: string, isSelected: boolean) => {
         // Ottieni i dati attuali per l'update ottimistico
-        const currentData = data?.sheetsRankingReport;
+        const currentData = data?.workbookRankingReport;
         if (!currentData) return;
 
         try {
@@ -153,10 +156,11 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
 
                     // Aggiorna la cache ottimisticamente
                     const queryKey = {
-                        query: GET_SHEETS_RANKING_REPORT_WITH_SELECTIONS,
+                        query: GetWorkbookRankingReportWithSelectionsDocument,
                         variables: { 
-                            sheetIds: filteredSheets.map(s => s._id), 
+                            workbookId, 
                             schema: selectedSelection?.schema || '', 
+                            commonData: {},
                             limit,
                             selectionLabel: selectedSelection?.label,
                             onlySelected,
@@ -165,10 +169,11 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                         }
                     };
 
-                    const existingData = cache.readQuery(queryKey) as { sheetsRankingReport: RankingReport } | null;
-                    if (!existingData) return;
+                    const existingData = cache.readQuery(queryKey) as { workbookRankingReport: RankingReport[] } | null;
+                    if (!existingData || !existingData.workbookRankingReport.length) return;
 
-                    const updatedRanking = existingData.sheetsRankingReport.ranking.map(entry => {
+                    const report = existingData.workbookRankingReport[0];
+                    const updatedRanking = report.ranking.map(entry => {
                         if (entry.rowId === rowId) {
                             const currentSelections = entry.selections || [];
                             let newSelections;
@@ -198,10 +203,10 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                     cache.writeQuery({
                         ...queryKey,
                         data: {
-                            sheetsRankingReport: {
-                                ...existingData.sheetsRankingReport,
+                            workbookRankingReport: [{
+                                ...report,
                                 ranking: updatedRanking
-                            }
+                            }]
                         }
                     });
                 }
@@ -256,15 +261,15 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                 </label>
             </div>}
 
-            {selectedSelection && availableSelections.length > 0 && (
+            {report && selectedSelection && availableSelections.length > 0 && (
                 <SelectionSection
                     profile={profile}
                     key={`${selectedSelection.schema}-${selectedSelection.label}`}
-                    report={data?.sheetsRankingReport}
+                    report={report}
                     selection={selectedSelection}
                     onToggleSelection={handleToggleSelection}
                     onShowMore={handleShowMore}
-                    canShowMore={limit !== undefined && (data?.sheetsRankingReport?.ranking.length || 0) === limit}
+                    canShowMore={limit !== undefined && (report?.ranking.length || 0) === limit}
                     loading={loading}
                     error={error}
                 />

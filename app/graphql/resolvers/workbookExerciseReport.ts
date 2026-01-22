@@ -1,26 +1,32 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsExerciseReportArgs, ExerciseReport, ExerciseDistributionItem } from '../generated'
+import { QueryWorkbookExerciseReportArgs, ExerciseReport, ExerciseDistributionItem } from '../generated'
 import { WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import { schemas } from '@/app/lib/schema'
 import { ChoiceAnswerField } from '@/app/lib/schema/fields'
-import sheetsReportHelper from './sheetsReportHelper'
+import { getAllSheets } from './sheetsReportHelper'
+import { ObjectId } from 'bson'
 
-export default async function sheetsExerciseReport(
+export default async function workbookExerciseReport(
     _: unknown, 
-    { sheetIds, schema }: QuerySheetsExerciseReportArgs, 
+    { workbookId, schema, commonData, state }: QueryWorkbookExerciseReportArgs, 
     context: Context
-): Promise<ExerciseReport> {
-    const allSheets = await sheetsReportHelper(sheetIds, context)
+): Promise<ExerciseReport[]> {
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
 
-    // Separa per schema
-    const sheets = allSheets.filter(s => s.schema === schema)
+    const reports: ExerciseReport[] = []
 
-    return {
-        schema,
-        ...await generateExerciseReport(sheets, schema)
+    for (const schema of allSchemas) {  
+        const sheets = allSheets.filter(s => s.schema === schema)
+        reports.push({
+            schema,
+            ...await generateExerciseReport(sheets, schema)
+        })
     }
+
+    return reports
 }
 
 async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): Promise<{totalStudents: number, exerciseDistribution: ExerciseDistributionItem[]}> {
