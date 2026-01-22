@@ -24,6 +24,7 @@ import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { zhCN } from 'date-fns/locale'
+import Competition from '../lib/schema/Competition'
 
 // Register Chart.js components
 ChartJS.register(
@@ -40,8 +41,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
-        sheetsDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!) {
+        sheetsDistributionReport(sheetIds: $sheetIds) {
             schema
             totalStudents
             scoreDistribution {
@@ -59,16 +60,16 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
-    const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
+    const { filterState } = useSheetsFilterWithQuerystring(); //{ schema: 'archimede_biennio' })
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
+        .filter(s => schemas[s.schema] instanceof Competition)
     const filteredSheets = filterSheets(filterState, sheets)
 
     const [useBinning, setUseBinning] = useState(false)
 
     const { loading, error, data } = useGetSheetsDistributionReportQuery({
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
-        skip: filterState?.schemaFilter === '',
+        variables: { sheetIds: filteredSheets.map(s => s._id)},
+        // skip: filterState?.schemaFilter === '',
         pollInterval: 10000, // millisecondi
     })
 
@@ -76,7 +77,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
 
-    const report = data?.sheetsDistributionReport
+    const reports = data?.sheetsDistributionReport
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
@@ -91,7 +92,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
                     <span>Raggruppa punteggi</span>
                 </label>
             </div>
-            {report && (
+            {reports?.map(report =>
                 <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
             )}
         </div>

@@ -241,7 +241,7 @@ type Query {
   rows(sheetId: ObjectId!): [Row!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
-  sheetsDistributionReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data): DistributionReport!
+  sheetsDistributionReport(sheetIds: [ObjectId!]!, commonData: Data): [DistributionReport!]!
   sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int, selectionLabel: String, onlySelected: Boolean, orderBy: String, orderDirection: Int): RankingReport!
   sheetsExerciseReport(sheetIds: [ObjectId!]!, schema: String!): ExerciseReport!
   sheetsTimeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): TimeDistributionReport!
