@@ -19,7 +19,7 @@ import { Chart } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { DistributionReport as DistributionReport, useGetSheetsQuery, useGetSheetsDistributionReportQuery } from '../graphql/generated'
+import { DistributionReport, useGetSheetsQuery, useGetWorkbookDistributionReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
@@ -41,8 +41,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!) {
-        sheetsDistributionReport(sheetIds: $sheetIds) {
+    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+        workbookDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
             schema
             totalStudents
             scoreDistribution {
@@ -60,16 +60,15 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
-    const { filterState } = useSheetsFilterWithQuerystring(); //{ schema: 'archimede_biennio' })
+    const { filterState } = useSheetsFilterWithQuerystring();
     const sheets = (sheetsData?.sheets || [])
         .filter(s => schemas[s.schema] instanceof Competition)
     const filteredSheets = filterSheets(filterState, sheets)
 
     const [useBinning, setUseBinning] = useState(false)
 
-    const { loading, error, data } = useGetSheetsDistributionReportQuery({
-        variables: { sheetIds: filteredSheets.map(s => s._id)},
-        // skip: filterState?.schemaFilter === '',
+    const { loading, error, data } = useGetWorkbookDistributionReportQuery({
+        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: filterState?.statoFilter || null },
         pollInterval: 10000, // millisecondi
     })
 
@@ -77,7 +76,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
 
-    const reports = data?.sheetsDistributionReport
+    const reports = data?.workbookDistributionReport
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>

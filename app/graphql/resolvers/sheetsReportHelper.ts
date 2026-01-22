@@ -29,3 +29,44 @@ export default async function sheetsReportHelper(
 
     return allSheets
 }
+
+export async function getAllSheets(
+    workbookId: ObjectId,
+    schema: string | null,
+    commonData: Record<string, string> | null,
+    state: string | null,
+    context: Context
+): Promise<Sheet[]> {
+    const user = await get_authenticated_user(context)
+    if (!user) throw new Error("Not authenticated")
+
+    const sheetsCollection = await getSheetsCollection()
+
+    // restringe gli sheet
+    // a cui l'utente ha accesso
+    const sheetFilter: Document = { 
+        workbookId: workbookId,
+        ...schema ? { schema } : {},
+        ...commonData ? { ...Object.entries(commonData).map(([key, value]: [string, string]) => ({ ['commonData.' + key]: value })) } : {},
+        ...state === 'open' ? { closed: false, locked: false } : {},
+        ...state === 'closed_or_locked' ? { $or: [ { closed: true }, { locked: true } ] } : {},
+        ...state === 'closed_not_locked' ? { closed: true, locked: false } : {},
+        ...state === 'locked' ? { locked: true } : {},
+    }
+    
+    if (!(user.isAdmin || user.isSupervisor)) {
+        sheetFilter.$or = [
+            { ownerId: user._id },
+            { 'permissions.email': user.email },
+            { 'permissions.userId': user._id },
+        ]
+    }
+
+    console.log("Sheet filter:", JSON.stringify(sheetFilter)) // DEBUG
+    
+    const allSheets = await sheetsCollection.find(sheetFilter).toArray()
+
+    console.log(`Found ${allSheets.length} sheets matching filter`) // DEBUG
+
+    return allSheets
+}
