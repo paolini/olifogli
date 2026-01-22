@@ -112,8 +112,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const displayedSheets = sortedSheets.slice(0, displayLimit);
     const hasMore = filteredSheets.length > displayLimit;
 
-    const emptySheetIds = filteredSheets.filter((s:Partial<Sheet>) => s.nRows === 0).map(s => s._id)
-
     const columnsSet = new Set<string>()
     
     // Colonne presenti nei dati filtrati
@@ -238,9 +236,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={olimanagerBulkUpdateResultsError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
-                <Button variant="danger" disabled={emptySheetIds.length === 0 || deletingSheets} onClick={() => deleteEmptySheets()}>
-                    ⚙ Elimina {pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}
-                </Button> 
                 <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={() => deleteSelectedSheets()}>
                     ⚙ Elimina {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
                 </Button>
@@ -323,12 +318,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 </div>
             )}
         </th>
-    }
-
-    async function deleteEmptySheets() {
-      if (!confirm(`Sei sicuro di voler eliminare ${pluralize(emptySheetIds.length, 'foglio vuoto', 'fogli vuoti')}?`)) return
-      await deleteSheets({ variables: { ids: emptySheetIds } })
-      refetch() 
     }
 
     async function deleteSelectedSheets() {
