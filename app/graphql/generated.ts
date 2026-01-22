@@ -314,7 +314,7 @@ export type Query = {
   sheet?: Maybe<Sheet>;
   sheets: Array<Sheet>;
   sheetsAgeDistributionReport: AgeDistributionReport;
-  sheetsDistributionReport: DistributionReport;
+  sheetsDistributionReport: Array<DistributionReport>;
   sheetsExerciseReport: ExerciseReport;
   sheetsRankingReport: RankingReport;
   sheetsTimeDistributionReport: TimeDistributionReport;
@@ -368,7 +368,6 @@ export type QuerySheetsAgeDistributionReportArgs = {
 
 export type QuerySheetsDistributionReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
-  schema: Scalars['String']['input'];
   sheetIds: Array<Scalars['ObjectId']['input']>;
 };
 
@@ -838,11 +837,10 @@ export type UpdateWorkbookMutation = { __typename?: 'Mutation', updateWorkbook?:
 
 export type GetSheetsDistributionReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
-  schema: Scalars['String']['input'];
 }>;
 
 
-export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDistributionReport: { __typename?: 'DistributionReport', schema: string, totalStudents: number, mean?: number | null, variance?: number | null, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> } };
+export type GetSheetsDistributionReportQuery = { __typename?: 'Query', sheetsDistributionReport: Array<{ __typename?: 'DistributionReport', schema: string, totalStudents: number, mean?: number | null, variance?: number | null, scoreDistribution: Array<{ __typename?: 'ScoreDistributionItem', score: number, count: number }> }> };
 
 export type GetSheetsExerciseReportQueryVariables = Exact<{
   sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
@@ -2286,8 +2284,8 @@ export type UpdateWorkbookMutationHookResult = ReturnType<typeof useUpdateWorkbo
 export type UpdateWorkbookMutationResult = Apollo.MutationResult<UpdateWorkbookMutation>;
 export type UpdateWorkbookMutationOptions = Apollo.BaseMutationOptions<UpdateWorkbookMutation, UpdateWorkbookMutationVariables>;
 export const GetSheetsDistributionReportDocument = gql`
-    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
-  sheetsDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!) {
+  sheetsDistributionReport(sheetIds: $sheetIds) {
     schema
     totalStudents
     scoreDistribution {
@@ -2313,7 +2311,6 @@ export const GetSheetsDistributionReportDocument = gql`
  * const { data, loading, error } = useGetSheetsDistributionReportQuery({
  *   variables: {
  *      sheetIds: // value for 'sheetIds'
- *      schema: // value for 'schema'
  *   },
  * });
  */
@@ -3235,7 +3232,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   sheet?: Resolver<Maybe<ResolversTypes['Sheet']>, ParentType, ContextType, RequireFields<QuerySheetArgs, 'sheetId'>>;
   sheets?: Resolver<Array<ResolversTypes['Sheet']>, ParentType, ContextType, Partial<QuerySheetsArgs>>;
   sheetsAgeDistributionReport?: Resolver<ResolversTypes['AgeDistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsAgeDistributionReportArgs, 'schema' | 'sheetIds'>>;
-  sheetsDistributionReport?: Resolver<ResolversTypes['DistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsDistributionReportArgs, 'schema' | 'sheetIds'>>;
+  sheetsDistributionReport?: Resolver<Array<ResolversTypes['DistributionReport']>, ParentType, ContextType, RequireFields<QuerySheetsDistributionReportArgs, 'sheetIds'>>;
   sheetsExerciseReport?: Resolver<ResolversTypes['ExerciseReport'], ParentType, ContextType, RequireFields<QuerySheetsExerciseReportArgs, 'schema' | 'sheetIds'>>;
   sheetsRankingReport?: Resolver<ResolversTypes['RankingReport'], ParentType, ContextType, RequireFields<QuerySheetsRankingReportArgs, 'schema' | 'sheetIds'>>;
   sheetsTimeDistributionReport?: Resolver<ResolversTypes['TimeDistributionReport'], ParentType, ContextType, RequireFields<QuerySheetsTimeDistributionReportArgs, 'schema' | 'sheetIds'>>;

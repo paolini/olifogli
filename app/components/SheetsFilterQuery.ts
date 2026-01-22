@@ -7,7 +7,7 @@ export function useSheetsFilterWithQuerystring(defaults: { schema?: string } = {
     const router = useRouter();
 
     // Stato filtri generali
-    const [schemaFilter, setSchemaFilter] = useState(defaults.schema || '');
+    const [schemaFilter, setSchemaFilter] = useState('');
     const [distrettoFilter, setDistrettoFilter] = useState('');
     const [statoFilter, setStatoFilter] = useState('');
     // Stato filtro per colonne dinamiche

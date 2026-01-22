@@ -13,7 +13,7 @@ export default async function sheetsReportHelper(
 
     const sheetsCollection = await getSheetsCollection()
 
-    // restringe gli sheetcon schema archimede_biennio o archimede_triennio
+    // restringe gli sheet
     // a cui l'utente ha accesso
     const sheetFilter: Document = { _id: { $in: sheetIds} }
     
