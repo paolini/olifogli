@@ -3,6 +3,13 @@ scalar ObjectId
 scalar JSON
 scalar Data
 
+enum SheetState {
+  open
+  closed_or_locked
+  closed_not_locked
+  locked
+}
+
 type Setting {
   _id: ObjectId!
   key: String!
@@ -241,7 +248,7 @@ type Query {
   rows(sheetId: ObjectId!): [Row!]!
   olimanager: String # testing
   appInstance: String # istanza runtime
-  sheetsDistributionReport(sheetIds: [ObjectId!]!, commonData: Data): [DistributionReport!]!
+  workbookDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [DistributionReport!]!
   sheetsRankingReport(sheetIds: [ObjectId!]!, schema: String!, commonData: Data, limit: Int, selectionLabel: String, onlySelected: Boolean, orderBy: String, orderDirection: Int): RankingReport!
   sheetsExerciseReport(sheetIds: [ObjectId!]!, schema: String!): ExerciseReport!
   sheetsTimeDistributionReport(sheetIds: [ObjectId!]!, schema: String!): TimeDistributionReport!

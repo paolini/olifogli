@@ -1,18 +1,18 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsDistributionReportArgs, DistributionReport, ScoreDistributionItem } from '../generated'
+import { QueryWorkbookDistributionReportArgs, DistributionReport, ScoreDistributionItem } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
-import sheetsReportHelper from './sheetsReportHelper'
+import { getAllSheets } from './sheetsReportHelper'
 import Competition from '@/app/lib/schema/Competition'
 import { schemas } from '@/app/lib/schema'
 
-export default async function sheetsDistributionReport(
+export default async function workbookDistributionReport(
     _: unknown, 
-    { sheetIds }: QuerySheetsDistributionReportArgs, 
+    { workbookId, schema, commonData, state }: QueryWorkbookDistributionReportArgs, 
     context: Context
 ): Promise<DistributionReport[]> {
-    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
     const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
     const reports: DistributionReport[] = []
     

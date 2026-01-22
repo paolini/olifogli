@@ -15,7 +15,7 @@ import rows from './resolvers/rows'
 import scanJobs from './resolvers/scanJobs'
 import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
-import sheetsDistributionReport from './resolvers/sheetsDistributionReport'
+import workbookDistributionReport from './resolvers/workbookDistributionReport'
 import sheetsRankingReport from './resolvers/sheetsRankingReport'
 import settingsResolvers from './resolvers/settings'
 import sheetsTimeDistributionReport from './resolvers/sheetsTimeDistributionReport'
@@ -70,7 +70,7 @@ export const resolvers: Resolvers = {
     scanJobs,
     scanSheetJobs,
     scanResults,
-    sheetsDistributionReport,
+    workbookDistributionReport,
     sheetsRankingReport,
     sheetsExerciseReport,
     sheetsTimeDistributionReport,
