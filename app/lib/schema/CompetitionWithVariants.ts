@@ -34,7 +34,7 @@ export default class CompetitionWithVariants extends Competition {
             anomalies,
         }
         console.log(`computeDerivedData variant=${variant}`)
-        if (variant === '000') return {
+        if (variant === '000' || variant === '0') return {
             error: '',
             data,
             anomalies,

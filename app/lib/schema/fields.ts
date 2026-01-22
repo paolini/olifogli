@@ -156,9 +156,8 @@ export class ChoiceAnswerField extends Field {
 
     isValid(value: string, data: Data): boolean {
         console.log(`Validating ChoiceAnswerField ${this.name} with value "${value}" and data:`, data)
-        if (data && data['variant']==='000') {
-            console.log(`Variant is 000, so value must be empty`)
-            return value==='' // se variante 000, deve essere vuoto
+        if (data && (data['variant'] === '000' || data['variant'] === '0')) {
+            return value==='' // se variante 0, lo studente è assente, deve essere vuoto
         } else {
             return super.isValid(value)
         }
