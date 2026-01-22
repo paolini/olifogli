@@ -19,7 +19,7 @@ import { Chart } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { DistributionReport, useGetSheetsQuery, useGetWorkbookDistributionReportQuery } from '../graphql/generated'
+import { DistributionReport, useGetSheetsQuery, useGetWorkbookDistributionReportQuery, SheetState, Sheet } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
@@ -63,12 +63,12 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     const { filterState } = useSheetsFilterWithQuerystring();
     const sheets = (sheetsData?.sheets || [])
         .filter(s => schemas[s.schema] instanceof Competition)
-    const filteredSheets = filterSheets(filterState, sheets)
+    const filteredSheets = filterSheets(filterState, sheets) as typeof sheets
 
     const [useBinning, setUseBinning] = useState(false)
 
     const { loading, error, data } = useGetWorkbookDistributionReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: filterState?.statoFilter || null },
+        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
         pollInterval: 10000, // millisecondi
     })
 
@@ -91,7 +91,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
                     <span>Raggruppa punteggi</span>
                 </label>
             </div>
-            {reports?.map(report =>
+            {reports?.map((report: DistributionReport) =>
                 <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
             )}
         </div>
