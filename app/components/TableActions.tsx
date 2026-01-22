@@ -147,7 +147,7 @@ const actions: Record<string, Action> = {
   'gen_ids': {
     label: 'Genera ID studenti',
     hidden: ctx => !ctx.edit || !ctx.schema.fields.some(field => field.name === 'id'),
-    disabled: ctx => !ctx.checkboxesState.showHiddenColumns,
+    disabled: ctx => false, //ctx => !ctx.checkboxesState.showHiddenColumns,
     handler: handleGenerateStudentIds
   },
   'olimanager': {
@@ -242,11 +242,17 @@ function handleGenerateScanSheet(ctx: TableActionContext) {
 }
 
 async function handleGenerateStudentIds(ctx: TableActionContext) {
+  ctx.setCheckboxesState(prev => ({...prev, showHiddenColumns: true}))
+
   // Trova il massimo valore del campo id
   const maxId = ctx.tableState.lines.reduce((max, line) => {
     const idValue = parseInt(line.row?.data.id || '0', 10)
     return isNaN(idValue) ? max : Math.max(max, idValue)
   }, 0)
+
+  const selectedRows = ctx.tableState.selectedLineKeys.size === 0 
+    ? ctx.tableState.lines.filter(line => line.row)
+    : ctx.tableState.lines.filter(line => line.row && ctx.tableState.selectedLineKeys.has(line.key))
 
   // Trova le righe con id vuoto
   const rowsWithEmptyId = ctx.tableState.lines.filter(line => line.row && (!line.row?.data.id || line.row?.data.id === ''))
