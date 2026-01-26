@@ -1,27 +1,33 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsDistributionReportArgs, DistributionReport, ScoreDistributionItem } from '../generated'
+import { QueryWorkbookDistributionReportArgs, DistributionReport, ScoreDistributionItem } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
-import sheetsReportHelper from './sheetsReportHelper'
+import { getAllSheets } from './sheetsReportHelper'
+import Competition from '@/app/lib/schema/Competition'
+import { schemas } from '@/app/lib/schema'
 
-export default async function sheetsDistributionReport(
+export default async function workbookDistributionReport(
     _: unknown, 
-    { sheetIds, schema }: QuerySheetsDistributionReportArgs, 
+    { workbookId, schema, commonData, state }: QueryWorkbookDistributionReportArgs, 
     context: Context
-): Promise<DistributionReport> {
-    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
-
-    // Separa per schema
-    const sheets = allSheets.filter(s => s.schema === schema)
-
-    return {
-        schema,
-        ...await generateDistributionReport(sheets)
+): Promise<DistributionReport[]> {
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
+    const reports: DistributionReport[] = []
+    
+    for (const schema of allSchemas) {  
+        if (schemas[schema] instanceof Competition) {     
+            const sheets = allSheets.filter(s => s.schema === schema)
+            reports.push({
+                schema,
+                ...await generateDistributionReport(sheets)
+            })
+        }
     }
+
+    return reports
 }
-
-
 
 async function generateDistributionReport(sheets: WithId<Sheet>[]) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
@@ -34,7 +40,7 @@ async function generateDistributionReport(sheets: WithId<Sheet>[]) {
     }).toArray()
 
     // Prepara le entry con punteggio
-    const scores = rows.map(row => parseFloat(row.data?.score))
+    const scores = rows.map(row => parseFloat(row.data?.score)).filter(score => !isNaN(score))
 
     // Calcola media e varianza
     const mean = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0

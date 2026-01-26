@@ -147,7 +147,7 @@ const actions: Record<string, Action> = {
   'gen_ids': {
     label: 'Genera ID studenti',
     hidden: ctx => !ctx.edit || !ctx.schema.fields.some(field => field.name === 'id'),
-    disabled: ctx => !ctx.checkboxesState.showHiddenColumns,
+    disabled: ctx => false, //ctx => !ctx.checkboxesState.showHiddenColumns,
     handler: handleGenerateStudentIds
   },
   'olimanager': {
@@ -242,22 +242,28 @@ function handleGenerateScanSheet(ctx: TableActionContext) {
 }
 
 async function handleGenerateStudentIds(ctx: TableActionContext) {
+  ctx.setCheckboxesState(prev => ({...prev, showHiddenColumns: true}))
+
   // Trova il massimo valore del campo id
   const maxId = ctx.tableState.lines.reduce((max, line) => {
     const idValue = parseInt(line.row?.data.id || '0', 10)
     return isNaN(idValue) ? max : Math.max(max, idValue)
   }, 0)
 
+  const selectedLines = ctx.tableState.selectedLineKeys.size === 0 
+    ? ctx.tableState.lines.filter(line => line.row)
+    : ctx.tableState.lines.filter(line => line.row && ctx.tableState.selectedLineKeys.has(line.key))
+
   // Trova le righe con id vuoto
-  const rowsWithEmptyId = ctx.tableState.lines.filter(line => line.row && (!line.row?.data.id || line.row?.data.id === ''))
+  const rowsWithEmptyId = selectedLines.filter(line => line.row && (!line.row?.data.id || line.row?.data.id === ''))
   
   if (rowsWithEmptyId.length === 0) {
-    alert('Non ci sono righe con id vuoto')
+    alert('Non ci sono righe con id vuoto tra quelle selezionate')
     return
   }
 
   const confirmed = confirm(
-    `Vuoi generare ${rowsWithEmptyId.length} ID studenti a partire da ${maxId + 1}?`
+    `Vuoi generare ${pluralize(rowsWithEmptyId.length, 'ID studente', 'ID studenti')} a partire da ${maxId + 1}?`
   )
   
   if (!confirmed) return
@@ -280,7 +286,7 @@ async function handleGenerateStudentIds(ctx: TableActionContext) {
         })
       })
     )
-    alert(`Generati ${rowsWithEmptyId.length} ID studenti`)
+    alert(pluralize(rowsWithEmptyId.length, 'generato un ID studente', 'generati % ID studenti'))
   } catch (error) {
     alert(`Errore durante la generazione degli ID: ${error}`)
   }

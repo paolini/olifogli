@@ -19,11 +19,12 @@ import { Chart } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { DistributionReport as DistributionReport, useGetSheetsQuery, useGetSheetsDistributionReportQuery } from '../graphql/generated'
+import { DistributionReport, useGetSheetsQuery, useGetWorkbookDistributionReportQuery, SheetState, Sheet } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { zhCN } from 'date-fns/locale'
+import Competition from '../lib/schema/Competition'
 
 // Register Chart.js components
 ChartJS.register(
@@ -40,8 +41,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetSheetsDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
-        sheetsDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+        workbookDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
             schema
             totalStudents
             scoreDistribution {
@@ -59,16 +60,15 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
-    const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
+    const { filterState } = useSheetsFilterWithQuerystring();
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
-    const filteredSheets = filterSheets(filterState, sheets)
+        .filter(s => schemas[s.schema] instanceof Competition)
+    const filteredSheets = filterSheets(filterState, sheets) as typeof sheets
 
     const [useBinning, setUseBinning] = useState(false)
 
-    const { loading, error, data } = useGetSheetsDistributionReportQuery({
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
-        skip: filterState?.schemaFilter === '',
+    const { loading, error, data } = useGetWorkbookDistributionReportQuery({
+        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
         pollInterval: 10000, // millisecondi
     })
 
@@ -76,7 +76,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
 
-    const report = data?.sheetsDistributionReport
+    const reports = data?.workbookDistributionReport
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
@@ -91,7 +91,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
                     <span>Raggruppa punteggi</span>
                 </label>
             </div>
-            {report && (
+            {reports?.map((report: DistributionReport) =>
                 <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
             )}
         </div>

@@ -10,7 +10,7 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, moveRightOrLeft}:{
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, adminEditMode}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
@@ -22,7 +22,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-    moveRightOrLeft: (n: number) => boolean,
+    adminEditMode: boolean,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -30,7 +30,10 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     const setters = useMemo(() => {
       const map: Record<string, null | ((v: string | undefined) => void)> = {};
       for (const field of columns.filter(col => col instanceof Field)) {
-        if (line?.row?.olimanager?.participantId && ["name","surname","birthDate","classYear","classSection"].includes(field.name)) {
+        if (line?.row?.olimanager?.participantId 
+                && ["name","surname","birthDate","classYear","classSection"].includes(field.name)
+                && !adminEditMode
+            ) {
             // campo non modificabile perché già sincronizzato da Olimanager
             map[field.name] = null
         } else if (showStandardAnswers && field instanceof ChoiceAnswerField) {

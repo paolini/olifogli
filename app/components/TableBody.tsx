@@ -5,7 +5,7 @@ import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 import { pluralize } from "../lib/util"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, moveRightOrLeft, polling, setPolling} : {
+export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode, polling, setPolling} : {
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -22,7 +22,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     directInput: boolean,
     setDirectInput: Dispatch<SetStateAction<boolean>>,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-    moveRightOrLeft: (n: number) => boolean,
+    adminEditMode: boolean,
     polling: boolean,
     setPolling: Dispatch<SetStateAction<boolean>>
 }) {
@@ -47,9 +47,8 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
                   cellKeyDownHandler={cellKeyDownHandler}
-                  moveRightOrLeft={moveRightOrLeft}
-              />
-            }
+                  adminEditMode={adminEditMode}
+            />}
         )}
         <tr className="hide-print"><td></td><td colSpan={columns.length}>
         { edit && (!tableState.focusLineKey || focusLine?.row) && 
