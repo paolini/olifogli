@@ -122,11 +122,29 @@ export class VariantField extends Field {
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
-        if (showStandardAnswers && value.length === 3) {
+        if (showStandardAnswers) {
+            let standard_code = ''
             // mostra il codice della variante standard
-            // 323 => 311
-            const standard_code = `${value.charAt(0)}11` 
-            return super.display(standard_code, standard_code, showStandardAnswers)
+            
+            // attenzione che il codice '0' o '000' indica studente 
+            // assente e non va modificato
+
+            if (value.length === 3) {
+                // archimede
+                // 323 => 311
+                const c = value.charAt(0)
+                if (c !== '0') standard_code = `${c}11` 
+            }
+            if (value.length === 1) {
+                // gara delle prime
+                // 3 => 1
+                const c = value.charAt(0)
+                if (c !== '0') standard_code = `1` 
+            }
+            if (standard_code !== '') {
+                // solo se il codice non indica assenza
+                return super.display(standard_code, standard_code, showStandardAnswers)
+            }
         }
         return super.display(value, old_value, showStandardAnswers)
     }
