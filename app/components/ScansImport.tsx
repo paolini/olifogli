@@ -211,10 +211,13 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
             if (!selected.includes(scan_row._id)) continue
             const {row, data} = scans_to_data_dict[scan_row._id.toString()] || {row: undefined, data: {}}
             if (row) {
+                const oldData = row.data || {}
+                const patch = Object.fromEntries(Object.entries(data)
+                    .filter(([key, value]) => oldData[key] !== value))
                 const res = await patchRow({
                     variables: {
                         _id: row._id,
-                        data,
+                        data: patch,
                         updatedOn: row.updatedOn || new Date(),
                     }})
                 if (res.errors) continue
@@ -236,7 +239,7 @@ function MergedResultTable({job, selected, setSelected, rows, schema, scans_to_d
     selected: ObjectId[],
     setSelected: Dispatch<SetStateAction<ObjectId[]>>,
     rows: ScanResultsWithId[],
-    scans_to_data_dict: Partial<Record<string, {row: Row | undefined;data: Data;}>>
+    scans_to_data_dict: Partial<Record<string, {row: Row | undefined; data: Data;}>>
     schema: typeof schemas[string]
 }) {
     return <table>
