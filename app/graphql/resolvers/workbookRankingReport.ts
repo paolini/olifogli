@@ -1,28 +1,34 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsRankingReportArgs, RankingReport, ReportEntry } from '../generated'
+import { QueryWorkbookRankingReportArgs, RankingReport, ReportEntry } from '../generated'
 import { ObjectId, WithId, Filter } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import { Row } from '@/app/lib/models'
-import sheetsReportHelper from './sheetsReportHelper'
+import { getAllSheets } from './sheetsReportHelper'
 import { schemas } from '@/app/lib/schema'
+import Competition from '@/app/lib/schema/Competition'
 
-export default async function sheetsRankingReport(
+export default async function workbookRankingReport(
     _: unknown, 
-    { sheetIds, schema, limit, selectionLabel, onlySelected, orderBy, orderDirection }: QuerySheetsRankingReportArgs & { selectionLabel?: string | null, onlySelected?: boolean | null, orderBy?: string | null, orderDirection?: number | null }, 
+    { workbookId, schema, commonData, state, limit, selectionLabel, onlySelected, orderBy, orderDirection }: QueryWorkbookRankingReportArgs & { selectionLabel?: string | null, onlySelected?: boolean | null, orderBy?: string | null, orderDirection?: number | null }, 
     context: Context
-): Promise<RankingReport> {
-    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
+): Promise<RankingReport[]> {
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || null, context)
+    const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
+    const reports: RankingReport[] = []
 
-    // Separa per schema
-    const sheets = allSheets.filter(s => s.schema === schema)
-
-    const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel, onlySelected, orderBy, orderDirection)
-
-    return {
-        schema,
-        ...report
+    for (const schema of allSchemas) {
+        if (schemas[schema] instanceof Competition) {
+            const sheets = allSheets.filter(s => s.schema === schema)
+            const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel, onlySelected, orderBy, orderDirection)
+            reports.push({
+                schema,
+                ...report
+            })
+        }
     }
+
+    return reports
 }
 
 async function generateRankingReport(
@@ -68,7 +74,7 @@ async function generateRankingReport(
     }
     
     // Recupera tutte le righe dai fogli
-    console.log("Filtro per ranking report:", filter)
+    // console.log("Filtro per ranking report:", filter)
     const rows = await rowsCollection.find(filter).toArray()
 
     /*

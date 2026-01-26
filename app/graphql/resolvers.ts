@@ -15,11 +15,11 @@ import rows from './resolvers/rows'
 import scanJobs from './resolvers/scanJobs'
 import scanSheetJobs from './resolvers/scanSheetJobs'
 import scanResults from './resolvers/scanResults'
-import sheetsDistributionReport from './resolvers/sheetsDistributionReport'
-import sheetsRankingReport from './resolvers/sheetsRankingReport'
+import workbookDistributionReport from './resolvers/workbookDistributionReport'
+import workbookRankingReport from './resolvers/workbookRankingReport'
 import settingsResolvers from './resolvers/settings'
-import sheetsTimeDistributionReport from './resolvers/sheetsTimeDistributionReport'
-import sheetsAgeDistributionReport from './resolvers/sheetsAgeDistributionReport'
+import workbookTimeDistributionReport from './resolvers/workbookTimeDistributionReport'
+import workbookAgeDistributionReport from './resolvers/workbookAgeDistributionReport'
 
 import addSheet from './resolvers/addSheet'
 import deleteSheet from './resolvers/deleteSheet'
@@ -47,7 +47,7 @@ import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
-import sheetsExerciseReport from './resolvers/sheetsExerciseReport'
+import workbookExerciseReport from './resolvers/workbookExerciseReport'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -70,11 +70,11 @@ export const resolvers: Resolvers = {
     scanJobs,
     scanSheetJobs,
     scanResults,
-    sheetsDistributionReport,
-    sheetsRankingReport,
-    sheetsExerciseReport,
-    sheetsTimeDistributionReport,
-    sheetsAgeDistributionReport,
+    workbookDistributionReport,
+    workbookRankingReport,
+    workbookExerciseReport,
+    workbookTimeDistributionReport,
+    workbookAgeDistributionReport,
     appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
     getSetting: settingsResolvers.Query.getSetting,
   },

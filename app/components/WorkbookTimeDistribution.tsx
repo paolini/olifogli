@@ -1,6 +1,5 @@
 'use client'
 
-import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import {
   Chart as ChartJS,
@@ -15,10 +14,10 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import 'chartjs-adapter-date-fns'
-import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { useGetSheetsQuery, useGetSheetsTimeDistributionReportQuery, TimeDistributionReport, TimeDistributionItem } from '../graphql/generated'
+import { gql } from '@apollo/client'
+import { useGetSheetsQuery, TimeDistributionReport, TimeDistributionItem, SheetState, useGetWorkbookTimeDistributionReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
@@ -36,8 +35,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetSheetsTimeDistributionReport($sheetIds: [ObjectId!]!, $schema: String!) {
-        sheetsTimeDistributionReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetWorkbookTimeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+        workbookTimeDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
             schema
             timeDistribution {
                 hour
@@ -62,9 +61,8 @@ export default function WorkbookTimeDistribution({ workbookId }: { workbookId: O
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
-    const { loading, error, data } = useGetSheetsTimeDistributionReportQuery({
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
-        skip: filterState?.schemaFilter === '',
+    const { loading, error, data } = useGetWorkbookTimeDistributionReportQuery({
+        variables: { workbookId, schema: filterState?.schemaFilter, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
         pollInterval: 10000, // millisecondi
     })
 
@@ -72,14 +70,14 @@ export default function WorkbookTimeDistribution({ workbookId }: { workbookId: O
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
 
-    const report = data?.sheetsTimeDistributionReport
+    const reports = data?.workbookTimeDistributionReport
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
             <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
-            {report && (
+            {reports?.map(report => (
                 <TimeDistributionSection key={report.schema} report={report} />
-            )}
+            ))}
         </div>
     )
 }

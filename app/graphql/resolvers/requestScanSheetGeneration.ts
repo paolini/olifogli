@@ -30,7 +30,16 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   
   const rows = await rowsCollection.find($match).toArray()
   
-  const payload = rows.map(row => JSON.stringify(row.data)).join('\n')
+  // riordina le righe nell'ordine specificato in selectedRowIds
+  const rowMap = new Map(rows.map(r => [r._id.toString(), r]))
+  const orderedRows = rowIds 
+    ? rowIds.map(rid => rowMap.get(rid.toString())!).filter(r => r)
+    : rows
+
+  const payload = orderedRows.map(row => JSON.stringify({
+    sheet_name: sheet.name,
+    ...row.data
+  })).join('\n')
   
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 

@@ -1,6 +1,5 @@
 'use client'
 
-import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import {
   Chart as ChartJS,
@@ -15,7 +14,8 @@ import { Bar } from 'react-chartjs-2'
 import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
-import { useGetSheetsQuery, useGetSheetsExerciseReportQuery, ExerciseReport } from '../graphql/generated'
+import { gql } from '@apollo/client'
+import { useGetSheetsQuery, ExerciseReport, useGetWorkbookExerciseReportQuery, SheetState } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
@@ -46,8 +46,8 @@ const CORRECTNESS_LABELS = {
 }
 
 const _ = gql`
-    query GetSheetsExerciseReport($sheetIds: [ObjectId!]!, $schema: String!) {
-        sheetsExerciseReport(sheetIds: $sheetIds, schema: $schema) {
+    query GetWorkbookExerciseReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+        workbookExerciseReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
             schema
             totalStudents
             exerciseDistribution {
@@ -76,9 +76,8 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
-    const { loading, error, data } = useGetSheetsExerciseReportQuery({
-        variables: { sheetIds: filteredSheets.map(s => s._id), schema: filterState?.schemaFilter },
-        skip: filterState?.schemaFilter === '',
+    const { loading, error, data } = useGetWorkbookExerciseReportQuery({
+        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
         pollInterval: 10000, // millisecondi
     })
 
@@ -88,7 +87,7 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
 
-    const report = data?.sheetsExerciseReport
+    const reports = data?.workbookExerciseReport
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
@@ -101,9 +100,9 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
                 />
                 <span>mostra distrattori</span>
             </label>
-            {report && (
+            {reports?.map(report => (
                 <ExerciseDistributionSection key={report.schema} report={report} viewMode={viewMode} />
-            )}
+            ))}
         </div>
     )
 }

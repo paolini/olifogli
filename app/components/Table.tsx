@@ -92,7 +92,7 @@ export const EMPTY_TABLE_STATE: TableState = {
     inputFocus: false,
 }
 
-export default function Table({edit, standardAnswers, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload, setCsvImport}: {
+export default function Table({edit, standardAnswers, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload, setCsvImport, adminEditMode}: {
     edit: boolean,
     standardAnswers: boolean,
     rows: Row[],
@@ -104,6 +104,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
     lastCsvDownload?: Date,
     csvDownload: (rows: Row[], standardAnswers: boolean) => void,
     setCsvImport: Dispatch<SetStateAction<boolean>>,
+    adminEditMode: boolean,
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
@@ -190,7 +191,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
                     loading={loading}
                     setLineData={setLineData}
                     cellKeyDownHandler={cellKeyDownHandler}
-                    moveRightOrLeft={moveRightOrLeft}
+                    adminEditMode={adminEditMode}
                     polling={polling}
                     setPolling={setPolling}
                 />

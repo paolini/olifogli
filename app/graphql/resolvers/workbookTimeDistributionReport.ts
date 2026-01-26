@@ -1,27 +1,35 @@
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
-import { QuerySheetsTimeDistributionReportArgs, TimeDistributionReport, TimeDistributionItem } from '../generated'
+import { QueryWorkbookTimeDistributionReportArgs, TimeDistributionReport, TimeDistributionItem } from '../generated'
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
-import sheetsReportHelper from './sheetsReportHelper'   
+import { getAllSheets } from './sheetsReportHelper'   
+import { schemas } from '@/app/lib/schema'
+import Competition from '@/app/lib/schema/Competition'
 
 
-export default async function sheetsTimeDistributionReport(
+export default async function workbookTimeDistributionReport(
     _: unknown, 
-    { sheetIds, schema }: QuerySheetsTimeDistributionReportArgs, 
+    { workbookId, schema, commonData, state }: QueryWorkbookTimeDistributionReportArgs, 
     context: Context
-): Promise<TimeDistributionReport> {
-    const allSheets = await sheetsReportHelper(sheetIds.map(id => new ObjectId(id)), context)
+): Promise<TimeDistributionReport[]> {
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
 
-    // Separa per schema
-    const sheets = allSheets.filter(s => s.schema === schema)
+    const reports: TimeDistributionReport[] = []
 
-    return {
-        schema,
-        timeDistribution: await generateTimeDistributionReport(sheets)
+    for (const schema of allSchemas) {
+        if (schemas[schema] instanceof Competition) {  
+            const sheets = allSheets.filter(s => s.schema === schema)
+            reports.push({
+                schema,
+                timeDistribution: await generateTimeDistributionReport(sheets)
+            })
+        }
     }
-}
 
+    return reports
+}
 
 async function generateTimeDistributionReport(sheets: WithId<Sheet>[]): Promise<TimeDistributionItem[]> {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
