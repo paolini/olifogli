@@ -102,9 +102,15 @@ type MappingResult = {
 }
 
 const variant_to_permutations: {[key:string]: MappingResult} = {}
+let last_permutations_fingerprint = "";
 
 function computeVariantMappings(variantCode:string, permutations_data: PermutationsObject): MappingResult|string {
-    // console.log("computeVariantMappings", JSON.stringify({variantCode, permutations_data}));
+    const current_fingerprint = JSON.stringify(permutations_data);
+    if (current_fingerprint !== last_permutations_fingerprint) {
+        last_permutations_fingerprint = current_fingerprint;
+        for (const key in variant_to_permutations) delete variant_to_permutations[key];
+    }
+
     const cached = variant_to_permutations[variantCode];
     if (cached) return cached;
 
