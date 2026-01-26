@@ -593,7 +593,7 @@ td.field-score {
 }
 
 col.actions-cell {
-  width: 15ex;
+  max-width: 15ex;
 }
 
 .sort-icon-button {

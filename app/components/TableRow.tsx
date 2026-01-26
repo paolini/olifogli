@@ -85,7 +85,10 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
-        { (line?.row?.error || line?.row?.olimanager?.error) && <td className="alert hide-print">{line.row?.error || line.row?.olimanager?.error}</td>}
+        { (line?.row?.error || line?.row?.olimanager?.error) 
+            ? <td className="alert hide-print">{line.row?.error || line.row?.olimanager?.error}</td>
+            : <td>✓</td>
+        }
         { line.row && line?.row?.olimanager?.participantId && <td title={`Olimanager participant_id: ${line.row.olimanager.participantId}, results_updated_on: ${line.row.olimanager.resultsUpdatedOn}`} className="olimanager-participant-id hide-print">oli={line.row.olimanager.participantId} sync={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
     </tr>
 
