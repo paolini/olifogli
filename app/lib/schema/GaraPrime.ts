@@ -1,13 +1,13 @@
 import { Data, Row, ScanResults } from '../models'
 import CompetitionWithVariants from './CompetitionWithVariants'
-import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField } from './fields'
+import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField, NumericField } from './fields'
 
 export default class GaraPrime extends CompetitionWithVariants {
     constructor() {
         const expectedMinAge = 10
         const expectedMaxAge = 16
         super('gara_prime', "Gara delle prime", [
-            new Field('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
+            new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
             new Field('surname',{header: "Cognome", titleCase: true}),
             new Field('name',{header: "Nome", titleCase: true}),
             new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),

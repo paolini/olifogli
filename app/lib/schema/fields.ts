@@ -228,6 +228,14 @@ export class ScoreAnswerField extends Field {
     }
 }
 
+export class NumericField extends Field {
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
+        this.css_class += ` field-Numeric`
+        this.type = 'number'
+    }
+}
+
 export class DateField extends Field {
     expectedMinAge: number = NaN
     expectedMaxAge: number = NaN

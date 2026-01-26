@@ -1,13 +1,13 @@
 import { Data, Row, ScanResults } from '../models'
 import { OlimanagerProblemResult } from './Competition'
 import CompetitionWithVariants from './CompetitionWithVariants'
-import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField } from './fields'
+import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField, NumericField } from './fields'
 import { buildPermutationsObject, computeScores} from './PERMUTATIONS'
 
 export default class ArchimedeCommon extends CompetitionWithVariants {
     constructor(name: string, description: string, expectedMinAge: number=Number.NEGATIVE_INFINITY, expectedMaxAge: number=Number.POSITIVE_INFINITY) {
         super(name, description, [
-            new Field('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
+            new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
             new Field('surname',{header: "Cognome", titleCase: true}),
             new Field('name',{header: "Nome", titleCase: true}),
             new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
