@@ -12,6 +12,7 @@ import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import SheetsSortIcon from './SheetsSortIcon'
 import { score_to_color_style } from '../lib/schema/fields'
+import Competition from '../lib/schema/Competition'
 
 const _ = gql`
     query GetWorkbookRankingReportWithSelections($workbookId: ObjectId!, $schema: String, $state: SheetState, $commonData: Data, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
@@ -76,7 +77,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
     const filteredSheetsFirst = filterSheets(filterState, querySheets);
 
     const sheets = filteredSheetsFirst
-        .filter(s => ["archimede_biennio", "archimede_triennio"].includes(s.schema));
+        .filter(s => schemas[s.schema] instanceof Competition);
 
     // Ottieni tutte le selections disponibili
     const availableSelections: SelectionOption[] = useMemo(() => {
