@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from 'react'
-import { gql, ApolloQueryResult } from '@apollo/client'
+import { useEffect, useState } from 'react'
+import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
 import Error from './Error'
 import Loading from './Loading'
 import { SheetState, useGetSheetsQuery, useGetWorkbookRankingReportLazyQuery, useGetWorkbookRankingReportQuery } from '../graphql/generated'
-import type { RankingReport, GetWorkbookRankingReportQuery } from '../graphql/generated'
+import type { RankingReport } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
@@ -14,6 +14,7 @@ import Papa from 'papaparse'
 import SheetsSortIcon from './SheetsSortIcon'
 import Button from './Button'
 import { score_to_color_style } from '../lib/schema/fields'
+import Competition from '../lib/schema/Competition'
 
 const _ = gql`
     query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
@@ -50,7 +51,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     });
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => ["archimede_biennio", "archimede_triennio"].includes(s.schema));
+        .filter(s => schemas[s.schema] instanceof Competition);
     const filteredSheets = filterSheets(filterState, sheets);
 
     const { loading, error, data } = useGetWorkbookRankingReportQuery({
@@ -61,6 +62,13 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     
     const [getFullRanking] = useGetWorkbookRankingReportLazyQuery();
     
+    useEffect(() => {
+        const availableSchemas = Array.from(new Set(sheets.map(s => s.schema)));
+        if (availableSchemas.length === 1 && filterState?.schemaFilter !== availableSchemas[0]) {
+            filterState?.setSchemaFilter(availableSchemas[0]);
+        }
+    }, [sheets, filterState]);
+
     if (loading) return <Loading />
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />

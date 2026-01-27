@@ -122,7 +122,9 @@ async function generateRankingReport(
 
         // Estrai il punteggio dal campo 'score'
         const scoreValue = row.data?.score
-        const score: number = parseFloat(scoreValue)
+        if (!scoreValue) continue
+        let score: number = parseFloat(scoreValue)
+        if (isNaN(score)) score = 0
 
         entries.push({
             sheetId: row.sheetId,
