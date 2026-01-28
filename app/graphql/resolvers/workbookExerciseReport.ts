@@ -42,7 +42,8 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     // Recupera tutte le righe dai fogli
     const rows = await rowsCollection.find({
         sheetId: { $in: sheetIds },
-        error: ""
+        error: "", // righe valide
+        "data.score": { $exists: true, $ne: "" } // togli studenti assenti
     }).toArray()
 
     type AnswerKey = 'A' | 'B' | 'C' | 'D' | 'E';
