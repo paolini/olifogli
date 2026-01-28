@@ -1,85 +1,71 @@
+#
+# Per aggiornare il servizio:
+#   sudo docker compose pull
+# Per riavviare
+#   sudo docker compose up -d
+#
+# Se si vuole mandare in stop tutti i container contiene prima fermare i due "worker" che ci mettono piu' tempo:
+#   sudo docker compose down oliscan olisheet
+#
+# Poi si possono fermare tutti gli altri, a quel punto sarà quasi istantaneo:
+#   sudo docker compose down
+#
+# Per eseguire uno script:
+#   sudo docker compose exec [-T] app1 node scripts/test.js
+#
+# Per fare un backup del database:
+#   sudo docker compose exec -T db mongodump -d olifogli --archive > $(date -u +%Y-%m-%d-%H-%M)-database-backup.archive
+#
+# restore database: (WARNING! database will be overwritten!)
+#   cat database-backup.archive | sudo docker compose exec -T db mongorestore --drop olifogli --archive
+
+
+x-app-common: &app-common
+  image: paolini/olifogli:1.5.31
+  restart: unless-stopped
+  environment:
+    - MONGODB_URI=mongodb://db:27017/olifogli?replicaSet=rs0&retryWrites=true&w=majority
+    - SCANS_SPOOL_DIR=/app/spool
+    - SCANS_DATA_DIR=/app/data
+    - SHEETGENDATA_DIR=/app/sheetgendata
+    - NEXTAUTH_SECRET=....
+    - NEXTAUTH_URL=https://fogli-olimat.olimpiadi-scientifiche.it
+    - OLIMANAGER_URL=https://olimpiadi-scientifiche.it
+    - OLIMANAGER_OAUTH_CLIENT_ID=....
+    - OLIMANAGER_OAUTH_CLIENT_SECRET=....
+    - OLI_GRAPHQL_ENDPOINT=https://olimpiadi-scientifiche.it/graphql/
+    - ADMIN_EMAILS=emanuele.paolini@unipi.it
+    - LOG_DIR=/app/logs
+  volumes:
+    - ./logs:/app/logs
+    - ./spool:/app/spool
+    - ./data:/app/data
+    - ./sheetgenspool:/app/sheetgenspool
+    - ./sheetgendata:/app/sheetgendata
+  networks:
+    - backend
+
 services:
   app1:
-    image: paolini/olifogli
-    restart: unless-stopped
+    <<: *app-common
     environment:
-      - MONGODB_URI=mongodb://db:27017/olifogli
-      - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app1
-      - LOG_DIR=/app/logs
-      - SHEETGENDATA_DIR=/app/sheetgendata
-      - SHEETGENSPOOL_DIR=/app/sheetgenspool
-    volumes:
-      - ./logs:/app/logs
-      - ./spool:/app/spool
-      - ./data:/app/data
-      - ./sheetgendata:/app/sheetgendata
-      - ./sheetgenspool:/app/sheetgenspool
-    networks:
-      - backend
 
   app2:
-    image: paolini/olifogli
-    restart: unless-stopped
+    <<: *app-common
     environment:
-      - MONGODB_URI=mongodb://db:27017/olifogli
-      - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app2
-      - LOG_DIR=/app/logs
-      - SHEETGENDATA_DIR=/app/sheetgendata
-      - SHEETGENSPOOL_DIR=/app/sheetgenspool
-    volumes:
-      - ./logs:/app/logs
-      - ./spool:/app/spool
-      - ./data:/app/data
-      - ./sheetgendata:/app/sheetgendata
-      - ./sheetgenspool:/app/sheetgenspool
-    networks:
-      - backend
 
   app3:
-    image: paolini/olifogli
-    restart: unless-stopped
+    <<: *app-common
     environment:
-      - MONGODB_URI=mongodb://db:27017/olifogli
-      - NEXTAUTH_URL=https://<your server>/api/auth
       - NEXT_PUBLIC_APP_INSTANCE=app3
-      - LOG_DIR=/app/logs
-      - SHEETGENDATA_DIR=/app/sheetgendata
-      - SHEETGENSPOOL_DIR=/app/sheetgenspool
-    volumes:
-      - ./logs:/app/logs
-      - ./spool:/app/spool
-      - ./data:/app/data
-      - ./sheetgendata:/app/sheetgendata
-      - ./sheetgenspool:/app/sheetgenspool
-    networks:
-      - backend
-
-  db:
-    image: mongo
-    restart: unless-stopped
-    command: ["--replSet", "rs0", "--bind_ip_all"]
-    environment:
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ./database:/data/db
-    networks:
-      - backend
-    healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'db:27017'}]}) }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      start_period: 0s
-      start_interval: 1s
-      retries: 30
 
   nginx:
     image: nginx:latest
     restart: unless-stopped
     ports:
-      - 8000:80
+      - 8001:80
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./media:/media:ro
@@ -87,6 +73,42 @@ services:
       - app1
       - app2
       - app3
+    networks:
+      - backend
+
+  oliscan:
+    image: harbor.cs.dm.unipi.it/olifogli/oliscan:v0.5.5
+    restart: unless-stopped
+    environment:
+      - SPOOL_DIR=/app/spool
+      - DATA_DIR=/app/data
+      - MONGO_URI=mongodb://db:27017/olifogli?replicaSet=rs0&retryWrites=true&w=majority
+    volumes:
+      - ./spool:/app/spool
+      - ./data:/app/data
+    networks:
+      - backend
+
+  olisheet:
+    image: harbor.cs.dm.unipi.it/olifogli/olisheet:v0.5.5
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://db:27017/olifogli?replicaSet=rs0&retryWrites=true&w=majority
+    volumes:
+      - ./sheetgendata:/app/sheetgendata
+      - ./sheetgenspool:/app/sheetgenspool
+    networks:
+      - backend
+
+  db:
+    image: mongo:8.2
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./database:/data/db
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     networks:
       - backend
 
