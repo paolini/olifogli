@@ -75,7 +75,6 @@ export const resolvers: Resolvers = {
     workbookExerciseReport,
     workbookTimeDistributionReport,
     workbookAgeDistributionReport,
-    appInstance: () => process.env.NEXT_PUBLIC_APP_INSTANCE || null,
     getSetting: settingsResolvers.Query.getSetting,
   },
 

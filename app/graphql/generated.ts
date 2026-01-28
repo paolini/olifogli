@@ -302,7 +302,6 @@ export type PermissionInput = {
 
 export type Query = {
   __typename?: 'Query';
-  appInstance?: Maybe<Scalars['String']['output']>;
   config?: Maybe<Config>;
   getSetting?: Maybe<Setting>;
   hello?: Maybe<Scalars['String']['output']>;
@@ -618,16 +617,6 @@ export type UpdateSettingMutationVariables = Exact<{
 
 
 export type UpdateSettingMutation = { __typename?: 'Mutation', updateSetting: { __typename?: 'Setting', _id: ObjectId, key: string, value: string, updatedBy: string, updatedOn: Date } };
-
-export type AppInstanceQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AppInstanceQuery = { __typename?: 'Query', appInstance?: string | null };
-
-export type BrandingQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type BrandingQuery = { __typename?: 'Query', serverName?: { __typename?: 'Setting', value: string } | null, backgroundColor?: { __typename?: 'Setting', value: string } | null };
 
 export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1095,85 +1084,6 @@ export function useUpdateSettingMutation(baseOptions?: Apollo.MutationHookOption
 export type UpdateSettingMutationHookResult = ReturnType<typeof useUpdateSettingMutation>;
 export type UpdateSettingMutationResult = Apollo.MutationResult<UpdateSettingMutation>;
 export type UpdateSettingMutationOptions = Apollo.BaseMutationOptions<UpdateSettingMutation, UpdateSettingMutationVariables>;
-export const AppInstanceDocument = gql`
-    query AppInstance {
-  appInstance
-}
-    `;
-
-/**
- * __useAppInstanceQuery__
- *
- * To run a query within a React component, call `useAppInstanceQuery` and pass it any options that fit your needs.
- * When your component renders, `useAppInstanceQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useAppInstanceQuery({
- *   variables: {
- *   },
- * });
- */
-export function useAppInstanceQuery(baseOptions?: Apollo.QueryHookOptions<AppInstanceQuery, AppInstanceQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<AppInstanceQuery, AppInstanceQueryVariables>(AppInstanceDocument, options);
-      }
-export function useAppInstanceLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AppInstanceQuery, AppInstanceQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<AppInstanceQuery, AppInstanceQueryVariables>(AppInstanceDocument, options);
-        }
-export function useAppInstanceSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AppInstanceQuery, AppInstanceQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<AppInstanceQuery, AppInstanceQueryVariables>(AppInstanceDocument, options);
-        }
-export type AppInstanceQueryHookResult = ReturnType<typeof useAppInstanceQuery>;
-export type AppInstanceLazyQueryHookResult = ReturnType<typeof useAppInstanceLazyQuery>;
-export type AppInstanceSuspenseQueryHookResult = ReturnType<typeof useAppInstanceSuspenseQuery>;
-export type AppInstanceQueryResult = Apollo.QueryResult<AppInstanceQuery, AppInstanceQueryVariables>;
-export const BrandingDocument = gql`
-    query Branding {
-  serverName: getSetting(key: "server_name") {
-    value
-  }
-  backgroundColor: getSetting(key: "server_background_color") {
-    value
-  }
-}
-    `;
-
-/**
- * __useBrandingQuery__
- *
- * To run a query within a React component, call `useBrandingQuery` and pass it any options that fit your needs.
- * When your component renders, `useBrandingQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useBrandingQuery({
- *   variables: {
- *   },
- * });
- */
-export function useBrandingQuery(baseOptions?: Apollo.QueryHookOptions<BrandingQuery, BrandingQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<BrandingQuery, BrandingQueryVariables>(BrandingDocument, options);
-      }
-export function useBrandingLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<BrandingQuery, BrandingQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<BrandingQuery, BrandingQueryVariables>(BrandingDocument, options);
-        }
-export function useBrandingSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<BrandingQuery, BrandingQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<BrandingQuery, BrandingQueryVariables>(BrandingDocument, options);
-        }
-export type BrandingQueryHookResult = ReturnType<typeof useBrandingQuery>;
-export type BrandingLazyQueryHookResult = ReturnType<typeof useBrandingLazyQuery>;
-export type BrandingSuspenseQueryHookResult = ReturnType<typeof useBrandingSuspenseQuery>;
-export type BrandingQueryResult = Apollo.QueryResult<BrandingQuery, BrandingQueryVariables>;
 export const ScanJobsDocument = gql`
     query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
@@ -3297,7 +3207,6 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  appInstance?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   config?: Resolver<Maybe<ResolversTypes['Config']>, ParentType, ContextType>;
   getSetting?: Resolver<Maybe<ResolversTypes['Setting']>, ParentType, ContextType, RequireFields<QueryGetSettingArgs, 'key'>>;
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
