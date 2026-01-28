@@ -1,4 +1,5 @@
-import { Data, Row, ScanResults } from '../models'
+import { ReportEntry } from '@/app/graphql/generated'
+import { Data, Row, ScanResults, Sheet } from '../models'
 import CompetitionWithVariants from './CompetitionWithVariants'
 import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField, NumericField } from './fields'
 
@@ -125,4 +126,31 @@ export default class GaraPrime extends CompetitionWithVariants {
 
         return { tabular, cards }
     }    
+
+    extract_ranking(row: Row, sheet: Sheet): ReportEntry | undefined {
+        // Estrai il punteggio dal campo 'score'
+        const scoreValue = row.data?.score
+        if (!scoreValue) return
+        let score: number = parseFloat(scoreValue)
+        if (isNaN(score)) score = 0
+
+        return {
+            sheetId: row.sheetId,
+            sheetName: sheet.name,
+            studentName: row.data?.name || '',
+            studentSurname: row.data?.surname || '',
+            studentBirthDate: row.data?.birthDate || '',
+            school: row.data?.nome_scuola || '',
+            city: row.data?.città_scuola || '',
+            district: sheet.name || '',
+            classYear: '1',
+            classSection: row.data?.classSection || '',
+            score,
+            rowId: row._id,
+            selections: row.selections || [],
+            participantId: row.olimanager?.participantId,
+            rank: 0, // Verrà calcolato dopo
+            sheet: sheet,
+        }
+    }
 }

@@ -170,11 +170,11 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
                             <Th field="studentSurname" header="Cognome" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                             <Th field="studentName" header="Nome" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                             <Th field="school" header="Scuola" sortRanking={sortRanking} setSortRanking={setSortRanking} />
-                            <Th field="sheetName" header="Codice" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                             <Th field="city" header="Città" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                             <Th field="district" header="Distretto" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                             <Th field="classYear" header="Anno" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                             <Th field="classSection" header="Sezione" sortRanking={sortRanking} setSortRanking={setSortRanking} />
+                            <Th field="sheetName" header="Foglio" sortRanking={sortRanking} setSortRanking={setSortRanking} />
                         </tr>
                     </thead>
                     <tbody>
@@ -185,11 +185,11 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
                                 <td className="border p-2 text-left w-40 truncate" title={entry.studentSurname}>{entry.studentSurname}</td>
                                 <td className="border p-2 text-left w-40 truncate" title={entry.studentName}>{entry.studentName}</td>
                                 <td className="border p-2 text-left max-w-48 truncate" title={entry.school || ''}>{entry.school}</td>
-                                <td className="border p-2 text-left max-w-48 truncate" title={entry.sheetName}><a href={`/sheet/${entry.sheetId}`}>{entry.sheetName}</a></td>
                                 <td className="border p-2 text-left">{entry.city}</td>
                                 <td className="border p-2 text-left">{entry.district}</td>
                                 <td className="border p-2 text-center">{entry.classYear}</td>
                                 <td className="border p-2 text-center">{entry.classSection}</td>
+                                <td className="border p-2 text-left max-w-48 truncate" title={entry.sheetName}><a href={`/sheet/${entry.sheetId}`}>{entry.sheetName}</a></td>
                             </tr>
                         ))}
                     </tbody>

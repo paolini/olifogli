@@ -1,3 +1,5 @@
+import { ReportEntry } from '@/app/graphql/generated'
+import { Sheet } from '../models'
 import { Data, Row, ScanResults } from '../models'
 import { OlimanagerProblemResult } from './Competition'
 import CompetitionWithVariants from './CompetitionWithVariants'
@@ -166,5 +168,32 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
         }
 
         return problemResults;
+    }
+
+    extract_ranking(row: Row, sheet: Sheet): ReportEntry | undefined {
+        // Estrai il punteggio dal campo 'score'
+        const scoreValue = row.data?.score
+        if (!scoreValue) return
+        let score: number = parseFloat(scoreValue)
+        if (isNaN(score)) score = 0
+
+        return {
+            sheetId: row.sheetId,
+            sheetName: sheet.name,
+            studentName: row.data?.name || '',
+            studentSurname: row.data?.surname || '',
+            studentBirthDate: row.data?.birthDate || '',
+            school: sheet.commonData?.Nome_scuola || '',
+            city: sheet.commonData?.Città_scuola || '',
+            district: sheet.commonData?.Distretto || '',
+            classYear: row.data?.classYear || '',
+            classSection: row.data?.classSection || '',
+            score,
+            rowId: row._id,
+            selections: row.selections || [],
+            participantId: row.olimanager?.participantId,
+            rank: 0, // Verrà calcolato dopo
+            sheet: sheet,
+        }
     }
 }

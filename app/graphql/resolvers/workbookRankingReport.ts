@@ -77,71 +77,24 @@ async function generateRankingReport(
     // console.log("Filtro per ranking report:", filter)
     const rows = await rowsCollection.find(filter).toArray()
 
-    /*
-    // Applica filtro se selectionLabel è fornito
-    if (selectionLabel) {
-        const schemaObj = schemas[sheets[0]?.schema]; // Assumiamo che tutti i sheets abbiano lo stesso schema
-        const selection = schemaObj?.selections.find(s => s.label === selectionLabel);
-        if (selection?.row_filter) {
-            rows = rows.filter(row => {
-                return Object.entries(selection.row_filter!).every(([key, value]) => {
-                    // I dati della row sono in row.data, ma alcuni campi come classYear sono diretti?
-                    // Dal codice precedente, sembra che classYear sia estratto da row.data
-                    // Devo controllare come vengono estratti i campi
-                    // Per ora, assumo che i campi siano in row.data
-                    return row.data[key] === value;
-                });
-            });
-        }
-    } */
-
     // Mappa con info dei fogli per riferimento veloce
     const sheetMap = new Map(sheets.map(s => [s._id.toString(), s]))
 
+    type Entry = ReportEntry
+
     // Prepara le entry con punteggio
-    const entries: Array<{
-        sheetId: ObjectId
-        sheetName: string
-        studentName: string
-        studentSurname: string
-        studentBirthDate: string | undefined
-        school: string
-        city: string
-        district: string
-        classYear: string
-        classSection: string
-        score: number
-        rowId: ObjectId
-        selections: { label: string, selected_by: string, timestamp: Date }[]
-        participantId: string | undefined
-    }> = []
+    const entries: Array<ReportEntry> = []
 
     for (const row of rows) {
         const sheet = sheetMap.get(row.sheetId.toString())
         if (!sheet) continue
+        const schemaObj = schemas[sheet.schema]
+        if (!(schemaObj instanceof Competition)) continue
 
-        // Estrai il punteggio dal campo 'score'
-        const scoreValue = row.data?.score
-        if (!scoreValue) continue
-        let score: number = parseFloat(scoreValue)
-        if (isNaN(score)) score = 0
+        const rankingEntry = schemaObj.extract_ranking(row, sheet)
+        if (!rankingEntry) continue
 
-        entries.push({
-            sheetId: row.sheetId,
-            sheetName: sheet.name,
-            studentName: row.data?.name || '',
-            studentSurname: row.data?.surname || '',
-            studentBirthDate: row.data?.birthDate || '',
-            school: sheet.commonData?.Nome_scuola || '',
-            city: sheet.commonData?.Città_scuola || '',
-            district: sheet.commonData?.Distretto || '',
-            classYear: row.data?.classYear || '',
-            classSection: row.data?.classSection || '',
-            score,
-            rowId: row._id,
-            selections: row.selections || [],
-            participantId: row.olimanager?.participantId
-        })
+        entries.push(rankingEntry)
     }
 
     // Ordina

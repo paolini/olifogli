@@ -1,3 +1,5 @@
+import { ReportEntry } from "@/app/graphql/generated";
+import { Sheet } from "../models";
 import { Data, Row } from "../models";
 import { Field } from "./fields";
 import Schema from "./Schema";
@@ -16,6 +18,10 @@ export default class Competition extends Schema {
 
     extract_olimanager_results(row: Row, sheetData: Data, workbookData: Data)
     : OlimanagerProblemResult[] {
+        throw new Error("Method not implemented.");
+    }
+
+    extract_ranking(row: Row, sheet: Sheet): ReportEntry | undefined {
         throw new Error("Method not implemented.");
     }
 }
