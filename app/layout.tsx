@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import SessionProviderWrapper from "./components/SessionProviderWrapper"
+import { ConfigProvider } from "./components/ConfigProvider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,14 +25,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const serverName = process.env["NEXT_PUBLIC_SERVER_NAME"] || "Olifogli";
+  const serverBackgroundColor = process.env["NEXT_PUBLIC_SERVER_BACKGROUND_COLOR"];
+  const appInstance = process.env["NEXT_PUBLIC_APP_INSTANCE"];
+
   return (
     <html lang="it">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-          <SessionProviderWrapper>
-            {children}
-          </SessionProviderWrapper>
+          <ConfigProvider serverName={serverName} serverBackgroundColor={serverBackgroundColor} appInstance={appInstance}>
+            <SessionProviderWrapper>
+              {children}
+            </SessionProviderWrapper>
+          </ConfigProvider>
       </body>
     </html>
   );

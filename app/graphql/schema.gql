@@ -248,7 +248,6 @@ type Query {
   sheet(sheetId: ObjectId!): Sheet
   rows(sheetId: ObjectId!): [Row!]!
   olimanager: String # testing
-  appInstance: String # istanza runtime
   workbookDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [DistributionReport!]!
   workbookExerciseReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [ExerciseReport!]!
   workbookRankingReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState, limit: Int, selectionLabel: String, onlySelected: Boolean, orderBy: String, orderDirection: Int): [RankingReport!]!
