@@ -279,6 +279,7 @@ export type OlimanagerCreateResult = {
 
 export type OlimanagerRowData = {
   __typename?: 'OlimanagerRowData';
+  contestId?: Maybe<Scalars['String']['output']>;
   error?: Maybe<Scalars['String']['output']>;
   participantCreatedOn?: Maybe<Scalars['Timestamp']['output']>;
   participantId?: Maybe<Scalars['String']['output']>;
@@ -668,7 +669,7 @@ export type GetRowsQueryVariables = Exact<{
 }>;
 
 
-export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
+export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -1419,6 +1420,7 @@ export const GetRowsDocument = gql`
     updatedBy
     olimanager {
       participantId
+      contestId
       resultsUpdatedOn
       error
     }
@@ -3278,6 +3280,7 @@ export type OlimanagerCreateResultResolvers<ContextType = any, ParentType extend
 };
 
 export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerRowData'] = ResolversParentTypes['OlimanagerRowData']> = {
+  contestId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   participantCreatedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;

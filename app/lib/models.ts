@@ -89,6 +89,7 @@ export type Row = {
     updatedBy: string
     olimanager?: {
         participantId?: string
+        contestId?: string
         participantCreatedOn?: Date 
         resultsUpdatedOn?: Date
         error: string

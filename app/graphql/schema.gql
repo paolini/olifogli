@@ -78,6 +78,7 @@ input UpdateSheetInput {
 
 type OlimanagerRowData {
   participantId: String
+  contestId: String
   error: String
   participantCreatedOn: Timestamp
   resultsUpdatedOn: Timestamp
