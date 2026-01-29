@@ -592,6 +592,11 @@ td.field-score {
   text-align: center;
 }
 
+td.field-codice_meccanografico, td.field-Codice_meccanografico {
+  font-family: monospace;
+  text-align: center;
+}
+
 col.actions-cell {
   max-width: 15ex;
 }
