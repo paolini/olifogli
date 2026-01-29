@@ -100,8 +100,10 @@ export default class Schema {
     }
 
     get_contest_id(data: Data): number {
-        const contestId = parseInt(data["olimanager_contest_id"], 10)
-        if (!contestId || isNaN(contestId)) throw new Error(`campo "olimanager_contest_id" mancante nei dati della gara`)
+        const primary_contest_field_name = `olimanager_${this.name}_contest_id`
+        const secondary_contest_field_name = `olimanager_contest_id`
+        const contestId = parseInt(data[primary_contest_field_name] || data[secondary_contest_field_name] || '', 10)
+        if (!contestId || isNaN(contestId)) throw new Error(`campi ${primary_contest_field_name} e ${secondary_contest_field_name} mancanti nella configurazione della competizione`)
         return contestId
     }   
 }
