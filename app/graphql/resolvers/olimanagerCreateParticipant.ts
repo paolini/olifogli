@@ -93,8 +93,60 @@ export default async function olimanagerCreateParticipant(
       const birthDate = row.data.birthDate.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, '$3-$2-$1');
 
       const classYear = parseInt(classYearStr || '0', 10) + 8 // Converto da anno di corso (1-5) a anno scolastico (9-13)
-      // console.log('Participant data:', { name, surname, classYearStr, classYear, section, birthDate: row.data.birthDate, birthDateConverted: birthDate })
 
+      const row_participant_id = parseInt(row.olimanager?.participantId || '', 10)
+      const row_contest_id = parseInt(row.olimanager?.contestId || '', 10)
+
+      if (!isNaN(row_participant_id) && row_contest_id === contestId) {
+        console.log(`  SKIPPING: la riga ha già un participantId (${row_participant_id}) per questo contestId (${row_contest_id})`)
+        results.push({success: true, participantId: `${row_participant_id}`})
+        continue
+      }
+
+      if (!isNaN(row_participant_id) && !isNaN(row_contest_id) && row_contest_id !== contestId) {
+        console.log(`  NOTE: la riga ha un participantId (${row_participant_id}) per un contestId diverso (${row_contest_id} vs ${contestId})`)
+        console.log(`    Devo ottenere il competitor_id e il participant_id corretti per il contestId ${contestId}`)
+
+        try {
+          const competitor = await getCompetitorFromParticipant(api, row_participant_id);
+          if (!competitor) {
+            console.warn(`    WARNING: Competitor not found for participantId ${row_participant_id}`);
+          } else {
+             console.log(`    Found competitor: ${competitor.id} (${competitor.name})`);
+             const venue = await getVenueForContest(api, contestId, sheet.name);
+             if (!venue) {
+               console.warn(`    WARNING: No venue found for contest ${contestId} with name matching "${sheet.name}"`);
+             } else {
+               console.log(`    Found venue: ${venue.id} (${venue.name})`);
+               const newParticipantId = await manualCreateParticipantHelper(api, competitor.id, venue.id);
+               if (newParticipantId) {
+                 console.log(`    SUCCESS: New participant created manually: ${newParticipantId}`);
+                 await rows.updateOne(
+                    { _id: rowId },
+                    {
+                      $set: {
+                        'olimanager.participantId': String(newParticipantId),
+                        'olimanager.participantCreatedOn': new Date(),
+                        'olimanager.error': '',
+                        'olimanager.result': { method: 'manualCreateParticipant', competitorId: competitor.id, venueId: venue.id, newParticipantId },
+                      },
+                    }
+                  );
+                  results.push({success: true, participantId: String(newParticipantId)});
+                  continue; 
+               } else {
+                 console.warn(`    WARNING: Failed to create participant manually.`);
+               }
+             }
+          }
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`    ERROR doing manual migration:`, msg);
+            console.log("    Falling back to standard matchOrCreateParticipant.");
+        }
+
+      }
+      // console.log('Participant data:', { name, surname, classYearStr, classYear, section, birthDate: row.data.birthDate, birthDateConverted: birthDate })
 
       console.log(`Creazione/abbinamento partecipante per riga ${rowId} (${surname} ${name})`)
       console.log(`  schoolExternalId: ${schoolExternalId}, contestId: ${contestId}, classYear: ${classYear}, section: ${section}, birthDate: ${birthDate}`)
@@ -292,6 +344,80 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
     console.log('Exception in matchOrCreateParticipant:', e)
     return { success: false, error: String((e as Error)?.message || e), input: participantData };
   }
+}
+
+const query_get_competitor = `
+query GetCompetitor($participantId: ID!) {
+  participants {
+    participants(participantId: $participantId) {
+      edges {
+        node {
+          id
+          competitor {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+`
+
+const query_get_venues = `
+query GetContestVenueByName($contestId: Int!, $venueName: String!) {
+  venues {
+    venues(filters: {contest: {id: $contestId}, name: {exact: $venueName}}) {
+      edges {
+        node {
+          id
+          name
+          location {
+            name
+          }
+        }
+      }
+    }
+  }
+}
+`
+
+const mutation_manual_create = `
+mutation ManualCreateParticipant($competitorId: ID!, $venueId: ID!) {
+  participants {
+    manualCreateParticipant(competitorId: $competitorId, venueId: $venueId) {
+      participant {
+        id
+      }
+    }
+  }
+}
+`
+
+async function getCompetitorFromParticipant(api: OlimanagerApi, participantId: number) {
+  const result = await api.query(query_get_competitor, { participantId });
+  const edges = result?.data?.participants?.participants?.edges;
+  if (edges && edges.length > 0) {
+    return edges[0].node.competitor;
+  }
+  return null;
+}
+
+async function getVenueForContest(api: OlimanagerApi, contestId: number, venueName: string) {
+  const result = await api.query(query_get_venues, { contestId, venueName });
+  const edges = result?.data?.venues?.venues?.edges;
+  if (edges && edges.length > 0) {
+    return edges[0].node;
+  }
+  return null;
+}
+
+async function manualCreateParticipantHelper(api: OlimanagerApi, competitorId: string, venueId: string) {
+  const result = await api.query(mutation_manual_create, { competitorId, venueId });
+  if (result.errors && result.errors.length > 0) {
+     throw new Error(result.errors.map((e: any) => e.message).join(', '));
+  }
+  return result?.data?.participants?.manualCreateParticipant?.participant?.id;
 }
 
 
