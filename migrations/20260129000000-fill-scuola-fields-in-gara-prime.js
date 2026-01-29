@@ -1,4 +1,4 @@
-const { ObjectId } = require('mongodb');
+// const { ObjectId } = require('mongodb');
 
 module.exports = {
   /**
@@ -9,6 +9,15 @@ module.exports = {
   async up(db, client) {
     const rowsCollection = db.collection('rows');
     const sheetsCollection = db.collection('sheets');
+
+    // Workaround for BSON version mismatch between migrate-mongo and local mongodb
+    // We try to get the ObjectId class directly from a retrieved document
+    const sampleSheet = await sheetsCollection.findOne({});
+    if (!sampleSheet) {
+      console.log('No sheets found, skipping migration.');
+      return;
+    }
+    const ObjectId = sampleSheet._id.constructor;
 
     console.log('Starting migration: fill nome_scuola and città_scuola in gara_prime sheets using scuole data (v2 - no ObjectId)');
 
