@@ -67,27 +67,7 @@ export default async function olimanagerCreateParticipant(
   for (let i = 0; i < finalRowIds.length; i++) {
     const rowId = finalRowIds[i];
     console.log(`--- Processing row ${i + 1}/${finalRowIds.length}: ${rowId} ---`)
-    const result = await processRow(rowId, api, rows, sheets, workbooks);
-    results.push(result);
-  }  
-  console.log('=== olimanagerCreateParticipant END ===')
-  console.log('Results summary:', { 
-    total: results.length, 
-    success: results.filter(r => r.success).length, 
-    failures: results.filter(r => !r.success).length,
-    skipped: results.filter(r => r.skipped).length,
-    converted: results.filter(r => r.converted).length
-  })
-  return results
-}
-
-async function processRow(
-  rowId: ObjectId,
-  api: OlimanagerApi,
-  rows: any,
-  sheets: any,
-  workbooks: any
-): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}> {
+    
     try {
       const row = await rows.findOne({ _id: rowId })
       // console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
@@ -104,6 +84,45 @@ async function processRow(
       // console.log('Workbook data:', workbook ? { _id: workbook._id, name: workbook.name } : 'NOT FOUND')
       if (!workbook) throw new Error(`Workbook non trovato: ${sheet.workbookId}`)
 
+      const result = await processRow(api, rows, row, sheet, workbook, schema);
+      results.push(result);
+    } catch (e) {
+      console.log(`  EXCEPTION:`, e)
+      console.log(e)
+      const errorMessage = String((e as Error)?.message || e)
+      console.log('Updating row with exception error:', errorMessage)
+      await rows.updateOne(
+        { _id: rowId },
+        {
+          $set: {
+            'olimanager.error': errorMessage
+          },
+        }
+      )
+      console.log('Row updated with exception')
+      results.push({success: false, error: errorMessage})
+    }
+  }  
+  console.log('=== olimanagerCreateParticipant END ===')
+  console.log('Results summary:', { 
+    total: results.length, 
+    success: results.filter(r => r.success).length, 
+    failures: results.filter(r => !r.success).length,
+    skipped: results.filter(r => r.skipped).length,
+    converted: results.filter(r => r.converted).length
+  })
+  return results
+}
+
+async function processRow(
+  api: OlimanagerApi,
+  rows: any,
+  row: any,
+  sheet: any,
+  workbook: any,
+  schema: any
+): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}> {
+      const rowId = row._id;
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
 
       if (result.skipped) {
@@ -143,22 +162,6 @@ async function processRow(
         console.log('Row updated with error')
         return { success: false, error: result.error }
       }
-    } catch (e) {
-        console.log(`  EXCEPTION:`, e)
-        console.log(e)
-        const errorMessage = String((e as Error)?.message || e)
-        console.log('Updating row with exception error:', errorMessage)
-        await rows.updateOne(
-          { _id: rowId },
-          {
-            $set: {
-              'olimanager.error': errorMessage
-            },
-          }
-        )
-        console.log('Row updated with exception')
-        return {success: false, error: errorMessage}
-    }
 }
 
 async function syncDataWithOlimanager(
