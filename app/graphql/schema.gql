@@ -263,6 +263,8 @@ type OlimanagerCreateResult {
   success: Boolean!
   error: String
   participantId: String
+  skipped: Boolean
+  converted: Boolean
 }
 
 type Mutation {

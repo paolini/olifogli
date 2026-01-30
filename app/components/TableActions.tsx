@@ -322,12 +322,28 @@ async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
   }
 
   const {username, password} = askOlimanagerCredentials(ctx)
-  const res = await ctx.mutations.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string}[]}}
+  const res = await ctx.mutations.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]}}
+  
   const arr = res.data?.olimanagerCreateParticipant || []
-  const ok = arr.filter(r => r.success).length
-  const ko = arr.length - ok
+  
+  const totalSuccess = arr.filter(r => r.success).length
+  const skipped = arr.filter(r => r.skipped).length
+  const converted = arr.filter(r => r.converted).length
+  const ok = totalSuccess - skipped - converted
+  const ko = arr.length - totalSuccess
+  
   const errorMessages = arr.filter(r => !r.success).map(r => r.error).filter(Boolean)
-  alert(`Esito Olimanager: ${ok} ok, ${ko} errori${errorMessages.length > 0 ? '\n\nErrori:\n' + errorMessages.join('\n') : ''}`)
+  
+  let msg = `Esito Olimanager: ${ok} creati/abbinati`
+  if (skipped > 0) msg += `, ${skipped} saltati`
+  if (converted > 0) msg += `, ${converted} convertiti`
+  msg += `, ${ko} errori`
+  
+  if (errorMessages.length > 0) {
+      msg += '\n\nErrori:\n' + errorMessages.join('\n')
+  }
+  
+  alert(msg)
   if (ctx.refresh) await ctx.refresh()
 }
 
