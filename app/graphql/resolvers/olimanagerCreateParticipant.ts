@@ -2,8 +2,10 @@ import { schemas } from "@/app/lib/schema";
 import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
 import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { Collection, ObjectId, WithoutId } from "mongodb";
 import { OlimanagerApi } from "./olimanagerApi";
+import { Row, Sheet, Workbook } from "@/app/lib/models";
+import Schema from "@/app/lib/schema/Schema";
 
 // Nota: in fondo al file esiste la funzione di supporto matchOrCreateParticipant
 // riutilizzata qui per chiamare l'endpoint GraphQL di Olimanager.
@@ -116,11 +118,11 @@ export default async function olimanagerCreateParticipant(
 
 async function processRow(
   api: OlimanagerApi,
-  rows: any,
-  row: any,
-  sheet: any,
-  workbook: any,
-  schema: any
+  rows: Collection<WithoutId<Row>>,
+  row: Row,
+  sheet: Sheet,
+  workbook: Workbook,
+  schema: Schema
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}> {
       const rowId = row._id;
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
@@ -132,6 +134,7 @@ async function processRow(
       if (result.success) {
         console.log('Updating row with participantId:', result.participantId)
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const $set: any = {
               'olimanager.participantId': result.participantId,
               'olimanager.participantCreatedOn': new Date(),
@@ -166,10 +169,10 @@ async function processRow(
 
 async function syncDataWithOlimanager(
     api: OlimanagerApi, 
-    row: any, 
-    sheet: any, 
-    workbook: any, 
-    schema: any
+    row: Row, 
+    sheet: Sheet, 
+    workbook: Workbook, 
+    schema: Schema
 ): Promise<{
     success: boolean, 
     error?: string, 
@@ -177,7 +180,7 @@ async function syncDataWithOlimanager(
     skipped?: boolean, 
     converted?: boolean,
     contestId?: string,
-    rawResult?: any 
+    rawResult?: unknown 
 }> {
       const contestId = schema.get_contest_id(workbook.commonData)
       const schoolExternalId = schema.get_school_external_id(sheet.commonData)
@@ -461,7 +464,7 @@ async function getVenueForContest(api: OlimanagerApi, contestId: number, venueNa
 async function manualCreateParticipantHelper(api: OlimanagerApi, competitorId: string, venueId: string) {
   const result = await api.query(mutation_manual_create, { competitorId, venueId });
   if (result.errors && result.errors.length > 0) {
-     throw new Error(result.errors.map((e: any) => e.message).join(', '));
+     throw new Error(result.errors.map((e: { message: string }) => e.message).join(', '));
   }
   return result?.data?.participants?.manualCreateParticipant?.participant?.id;
 }
