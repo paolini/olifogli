@@ -272,8 +272,10 @@ export type MutationValidateRowsArgs = {
 
 export type OlimanagerCreateResult = {
   __typename?: 'OlimanagerCreateResult';
+  converted?: Maybe<Scalars['Boolean']['output']>;
   error?: Maybe<Scalars['String']['output']>;
   participantId?: Maybe<Scalars['String']['output']>;
+  skipped?: Maybe<Scalars['Boolean']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -3183,8 +3185,10 @@ export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversT
 }
 
 export type OlimanagerCreateResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerCreateResult'] = ResolversParentTypes['OlimanagerCreateResult']> = {
+  converted?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  skipped?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

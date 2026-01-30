@@ -12,7 +12,7 @@ export default async function olimanagerCreateParticipant(
   _: unknown,
   { rowIds, sheetIds, username, password }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[]; username?: string; password: string },
   context: Context
-): Promise<{success: boolean, error?: string, participantId?: string}[]> {
+): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]> {
   console.log('=== olimanagerCreateParticipant START ===')
   console.log('Input params:', { rowIds: rowIds?.length, sheetIds: sheetIds?.length, username, passwordProvided: !!password })
 
@@ -61,11 +61,35 @@ export default async function olimanagerCreateParticipant(
   await api.login()
   console.log('Olimanager login successful')
 
-  const results: {success: boolean, error?: string, participantId?: string}[] = []
+  const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[] = []
   console.log('Starting processing', finalRowIds.length, 'rows')
 
-  for (const rowId of finalRowIds) {
-    console.log(`--- Processing row ${finalRowIds.indexOf(rowId) + 1}/${finalRowIds.length}: ${rowId} ---`)
+  for (let i = 0; i < finalRowIds.length; i++) {
+    const rowId = finalRowIds[i];
+    const result = await processRow(rowId, i, finalRowIds.length, api, rows, sheets, workbooks);
+    results.push(result);
+  }  
+  console.log('=== olimanagerCreateParticipant END ===')
+  console.log('Results summary:', { 
+    total: results.length, 
+    success: results.filter(r => r.success).length, 
+    failures: results.filter(r => !r.success).length,
+    skipped: results.filter(r => r.skipped).length,
+    converted: results.filter(r => r.converted).length
+  })
+  return results
+}
+
+async function processRow(
+  rowId: ObjectId,
+  index: number,
+  total: number,
+  api: OlimanagerApi,
+  rows: any,
+  sheets: any,
+  workbooks: any
+): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}> {
+    console.log(`--- Processing row ${index + 1}/${total}: ${rowId} ---`)
     try {
       const row = await rows.findOne({ _id: rowId })
       // console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
@@ -99,8 +123,7 @@ export default async function olimanagerCreateParticipant(
 
       if (!isNaN(row_participant_id) && row_contest_id === contestId) {
         console.log(`  SKIPPING: la riga ha già un participantId (${row_participant_id}) per questo contestId (${row_contest_id})`)
-        results.push({success: true, participantId: `${row_participant_id}`})
-        continue
+        return {success: true, participantId: `${row_participant_id}`, skipped: true}
       }
 
       if (!isNaN(row_participant_id) && !isNaN(row_contest_id) && row_contest_id !== contestId) {
@@ -132,8 +155,7 @@ export default async function olimanagerCreateParticipant(
                       },
                     }
                   );
-                  results.push({success: true, participantId: String(newParticipantId)});
-                  continue; 
+                  return {success: true, participantId: String(newParticipantId), converted: true};
                } else {
                  console.warn(`    WARNING: Failed to create participant manually.`);
                }
@@ -177,7 +199,7 @@ export default async function olimanagerCreateParticipant(
           }
         )
         console.log('Row updated successfully')
-        results.push({success: true, participantId})
+        return {success: true, participantId}
       } else {
         console.log(`  FAILURE:`, result?.error || result?.messages || 'unknown')
         console.log(JSON.stringify(result))
@@ -193,7 +215,7 @@ export default async function olimanagerCreateParticipant(
           }
         )
         console.log('Row updated with error')
-        results.push({success: false, error: errorMsg})
+        return {success: false, error: errorMsg}
       }
       } catch (e) {
         console.log(`  EXCEPTION:`, e)
@@ -209,12 +231,8 @@ export default async function olimanagerCreateParticipant(
           }
         )
         console.log('Row updated with exception')
-        results.push({success: false, error: errorMessage})
+        return {success: false, error: errorMessage}
       }
-    }  
-  console.log('=== olimanagerCreateParticipant END ===')
-  console.log('Results summary:', { total: results.length, success: results.filter(r => r.success).length, failures: results.filter(r => !r.success).length })
-  return results
 }
 
 /**
