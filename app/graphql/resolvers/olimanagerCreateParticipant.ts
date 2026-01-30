@@ -66,7 +66,8 @@ export default async function olimanagerCreateParticipant(
 
   for (let i = 0; i < finalRowIds.length; i++) {
     const rowId = finalRowIds[i];
-    const result = await processRow(rowId, i, finalRowIds.length, api, rows, sheets, workbooks);
+    console.log(`--- Processing row ${i + 1}/${finalRowIds.length}: ${rowId} ---`)
+    const result = await processRow(rowId, api, rows, sheets, workbooks);
     results.push(result);
   }  
   console.log('=== olimanagerCreateParticipant END ===')
@@ -82,14 +83,11 @@ export default async function olimanagerCreateParticipant(
 
 async function processRow(
   rowId: ObjectId,
-  index: number,
-  total: number,
   api: OlimanagerApi,
   rows: any,
   sheets: any,
   workbooks: any
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}> {
-    console.log(`--- Processing row ${index + 1}/${total}: ${rowId} ---`)
     try {
       const row = await rows.findOne({ _id: rowId })
       // console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
@@ -106,6 +104,78 @@ async function processRow(
       // console.log('Workbook data:', workbook ? { _id: workbook._id, name: workbook.name } : 'NOT FOUND')
       if (!workbook) throw new Error(`Workbook non trovato: ${sheet.workbookId}`)
 
+      const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
+
+      if (result.skipped) {
+          return { success: true, participantId: result.participantId, skipped: true };
+      }
+
+      if (result.success) {
+        console.log('Updating row with participantId:', result.participantId)
+        
+        const $set: any = {
+              'olimanager.participantId': result.participantId,
+              'olimanager.participantCreatedOn': new Date(),
+              'olimanager.error': '',
+              'olimanager.result': result.rawResult,
+        }
+        if (result.converted && result.contestId) {
+            $set['olimanager.contestId'] = result.contestId
+        }
+
+        await rows.updateOne(
+          { _id: rowId },
+          { $set }
+        )
+        console.log('Row updated successfully')
+        return { success: true, participantId: result.participantId, converted: result.converted }
+      } else {
+        console.log('Updating row with error:', result.error)
+        await rows.updateOne(
+          { _id: rowId },
+          {
+            $set: {
+              'olimanager.error': result.error,
+              'olimanager.result': result.rawResult,
+            },
+          }
+        )
+        console.log('Row updated with error')
+        return { success: false, error: result.error }
+      }
+    } catch (e) {
+        console.log(`  EXCEPTION:`, e)
+        console.log(e)
+        const errorMessage = String((e as Error)?.message || e)
+        console.log('Updating row with exception error:', errorMessage)
+        await rows.updateOne(
+          { _id: rowId },
+          {
+            $set: {
+              'olimanager.error': errorMessage
+            },
+          }
+        )
+        console.log('Row updated with exception')
+        return {success: false, error: errorMessage}
+    }
+}
+
+async function syncDataWithOlimanager(
+    api: OlimanagerApi, 
+    row: any, 
+    sheet: any, 
+    workbook: any, 
+    schema: any
+): Promise<{
+    success: boolean, 
+    error?: string, 
+    participantId?: string, 
+    skipped?: boolean, 
+    converted?: boolean,
+    contestId?: string,
+    rawResult?: any 
+}> {
       const contestId = schema.get_contest_id(workbook.commonData)
       const schoolExternalId = schema.get_school_external_id(sheet.commonData)
       console.log('Extracted contestId:', contestId, 'schoolExternalId:', schoolExternalId)
@@ -144,18 +214,13 @@ async function processRow(
                const newParticipantId = await manualCreateParticipantHelper(api, competitor.id, venue.id);
                if (newParticipantId) {
                  console.log(`    SUCCESS: New participant created manually: ${newParticipantId}`);
-                 await rows.updateOne(
-                    { _id: rowId },
-                    {
-                      $set: {
-                        'olimanager.participantId': String(newParticipantId),
-                        'olimanager.participantCreatedOn': new Date(),
-                        'olimanager.error': '',
-                        'olimanager.result': { method: 'manualCreateParticipant', competitorId: competitor.id, venueId: venue.id, newParticipantId },
-                      },
-                    }
-                  );
-                  return {success: true, participantId: String(newParticipantId), converted: true};
+                 return {
+                    success: true, 
+                    participantId: String(newParticipantId), 
+                    converted: true,
+                    contestId: String(contestId),
+                    rawResult: { method: 'manualCreateParticipant', competitorId: competitor.id, venueId: venue.id, newParticipantId },
+                 };
                } else {
                  console.warn(`    WARNING: Failed to create participant manually.`);
                }
@@ -164,13 +229,13 @@ async function processRow(
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error(`    ERROR doing manual migration:`, msg);
-            console.log("    Falling back to standard matchOrCreateParticipant.");
+            const errorMsg = `Manual migration failed: ${msg}`;
+            return { success: false, error: errorMsg };
         }
-
       }
       // console.log('Participant data:', { name, surname, classYearStr, classYear, section, birthDate: row.data.birthDate, birthDateConverted: birthDate })
 
-      console.log(`Creazione/abbinamento partecipante per riga ${rowId} (${surname} ${name})`)
+      console.log(`Creazione/abbinamento partecipante per riga ${row._id} (${surname} ${name})`)
       console.log(`  schoolExternalId: ${schoolExternalId}, contestId: ${contestId}, classYear: ${classYear}, section: ${section}, birthDate: ${birthDate}`)
       const result = await matchOrCreateParticipant(api, contestId, {
         schoolExternalId,
@@ -186,52 +251,12 @@ async function processRow(
         console.log(`  SUCCESS: participantId: ${result.participant.id}, competitorCreated: ${result.competitorCreated}, participantCreated: ${result.participantCreated}`)
         console.log(JSON.stringify(result))
         const participantId = result?.participant?.id ? String(result.participant.id) : undefined
-        console.log('Updating row with participantId:', participantId)
-        await rows.updateOne(
-          { _id: rowId },
-          {
-            $set: {
-              'olimanager.participantId': participantId,
-              'olimanager.participantCreatedOn': new Date(),
-              'olimanager.error': '',
-              'olimanager.result': result,
-            },
-          }
-        )
-        console.log('Row updated successfully')
-        return {success: true, participantId}
+        return { success: true, participantId, rawResult: result }
       } else {
         console.log(`  FAILURE:`, result?.error || result?.messages || 'unknown')
         console.log(JSON.stringify(result))
         const errorMsg = typeof result?.error === 'string' ? result?.error : JSON.stringify(result?.error || result?.messages || 'unknown error')
-        console.log('Updating row with error:', errorMsg)
-        await rows.updateOne(
-          { _id: rowId },
-          {
-            $set: {
-              'olimanager.error': errorMsg,
-              'olimanager.result': result,
-            },
-          }
-        )
-        console.log('Row updated with error')
-        return {success: false, error: errorMsg}
-      }
-      } catch (e) {
-        console.log(`  EXCEPTION:`, e)
-        console.log(e)
-        const errorMessage = String((e as Error)?.message || e)
-        console.log('Updating row with exception error:', errorMessage)
-        await rows.updateOne(
-          { _id: rowId },
-          {
-            $set: {
-              'olimanager.error': errorMessage
-            },
-          }
-        )
-        console.log('Row updated with exception')
-        return {success: false, error: errorMessage}
+        return { success: false, error: errorMsg, rawResult: result }
       }
 }
 
