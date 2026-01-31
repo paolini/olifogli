@@ -1,7 +1,7 @@
 import { ReportEntry } from '@/app/graphql/generated'
 import { Sheet } from '../models'
 import { Data, Row, ScanResults } from '../models'
-import { OlimanagerProblemResult } from './Competition'
+import { OlimanagerProblemResult } from './Schema'
 import CompetitionWithVariants from './CompetitionWithVariants'
 import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField, NumericField } from './fields'
 import { buildPermutationsObject, computeScores} from './PERMUTATIONS'
@@ -136,9 +136,9 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
         return schoolExternalId
     }
 
-    extract_olimanager_results(
+    extract_olimanager_results = (
       row: Row, sheetData: Data, workbookData: Data
-    ): OlimanagerProblemResult[] {
+    ): OlimanagerProblemResult[] => {
         const contestId = this.get_contest_id(workbookData);
 
         if (!row.olimanager || !row.olimanager.participantId) {
@@ -170,7 +170,7 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
         return problemResults;
     }
 
-    extract_ranking(row: Row, sheet: Sheet): ReportEntry | undefined {
+    extract_ranking = (row: Row, sheet: Sheet): ReportEntry | undefined => {
         // Estrai il punteggio dal campo 'score'
         const scoreValue = row.data?.score
         if (!scoreValue) return

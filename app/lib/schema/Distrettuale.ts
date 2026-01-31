@@ -127,7 +127,7 @@ export default class Distrettuale extends Schema {
         return { tabular, cards }
     }    
 
-    extract_ranking(row: Row, sheet: Sheet): ReportEntry | undefined {
+    extract_ranking = (row: Row, sheet: Sheet): ReportEntry | undefined => {
         // Estrai il punteggio dal campo 'score'
         const scoreValue = row.data?.score
         if (!scoreValue) return

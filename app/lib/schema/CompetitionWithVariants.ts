@@ -1,10 +1,9 @@
 import { Data } from "../models";
-import Competition from "./Competition";
 import { ChoiceAnswerField, Field } from "./fields";
 import { buildPermutationsObject, decodePermutations } from "./PERMUTATIONS";
-import { DerivedData } from "./Schema";
+import Schema, { DerivedData } from "./Schema";
 
-export default class CompetitionWithVariants extends Competition {
+export default class CompetitionWithVariants extends Schema {
     constructor(name: string, header: string, fields: Field[]) {
         super(name, header, fields)
         if (!this.fields.find(f => f.name === 'variant')) {
@@ -57,6 +56,5 @@ export default class CompetitionWithVariants extends Competition {
                 anomalies,
             }
         }
-    }
-    
+    }   
 }

@@ -24,7 +24,6 @@ import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { zhCN } from 'date-fns/locale'
-import Competition from '../lib/schema/Competition'
 
 // Register Chart.js components
 ChartJS.register(
@@ -62,7 +61,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     })
     const { filterState } = useSheetsFilterWithQuerystring();
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => schemas[s.schema] instanceof Competition)
+        .filter(s => schemas[s.schema].extract_ranking)
     const filteredSheets = filterSheets(filterState, sheets) as typeof sheets
 
     const [useBinning, setUseBinning] = useState(false)

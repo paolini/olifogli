@@ -5,8 +5,7 @@ import { Row, Sheet, Workbook } from "@/app/lib/models";
 import { ObjectId } from "mongodb";
 import { schemas } from "@/app/lib/schema";
 import { OlimanagerApi } from "./olimanagerApi";
-import { OlimanagerProblemResult } from "@/app/lib/schema/Competition";
-import Competition from "@/app/lib/schema/Competition";
+import Schema, { OlimanagerProblemResult } from "@/app/lib/schema/Schema";
 
 /**
  * Resolver GraphQL per aggiornare in batch i risultati dei partecipanti a un contest.
@@ -90,7 +89,7 @@ export default async function olimanagerBulkUpdateResults(
       
       let cache: {
         sheet: Sheet;
-        schema: Competition;
+        schema: Schema;
         workbook: Workbook;
       } | null = null ;
 
@@ -109,8 +108,8 @@ export default async function olimanagerBulkUpdateResults(
             throw new Error(`Schema non trovato per il foglio: ${sheet.schema}`);
         }
 
-        if (!(schema instanceof Competition)) {
-            throw new Error(`Non è una Competition: ${sheet.schema}`);
+        if (!(schema.extract_olimanager_results)) {
+            throw new Error(`${sheet.schema} non implementa extract_olimanager_results`);
         }
 
         const workbook = await workbooks.findOne({ _id: sheet.workbookId });
@@ -136,7 +135,7 @@ export default async function olimanagerBulkUpdateResults(
         const { sheet, schema, workbook } = await cachedSheetData(row.sheetId);
 
         // Converte la riga in problemResults (16 problemi)
-        const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results(row, sheet.commonData, workbook.commonData);
+        const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results!(row, sheet.commonData, workbook.commonData);
 
         // Sanity check...
         const score = problemResults.reduce((sum, pr) => sum + (pr.score || 0), 0);

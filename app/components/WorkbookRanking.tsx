@@ -14,7 +14,6 @@ import Papa from 'papaparse'
 import SheetsSortIcon from './SheetsSortIcon'
 import Button from './Button'
 import { score_to_color_style } from '../lib/schema/fields'
-import Competition from '../lib/schema/Competition'
 
 const _ = gql`
     query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
@@ -51,7 +50,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     });
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => schemas[s.schema] instanceof Competition);
+        .filter(s => schemas[s.schema].extract_ranking);
     const filteredSheets = filterSheets(filterState, sheets);
 
     const { loading, error, data } = useGetWorkbookRankingReportQuery({

@@ -1,4 +1,4 @@
-import { Row, ScanResults } from "@/app/graphql/generated"
+import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet, Row as RowModel } from '@/app/lib/models'
 import { Field } from './fields'
 
@@ -13,6 +13,13 @@ export type Selection = {
     name: string,
     color: string,
     row_filter?: Record<string, unknown>,
+}
+
+export type OlimanagerProblemResult = {
+  participantId: number;
+  problemIndex: number;
+  score: number | null;
+  disqualified: boolean;
 }
 
 export type RowToSheetsResult = {
@@ -33,6 +40,8 @@ export default class Schema {
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
     selections: Selection[] = [] // selezioni possibili per questo schema
     row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
+    extract_olimanager_results: undefined | ((row: RowModel, sheetData: Data, workbookData: Data) => OlimanagerProblemResult[]) = undefined
+    extract_ranking: undefined | ((row: RowModel, sheet: Sheet) => ReportEntry | undefined) = undefined
 
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields
