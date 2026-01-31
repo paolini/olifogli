@@ -2,6 +2,8 @@ import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
 import CompetitionWithVariants from './CompetitionWithVariants'
 import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField, NumericField } from './fields'
+import { OlimanagerProblemResult } from './Schema'
+import { buildPermutationsObject, computeScores } from './PERMUTATIONS'
 
 export default class GaraPrime extends CompetitionWithVariants {
     constructor() {
@@ -159,5 +161,39 @@ export default class GaraPrime extends CompetitionWithVariants {
         const schoolExternalId = row_data[FIELD_NAME]
         if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
         return schoolExternalId
+    }
+
+    extract_olimanager_results = (
+        row: Row, sheetData: Data, workbookData: Data
+    ): OlimanagerProblemResult[] => {
+        const contestId = this.get_contest_id(workbookData);
+
+        if (!row.olimanager || !row.olimanager.participantId) {
+            throw new Error(`participantId mancante per la riga ${row._id}`);
+        }
+
+        const participantId = parseInt(row.olimanager.participantId);
+
+        if (isNaN(participantId)) {
+            throw new Error(`participantId non valido per la riga ${row._id}: ${row.olimanager.participantId}`);
+        }
+
+        const answer_items = this.extractAnswerItems(row.data);
+        const permutation_data = buildPermutationsObject(sheetData, workbookData);
+
+        const scores = computeScores(answer_items.map(item => item.answer), permutation_data);
+
+        const problemResults = scores.map((score, index) => ({
+            participantId: participantId,
+            problemIndex: index+1,
+            score: score,
+            disqualified: false
+        }));
+
+        if (problemResults.length !== answer_items.length) {
+            throw new Error(`Numero di risultati problema non valido per la riga ${row._id}: attesi ${answer_items.length}, trovati ${problemResults.length}`);
+        }
+
+        return problemResults;
     }
 }
