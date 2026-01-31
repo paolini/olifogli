@@ -155,7 +155,7 @@ export type MutationCloseSheetArgs = {
 
 export type MutationCreateSheetsArgs = {
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
-  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -977,7 +977,7 @@ export type RequestScanSheetGenerationMutationVariables = Exact<{
 export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
 
 export type CreateSheetsMutationVariables = Exact<{
-  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
 }>;
 
@@ -2879,7 +2879,7 @@ export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof use
 export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
 export const CreateSheetsDocument = gql`
-    mutation CreateSheets($sheetId: ObjectId, $rowIds: [ObjectId!]) {
+    mutation CreateSheets($sheetId: ObjectId!, $rowIds: [ObjectId!]) {
   createSheets(sheetId: $sheetId, rowIds: $rowIds) {
     sheets_created
     sheets_updated
@@ -3230,7 +3230,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationAddSheetsArgs, 'sheets'>>;
   addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
   closeSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCloseSheetArgs, '_id'>>;
-  createSheets?: Resolver<ResolversTypes['CreateSheetsResult'], ParentType, ContextType, Partial<MutationCreateSheetsArgs>>;
+  createSheets?: Resolver<ResolversTypes['CreateSheetsResult'], ParentType, ContextType, RequireFields<MutationCreateSheetsArgs, 'sheetId'>>;
   deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteRowsArgs, 'ids'>>;

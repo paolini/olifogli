@@ -1,7 +1,7 @@
 import { ReportEntry } from '@/app/graphql/generated'
-import { Data, Row, ScanResults, Sheet, Workbook } from '../models'
+import { Data, Row, ScanResults, Sheet } from '../models'
 import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField } from './fields'
-import Schema from './Schema'
+import Schema, { RowToSheetsResult } from './Schema'
 
 export default class Distrettuale extends Schema {
     constructor() {
@@ -201,16 +201,18 @@ export class ImportazioneDistrettuale extends Schema {
     // estrae da una riga di questo schema i dati 
     // da usare per popolare la riga di un nuovo foglio
     // di uno schema diverso
-    sheet_row(row: Row) {
+    row_to_sheet = (row: Row): RowToSheetsResult | string => {
         const TargetSchema = this.TargetSchema
         const sheet_name = row.data['distretto'].replace('Distretto di ','').trim()
         if (!sheet_name) return "distretto non definito"
         return {
             schema: TargetSchema.name,
             sheet_name: sheet_name,
-            data: Object.fromEntries(TargetSchema.fields.map(
-                field => [field.name, row.data[field.name] || '']
-            ))
+            row: {
+                data: Object.fromEntries(TargetSchema.fields.map(
+                    field => [field.name, row.data[field.name] || '']
+                ))
+            }
         }
     }
 }

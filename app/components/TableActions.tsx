@@ -1,5 +1,5 @@
 import { ObjectId } from "bson"
-import { CreateSheetsResult, CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useCreateSheetsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, MutationCreateSheetsArgs, MutationOlimanagerCreateParticipantArgs, MutationOlimanagerBulkUpdateResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs } from "../graphql/generated"
+import { CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useCreateSheetsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, MutationCreateSheetsArgs, MutationOlimanagerCreateParticipantArgs, MutationOlimanagerBulkUpdateResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
 import { TableState } from "./Table"
@@ -9,7 +9,6 @@ import ErrorElement from "./Error"
 import { pluralize } from "../lib/util"
 import Button from "./Button"
 import GlobalMessage from "./GlobalMessage"
-import { ImportazioneDistrettuale } from "../lib/schema/Distrettuale"
 
 type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
@@ -179,7 +178,7 @@ const actions: Record<string, Action> = {
     handler: handleAnonymizeNames
   },
   'create_sheets': {
-    hidden: ctx => !(ctx.schema instanceof ImportazioneDistrettuale),
+    hidden: ctx => !ctx.schema.row_to_sheet,
     label: 'Genera fogli',
     disabled: ctx => !ctx.profile?.isAdmin,
     handler: handleCreateSheets
@@ -325,11 +324,12 @@ async function handleCreateSheets(ctx: TableActionContext) {
   const rows = selectedLines
     .map(line => line?.row)
     .filter(row => row) as Row[]
-  const res = await ctx.mutations.createSheets({ variables: 
-    rows.length > 0 
-      ? { rowIds: rows.map(row => row._id) }
-      : { sheetId: ctx.sheet._id } 
-    });
+  const res = await ctx.mutations.createSheets({ variables: { 
+    sheetId: ctx.sheet._id, 
+    rowIds: (rows.length > 0 
+      ? rows.map(row => new ObjectId(row._id)) 
+      : undefined)
+  }});
   if (!res.data?.createSheets) {
     alert('Errore durante la creazione dei fogli: '+JSON.stringify(res))
   } else {

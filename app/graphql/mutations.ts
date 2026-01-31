@@ -23,7 +23,7 @@ export const REQUEST_SCAN_SHEET_GENERATION_MUTATION = gql`
 `;
 
 export const CREATE_SHEETS_MUTATION = gql`
-  mutation CreateSheets($sheetId: ObjectId, $rowIds: [ObjectId!]) {
+  mutation CreateSheets($sheetId: ObjectId!, $rowIds: [ObjectId!]) {
     createSheets(sheetId: $sheetId, rowIds: $rowIds) {
       sheets_created
       sheets_updated
