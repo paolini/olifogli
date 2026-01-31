@@ -430,11 +430,13 @@ query GetContestVenueByName($contestId: Int!, $venueName: String!) {
 `
 
 const mutation_manual_create = `
-mutation ManualCreateParticipant($competitorId: ID!, $venueId: ID!) {
+mutation ManualCreateParticipant($competitorId: Int!, $venueId: Int!) {
   participants {
     manualCreateParticipant(competitorId: $competitorId, venueId: $venueId) {
-      participant {
-        id
+      ... on ManualParticipantCreateSuccess {
+        participant {
+          id
+        }
       }
     }
   }
@@ -467,8 +469,8 @@ async function getVenueForContest(api: OlimanagerApi, contestId: number, venueNa
   return null;
 }
 
-async function manualCreateParticipantHelper(api: OlimanagerApi, competitorId: string, venueId: string) {
-  const result = await api.query(mutation_manual_create, { competitorId, venueId });
+async function manualCreateParticipantHelper(api: OlimanagerApi, competitorId: string | number, venueId: string | number) {
+  const result = await api.query(mutation_manual_create, { competitorId: Number(competitorId), venueId: Number(venueId) });
   if (result.errors && result.errors.length > 0) {
      throw new Error(result.errors.map((e: { message: string }) => e.message).join(', '));
   }
