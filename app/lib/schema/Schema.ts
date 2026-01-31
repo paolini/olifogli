@@ -113,7 +113,7 @@ export default class Schema {
         return { tabular, cards }
     }
 
-    get_school_external_id(data: Data): string {
+    get_school_external_id(row_data: Data, sheet_data: Data): string {
         throw new Error(`lo schema "${this.name}" non ha associata una scuola`)
     }
 

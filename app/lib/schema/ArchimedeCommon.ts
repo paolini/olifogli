@@ -129,9 +129,9 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
         return { tabular, cards }
     }    
 
-    get_school_external_id(data: Data): string {
+    get_school_external_id(row_data: Data, sheet_data: Data): string {
         const FIELD_NAME = "Codice_meccanografico"
-        const schoolExternalId = data[FIELD_NAME]
+        const schoolExternalId = sheet_data[FIELD_NAME]
         if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
         return schoolExternalId
     }
