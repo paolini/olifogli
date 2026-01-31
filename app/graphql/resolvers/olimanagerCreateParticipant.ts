@@ -35,8 +35,8 @@ export default async function olimanagerCreateParticipant(
       console.log('Fetching rows for sheetId:', sheetId)
       const totalRows = await rows.countDocuments({ sheetId })
       console.log('Total rows in sheet:', totalRows)
-      const allSheetRows = await rows.find({ sheetId }).limit(3).toArray()
-      console.log('Sample rows:', allSheetRows.map(r => ({ _id: r._id, error: r.error, data: r.data })))
+      // const allSheetRows = await rows.find({ sheetId }).limit(3).toArray()
+      // console.log('Sample rows:', allSheetRows.map(r => ({ _id: r._id, error: r.error, data: r.data })))
       const sheetRows = await rows.find({ 
         sheetId, 
         $or: [
@@ -188,7 +188,7 @@ async function syncDataWithOlimanager(
 
       const name = row.data.name
       const surname = row.data.surname
-      const classYearStr = row.data.classYear
+      const classYearStr = row.data?.classYear || '1'
       const section = row.data.classSection
       const birthDate = row.data.birthDate.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, '$3-$2-$1');
 
@@ -455,7 +455,7 @@ async function getVenueForContest(api: OlimanagerApi, contestId: number, venueNa
   if (edges && edges.length > 0) {
     return edges[0].node;
   }
-  
+
   // poi prova con il nome esatto
   const result2 = await api.query(query_get_venues, { contestId, venueName });
   const edges2 = result2?.data?.venues?.venues?.edges;
