@@ -45,6 +45,15 @@ export type Config = {
   OLIMANAGER_URL?: Maybe<Scalars['String']['output']>;
 };
 
+export type CreateSheetsResult = {
+  __typename?: 'CreateSheetsResult';
+  error: Scalars['String']['output'];
+  rows_created: Scalars['Int']['output'];
+  rows_updated: Scalars['Int']['output'];
+  sheets_created: Scalars['Int']['output'];
+  sheets_updated: Scalars['Int']['output'];
+};
+
 export type DistributionReport = {
   __typename?: 'DistributionReport';
   mean?: Maybe<Scalars['Float']['output']>;
@@ -83,6 +92,7 @@ export type Mutation = {
   addSheets?: Maybe<Scalars['Boolean']['output']>;
   addWorkbook?: Maybe<Workbook>;
   closeSheet?: Maybe<Scalars['Boolean']['output']>;
+  createSheets: CreateSheetsResult;
   deleteAllRows?: Maybe<Scalars['Int']['output']>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteRows?: Maybe<Scalars['Int']['output']>;
@@ -140,6 +150,12 @@ export type MutationAddWorkbookArgs = {
 
 export type MutationCloseSheetArgs = {
   _id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationCreateSheetsArgs = {
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
 };
 
 
@@ -959,6 +975,14 @@ export type RequestScanSheetGenerationMutationVariables = Exact<{
 
 
 export type RequestScanSheetGenerationMutation = { __typename?: 'Mutation', requestScanSheetGeneration?: boolean | null };
+
+export type CreateSheetsMutationVariables = Exact<{
+  sheetId?: InputMaybe<Scalars['ObjectId']['input']>;
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+}>;
+
+
+export type CreateSheetsMutation = { __typename?: 'Mutation', createSheets: { __typename?: 'CreateSheetsResult', sheets_created: number, sheets_updated: number, rows_created: number, rows_updated: number, error: string } };
 
 export type GetProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2854,6 +2878,44 @@ export function useRequestScanSheetGenerationMutation(baseOptions?: Apollo.Mutat
 export type RequestScanSheetGenerationMutationHookResult = ReturnType<typeof useRequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationResult = Apollo.MutationResult<RequestScanSheetGenerationMutation>;
 export type RequestScanSheetGenerationMutationOptions = Apollo.BaseMutationOptions<RequestScanSheetGenerationMutation, RequestScanSheetGenerationMutationVariables>;
+export const CreateSheetsDocument = gql`
+    mutation CreateSheets($sheetId: ObjectId, $rowIds: [ObjectId!]) {
+  createSheets(sheetId: $sheetId, rowIds: $rowIds) {
+    sheets_created
+    sheets_updated
+    rows_created
+    rows_updated
+    error
+  }
+}
+    `;
+export type CreateSheetsMutationFn = Apollo.MutationFunction<CreateSheetsMutation, CreateSheetsMutationVariables>;
+
+/**
+ * __useCreateSheetsMutation__
+ *
+ * To run a mutation, you first call `useCreateSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createSheetsMutation, { data, loading, error }] = useCreateSheetsMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *      rowIds: // value for 'rowIds'
+ *   },
+ * });
+ */
+export function useCreateSheetsMutation(baseOptions?: Apollo.MutationHookOptions<CreateSheetsMutation, CreateSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateSheetsMutation, CreateSheetsMutationVariables>(CreateSheetsDocument, options);
+      }
+export type CreateSheetsMutationHookResult = ReturnType<typeof useCreateSheetsMutation>;
+export type CreateSheetsMutationResult = Apollo.MutationResult<CreateSheetsMutation>;
+export type CreateSheetsMutationOptions = Apollo.BaseMutationOptions<CreateSheetsMutation, CreateSheetsMutationVariables>;
 export const GetProfileDocument = gql`
     query GetProfile {
   me {
@@ -3011,6 +3073,7 @@ export type ResolversTypes = {
   AgeDistributionReport: ResolverTypeWrapper<AgeDistributionReport>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Config: ResolverTypeWrapper<Config>;
+  CreateSheetsResult: ResolverTypeWrapper<CreateSheetsResult>;
   Data: ResolverTypeWrapper<Scalars['Data']['output']>;
   DistributionReport: ResolverTypeWrapper<DistributionReport>;
   ExerciseDistributionItem: ResolverTypeWrapper<ExerciseDistributionItem>;
@@ -3055,6 +3118,7 @@ export type ResolversParentTypes = {
   AgeDistributionReport: AgeDistributionReport;
   Boolean: Scalars['Boolean']['output'];
   Config: Config;
+  CreateSheetsResult: CreateSheetsResult;
   Data: Scalars['Data']['output'];
   DistributionReport: DistributionReport;
   ExerciseDistributionItem: ExerciseDistributionItem;
@@ -3112,6 +3176,15 @@ export type ConfigResolvers<ContextType = any, ParentType extends ResolversParen
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type CreateSheetsResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CreateSheetsResult'] = ResolversParentTypes['CreateSheetsResult']> = {
+  error?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  rows_created?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rows_updated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  sheets_created?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  sheets_updated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export interface DataScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Data'], any> {
   name: 'Data';
 }
@@ -3157,6 +3230,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationAddSheetsArgs, 'sheets'>>;
   addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
   closeSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCloseSheetArgs, '_id'>>;
+  createSheets?: Resolver<ResolversTypes['CreateSheetsResult'], ParentType, ContextType, Partial<MutationCreateSheetsArgs>>;
   deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteRowsArgs, 'ids'>>;
@@ -3403,6 +3477,7 @@ export type Resolvers<ContextType = any> = {
   AgeDistributionItem?: AgeDistributionItemResolvers<ContextType>;
   AgeDistributionReport?: AgeDistributionReportResolvers<ContextType>;
   Config?: ConfigResolvers<ContextType>;
+  CreateSheetsResult?: CreateSheetsResultResolvers<ContextType>;
   Data?: GraphQLScalarType;
   DistributionReport?: DistributionReportResolvers<ContextType>;
   ExerciseDistributionItem?: ExerciseDistributionItemResolvers<ContextType>;

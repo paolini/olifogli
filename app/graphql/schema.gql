@@ -259,6 +259,14 @@ type Query {
   getSetting(key: String!): Setting
 }
 
+type CreateSheetsResult {
+  sheets_created: Int!
+  sheets_updated: Int!
+  rows_created: Int!
+  rows_updated: Int!
+  error: String!
+}
+
 type OlimanagerCreateResult {
   success: Boolean!
   error: String
@@ -314,6 +322,8 @@ type Mutation {
   openSheet(_id: ObjectId!): Boolean
   lockSheet(_id: ObjectId!): Boolean
   unlockSheet(_id: ObjectId!): Boolean
+
+  createSheets(sheetId: ObjectId, rowIds: [ObjectId!]): CreateSheetsResult!
 
   olimanagerCreateParticipant(
     rowIds: [ObjectId!]

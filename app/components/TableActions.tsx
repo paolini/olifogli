@@ -1,14 +1,15 @@
 import { ObjectId } from "bson"
-import { Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation } from "../graphql/generated"
+import { CreateSheetsResult, CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useCreateSheetsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, MutationCreateSheetsArgs, MutationOlimanagerCreateParticipantArgs, MutationOlimanagerBulkUpdateResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
 import { TableState } from "./Table"
 import { Dispatch, SetStateAction, useState } from "react"
-import { ApolloError } from "@apollo/client"
+import { ApolloError, FetchResult } from "@apollo/client"
 import ErrorElement from "./Error"
 import { pluralize } from "../lib/util"
 import Button from "./Button"
 import GlobalMessage from "./GlobalMessage"
+import { ImportazioneDistrettuale } from "../lib/schema/Distrettuale"
 
 type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
@@ -75,11 +76,12 @@ export function TableActionsErrors({ctx}: {ctx: TableActionContext}) {
 
 type TableActionContext = TableActionInput & {
   mutations: {
-    deleteRows: (args: { variables: { ids: ObjectId[] } }) => Promise<unknown>,
-    patchRow: (args: { variables: { _id: ObjectId, updatedOn: Date, data: Record<string, unknown> } }) => Promise<unknown>,
-    requestScanSheetGeneration: (args: { variables: { sheetId: ObjectId, selectedRowIds?: ObjectId[] } }) => Promise<unknown>,
-    olimanagerCreateParticipant: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
-    olimanagerBulkUpdateResults: (args: { variables: { rowIds: ObjectId[], username: string, password: string } }) => Promise<unknown>,
+    deleteRows: (args: { variables: MutationDeleteRowsArgs }) => Promise<FetchResult<DeleteRowsMutation>>,
+    patchRow: (args: { variables: MutationPatchRowArgs }) => Promise<FetchResult<PatchRowMutation>>,
+    requestScanSheetGeneration: (args: { variables: MutationRequestScanSheetGenerationArgs }) => Promise<FetchResult<RequestScanSheetGenerationMutation>>,
+    createSheets: (args: { variables: MutationCreateSheetsArgs }) => Promise<FetchResult<CreateSheetsMutation>>,
+    olimanagerCreateParticipant: (args: { variables: MutationOlimanagerCreateParticipantArgs }) => Promise<unknown>,
+    olimanagerBulkUpdateResults: (args: { variables: MutationOlimanagerBulkUpdateResultsArgs }) => Promise<unknown>,
     loading: boolean,
     errors: ApolloError[],
   }
@@ -96,6 +98,7 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
   const [requestScanSheetGeneration, { loading: scanSheetLoading, error: scanSheetError }] = useRequestScanSheetGenerationMutation({
     refetchQueries: ['ScanSheetJobs']
   })
+  const [createSheets, { loading: createSheetsLoading, error: createSheetsError }] = useCreateSheetsMutation()
   const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
   const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
   const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
@@ -109,10 +112,11 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
             deleteRows,
             patchRow,
             requestScanSheetGeneration,
+            createSheets,
             olimanagerCreateParticipant,
             olimanagerBulkUpdateResults,
-            loading: scanSheetLoading || olimanagerCreateParticipantLoading || olimanagerBulkUpdateLoading || patchLoading || deleteLoading,
-            errors: [olimanagerCreateParticipantError,olimanagerBulkUpdateError,scanSheetError].filter(e => e !== undefined),
+            loading: scanSheetLoading || createSheetsLoading || olimanagerCreateParticipantLoading || olimanagerBulkUpdateLoading || patchLoading || deleteLoading,
+            errors: [olimanagerCreateParticipantError,olimanagerBulkUpdateError,scanSheetError,createSheetsError].filter(e => e !== undefined),
         },
 
         olimanagerEmail, setOlimanagerEmail,
@@ -173,7 +177,13 @@ const actions: Record<string, Action> = {
     label: 'Anonimizza nomi',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleAnonymizeNames
-  }
+  },
+  'create_sheets': {
+    hidden: ctx => !(ctx.schema instanceof ImportazioneDistrettuale),
+    label: 'Genera fogli',
+    disabled: ctx => !ctx.profile?.isAdmin,
+    handler: handleCreateSheets
+  },
 }
 
 async function handleDeleteSelectedRows(ctx: TableActionContext) {
@@ -292,14 +302,6 @@ async function handleGenerateStudentIds(ctx: TableActionContext) {
   }
 }
 
-function askOlimanagerCredentials(ctx: TableActionContext): {username: string, password: string} {
-  const username = prompt('Username olimanager (email)', ctx.olimanagerEmail) ?? ''
-  const password = prompt('Password', ctx.olimanagerPassword) ?? ''
-  ctx.setOlimanagerEmail(username)
-  ctx.setOlimanagerPassword(password)
-  return {username, password}
-}
-
 function filterValidRowsAndConfirm(ctx: TableActionContext): Row[] | null  {
   const lines = ctx.tableState.lines
   const selectedLineKeys = ctx.tableState.selectedLineKeys
@@ -313,6 +315,34 @@ function filterValidRowsAndConfirm(ctx: TableActionContext): Row[] | null  {
     }
 
   return valid_lines.map(line => line.row as Row)
+}
+
+async function handleCreateSheets(ctx: TableActionContext) {
+  const allLines = ctx.tableState.lines
+  const selectedLineKeys = ctx.tableState.selectedLineKeys
+  const selectedLines = allLines
+    .filter(line => selectedLineKeys.has(line.key))
+  const rows = selectedLines
+    .map(line => line?.row)
+    .filter(row => row) as Row[]
+  const res = await ctx.mutations.createSheets({ variables: 
+    rows.length > 0 
+      ? { rowIds: rows.map(row => row._id) }
+      : { sheetId: ctx.sheet._id } 
+    });
+  if (!res.data?.createSheets) {
+    alert('Errore durante la creazione dei fogli: '+JSON.stringify(res))
+  } else {
+    alert(`Responso: ${JSON.stringify(res.data.createSheets)}`)
+  }
+}
+
+function askOlimanagerCredentials(ctx: TableActionContext): {username: string, password: string} {
+  const username = prompt('Username olimanager (email)', ctx.olimanagerEmail) ?? ''
+  const password = prompt('Password', ctx.olimanagerPassword) ?? ''
+  ctx.setOlimanagerEmail(username)
+  ctx.setOlimanagerPassword(password)
+  return {username, password}
 }
 
 async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
