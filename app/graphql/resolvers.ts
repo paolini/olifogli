@@ -48,6 +48,7 @@ import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
 import workbookExerciseReport from './resolvers/workbookExerciseReport'
+import createSheets from './resolvers/createSheets'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -129,6 +130,7 @@ export const resolvers: Resolvers = {
     lockSheet,
     unlockSheet,
     validateRows,
+    createSheets,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerCreateParticipant: olimanagerCreateParticipant as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
