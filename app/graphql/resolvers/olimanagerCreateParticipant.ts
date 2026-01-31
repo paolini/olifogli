@@ -417,14 +417,10 @@ const query_get_venues = `
 query GetContestVenueByName($contestId: Int!, $venueName: String!) {
   venues {
     venues(filters: {contest: {id: $contestId}, name: {exact: $venueName}}) {
-      edges {
-        node {
-          id
-          name
-          location {
-            name
-          }
-        }
+      id
+      name
+      location {
+        name
       }
     }
   }
@@ -453,10 +449,18 @@ async function getCompetitorFromParticipant(api: OlimanagerApi, participantId: n
 }
 
 async function getVenueForContest(api: OlimanagerApi, contestId: number, venueName: string) {
-  const result = await api.query(query_get_venues, { contestId, venueName });
+  // prova prima con "Distretto di {venueName}"
+  const result = await api.query(query_get_venues, { contestId, venueName: `Distretto di ${venueName}` });
   const edges = result?.data?.venues?.venues?.edges;
   if (edges && edges.length > 0) {
     return edges[0].node;
+  }
+  
+  // poi prova con il nome esatto
+  const result2 = await api.query(query_get_venues, { contestId, venueName });
+  const edges2 = result2?.data?.venues?.venues?.edges;
+  if (edges2 && edges2.length > 0) {
+    return edges2[0].node;
   }
   return null;
 }
