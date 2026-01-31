@@ -127,12 +127,14 @@ async function processRow(
       const rowId = row._id;
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
 
+      console.log(`syncDataWithOlimanager result: ${JSON.stringify(result)}`)
+
       if (result.skipped) {
           return { success: true, participantId: result.participantId, skipped: true };
       }
 
       if (result.success) {
-        console.log('Updating row with participantId:', result.participantId)
+        console.log(`Updating row with participantId: ${result.participantId}, contestId: ${result.contestId}`);
         
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const $set: any = {
@@ -141,7 +143,7 @@ async function processRow(
               'olimanager.error': '',
               'olimanager.result': result.rawResult,
         }
-        if (result.converted && result.contestId) {
+        if (result.contestId) {
             $set['olimanager.contestId'] = result.contestId
         }
 
@@ -257,7 +259,7 @@ async function syncDataWithOlimanager(
         console.log(`  SUCCESS: participantId: ${result.participant.id}, competitorCreated: ${result.competitorCreated}, participantCreated: ${result.participantCreated}`)
         console.log(JSON.stringify(result))
         const participantId = result?.participant?.id ? String(result.participant.id) : undefined
-        return { success: true, participantId, rawResult: result }
+        return { success: true, participantId, rawResult: result, contestId: String(contestId) }
       } else {
         console.log(`  FAILURE:`, result?.error || result?.messages || 'unknown')
         console.log(JSON.stringify(result))
@@ -451,16 +453,16 @@ async function getCompetitorFromParticipant(api: OlimanagerApi, participantId: n
 async function getVenueForContest(api: OlimanagerApi, contestId: number, venueName: string) {
   // prova prima con "Distretto di {venueName}"
   const result = await api.query(query_get_venues, { contestId, venueName: `Distretto di ${venueName}` });
-  const edges = result?.data?.venues?.venues?.edges;
-  if (edges && edges.length > 0) {
-    return edges[0].node;
+  const venues = result?.data?.venues?.venues;
+  if (venues && venues.length > 0) {
+    return venues[0];
   }
 
   // poi prova con il nome esatto
   const result2 = await api.query(query_get_venues, { contestId, venueName });
-  const edges2 = result2?.data?.venues?.venues?.edges;
-  if (edges2 && edges2.length > 0) {
-    return edges2[0].node;
+  const venues2 = result2?.data?.venues?.venues;
+  if (venues2 && venues2.length > 0) {
+    return venues2[0];
   }
   return null;
 }
