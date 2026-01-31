@@ -137,6 +137,9 @@ export default async function olimanagerBulkUpdateResults(
         // Converte la riga in problemResults (16 problemi)
         const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results!(row, sheet.commonData, workbook.commonData);
 
+        // Salta se non ci sono risultati da inviare (variant '0' o '000', assente)
+        if (problemResults.length === 0) return;
+
         // Sanity check...
         const score = problemResults.reduce((sum, pr) => sum + (pr.score || 0), 0);
         if (score !== parseInt(row.data.score || '-1', 10)) {

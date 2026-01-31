@@ -125,6 +125,21 @@ async function processRow(
   schema: Schema
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}> {
       const rowId = row._id;
+
+      const variant = row.data['variant'];
+      if (variant === '0' || variant === '000') {
+        console.log(`Row ${rowId} skipped because variant is '${variant}' (ABSENT)`);
+        
+        // Se c'era un errore precedente su questa riga relativo a olimanager, lo puliamo
+        if (row.olimanager?.error) {
+           await rows.updateOne(
+             { _id: rowId },
+             { $set: { 'olimanager.error': '' } }
+           );
+        }
+        return { success: true, skipped: true };
+      }
+
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
 
       console.log(`syncDataWithOlimanager result: ${JSON.stringify(result)}`)

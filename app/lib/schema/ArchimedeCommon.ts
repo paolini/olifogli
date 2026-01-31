@@ -139,6 +139,11 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
     extract_olimanager_results = (
       row: Row, sheetData: Data, workbookData: Data
     ): OlimanagerProblemResult[] => {
+        const variant = row.data['variant'];
+        if (variant === '0' || variant === '000') {
+            return [];
+        }
+
         const contestId = this.get_contest_id(workbookData);
 
         if (!row.olimanager || !row.olimanager.participantId) {
