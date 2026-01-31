@@ -4,7 +4,6 @@ import { QueryWorkbookDistributionReportArgs, DistributionReport, ScoreDistribut
 import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import { getAllSheets } from './sheetsReportHelper'
-import Competition from '@/app/lib/schema/Competition'
 import { schemas } from '@/app/lib/schema'
 
 export default async function workbookDistributionReport(
@@ -17,7 +16,7 @@ export default async function workbookDistributionReport(
     const reports: DistributionReport[] = []
     
     for (const schema of allSchemas) {  
-        if (schemas[schema] instanceof Competition) {     
+        if (schemas[schema].extract_ranking) {     
             const sheets = allSheets.filter(s => s.schema === schema)
             reports.push({
                 schema,

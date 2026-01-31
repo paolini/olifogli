@@ -6,7 +6,6 @@ import { Sheet } from '@/app/lib/models'
 import { Row } from '@/app/lib/models'
 import { getAllSheets } from './sheetsReportHelper'
 import { schemas } from '@/app/lib/schema'
-import Competition from '@/app/lib/schema/Competition'
 
 export default async function workbookRankingReport(
     _: unknown, 
@@ -18,7 +17,7 @@ export default async function workbookRankingReport(
     const reports: RankingReport[] = []
 
     for (const schema of allSchemas) {
-        if (schemas[schema] instanceof Competition) {
+        if (schemas[schema].extract_ranking) {
             const sheets = allSheets.filter(s => s.schema === schema)
             const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel, onlySelected, orderBy, orderDirection)
             reports.push({
@@ -89,7 +88,7 @@ async function generateRankingReport(
         const sheet = sheetMap.get(row.sheetId.toString())
         if (!sheet) continue
         const schemaObj = schemas[sheet.schema]
-        if (!(schemaObj instanceof Competition)) continue
+        if (!schemaObj.extract_ranking) continue
 
         const rankingEntry = schemaObj.extract_ranking(row, sheet)
         if (!rankingEntry) continue

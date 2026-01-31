@@ -5,8 +5,6 @@ import { ObjectId, WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import { getAllSheets } from './sheetsReportHelper'   
 import { schemas } from '@/app/lib/schema'
-import Competition from '@/app/lib/schema/Competition'
-
 
 export default async function workbookTimeDistributionReport(
     _: unknown, 
@@ -19,7 +17,7 @@ export default async function workbookTimeDistributionReport(
     const reports: TimeDistributionReport[] = []
 
     for (const schema of allSchemas) {
-        if (schemas[schema] instanceof Competition) {  
+        if (schemas[schema].extract_ranking) {  
             const sheets = allSheets.filter(s => s.schema === schema)
             reports.push({
                 schema,
