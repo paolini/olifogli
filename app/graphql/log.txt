@@ -1,0 +1,65 @@
+=== olimanagerCreateParticipant START ===
+Input params: {
+  rowIds: 1,
+  sheetIds: undefined,
+  username: 'emanuele.paolini@unipi.it',
+  passwordProvided: true
+}
+Total final rowIds to process: 1
+Using endpoint: https://olimpiadi-scientifiche.it/graphql/
+OlimanagerApi created with username: emanuele.paolini@unipi.it
+Logging in
+Creating session
+Olimanager login successful
+Starting processing 1 rows
+--- Processing row 1/1: 696a035fe78a56fe8c388772 ---
+GaraPrime.get_school_external_id: cercando campo "codice_meccanografico" nei dati della scuola
+Dati: {"id":"","surname":"De Santis","name":"Benedetta","birthDate":"08/12/2011","codice_meccanografico":"CSPS03000G","nome_scuola":"Scorza","città_scuola":"Cosenza","classSection":"D","variant":"4","r01":"D [EAB]","r02":"B [ECC]","r03":"D [DED]","r04":"D [DAA]","r05":"C [ACB]","r06":"B [BCC]","r07":"- [D-C]","r08":"- [D-C]","r09":"- [D-B]","r10":"- [CBE]","r11":"- [E-C]","r12":"E [C-E]","r13":"- [B-B]","r14":"- [EAC]","r15":"B [DBD]","r16":"D [ABB]","r17":"E [A-A]","r18":"E [ECD]","score":"27"}
+Extracted contestId: 33 schoolExternalId: CSPS03000G
+  NOTE: la riga ha un participantId (421727) per un contestId diverso (31 vs 33)
+    Devo ottenere il competitor_id e il participant_id corretti per il contestId 33
+Creazione/abbinamento partecipante per riga 696a035fe78a56fe8c388772 (De Santis Benedetta)
+  schoolExternalId: CSPS03000G, contestId: 33, classYear: 8, section: D, birthDate: 2011-12-08
+    WARNING: Competitor not found for participantId 421727
+--- matchOrCreateParticipant START ---
+contestId: 33 participantData: {
+  schoolExternalId: 'CSPS03000G',
+  name: 'Benedetta',
+  surname: 'De Santis',
+  classYear: 8,
+  section: 'D',
+  birthDate: '2011-12-08'
+}
+OperationInfo messages: [
+  {
+    message: 'This mutation is allowed only for school type contests.',
+    kind: 'VALIDATION'
+  }
+]
+matchOrCreateParticipant result: {
+  success: false,
+  messages: [
+    {
+      message: 'This mutation is allowed only for school type contests.',
+      kind: 'VALIDATION'
+    }
+  ],
+  input: {
+    schoolExternalId: 'CSPS03000G',
+    name: 'Benedetta',
+    surname: 'De Santis',
+    classYear: 8,
+    section: 'D',
+    birthDate: '2011-12-08'
+  }
+}
+  FAILURE: [
+  {
+    message: 'This mutation is allowed only for school type contests.',
+    kind: 'VALIDATION'
+  }
+]
+{"success":false,"messages":[{"message":"This mutation is allowed only for school type contests.","kind":"VALIDATION"}],"input":{"schoolExternalId":"CSPS03000G","name":"Benedetta","surname":"De Santis","classYear":8,"section":"D","birthDate":"2011-12-08"}}
+Updating row with error: [{"message":"This mutation is allowed only for school type contests.","kind":"VALIDATION"}]
+Row updated with error
+=== olimanagerCreateParticipant END ===

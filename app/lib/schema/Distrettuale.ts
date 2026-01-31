@@ -2,40 +2,47 @@ import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
 import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField } from './fields'
 import Schema, { RowToSheetsResult } from './Schema'
+import CompetitionWithVariants from './CompetitionWithVariants'
 
-export default class Distrettuale extends Schema {
+const expectedMinAge = 10
+const expectedMaxAge = 20
+
+// campi in comune tra Distrettuale e ImportazioneDistrettuale
+const fields = [
+    new Field('surname',{header: "Cognome", titleCase: true}),
+    new Field('name',{header: "Nome", titleCase: true}),
+    new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
+    new Field('codice_meccanografico',{header: 'Codice meccanografico'}),
+    new Field('nome_scuola',{header: 'Scuola', hidden: true, required: false}),
+    new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
+    new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno'], precompileValue: true}),
+    new Field('classSection',{header:'Sezione', precompileValue: true}),
+    new VariantField('variant',{header: "Codice compito (0 se assente)", additionalCssStyle: 'thick-border-left'}),
+    new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
+    new ChoiceAnswerField('r02', {header: '2'}),
+    new ChoiceAnswerField('r03', {header: '3', additionalCssStyle: 'thick-border-right'}),
+    new ChoiceAnswerField('r04', {header: '4'}),
+    new ChoiceAnswerField('r05', {header: '5'}),
+    new ChoiceAnswerField('r06', {header: '6', additionalCssStyle: 'thick-border-right'}),
+    new ChoiceAnswerField('r07', {header: '7'}),
+    new ChoiceAnswerField('r08', {header: '8'}),
+    new ChoiceAnswerField('r09', {header: '9', additionalCssStyle: 'thick-border-right'}),
+    new ChoiceAnswerField('r10', {header: '10'}),
+    new ChoiceAnswerField('r11', {header: '11'}),
+    new ChoiceAnswerField('r12', {header: '12', additionalCssStyle: 'thick-border-right'}),
+    new NumericAnswerField('r13', {header: '13'}),
+    new NumericAnswerField('r14', {header: '14'}),
+    new ScoreAnswerField('r15', {header: '15'}),
+    new ScoreAnswerField('r16', {header: '16'}),
+    new ScoreAnswerField('r17', {header: '17'}),
+    new ScoreField('score', 115, {additionalCssStyle: 'thick-border-right'}),
+]
+
+export default class Distrettuale extends CompetitionWithVariants {
     constructor() {
-        const expectedMinAge = 10
-        const expectedMaxAge = 20
         super('distrettuale', 'Distrettuale', [
             new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
-            new Field('surname',{header: "Cognome", titleCase: true}),
-            new Field('name',{header: "Nome", titleCase: true}),
-            new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
-            new Field('codice_meccanografico',{header: 'Codice meccanografico'}),
-            new Field('nome_scuola',{header: 'Scuola', hidden: true, required: false}),
-            new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
-            new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno'], precompileValue: true}),
-            new Field('classSection',{header:'Sezione', precompileValue: true}),
-            new VariantField('variant',{header: "Codice compito (0 se assente)", additionalCssStyle: 'thick-border-left'}),
-            new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
-            new ChoiceAnswerField('r02', {header: '2'}),
-            new ChoiceAnswerField('r03', {header: '3', additionalCssStyle: 'thick-border-right'}),
-            new ChoiceAnswerField('r04', {header: '4'}),
-            new ChoiceAnswerField('r05', {header: '5'}),
-            new ChoiceAnswerField('r06', {header: '6', additionalCssStyle: 'thick-border-right'}),
-            new ChoiceAnswerField('r07', {header: '7'}),
-            new ChoiceAnswerField('r08', {header: '8'}),
-            new ChoiceAnswerField('r09', {header: '9', additionalCssStyle: 'thick-border-right'}),
-            new ChoiceAnswerField('r10', {header: '10'}),
-            new ChoiceAnswerField('r11', {header: '11'}),
-            new ChoiceAnswerField('r12', {header: '12', additionalCssStyle: 'thick-border-right'}),
-            new NumericAnswerField('r13', {header: '13'}),
-            new NumericAnswerField('r14', {header: '14'}),
-            new ScoreAnswerField('r15', {header: '15'}),
-            new ScoreAnswerField('r16', {header: '16'}),
-            new ScoreAnswerField('r17', {header: '17'}),
-            new ScoreField('score', 115, {additionalCssStyle: 'thick-border-right'}),
+            ...fields
         ])
     }
 
@@ -160,39 +167,14 @@ export class ImportazioneDistrettuale extends Schema {
     TargetSchema: Schema
 
     constructor() {
-        const expectedMinAge = 10
-        const expectedMaxAge = 20
         super('importazione_distrettuale', 'Importazione Distrettuale', [
             new Field('distretto',{header: "Distretto", alternativeNames: ["Sede di partecipazione"]}),
-            new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
             new NumericField('participant_id',{header: "participant_id", required: false, alternativeNames: ["ID partecipante"]}),
-            new Field('surname',{header: "Cognome", titleCase: true}),
-            new Field('name',{header: "Nome", titleCase: true}),
-            new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
-            new Field('codice_meccanografico',{header: 'Codice meccanografico'}),
-            new Field('nome_scuola',{header: 'Scuola', hidden: true, required: false, alternativeNames: ['Nome Scuola']}),
-            new Field('città_scuola',{header: 'Città', hidden: true, required: false, alternativeNames: ['Città Scuola']}),
-            new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno','classe'], precompileValue: true}),
-            new Field('classSection',{header:'Sezione', precompileValue: true}),
-            new VariantField('variant',{header: "Codice compito (0 se assente)", additionalCssStyle: 'thick-border-left'}),
-            new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
-            new ChoiceAnswerField('r02', {header: '2'}),
-            new ChoiceAnswerField('r03', {header: '3', additionalCssStyle: 'thick-border-right'}),
-            new ChoiceAnswerField('r04', {header: '4'}),
-            new ChoiceAnswerField('r05', {header: '5'}),
-            new ChoiceAnswerField('r06', {header: '6', additionalCssStyle: 'thick-border-right'}),
-            new ChoiceAnswerField('r07', {header: '7'}),
-            new ChoiceAnswerField('r08', {header: '8'}),
-            new ChoiceAnswerField('r09', {header: '9', additionalCssStyle: 'thick-border-right'}),
-            new ChoiceAnswerField('r10', {header: '10'}),
-            new ChoiceAnswerField('r11', {header: '11'}),
-            new ChoiceAnswerField('r12', {header: '12', additionalCssStyle: 'thick-border-right'}),
-            new NumericAnswerField('r13', {header: '13'}),
-            new NumericAnswerField('r14', {header: '14'}),
-            new ScoreAnswerField('r15', {header: '15'}),
-            new ScoreAnswerField('r16', {header: '16'}),
-            new ScoreAnswerField('r17', {header: '17'}),
-            new ScoreField('score', 115, {additionalCssStyle: 'thick-border-right'}),
+            new Field('surname_backup',{header: "Cognome (backup)", titleCase: true}),
+            new Field('name_backup',{header: "Nome (backup)", titleCase: true}),
+            new DateField('birthDate_backup',{header: 'Data di nascita (backup)', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
+
+            ...fields, // campi della gara distrettuale
         ])
 
         this.TargetSchema = new Distrettuale()
