@@ -1,5 +1,5 @@
 import { Row, ScanResults } from "@/app/graphql/generated"
-import { Data, Sheet } from '@/app/lib/models'
+import { Data, Sheet, Row as RowModel } from '@/app/lib/models'
 import { Field } from './fields'
 
 export type DerivedData = {
@@ -15,6 +15,14 @@ export type Selection = {
     row_filter?: Record<string, unknown>,
 }
 
+export type RowToSheetsResult = {
+    schema: string,
+    sheet_name: string,
+    row: {
+        data: Data,
+    } | string // error message
+}
+
 export default class Schema {
     fields: Field[]
     name: string // da usare nel codice
@@ -24,6 +32,7 @@ export default class Schema {
     fields_to_be_copied_on_new_row: string[] = [] // nomi dei campi da copiare quando si crea una nuova riga
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
     selections: Selection[] = [] // selezioni possibili per questo schema
+    row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
 
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields

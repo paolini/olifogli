@@ -323,7 +323,8 @@ type Mutation {
   lockSheet(_id: ObjectId!): Boolean
   unlockSheet(_id: ObjectId!): Boolean
 
-  createSheets(sheetId: ObjectId, rowIds: [ObjectId!]): CreateSheetsResult!
+  # create new sheets and rows from rows provided in an existing sheet
+  createSheets(sheetId: ObjectId!, rowIds: [ObjectId!]): CreateSheetsResult!
 
   olimanagerCreateParticipant(
     rowIds: [ObjectId!]
