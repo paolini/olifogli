@@ -396,7 +396,7 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
 }
 
 const query_get_competitor = `
-query GetCompetitor($participantId: ID!) {
+query GetCompetitor($participantId: Int!) {
   participants {
     participants(participantId: $participantId) {
       edges {
@@ -468,7 +468,6 @@ async function manualCreateParticipantHelper(api: OlimanagerApi, competitorId: s
   }
   return result?.data?.participants?.manualCreateParticipant?.participant?.id;
 }
-
 
 /*
 Creazione/abbinamento partecipante per riga 6929aecaffb46aa2834c64a3 (Giordano Alessandro)
