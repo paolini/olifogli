@@ -154,9 +154,11 @@ export default class GaraPrime extends CompetitionWithVariants {
         }
     }
 
-    get_school_external_id(data: Data): string {
+    get_school_external_id(row_data: Data, sheet_data: Data): string {
         const FIELD_NAME = "codice_meccanografico"
-        const schoolExternalId = data[FIELD_NAME]
+        console.log(`GaraPrime.get_school_external_id: cercando campo "${FIELD_NAME}" nei dati della scuola`)
+        console.log(`Dati: ${JSON.stringify(row_data)}`)
+        const schoolExternalId = row_data[FIELD_NAME]
         if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
         return schoolExternalId
     }
