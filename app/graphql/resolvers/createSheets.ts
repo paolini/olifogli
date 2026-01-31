@@ -2,16 +2,15 @@ import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "
 import { CreateSheetsResult, MutationCreateSheetsArgs } from "../generated";
 import { Context } from "../types";
 import { schemas } from "@/app/lib/schema";
-import { ImportazioneDistrettuale } from "@/app/lib/schema/Distrettuale";
 
 export default async function createSheets(
   _: unknown,
 {sheetId, rowIds}: MutationCreateSheetsArgs,
 context: Context): Promise<CreateSheetsResult> {    
-    let sheets_created = 0;
-    let sheets_updated = 0;
-    let rows_created = 0;
-    let rows_updated = 0;
+    const sheets_created = 0;
+    const sheets_updated = 0;
+    const rows_created = 0;
+    const rows_updated = 0;
     let error = '';
 
     const sheeteCollection = await getSheetsCollection();
