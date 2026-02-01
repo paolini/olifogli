@@ -64,23 +64,17 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                 // Merge permissions avoiding duplicates
                 const mergedPermissions = [...existing.permissions]
                 for (const p of existing.permissions) {
-                    const match = job.permissions.find(np => 
-                        (p.email && np.email && p.email === np.email) ||
-                        (p.userId && np.userId && p.userId.equals(np.userId))
-                    )
+                    const match = job.permissions.find(np => p.email && np.email && p.email === np.email)
                     if (!match) {
-                        modifications.push(`(!) rimosso permesso ${p.email || p.userId} (${p.role})`)
+                        modifications.push(`(!) rimosso permesso ${p.email} (${p.role})`)
                     }
                 }
                 for (const newPerm of job.permissions) {
-                    const exists = mergedPermissions.some(p => 
-                        (p.email && newPerm.email && p.email === newPerm.email) ||
-                        (p.userId && newPerm.userId && p.userId.equals(newPerm.userId))
-                    )
+                    const exists = mergedPermissions.some(p => p.email && newPerm.email && p.email === newPerm.email)
                     if (!exists) {
                         mergedPermissions.push(newPerm)
                         modified = true
-                        modifications.push(`aggiunto permesso ${newPerm.email || newPerm.userId} (${newPerm.role})`)
+                        modifications.push(`aggiunto permesso ${newPerm.email} (${newPerm.role})`)
                     }
                 }
                 existing.permissions = mergedPermissions
@@ -310,7 +304,7 @@ function Process({jobsCallback, workbookId, done}: {
                     {job.name}
                 </td>
                 <td>
-                    {job.permissions.map(p => `${p.email || 'ID:' + p.userId} (${p.role})`).join(', ')}
+                    {job.permissions.map(p => `${p.email} (${p.role})`).join(', ')}
                 </td>
                 <td>
                     {job.commonData?.Nome_scuola}
@@ -339,7 +333,6 @@ function Process({jobsCallback, workbookId, done}: {
                 name: job.name,
                 permissions: job.permissions.map(p => ({
                     email: p.email,
-                    userId: p.userId,
                     role: p.role
                 })),
                 commonData: job.commonData,
@@ -389,8 +382,7 @@ function Process({jobsCallback, workbookId, done}: {
 type UpdateInfo = {
     _id: ObjectId,
     permissions: {
-        email?: string,
-        userId?: ObjectId,
+        email: string,
         role: string
     }[],
     commonData: Data
@@ -400,8 +392,7 @@ function update_info_from_job(job: Job): UpdateInfo {
     return {
         _id: job.sheet!._id!,
         permissions: job.permissions.map(p => ({
-            email: p.email || undefined,
-            userId: p.userId || undefined,
+            email: p.email,
             role: p.role
         })),
         commonData: job.commonData,

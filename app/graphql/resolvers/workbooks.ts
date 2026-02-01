@@ -18,7 +18,6 @@ export default async function workbooks(_: unknown, __: unknown, context: Contex
             { $match: { $or: [
                 { ownerId: user._id },
                 { 'permissions.email': user.email },
-                { 'permissions.userId': user._id },
             ] } },
             { $group: { _id: "$workbookId" } },
             {

@@ -27,14 +27,12 @@ type Workbook {
 }
 
 type Permission {
-  email: String
-  userId: ObjectId
+  email: String!
   role: String!
 }
 
 input PermissionInput {
-  email: String
-  userId: ObjectId
+  email: String!
   role: String!
 }
 

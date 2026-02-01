@@ -30,8 +30,7 @@ export default async function updateSheets (_: unknown, { sheets }: MutationUpda
         if (sheetInput.permissions) {
             // Converti PermissionInput a Permission
             const newPermissions = sheetInput.permissions.map(p => ({
-                email: p.email || undefined,
-                userId: p.userId || undefined,
+                email: p.email,
                 role: p.role
             }))
             
@@ -39,8 +38,7 @@ export default async function updateSheets (_: unknown, { sheets }: MutationUpda
             const mergedPermissions = [...(existingSheet.permissions || [])]
             for (const newPerm of newPermissions) {
                 const isDuplicate = mergedPermissions.some(existingPerm =>
-                    (newPerm.email && existingPerm.email === newPerm.email) ||
-                    (newPerm.userId && existingPerm.userId?.toString() === newPerm.userId.toString())
+                    (newPerm.email && existingPerm.email === newPerm.email)
                 )
                 if (!isDuplicate) {
                     mergedPermissions.push(newPerm as Permission)

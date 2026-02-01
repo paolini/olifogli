@@ -21,8 +21,7 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
   
   if (args.permissions && Array.isArray(args.permissions)) {
     update.permissions = args.permissions.map(p => ({
-      email: p.email || undefined,
-      userId: p.userId || undefined,
+      email: p.email,
       role: p.role as 'admin' | 'editor' | 'view'
     }))
   }

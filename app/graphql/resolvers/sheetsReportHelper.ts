@@ -21,7 +21,6 @@ export default async function sheetsReportHelper(
         sheetFilter.$or = [
             { ownerId: user._id },
             { 'permissions.email': user.email },
-            { 'permissions.userId': user._id },
         ]
     }
 
@@ -60,7 +59,6 @@ export async function getAllSheets(
         sheetFilter.$or = [
             { ownerId: user._id },
             { 'permissions.email': user.email },
-            { 'permissions.userId': user._id },
         ]
     }
 
