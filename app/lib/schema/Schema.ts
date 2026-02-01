@@ -1,5 +1,5 @@
-import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
-import { Data, Sheet, Row as RowModel } from '@/app/lib/models'
+import { Permission, ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
+import { Data, Sheet, Row as RowModel, Permission as PermissionModel } from '@/app/lib/models'
 import { Field } from './fields'
 
 export type DerivedData = {
@@ -23,12 +23,21 @@ export type OlimanagerProblemResult = {
 }
 
 export type RowToSheetsResult = {
-    schema: string,
-    sheet_name: string,
-    row: {
+    sheet: {
+        schema: string,
+        name: string,
+        permissions?: PermissionModel[]
+        data?: Data,
+    },
+    row?: {
         data: Data,
-    } | string // error message
-}
+        olimanager?: {
+            participantId?: string,
+            competitionId?: string,
+        },
+        unique_keys: string[], // nomi dei campi da usare come chiavi univoche per la riga
+    }
+} | string // error message
 
 export default class Schema {
     fields: Field[]

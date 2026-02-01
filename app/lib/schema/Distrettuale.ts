@@ -3,6 +3,7 @@ import { Data, Row, ScanResults, Sheet } from '../models'
 import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField } from './fields'
 import Schema, { RowToSheetsResult } from './Schema'
 import CompetitionWithVariants from './CompetitionWithVariants'
+import { schemas } from '../schema'
 
 const expectedMinAge = 10
 const expectedMaxAge = 20
@@ -162,12 +163,12 @@ export default class Distrettuale extends CompetitionWithVariants {
     }
 }
 
-export class ImportazioneDistrettuale extends Schema {
+export class ImportazionePartecipantiDistrettuale extends Schema {
     fields_to_be_ignored_on_inport: string[] = ["distretto", "ruolo", "approvato/a", "idoneo/a", "ID scuola", "Tipo Scuola", "indirizzo scuola", "CAP scuola", "Provincia scuola", "Sigla provincia scuola", "Regione scuola", "email scuola", "ID sede ufficiale", "Sede ufficiale", "ID sede di partecipazione", "Codice fiscale", "Qualificato", "Email", "Genere", "Punteggio totale"]
     TargetSchema: Schema
 
     constructor() {
-        super('importazione_distrettuale', 'Importazione Distrettuale', [
+        super('importazione_partecipanti_distrettuale', 'Importazione Partecipanti Distrettuale', [
             new Field('distretto',{header: "Distretto", alternativeNames: ["Sede di partecipazione"]}),
             new NumericField('participant_id',{header: "participant_id", required: false, alternativeNames: ["ID partecipante"]}),
             new Field('surname_backup',{header: "Cognome (backup)", titleCase: true}),
@@ -188,14 +189,56 @@ export class ImportazioneDistrettuale extends Schema {
         const sheet_name = row.data['distretto'].replace('Distretto di ','').trim()
         if (!sheet_name) return "distretto non definito"
         return {
-            schema: TargetSchema.name,
-            sheet_name: sheet_name,
+            sheet:  {
+                schema: TargetSchema.name,
+                name: sheet_name,
+            },
             row: {
                 data: Object.fromEntries(TargetSchema.fields.map(
                     field => [field.name, row.data[field.name] || '']
-                ))
+                )),
+                unique_keys: ['surname','name','birthDate'],
             }
         }
     }
 }
 
+export class Distretti extends Schema {
+    TargetSchema: Schema = new Distrettuale()
+
+    constructor() {
+        const fields_to_be_ignored_on_inport = ['user.phoneNumber', 'school.address']
+        super('distretti', 'Distretti', [
+            new Field("distretto", {alternativeNames: ["zone"]}),
+            new Field("id_distretto", {alternativeNames: ["zone_id"]}),
+            new Field("cd", {alternativeNames: ["isPrimary"]}),
+            new Field("nome", {alternativeNames: ["name"]}),
+            new Field("cognome", {alternativeNames: ["surname"]}),
+            new Field("email"),
+            new Field("school_name", {alternativeNames: ["school.name"]}),
+            new Field("school_city", {alternativeNames: ["school.city"]}),
+        ])
+    }
+
+    row_to_sheet = (row: Row): RowToSheetsResult|string => {
+        const TargetSchema = this.TargetSchema
+        const sheet_name = row.data['distretto'].replace('Distretto di ','').trim()
+        const isPrimary = row.data['cd'] && row.data['cd'] === '1'
+        if (!sheet_name) return "distretto non definito"
+
+        return {
+            sheet: {
+                schema: TargetSchema.name,
+                name: sheet_name,
+                permissions: [{
+                    email: row.data['email'],
+                    role: isPrimary ? 'admin' : 'editor',
+                }],
+                data: {
+                    id_distretto: row.data['id_distretto'],
+                    referente: `${row.data['nome']} ${row.data['cognome']}`,
+                }
+            }
+        }
+    }
+}

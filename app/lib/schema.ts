@@ -2,7 +2,7 @@ import Schema from './schema/Schema'
 import ArchimedeBiennio from './schema/ArchimedeBiennio'
 import ArchimedeTriennio from './schema/ArchimedeTriennio'
 import GaraPrime from './schema/GaraPrime'
-import Distrettuale, { ImportazioneDistrettuale } from './schema/Distrettuale'
+import Distrettuale, { ImportazionePartecipantiDistrettuale, Distretti } from './schema/Distrettuale'
 import AmmissioneSenior from './schema/AmmissioneSenior'
 import Scuole from './schema/Scuole'
 
@@ -13,7 +13,8 @@ const schemaClasses: Array<new () => Schema> = [
     Distrettuale,
     AmmissioneSenior,
     Scuole,
-    ImportazioneDistrettuale,
+    ImportazionePartecipantiDistrettuale,
+    Distretti,
 ]
 
 export const schemas = Object.fromEntries(

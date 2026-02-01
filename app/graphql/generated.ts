@@ -154,6 +154,7 @@ export type MutationCloseSheetArgs = {
 
 
 export type MutationCreateSheetsArgs = {
+  dry?: InputMaybe<Scalars['Boolean']['input']>;
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetId: Scalars['ObjectId']['input'];
 };
@@ -307,15 +308,13 @@ export type OlimanagerRowData = {
 
 export type Permission = {
   __typename?: 'Permission';
-  email?: Maybe<Scalars['String']['output']>;
+  email: Scalars['String']['output'];
   role: Scalars['String']['output'];
-  userId?: Maybe<Scalars['ObjectId']['output']>;
 };
 
 export type PermissionInput = {
-  email?: InputMaybe<Scalars['String']['input']>;
+  email: Scalars['String']['input'];
   role: Scalars['String']['input'];
-  userId?: InputMaybe<Scalars['ObjectId']['input']>;
 };
 
 export type Query = {
@@ -669,7 +668,7 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email: string, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -924,7 +923,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email?: string | null, userId?: ObjectId | null, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email: string, role: string }> }> };
 
 export type GetWorkbookTimeDistributionReportQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -1285,7 +1284,6 @@ export const GetSheetDocument = gql`
     schema
     permissions {
       email
-      userId
       role
     }
     workbook {
@@ -2583,7 +2581,6 @@ export const GetSheetsDocument = gql`
     commonData
     permissions {
       email
-      userId
       role
     }
     updatedAt
@@ -3086,7 +3083,7 @@ export type ResolversTypes = {
   ObjectId: ResolverTypeWrapper<ObjectId>;
   OlimanagerCreateResult: ResolverTypeWrapper<OlimanagerCreateResult>;
   OlimanagerRowData: ResolverTypeWrapper<OlimanagerRowData>;
-  Permission: ResolverTypeWrapper<Omit<Permission, 'userId'> & { userId?: Maybe<ResolversTypes['ObjectId']> }>;
+  Permission: ResolverTypeWrapper<Permission>;
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
   RankingReport: ResolverTypeWrapper<RankingReport>;
@@ -3131,7 +3128,7 @@ export type ResolversParentTypes = {
   ObjectId: ObjectId;
   OlimanagerCreateResult: OlimanagerCreateResult;
   OlimanagerRowData: OlimanagerRowData;
-  Permission: Omit<Permission, 'userId'> & { userId?: Maybe<ResolversParentTypes['ObjectId']> };
+  Permission: Permission;
   PermissionInput: PermissionInput;
   Query: {};
   RankingReport: RankingReport;
@@ -3278,9 +3275,8 @@ export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends Res
 };
 
 export type PermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission']> = {
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  userId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
