@@ -47,8 +47,6 @@ export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): She
       
       if (permission.email && permission.email === user.email) {
         hasPermission = true
-      } else if (permission.userId && permission.userId.equals(user._id)) {
-        hasPermission = true
       }
       
       if (hasPermission) {

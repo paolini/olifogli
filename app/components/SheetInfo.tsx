@@ -158,10 +158,7 @@ function PanelEdit({sheet,profile}: {
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
     const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
-    // questi utenti possono aprire/chiudere ma non bloccare.
-    // possono anche gestire i permessi di acceso al foglio (altri utenti)
-    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => p.userId === profile._id && p.role === 'admin'))
-
+ 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
 
     return <>
@@ -276,7 +273,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
     // questi utenti possono aprire/chiudere ma non bloccare.
     // possono anche gestire i permessi di acceso al foglio (altri utenti)
-    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.userId && p.userId === profile._id || p.email && p.email === profile.email) && p.role === 'admin'))
+    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.email && p.email === profile.email) && p.role === 'admin'))
 
     const schema = schemas[sheet.schema]
     const countSheetAdmins = sheet.permissions.filter(p => p.role === 'admin').length
@@ -367,7 +364,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
         <tbody>
           {permissions.map((permission, index) => (
               <tr key={index}>
-              <td>{permission.email || `ID: ${permission.userId}`}</td>
+              <td>{permission.email}</td>
               <td>{ROLE_LABELS[permission.role]}</td>
                 <td>{<Button variant="danger" disabled={updating || (profile?.email===permission.email && !profile?.isAdmin)} onClick={() => removePermission(index)}>
                     rimuovi
@@ -437,7 +434,6 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
       // Keep only the fields defined in PermissionInput
       const cleanPermissions = next.map(permission => ({
         email: permission.email,
-        userId: permission.userId,
         role: permission.role
       }))
       await updateSheet({ variables: { _id: sheet._id, permissions: cleanPermissions },
@@ -454,7 +450,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     }
 
     async function removePermission(index: number) {
-        if (!confirm(`Sei sicuro di voler rimuovere i permessi per ${permissions[index].email || `ID: ${permissions[index].userId}`}?`)) return
+        if (!confirm(`Sei sicuro di voler rimuovere i permessi per ${permissions[index].email}?`)) return
         await persistPermissions(permissions.filter((_, i) => i !== index))
     }
 

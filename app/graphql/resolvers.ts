@@ -97,7 +97,6 @@ export const resolvers: Resolvers = {
           $or: [
             { ownerId: user._id },
             { 'permissions.email': user.email },
-            { 'permissions.userId': user._id },
           ]
         })
       }

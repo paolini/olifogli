@@ -12,8 +12,7 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
     const result = await collection.insertMany(sheets.map(sheet => {
         // Converti PermissionInput a Permission
         const permissions = (sheet.permissions || []).map(p => ({
-            email: p.email || undefined,
-            userId: p.userId || undefined,
+            email: p.email,
             role: p.role as 'admin' | 'editor' | 'view'
         }))
         

@@ -16,8 +16,7 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     
     // Converti PermissionInput a Permission
     const permissions = (args.permissions || []).map(p => ({
-        email: p.email || undefined,
-        userId: p.userId || undefined,
+        email: p.email,
         role: p.role as 'admin' | 'editor' | 'view'
     }))
     

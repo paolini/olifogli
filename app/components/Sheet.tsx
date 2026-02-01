@@ -28,7 +28,6 @@ const _ = gql`
             schema
             permissions {
                 email
-                userId
                 role
             }
             workbook {

@@ -108,7 +108,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
-    const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && (p.userId?.toString() === profile?._id?.toString() || p.email === profile?.email))
+    const userHasSheetAdminPrivileges = profile?.isAdmin || sheet.ownerId.toString() === profile?._id?.toString() || sheet.permissions.some(p => p.role === 'admin' && p.email === profile?.email)
     const [checkboxesState, setCheckboxesState] = useCheckboxesState();
     const [tableState, setTableState ] = useState<TableState>(EMPTY_TABLE_STATE);
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});

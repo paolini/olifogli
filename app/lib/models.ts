@@ -33,8 +33,7 @@ export type User = {
 export type SheetPermissionRole = 'owner' | 'admin' | 'editor' | 'view';
 
 export type Permission = {
-    email?: string
-    userId?: ObjectId
+    email: string
     role: SheetPermissionRole
 }
 

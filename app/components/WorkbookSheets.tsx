@@ -15,7 +15,6 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
             commonData
             permissions {
                 email
-                userId
                 role
             }
             updatedAt

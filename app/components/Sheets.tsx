@@ -389,19 +389,18 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         // Aggiorna i permessi su ciascun foglio: sostituisce eventuale entry per la stessa email
         await Promise.all(selectedSheets.map(async (sheet) => {
             const existing = (sheet.permissions || [])
-            type PermInput = { email?: string; userId?: ObjectId; role: 'admin'|'editor'|'view' }
+            type PermInput = { email: string; role: 'admin'|'editor'|'view' }
             // Rimuovi l'eventuale permesso per la stessa email e pulisci i campi per l'input GraphQL (niente __typename)
             const kept: PermInput[] = existing
                 .filter(p => p.email !== emailTrimmed)
-                .map(p => ({ email: p.email || undefined, userId: p.userId || undefined, role: p.role as 'admin'|'editor'|'view' }))
+                .map(p => ({ email: p.email, role: p.role as 'admin'|'editor'|'view' }))
             const nextPermissions: PermInput[] = [
                 ...kept,
                 { email: emailTrimmed, role }
             ]
-            // Assicurati che gli oggetti rispettino PermissionInput (solo email/userId/role)
+            // Assicurati che gli oggetti rispettino PermissionInput
             const cleanPermissions = nextPermissions.map(p => ({
                 email: p.email,
-                userId: p.userId,
                 role: p.role
             }))
             await updateSheetSingle({ variables: { _id: sheet._id, permissions: cleanPermissions } })
