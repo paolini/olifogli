@@ -3,20 +3,19 @@ import { Data, Row, ScanResults, Sheet } from '../models'
 import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField } from './fields'
 import Schema, { RowToSheetsResult } from './Schema'
 import CompetitionWithVariants from './CompetitionWithVariants'
-import { schemas } from '../schema'
 
 const expectedMinAge = 10
 const expectedMaxAge = 20
 
 // campi in comune tra Distrettuale e ImportazioneDistrettuale
-const fields = [
+const common_fields = [
     new Field('surname',{header: "Cognome", titleCase: true}),
     new Field('name',{header: "Nome", titleCase: true}),
     new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
     new Field('codice_meccanografico',{header: 'Codice meccanografico'}),
     new Field('nome_scuola',{header: 'Scuola', hidden: true, required: false}),
     new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
-    new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno'], precompileValue: true}),
+    new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno', 'classe'], precompileValue: true}),
     new Field('classSection',{header:'Sezione', precompileValue: true}),
     new VariantField('variant',{header: "Codice compito (0 se assente)", additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
@@ -43,7 +42,7 @@ export default class Distrettuale extends CompetitionWithVariants {
     constructor() {
         super('distrettuale', 'Distrettuale', [
             new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
-            ...fields
+            ...common_fields
         ])
     }
 
@@ -164,7 +163,7 @@ export default class Distrettuale extends CompetitionWithVariants {
 }
 
 export class ImportazionePartecipantiDistrettuale extends Schema {
-    fields_to_be_ignored_on_inport: string[] = ["distretto", "ruolo", "approvato/a", "idoneo/a", "ID scuola", "Tipo Scuola", "indirizzo scuola", "CAP scuola", "Provincia scuola", "Sigla provincia scuola", "Regione scuola", "email scuola", "ID sede ufficiale", "Sede ufficiale", "ID sede di partecipazione", "Codice fiscale", "Qualificato", "Email", "Genere", "Punteggio totale"]
+    fields_to_be_ignored_on_inport: string[] = ["distretto", "ruolo", "approvato/a", "idoneo/a", "ID scuola", "Tipo Scuola", "indirizzo scuola", "CAP scuola", "Provincia scuola", "Sigla provincia scuola", "Regione scuola", "email scuola", "ID sede ufficiale", "Sede ufficiale", "ID sede di partecipazione", "Codice fiscale", "Qualificato", "Email", "Genere", "Punteggio totale", "Nome concorrente"]
     TargetSchema: Schema
 
     constructor() {
@@ -175,7 +174,7 @@ export class ImportazionePartecipantiDistrettuale extends Schema {
             new Field('name_backup',{header: "Nome (backup)", titleCase: true}),
             new DateField('birthDate_backup',{header: 'Data di nascita (backup)', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
 
-            ...fields, // campi della gara distrettuale
+            ...common_fields, // campi della gara distrettuale
         ])
 
         this.TargetSchema = new Distrettuale()
@@ -188,14 +187,23 @@ export class ImportazionePartecipantiDistrettuale extends Schema {
         const TargetSchema = this.TargetSchema
         const sheet_name = row.data['distretto'].replace('Distretto di ','').trim()
         if (!sheet_name) return "distretto non definito"
+        const data = {...row.data}
+        data['surname'] = data['surname'] || data['surname_backup'] || ''
+        data['name'] = data['name'] || data['name_backup'] || ''
+        data['birthDate'] = data['birthDate'] || data['birthDate_backup'] || ''
+        const classYear = parseInt(data['classYear'],10)
+        if (!isNaN(classYear) && (classYear >= 9)) {
+            data['classYear'] = `${classYear-8}`
+        }
+        console.log("ImportazionePartecipantiDistrettuale.row_to_sheet:", {sheet_name, data})
         return {
             sheet:  {
                 schema: TargetSchema.name,
                 name: sheet_name,
             },
             row: {
-                data: Object.fromEntries(TargetSchema.fields.map(
-                    field => [field.name, row.data[field.name] || '']
+                data: Object.fromEntries(common_fields.map(
+                    field => [field.name, data[field.name] || '']
                 )),
                 unique_keys: ['surname','name','birthDate'],
             }
@@ -235,8 +243,8 @@ export class Distretti extends Schema {
                     role: isPrimary ? 'admin' : 'editor',
                 }],
                 data: {
-                    id_distretto: row.data['id_distretto'],
-                    referente: `${row.data['nome']} ${row.data['cognome']}`,
+                    _id_distretto: row.data['id_distretto'],
+                    _referente: `${row.data['nome']} ${row.data['cognome']}`,
                 }
             }
         }

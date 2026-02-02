@@ -333,7 +333,7 @@ async function handleCreateSheets(ctx: TableActionContext) {
   if (!res.data?.createSheets) {
     alert('Errore durante la creazione dei fogli: '+JSON.stringify(res))
   } else {
-    alert(`Responso: ${JSON.stringify(res.data.createSheets)}`)
+    alert(`Responso: ${res.data.createSheets}`)
   }
 }
 

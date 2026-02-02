@@ -37,7 +37,7 @@ export type RowToSheetsResult = {
         },
         unique_keys: string[], // nomi dei campi da usare come chiavi univoche per la riga
     }
-} | string // error message
+}
 
 export default class Schema {
     fields: Field[]
