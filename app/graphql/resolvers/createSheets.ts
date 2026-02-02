@@ -1,21 +1,27 @@
 import { getRowsCollection, getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
-import { CreateSheetsResult, MutationCreateSheetsArgs } from "../generated";
+import { MutationCreateSheetsArgs } from "../generated";
 import { Context } from "../types";
 import { schemas } from "@/app/lib/schema";
-import { ObjectId } from "mongodb";
+import { ObjectId, WithoutId } from "mongodb";
 import { Sheet, Row, Permission, Data } from "@/app/lib/models";
+import { RowToSheetsResult } from "@/app/lib/schema/Schema";
 
 export default async function createSheets(
   _: unknown,
   args: MutationCreateSheetsArgs,
   context: Context
-): Promise<CreateSheetsResult> {
+): Promise<string> {
     const { sheetId, rowIds, dry } = args;
 
-    let sheets_created = 0;
-    let sheets_updated = 0;
-    let rows_created = 0;
-    let error = '';
+    const ret = {
+        sheets_created: 0,
+        sheets_updated: 0,
+        sheets_unchanged: 0,
+        rows_created: 0,
+        rows_skipped: 0,
+        error: '',
+    };
+
     const now = new Date();
 
     const sheetsCollection = await getSheetsCollection();
@@ -23,6 +29,7 @@ export default async function createSheets(
     if (!importSheet) {
         throw new Error('Sheet not found');
     }
+
     const schema = schemas[importSheet.schema];
     if (!schema.row_to_sheet) {
         throw new Error(`Create sheets functionality not available for schema "${schema.name}"`);
@@ -33,184 +40,213 @@ export default async function createSheets(
     if (!workbook) throw new Error('Workbook not found');
 
     const rowsCollection = await getRowsCollection();
-    const sheetsCache = new Map<string, Sheet>();
-    const sheetsRowIncrements = new Map<string, { nRows: number, nValidRows: number, anomalies: number }>();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const query: any = { sheetId };
+    const query: {
+        sheetId: ObjectId,
+        _id?: { $in: ObjectId[] }
+    } = { sheetId };
+
     if (rowIds) {
         query._id = { $in: rowIds };
     }
 
     console.log(`Starting to process rows for sheet ${sheetId}... query: `, query);
 
+    const sheets: Record<string, {
+        _id: ObjectId,
+        original: Sheet
+        updated: Sheet
+    }> = {};
+
     for await (const row of rowsCollection.find(query)) {
-        console.log(`Processing row ${row._id} ${JSON.stringify({row})}`);
+        console.log(`Processing row ${row._id}`, row.data);
         const data = schema.row_to_sheet(row);
-        console.log(`  Result: ${JSON.stringify(data)}`);
+        console.log(`  data:`, data);
+
         if (typeof data === 'string') {
-            error = `Error processing row ${row._id}: ${data}\n`;
-            break;
+            return `Error processing row ${row._id}: ${data}\n`;
         }
         if (!data) {
-            error = `No sheet data returned for row ${row._id}\n`;
-            break;
+            return `No sheet data returned for row ${row._id}\n`;
         }
 
-        if (typeof data === 'string') {
-            error = `Error in row payload for ${row._id}: ${data}\n`;
-            break;
+        try {
+            await create_or_update_sheet(data)
+        } catch (e) {
+            return `${JSON.stringify(ret)} + Error creating/updating sheet for row ${row._id}: ${(e as Error).message}\n`;
         }
 
-        // Trova il foglio di destinazione (cache o DB)
-        let targetSheet = sheetsCache.get(data.sheet.name);
-        if (!targetSheet) {
-            const existingSheet = await sheetsCollection.findOne({
-                workbookId: importSheet.workbookId,
-                name: data.sheet.name
+        if (data.row) {
+            await create_or_update_row(data);
+        }
+    }
+    
+    await persist_sheets();
+
+    console.log(`Finished processing rows for sheet ${sheetId}.`, ret);
+
+    return JSON.stringify(ret);
+
+    async function create_or_update_sheet(data: RowToSheetsResult) {
+        const name = data.sheet.name;
+        if (!sheets[name]) {
+            const original = await sheetsCollection.findOne({
+                workbookId: importSheet!.workbookId,
+                name:name
             });
-
-            if (existingSheet) {
-                targetSheet = existingSheet;
-                const updateSheet: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    $set?: any
-                } = {}
-                let permissions: Permission[] = targetSheet.permissions || [];
-                let permissionsChanged = false;
-                for (const perm of data.sheet.permissions || []) {
-                    if (permissions.find(p => p.email === perm.email && p.role === perm.role)) continue
-                    permissions = permissions.filter(p => p.email !== perm.email);
-                    permissions.push(perm);
-                    permissionsChanged = true;
+            if (original) {
+                if (original.schema !== data.sheet.schema) {
+                    throw new Error(`Schema mismatch for sheet "${name}": existing schema is "${original.schema}", new schema is "${data.sheet.schema}"`);
                 }
-                if (permissionsChanged) {
-                    updateSheet.$set = updateSheet.$set || {};
-                    updateSheet.$set.permissions = permissions;
-                }
-                for (const key of Object.keys(data.sheet.data || {})) {
-                    if (targetSheet.commonData[key] !== data.sheet.data![key]) {
-                        updateSheet.$set = updateSheet.$set || {};
-                        updateSheet.$set[`commonData.${key}`] = data.sheet.data![key];
-                    }
-                }
-                if (Object.keys(updateSheet).length > 0) {
-                    if (dry) {
-                        console.log("Dry run: db.sheets.updateOne: ", 
-                            {_id: targetSheet._id, updateSheet});
-                    } else {
-                        await sheetsCollection.updateOne(
-                            { _id: targetSheet._id },
-                            updateSheet
-                        );
-                    }
-                    sheets_updated++;
-                } else {
-                    console.log(`No updates needed for sheet ${targetSheet._id}`);
+                sheets[name] = {
+                    _id: original._id,
+                    original,
+                    updated: {...original},
                 }
             } else {
-                // Crea nuovo foglio
-                const newSheet: Sheet = {
-                    _id: new ObjectId(),
-                    name: data.sheet.name,
+                const payload: WithoutId<Sheet> = {
+                    workbookId: importSheet!.workbookId,
+                    name: name,
+                    ownerId: context.user_id!,
                     schema: data.sheet.schema,
-                    ownerId: importSheet.ownerId,
-                    workbookId: importSheet.workbookId,
                     permissions: data.sheet.permissions || [],
                     commonData: data.sheet.data || {},
-                    createdAt: now,
-                    updatedAt: now,
                     nRows: 0,
                     nValidRows: 0,
                     nSyncedRows: 0,
                     anomalies: 0,
                     nScanJobs: 0,
-                    nScanSheetJobs: 0
-                };
+                    nScanSheetJobs: 0,
+                    createdAt: now,
+                    updatedAt: now,
+                }
+                let _id: ObjectId;
                 if (dry) {
-                    console.log("Dry run: db.sheets.insertOne: ", newSheet);
+                    console.log("Dry run: would create sheet with payload:", payload);
+                    _id = new ObjectId();
                 } else {
-                    await sheetsCollection.insertOne(newSheet);
+                    console.log("Creating sheet with payload:", payload);
+                    const res = await sheetsCollection.insertOne(payload);
+                    _id = res.insertedId;
                 }
-                targetSheet = newSheet;
-                sheets_created++;
+                ret.sheets_created++;
+                sheets[name] = {
+                    _id,
+                    original: {
+                        _id,
+                        ...payload
+                    },
+                    updated: {
+                        _id,
+                        ...payload
+                    },
+                }
             }
-            sheetsCache.set(data.sheet.name, targetSheet);
         }
 
-        if (data.row) {
-            const targetSchema = schemas[targetSheet.schema];
-            let rowData = targetSchema.clean(data.row.data || {});
+        const sheet = sheets[name].updated;
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const uniqueKeys = (data.row as any).unique_keys;
-            if (uniqueKeys && Array.isArray(uniqueKeys) && uniqueKeys.length > 0) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const uniqueQuery: any = { sheetId: targetSheet._id };
-                for (const key of uniqueKeys) {
-                    uniqueQuery[`data.${key}`] = rowData[key];
-                }
-                const existingRow = await rowsCollection.findOne(uniqueQuery);
-                if (existingRow) {
-                    console.log(`Skipping duplicate row in sheet ${targetSheet.name}. Keys: ${uniqueKeys.join(', ')}`);
-                    continue;
+        for (const perm of data.sheet.permissions || []) {
+            if (sheet.permissions.find(p => p.email === perm.email && p.role === perm.role)) continue
+            sheet.permissions = sheet.permissions.filter(p => p.email !== perm.email);
+            sheet.permissions.push(perm);
+        }
+
+        sheet.commonData = {
+            ...sheet.commonData,
+            ...(data.sheet.data || {})
+        }
+    }
+
+    async function persist_sheets() {
+        for (const sheetName of Object.keys(sheets)) {
+            const sheetEntry = sheets[sheetName];
+            const original = sheetEntry.original;
+            const updated = sheetEntry.updated;
+
+            const $set: Partial<Sheet> = {};
+            let changed = false;
+            for (const key of Object.keys(updated)) {
+                // @ts-expect-error: dynamic key access
+                if (JSON.stringify(updated[key]) !== JSON.stringify(original[key])) {
+                    // @ts-expect-error: dynamic key access
+                    $set[key] = updated[key];
+                    changed = true;
                 }
             }
-
-            const derivedData = await targetSchema.computeDerivedData(rowData, targetSheet.commonData, workbook.commonData);
-            rowData = derivedData.data;
-            const error = derivedData.error || '';
-            const anomalies = derivedData.anomalies || 0;
-            const isValid = error === '';
-
-            // Crea nuova riga
-            const newRow: Row = {
-                _id: new ObjectId(),
-                sheetId: targetSheet._id,
-                data: rowData,
-                error: error,
-                anomalies: anomalies,
-                createdOn: now,
-                createdBy: 'system',
-                updatedOn: now,
-                updatedBy: 'system'
-            };
-
-            if (dry) {
-                console.log("Dry run: db.rows.insertOne: ", newRow);
+            if (changed) {
+                $set.updatedAt = now;
+                if (dry) {
+                    console.log(`Dry run. Would update sheet ${original._id} with`, $set);
+                } else {
+                    console.log(`Updating sheet "${sheetName}" (${original._id})`, $set);
+                    await sheetsCollection.updateOne(
+                        { _id: original._id },
+                        { $set }
+                    );
+                }
+                ret.sheets_updated++;
             } else {
-                await rowsCollection.insertOne(newRow);
+                console.log(`No changes for sheet "${sheetName}" (${original._id})`);
+                ret.sheets_unchanged++;
             }
-            rows_created++;
+       }
+    }
 
-            // Aggiorna conteggi
-            const current = sheetsRowIncrements.get(targetSheet._id.toHexString()) || { nRows: 0, nValidRows: 0, anomalies: 0 };
-            current.nRows++;
-            if (isValid) current.nValidRows++;
-            current.anomalies += anomalies;
-            sheetsRowIncrements.set(targetSheet._id.toHexString(), current);
+    async function create_or_update_row(data: RowToSheetsResult) {
+        if (!data.row) {
+            console.log("No row data to create/update");
+            return;
         }
 
-        // Aggiorna conteggi dei fogli alla fine
-        if (!dry) {
-            for (const [sId, incs] of sheetsRowIncrements) {
-                await sheetsCollection.updateOne(
-                    { _id: new ObjectId(sId) },
-                    { 
-                        $inc: { nRows: incs.nRows, nValidRows: incs.nValidRows, anomalies: incs.anomalies },
-                        $set: { updatedAt: now }
-                    }
-                );
-            }
+        const sheet = sheets[data.sheet.name].updated;
+
+        if (true) {
+            // controlla se la riga c'è già
+            const query = data.row.unique_keys.reduce((acc, key) => {
+                    acc[`data.${key}`] = data.row!.data[key];
+                    return acc;
+                }, {} as Record<string, string>);
+            console.log(`Checking for existing row with query:`, { sheetId: sheet._id, ...query });
+            const row = await rowsCollection.findOne({
+                sheetId: sheet._id,
+                ...query
+            });
+            if (row) {
+                console.log(`Row already exists with id ${row._id}, skipping creation.`);
+                ret.rows_skipped++;
+                return;
+            } 
         }
-        sheets_updated = sheetsRowIncrements.size;
-    }
-    console.log(`Finished processing rows for sheet ${sheetId}. Created sheets: ${sheets_created}, updated sheets: ${sheets_updated}, created rows: ${rows_created}`);
-    return {
-        sheets_created,
-        sheets_updated,
-        rows_created,
-        rows_updated: 0,
-        error,
-    }
+
+        const schema = schemas[sheet.schema];
+        const derivedData = await schema.computeDerivedData(data.row.data, sheet.commonData, workbook!.commonData);
+        const rowData = derivedData.data;
+        const error = derivedData.error || '';
+        const anomalies = derivedData.anomalies || 0;
+
+        const row: WithoutId<Row> = {
+            sheetId: sheet._id,
+            data: rowData,
+            error,
+            anomalies,
+            createdOn: now,
+            createdBy: 'system',
+            updatedOn: now,
+            updatedBy: 'system'
+        };
+
+        if (dry) {
+            console.log("Dry run: would create row with data:", row);
+        } else {
+            const res = await rowsCollection.insertOne(row);
+            if (!res) throw new Error('Failed to insert row');
+        }
+        ret.rows_created++;
+        sheet.nRows++;
+        if (!error) {
+            sheet.nValidRows++;
+        }
+        sheet.anomalies += anomalies;
+    } 
 }
