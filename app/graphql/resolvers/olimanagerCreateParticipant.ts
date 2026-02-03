@@ -433,7 +433,7 @@ query GetCompetitor($participantId: Int!) {
 const query_get_venues = `
 query GetContestVenueByName($contestId: Int!, $venueName: String!) {
   venues {
-    venues(filters: {contest: {id: $contestId}, name: {exact: $venueName}}) {
+    venues(filters: {contest: {id: $contestId}, name: {iContains: $venueName}}) {
       id
       name
       location {
