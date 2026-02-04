@@ -597,6 +597,18 @@ td.field-codice_meccanografico, td.field-Codice_meccanografico {
   text-align: center;
 }
 
+th.field-NumericAnswer {
+  min-width: 6ex;
+}
+
+th.field-ScoreAnswer {
+  min-width: 6ex;
+}
+
+td.field-NumericAnswer, td.field-ScoreAnswer {
+  text-align: center;
+}
+
 col.actions-cell {
   max-width: 15ex;
 }
