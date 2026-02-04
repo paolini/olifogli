@@ -5,6 +5,8 @@ import "./globals.css";
 import SessionProviderWrapper from "./components/SessionProviderWrapper"
 import { ConfigProvider } from "./components/ConfigProvider"
 
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
