@@ -31,10 +31,10 @@ const common_fields = [
     new ChoiceAnswerField('r11', {header: '11'}),
     new ChoiceAnswerField('r12', {header: '12', additionalCssStyle: 'thick-border-right'}),
     new NumericAnswerField('r13', {header: '13'}),
-    new NumericAnswerField('r14', {header: '14'}),
+    new NumericAnswerField('r14', {header: '14', additionalCssStyle: 'thick-border-right'}),
     new ScoreAnswerField('r15', {header: '15'}),
     new ScoreAnswerField('r16', {header: '16'}),
-    new ScoreAnswerField('r17', {header: '17'}),
+    new ScoreAnswerField('r17', {header: '17', additionalCssStyle: 'thick-border-right'}),
     new ScoreField('score', 115, {additionalCssStyle: 'thick-border-right'}),
 ]
 
