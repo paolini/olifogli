@@ -25,9 +25,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const serverName = process.env["NEXT_PUBLIC_SERVER_NAME"] || "Olifogli";
-  const serverBackgroundColor = process.env["NEXT_PUBLIC_SERVER_BACKGROUND_COLOR"];
-  const appInstance = process.env["NEXT_PUBLIC_APP_INSTANCE"];
+  const serverName = process.env["SERVER_NAME"]  || "Olifogli";
+  const serverBackgroundColor = process.env["SERVER_BACKGROUND_COLOR"];
+  const appInstance = process.env["APP_INSTANCE"];
 
   return (
     <html lang="it">

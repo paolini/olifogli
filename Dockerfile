@@ -32,8 +32,7 @@ COPY . .
 RUN echo "MONGODB_URI=mongodb://dummy:27017/dummy" > .env && \
     echo "NEXTAUTH_SECRET=dummysecret" >> .env && \
     echo "NEXTAUTH_URL=http://localhost:3000" >> .env && \
-    echo "OLIMANAGER_URL=https://olimpiadi-scientifiche.it" >> .env && \
-    echo "NEXT_PUBLIC_APP_INSTANCE=docker-build" >> .env
+    echo "OLIMANAGER_URL=https://olimpiadi-scientifiche.it" >> .env
 RUN npm run build 
 
 # Production image, copy all the files and run next
