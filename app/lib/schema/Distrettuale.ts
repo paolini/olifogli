@@ -205,6 +205,9 @@ export class ImportazionePartecipantiDistrettuale extends Schema {
                 data: Object.fromEntries(common_fields.map(
                     field => [field.name, data[field.name] || '']
                 )),
+                olimanager: {
+                    participantId: row.data['participant_id'] ? `${row.data['participant_id']}` : undefined,
+                },
                 unique_keys: ['surname','name','birthDate'],
             }
         }

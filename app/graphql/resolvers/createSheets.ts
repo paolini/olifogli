@@ -3,7 +3,7 @@ import { MutationCreateSheetsArgs } from "../generated";
 import { Context } from "../types";
 import { schemas } from "@/app/lib/schema";
 import { ObjectId, WithoutId } from "mongodb";
-import { Sheet, Row, Permission, Data } from "@/app/lib/models";
+import { Sheet, Row } from "@/app/lib/models";
 import { RowToSheetsResult } from "@/app/lib/schema/Schema";
 
 export default async function createSheets(
@@ -38,6 +38,8 @@ export default async function createSheets(
     const workbooksCollection = await getWorkbooksCollection();
     const workbook = await workbooksCollection.findOne({_id: importSheet.workbookId});
     if (!workbook) throw new Error('Workbook not found');
+
+    const contest_id = workbook.commonData['olimanager_contest_id'] || '';
 
     const rowsCollection = await getRowsCollection();
 
@@ -235,6 +237,18 @@ export default async function createSheets(
             updatedOn: now,
             updatedBy: 'system'
         };
+
+        if (data.row.olimanager?.participantId) {
+            row.olimanager = {
+                participantId: data.row.olimanager.participantId,
+                error: '',
+            };
+            if (data.row.olimanager.contestId) {
+                row.olimanager.contestId = data.row.olimanager.contestId;
+            } else if (contest_id) {
+                row.olimanager.contestId = contest_id;
+            }
+        }
 
         if (dry) {
             console.log("Dry run: would create row with data:", row);
