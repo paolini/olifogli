@@ -33,7 +33,7 @@ export type RowToSheetsResult = {
         data: Data,
         olimanager?: {
             participantId?: string,
-            competitionId?: string,
+            contestId?: string,
         },
         unique_keys: string[], // nomi dei campi da usare come chiavi univoche per la riga
     }
