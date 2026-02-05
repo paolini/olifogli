@@ -340,7 +340,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     }
 
     async function lockSelectedSheets() {
-        if (!confirm(`Sei sicuro di voler bloccare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
+        if (!confirm(`Sei sicuro di voler finalizzare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
         const updates = selectedIds.map(id => ({
             _id: new ObjectId(id),
             locked: true
