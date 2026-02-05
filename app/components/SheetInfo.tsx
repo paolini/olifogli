@@ -271,7 +271,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
     const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
-    // questi utenti possono aprire/chiudere ma non bloccare.
+    // questi utenti possono aprire/chiudere ma non finalizzare.
     // possono anche gestire i permessi di acceso al foglio (altri utenti)
     const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.email && p.email === profile.email) && p.role === 'admin'))
 
@@ -484,7 +484,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     }
 
     async function doLockSheet() {
-        if (!confirm("Sei sicuro di voler bloccare questo foglio? Solo gli amministratori di sistema potranno sbloccarlo.")) return
+        if (!confirm("Sei sicuro di voler finalizzare questo foglio? Solo gli amministratori di sistema potranno sbloccarlo.")) return
         await lockSheet({
             variables: {_id: sheet._id},
             refetchQueries: ['getSheet']
