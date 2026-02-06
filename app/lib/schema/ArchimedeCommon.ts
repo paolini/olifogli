@@ -1,12 +1,10 @@
 import { ReportEntry } from '@/app/graphql/generated'
 import { Sheet } from '../models'
 import { Data, Row, ScanResults } from '../models'
-import { OlimanagerProblemResult } from './Schema'
-import CompetitionWithVariants from './CompetitionWithVariants'
+import Competition from './Competition'
 import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField, NumericField } from './fields'
-import { buildPermutationsObject, computeScores} from './PERMUTATIONS'
 
-export default class ArchimedeCommon extends CompetitionWithVariants {
+export default class ArchimedeCommon extends Competition {
     constructor(name: string, description: string, expectedMinAge: number=Number.NEGATIVE_INFINITY, expectedMaxAge: number=Number.POSITIVE_INFINITY) {
         super(name, description, [
             new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
@@ -134,45 +132,6 @@ export default class ArchimedeCommon extends CompetitionWithVariants {
         const schoolExternalId = sheet_data[FIELD_NAME]
         if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
         return schoolExternalId
-    }
-
-    extract_olimanager_results = (
-      row: Row, sheetData: Data, workbookData: Data
-    ): OlimanagerProblemResult[] => {
-        const variant = row.data['variant'];
-        if (variant === '0' || variant === '000') {
-            return [];
-        }
-
-        const contestId = this.get_contest_id(workbookData);
-
-        if (!row.olimanager || !row.olimanager.participantId) {
-            throw new Error(`participantId mancante per la riga ${row._id}`);
-        }
-
-        const participantId = parseInt(row.olimanager.participantId);
-
-        if (isNaN(participantId)) {
-            throw new Error(`participantId non valido per la riga ${row._id}: ${row.olimanager.participantId}`);
-        }
-
-        const answer_items = this.extractAnswerItems(row.data);
-        const permutation_data = buildPermutationsObject(sheetData, workbookData);
-
-        const scores = computeScores(answer_items.map(item => item.answer), permutation_data);
-
-        const problemResults = scores.map((score, index) => ({
-            participantId: participantId,
-            problemIndex: index+1,
-            score: score,
-            disqualified: false
-        }));
-
-        if (problemResults.length !== answer_items.length) {
-            throw new Error(`Numero di risultati problema non valido per la riga ${row._id}: attesi ${answer_items.length}, trovati ${problemResults.length}`);
-        }
-
-        return problemResults;
     }
 
     extract_ranking = (row: Row, sheet: Sheet): ReportEntry | undefined => {

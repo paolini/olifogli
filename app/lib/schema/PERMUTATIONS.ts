@@ -172,6 +172,9 @@ function computeVariantMappings(variantCode:string, permutations_data: Permutati
 }
 
 export function decodePermutations(variantCode: string, answers: string[], permutations_data: PermutationsObject) {
+    if (!variantCode) {
+        throw new Error("not yet implemented");        
+    }
     const mappingResult = computeVariantMappings(variantCode, permutations_data);
     if (typeof mappingResult === 'string') {
         return {
@@ -186,45 +189,22 @@ export function decodePermutations(variantCode: string, answers: string[], permu
         questions_permutation,
         questions_inverse_permutation,
         correct_answers,
-    } = mappingResult;
+    } = mappingResult
 
-    const n_questions = correct_answers.length;
-    const remapped_answers = questions_inverse_permutation.map(j => answers_mapping[answers[j].charAt(0)]);
+    const remapped_answers = variantCode 
+       ? questions_inverse_permutation.map(j => answers_mapping[answers[j].charAt(0)])
+       : answers;
 
-    const extended_answers = questions_permutation.map(
-        (j,i) => 
-            `${answers[i].charAt(0) || '?'} [${answers_inverse_mapping[correct_answers[j]] || '?'}${remapped_answers[i] || '?'}${correct_answers[i] || '?'}]`);
+    const extended_answers = variantCode 
+        ? questions_permutation.map(
+            (j,i) => 
+                `${answers[i].charAt(0) || '?'} [${answers_inverse_mapping[correct_answers[j]] || '?'}${remapped_answers[i] || '?'}${correct_answers[i] || '?'}]`)
+        : answers;
 
     // console.log(JSON.stringify({n_questions, remapped_answers, correct_answers, extended_answers}));
 
-    let correct_answer_count = 0;
-    let wrong_answer_count = 0;
-    let empty_answer_count = 0;
-    let invalid_answer_count = 0;
-    for (let i = 0; i < n_questions; i++) {
-        const student_answer = remapped_answers[i];
-        if (student_answer === '-') {
-            empty_answer_count++;
-        } else if (student_answer === correct_answers[i]) {
-            correct_answer_count++;
-        } else if (['A','B','C','D','E'].includes(student_answer)) {
-            wrong_answer_count++;
-        } else {
-            invalid_answer_count++;
-        }
-    }
-
-    const score = correct_answer_count*permutations_data.points.correct 
-        + empty_answer_count*permutations_data.points.empty 
-        + invalid_answer_count*permutations_data.points.invalid 
-        + wrong_answer_count*permutations_data.points.wrong;
-
-    // consistency check
-    const scores = computeScores(extended_answers, permutations_data);
-    if (score !== scores.reduce((a,b) => a+b, 0)) {
-        console.log(JSON.stringify({permutations_data, variantCode, answers, extended_answers, score, scores}));
-        throw new Error(`Incoerenza nel punteggio per la variante ${variantCode} risposte ${answers}`);
-    }
+    const scores = computeScoresWithVariants(extended_answers, permutations_data);
+    const score = scores.reduce((a,b) => a+b, 0);
 
     return {
         error: '',
@@ -233,16 +213,15 @@ export function decodePermutations(variantCode: string, answers: string[], permu
     }
 }
 
-export function computeScores(extended_answers: string[], permutations_data: PermutationsObject) {
-    return extended_answers.map(s => {
-        if (!s.match(/^[A-EX?\-] \[[A-EX\-][A-EX?\-][A-EX\-]\]$/)) {
-            throw new Error(`Formato di risposta estesa non valido: "${s}"`);
-        }
+export function computeScoresWithVariants(extended_answers: string[], permutations_data: PermutationsObject) {
+    return extended_answers.map((s, i) => {
+        if (!s.match(/^[A-EX?\-] \[[A-EX\-][A-EX?\-][A-EX\-]\]$/)) throw new Error(`Formato di risposta estesa non valido: "${s}"`);
         const answer = s.charAt(4);
         const correct_answer = s.charAt(5);
         if (answer === '-') return permutations_data.points.empty;
         if (answer === 'X') return permutations_data.points.invalid;
         if (answer === correct_answer) return permutations_data.points.correct;
         else return permutations_data.points.wrong;
-    })
+        }
+    )
 }
