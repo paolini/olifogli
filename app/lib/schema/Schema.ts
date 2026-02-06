@@ -15,6 +15,13 @@ export type Selection = {
     row_filter?: Record<string, unknown>,
 }
 
+export type RowCalculationResult = {
+    totalScore: number;
+    problemScores: number[]; 
+    processedAnswers: Record<string, string>;
+    error?: string;
+}
+
 export type OlimanagerProblemResult = {
   participantId: number;
   problemIndex: number;

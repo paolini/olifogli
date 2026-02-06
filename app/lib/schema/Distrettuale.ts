@@ -1,7 +1,7 @@
 import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
 import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField, AbsentField } from './fields'
-import Schema, { RowToSheetsResult } from './Schema'
+import Schema, { RowToSheetsResult, RowCalculationResult } from './Schema'
 import Competition from './Competition'
 
 const expectedMinAge = 10
@@ -84,6 +84,30 @@ export default class Distrettuale extends Competition {
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
                 })
+            
+            // Gestione NumericAnswerField e ScoreAnswerField (se presenti nella scansione come AnswerN)
+            // Assumiamo che la scansione popoli Answer13, Answer14 etc.
+            // Bisogna vedere come sono mappati nell'oggetto raw.
+            // Per ora manteniamo la logica esistente per ChoiceAnswerField e aggiungiamo gli altri se necessario
+            // Ma scans_to_data_dict mappava solo ChoiceAnswerField nel codice precedente.
+            // Se le risposte 13-17 arrivano dalla scansione, dobbiamo mapparle.
+            // Le domande numeriche (13,14) potrebbero arrivare nella scansione.
+            // Le domande score (15,16,17) arrivano dalla scansione o inserimento manuale dopo?
+            // Se arrivano dalla scansione, aggiungiamo il mapping.
+            
+            const otherFields = this.fields.filter(field => field instanceof NumericAnswerField || field instanceof ScoreAnswerField);
+            otherFields.forEach((field) => {
+                // Estraiamo il numero dalla parte "rXX" del nome
+                const match = field.name.match(/r(\d+)/);
+                if (match) {
+                    const index = parseInt(match[1]);
+                    const key = `Answer${index}`;
+                    if (raw[key]) {
+                        data[field.name] = raw[key].replaceAll('X','').trim(); 
+                    }
+                }
+            });
+
             return [scan._id,{row, data: this.clean(data)}]
         }))
 
@@ -105,6 +129,82 @@ export default class Distrettuale extends Competition {
             }[s] ?? 'X'
         }
     }
+
+    protected calculateRowData(data: Data, sheetCommonData: Data, workbookCommonData: Data): RowCalculationResult {
+        const commonData = {...(workbookCommonData || {}), ...(sheetCommonData || {})};
+        
+        let totalScore = 0
+        const problemScores: number[] = []
+        const processedAnswers: Record<string, string> = {}
+        const errors: string[] = []
+
+        const choicePoints = 5;
+        const numericPoints = 5;
+
+        // Iterate fields
+        for(const field of this.fields) {
+            if (!(field instanceof ChoiceAnswerField || field instanceof NumericAnswerField || field instanceof ScoreAnswerField)) continue;
+            
+            let answer = data[field.name] || '';
+            // Pulisci l'eventuale formato esteso se già presente (per evitare doppie conversioni se richiamato più volte)
+            if (field instanceof ChoiceAnswerField && answer.match(/^[A-EX\-] \[.*\]$/)) {
+                answer = answer.split(' ')[0];
+            }
+
+            let score = 0;
+            let displayString = answer;
+
+            if (field instanceof ScoreAnswerField) {
+                // Il valore è direttamente il punteggio
+                score = parseFloat(answer);
+                if (isNaN(score)) score = 0;
+            } else {
+                const correctKey = `correct_${field.name}`;
+                const correctAnswer = commonData[correctKey];
+                
+                const pointsKey = `points_${field.name}`;
+                const maxPoints = commonData[pointsKey] ? parseFloat(commonData[pointsKey]) : (field instanceof ChoiceAnswerField ? choicePoints : numericPoints);
+                
+                if (field instanceof ChoiceAnswerField) {
+                     if (!correctAnswer) {
+                         // Missing correct answer definition
+                     } else {
+                         // Valutazione
+                         if (!answer || answer === '-' || answer === 'X' || answer === '') {
+                             const pointsEmpty = parseFloat(commonData['points_empty'] || '0');
+                             score = pointsEmpty;
+                             displayString = `- [${correctAnswer}-${correctAnswer}]`;
+                         } else if (answer === correctAnswer) {
+                             score = maxPoints;
+                             displayString = `${answer} [${correctAnswer}${answer}${correctAnswer}]`;
+                         } else {
+                             const pointsWrong = parseFloat(commonData['points_wrong'] || '0');
+                             score = pointsWrong;
+                             displayString = `${answer} [${correctAnswer}${answer}${correctAnswer}]`;
+                         }
+                     }
+                } else if (field instanceof NumericAnswerField) {
+                     if (correctAnswer) {
+                         if (parseFloat(answer) === parseFloat(correctAnswer)) {
+                             score = maxPoints;
+                         } 
+                     }
+                }
+            }
+            
+            problemScores.push(score);
+            totalScore += score;
+            processedAnswers[field.name] = displayString;
+        }
+
+        return {
+            totalScore,
+            problemScores,
+            processedAnswers,
+            error: errors.length > 0 ? errors.join(', ') : ''
+        }
+    }
+
 
     customized_common_data(data: Data) {
         const tabular: [string,string][] = []
