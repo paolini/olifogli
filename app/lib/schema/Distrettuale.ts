@@ -171,8 +171,11 @@ export default class Distrettuale extends Competition {
             
             let answer = data[field.name] || '';
             // Pulisci l'eventuale formato esteso se già presente
-            if (field instanceof ChoiceAnswerField && answer.match(/^[A-EX\-] \[.*\]$/)) {
-                answer = answer.split(' ')[0];
+            // Per ChoiceAnswerField il formato è "RISPOSTA [PERMUTAZIONE]" es "A [CAC]"
+            // Per NumericAnswerField il formato è "RISPOSTA [CORRETTA]" es "12 [10]"
+            const formatMatch = answer.match(/^(.*)\s\[.*\]$/);
+            if (formatMatch) {
+                answer = formatMatch[1];
             }
 
             let score = 0;
@@ -211,7 +214,8 @@ export default class Distrettuale extends Competition {
                      if (correctAnswer) {
                          if (parseFloat(answer) === parseFloat(correctAnswer)) {
                              score = maxPoints;
-                         } 
+                         }
+                         displayString = `${answer} [${correctAnswer}]`;
                      } else {
                         missingCorrectAnswers.push(field.name);
                      }

@@ -1,4 +1,4 @@
-import { Permission, ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
+import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet, Row as RowModel, Permission as PermissionModel } from '@/app/lib/models'
 import { Field } from './fields'
 
