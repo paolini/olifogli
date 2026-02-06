@@ -227,6 +227,7 @@ export class NumericAnswerField extends Field {
         super(name, options)
         this.css_class += ` field-NumericAnswer`
         this.type = 'number'
+        this.required = false
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
@@ -293,6 +294,7 @@ export class ScoreAnswerField extends Field {
         super(name, options)
         this.css_class += ` field-ScoreAnswer`
         this.type = 'number'
+        this.required = false
     }
 }
 
