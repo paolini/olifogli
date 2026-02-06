@@ -228,6 +228,64 @@ export class NumericAnswerField extends Field {
         this.css_class += ` field-NumericAnswer`
         this.type = 'number'
     }
+
+    display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
+        // Formato atteso: "VALORE [CORRETTO]" es: "10 [10]" oppure "5 [10]"
+        
+        // Helper to extract parts
+        const parse = (v: string) => {
+            const m = v?.match(/^(.*)\s\[(.*)\]$/);
+            if (m) return { val: m[1], corr: m[2] };
+            return { val: v, corr: undefined };
+        }
+
+        const current = parse(value);
+        // Se non troviamo il valore corretto nel valore corrente, proviamo a recuperarlo dal vecchio valore
+        // Questo serve per mantenere la colorazione durante l'editing
+        const original = parse(old_value);
+        
+        let displayValue = current.val;
+        const correctValue = current.corr !== undefined ? current.corr : original.corr;
+        
+        let extra_css = '';
+        let title = undefined;
+
+        if (correctValue !== undefined) {
+             // Abbiamo un riferimento per la correzione
+             const numVal = parseFloat(displayValue);
+             const numCorr = parseFloat(correctValue);
+             
+             if (!isNaN(numVal) && !isNaN(numCorr)) {
+                // Confronto numerico con tolleranza
+                if (Math.abs(numVal - numCorr) < 0.000001) { 
+                    extra_css = 'correct';
+                } else {
+                    extra_css = 'incorrect';
+                    title = `${displayValue} (invece di ${correctValue})`;
+                }
+             } else {
+                // Confronto stringhe (fallback)
+                if (displayValue === '' || displayValue === '-') {
+                     extra_css = 'empty';
+                } else if (displayValue === correctValue) {
+                     extra_css = 'correct';
+                } else {
+                     extra_css = 'incorrect';
+                     title = `${displayValue} (invece di ${correctValue})`;
+                }
+             }
+        }
+        
+        const changed = (value !== old_value);
+
+        return {
+            value: displayValue, 
+            csv_value: displayValue,
+            extra_css: extra_css,
+            title: title,
+            changed
+        }
+    }
 }
 
 export class ScoreAnswerField extends Field {
