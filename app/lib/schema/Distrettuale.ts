@@ -178,6 +178,10 @@ export default class Distrettuale extends Competition {
                 answer = formatMatch[1];
             }
 
+            if ((field instanceof NumericAnswerField || field instanceof ScoreAnswerField) && answer === '') {
+                answer = '-';
+            }
+
             let score = 0;
             let displayString = answer;
 
