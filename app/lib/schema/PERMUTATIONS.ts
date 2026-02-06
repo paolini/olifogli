@@ -179,7 +179,7 @@ export function decodePermutations(variantCode: string, answers: string[], permu
     if (typeof mappingResult === 'string') {
         return {
             error: mappingResult,
-            score: '',
+            score: 0,
             extended_answers: answers,
         };
     }
