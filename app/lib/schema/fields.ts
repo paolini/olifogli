@@ -245,11 +245,11 @@ export class NumericAnswerField extends Field {
         // Questo serve per mantenere la colorazione durante l'editing
         const original = parse(old_value);
         
-        let displayValue = current.val;
+        const displayValue = current.val;
         const correctValue = current.corr !== undefined ? current.corr : original.corr;
         
         let extra_css = '';
-        let title = undefined;
+        let title = displayValue;
 
         if (correctValue !== undefined) {
              // Abbiamo un riferimento per la correzione
