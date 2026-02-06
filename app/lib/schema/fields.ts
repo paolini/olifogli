@@ -150,6 +150,16 @@ export class VariantField extends Field {
     }
 }    
 
+export class AbsentField extends Field {
+    constructor(name: string, options: FieldOptions) {
+        super(name, options)
+    }
+
+    isValid(value: string): boolean {
+        return value === '1' || value === '0' || value === ''
+    }
+}    
+
 export class OptionsField extends Field {
     choices: string[]
     constructor(name: string, choices: string[], options: FieldOptions = {}) {

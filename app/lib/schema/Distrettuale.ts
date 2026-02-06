@@ -1,8 +1,8 @@
 import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
-import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField } from './fields'
+import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField, AbsentField } from './fields'
 import Schema, { RowToSheetsResult } from './Schema'
-import CompetitionWithVariants from './CompetitionWithVariants'
+import Competition from './Competition'
 
 const expectedMinAge = 10
 const expectedMaxAge = 20
@@ -17,7 +17,7 @@ const common_fields = [
     new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
     new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno', 'classe'], precompileValue: true}),
     new Field('classSection',{header:'Sezione', precompileValue: true}),
-    new VariantField('variant',{header: "Codice compito (0 se assente)", additionalCssStyle: 'thick-border-left'}),
+    new AbsentField('absent',{header: "1=assente", additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r02', {header: '2'}),
     new ChoiceAnswerField('r03', {header: '3', additionalCssStyle: 'thick-border-right'}),
@@ -38,7 +38,7 @@ const common_fields = [
     new ScoreField('score', 115, {additionalCssStyle: 'thick-border-right'}),
 ]
 
-export default class Distrettuale extends CompetitionWithVariants {
+export default class Distrettuale extends Competition {
     constructor() {
         super('distrettuale', 'Distrettuale', [
             new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
