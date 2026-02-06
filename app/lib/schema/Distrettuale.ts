@@ -132,11 +132,35 @@ export default class Distrettuale extends Competition {
 
     protected calculateRowData(data: Data, sheetCommonData: Data, workbookCommonData: Data): RowCalculationResult {
         const commonData = {...(workbookCommonData || {}), ...(sheetCommonData || {})};
+        const errors: string[] = []
         
+        // Parsing delle risposte corrette da 'correct_answers' se presente
+        const correctAnswersMap: Record<string, string> = {};
+        if (commonData['correct_answers']) {
+            const raw = commonData['correct_answers'].trim();
+            if (raw.startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        const answerFields = this.fields.filter(f => f instanceof ChoiceAnswerField || f instanceof NumericAnswerField);
+                        parsed.forEach((val, i) => {
+                            if (answerFields[i]) correctAnswersMap[answerFields[i].name] = String(val);
+                        });
+                    } 
+                } catch (e) {
+                    errors.push(`Errore nel parsing JSON di correct_answers: ${(e as Error).message}`);
+                }
+            } else {
+                 errors.push(`correct_answers deve essere un array JSON (es. ["A", "B", ...])`);
+            }
+        } else {
+            
+        }
+    
         let totalScore = 0
         const problemScores: number[] = []
         const processedAnswers: Record<string, string> = {}
-        const errors: string[] = []
+        const missingCorrectAnswers: string[] = []
 
         const choicePoints = 5;
         const numericPoints = 5;
@@ -146,7 +170,7 @@ export default class Distrettuale extends Competition {
             if (!(field instanceof ChoiceAnswerField || field instanceof NumericAnswerField || field instanceof ScoreAnswerField)) continue;
             
             let answer = data[field.name] || '';
-            // Pulisci l'eventuale formato esteso se già presente (per evitare doppie conversioni se richiamato più volte)
+            // Pulisci l'eventuale formato esteso se già presente
             if (field instanceof ChoiceAnswerField && answer.match(/^[A-EX\-] \[.*\]$/)) {
                 answer = answer.split(' ')[0];
             }
@@ -159,15 +183,15 @@ export default class Distrettuale extends Competition {
                 score = parseFloat(answer);
                 if (isNaN(score)) score = 0;
             } else {
-                const correctKey = `correct_${field.name}`;
-                const correctAnswer = commonData[correctKey];
+                // Cerca prima nella mappa globale, poi nella chiave specifica
+                const correctAnswer = correctAnswersMap[field.name] || commonData[`correct_${field.name}`];
                 
                 const pointsKey = `points_${field.name}`;
                 const maxPoints = commonData[pointsKey] ? parseFloat(commonData[pointsKey]) : (field instanceof ChoiceAnswerField ? choicePoints : numericPoints);
                 
                 if (field instanceof ChoiceAnswerField) {
                      if (!correctAnswer) {
-                         // Missing correct answer definition
+                         missingCorrectAnswers.push(field.name);
                      } else {
                          // Valutazione
                          if (!answer || answer === '-' || answer === 'X' || answer === '') {
@@ -188,6 +212,8 @@ export default class Distrettuale extends Competition {
                          if (parseFloat(answer) === parseFloat(correctAnswer)) {
                              score = maxPoints;
                          } 
+                     } else {
+                        missingCorrectAnswers.push(field.name);
                      }
                 }
             }
@@ -195,6 +221,10 @@ export default class Distrettuale extends Competition {
             problemScores.push(score);
             totalScore += score;
             processedAnswers[field.name] = displayString;
+        }
+
+        if (missingCorrectAnswers.length > 0 && errors.length === 0) {
+             errors.push(`Manca risposta corretta per: ${missingCorrectAnswers.join(', ')}`);
         }
 
         return {
