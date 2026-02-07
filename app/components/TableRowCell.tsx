@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react"
 import type { ChangeEvent, Dispatch, FocusEvent, KeyboardEvent, RefObject, SetStateAction } from "react"
-import { Field, ValidationContext } from "../lib/schema/fields"
+import { Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
 import { RowSelectionState } from "./TableRow";
+import { RowValidationContext } from "../lib/schema/Context";
 
 export function CheckboxCell({selectionState}:{
     selectionState: RowSelectionState
@@ -49,7 +50,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   showStandardAnswers: boolean,
   onClick: () => void,
   cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-  validationContext: ValidationContext,
+  validationContext: RowValidationContext,
 }) {
   const tdRef = useRef<HTMLTableCellElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

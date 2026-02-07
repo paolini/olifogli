@@ -6,6 +6,7 @@ import { ObjectId } from "mongodb";
 import { schemas } from "@/app/lib/schema";
 import { OlimanagerApi } from "./olimanagerApi";
 import Schema, { OlimanagerProblemResult } from "@/app/lib/schema/Schema";
+import { ValidationContext } from "@/app/lib/schema/Context";
 
 /**
  * Resolver GraphQL per aggiornare in batch i risultati dei partecipanti a un contest.
@@ -91,6 +92,7 @@ export default async function olimanagerBulkUpdateResults(
         sheet: Sheet;
         schema: Schema;
         workbook: Workbook;
+        validationContext: ValidationContext;
       } | null = null ;
 
       async function cachedSheetData(sheetId: ObjectId) {
@@ -118,24 +120,25 @@ export default async function olimanagerBulkUpdateResults(
         }
 
         // Estrae il contestId dal workbook
-        const sheetContestId = schema.get_contest_id(workbook.commonData);
+        const validationContext = schema.validationContext(sheet.commonData, workbook.commonData);
+        const sheetContestId = validationContext.contest_id;
         if (contestId === null) {
             contestId = sheetContestId;
         } else if (contestId !== sheetContestId) {
             throw new Error(`Le righe appartengono a contest diversi: ${contestId} vs ${sheetContestId}`);
         }
 
-        cache = { sheet, schema, workbook };
+        cache = { sheet, schema, workbook, validationContext };
         return cache;
       }
 
       async function pushRow(row: Row) {
         if (row.error) return; // Salta righe non valide
 
-        const { sheet, schema, workbook } = await cachedSheetData(row.sheetId);
+        const { sheet, schema, workbook, validationContext } = await cachedSheetData(row.sheetId);
 
         // Converte la riga in problemResults (16 problemi)
-        const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results!(row, sheet.commonData, workbook.commonData);
+        const problemResults: OlimanagerProblemResult[] = schema.extract_olimanager_results!(row, validationContext);
 
         // Salta se non ci sono risultati da inviare (variant '0' o '000', assente)
         if (problemResults.length === 0) return;

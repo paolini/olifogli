@@ -21,7 +21,8 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     const createdBy = user.email
     const updatedBy = user.email    
     let data = schema.clean(args.data)
-    const derivedData = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
+    const validationContext = schema.validationContext(sheet.commonData, workbook.commonData)
+    const derivedData = await schema.computeDerivedData(data, validationContext)
     data = derivedData.data
     const error = derivedData.error || ''
     const nValidRows = (error === '' ) ? 1 : 0

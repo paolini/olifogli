@@ -1,8 +1,9 @@
-import { Dispatch, KeyboardEvent, RefObject, SetStateAction, useMemo } from "react"
-import { ChoiceAnswerField, Field, ValidationContext } from "../lib/schema/fields"
+import { Dispatch, KeyboardEvent, SetStateAction, useMemo } from "react"
+import { ChoiceAnswerField, Field } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
 import { Line } from "./Table"
+import { RowValidationContext } from "../lib/schema/Context"
 
 export type RowSelectionState = {
     isSelected: boolean,
@@ -23,7 +24,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     onCellClick: (column: Column) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     adminEditMode: boolean,
-    validationContext: ValidationContext,
+    validationContext: RowValidationContext,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render

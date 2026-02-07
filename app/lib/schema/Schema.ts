@@ -1,6 +1,7 @@
 import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet, Row as RowModel, Permission as PermissionModel } from '@/app/lib/models'
-import { Field, ValidationContext } from './fields'
+import { Field } from './fields'
+import { ValidationContext } from "./Context"
 
 export type DerivedData = {
     error: string,
@@ -56,7 +57,7 @@ export default class Schema {
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
     selections: Selection[] = [] // selezioni possibili per questo schema
     row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
-    extract_olimanager_results: undefined | ((row: RowModel, sheetData: Data, workbookData: Data) => OlimanagerProblemResult[]) = undefined
+    extract_olimanager_results: undefined | ((row: RowModel, context: ValidationContext) => OlimanagerProblemResult[]) = undefined
     extract_ranking: undefined | ((row: RowModel, sheet: Sheet) => ReportEntry | undefined) = undefined
     variant_field: string = '';
     absent_field: string = '';
@@ -75,39 +76,49 @@ export default class Schema {
         return cleaned
     }
 
-    validationContext(data: Data, workbookCommonData: Data): ValidationContext {
+    validationContext(sheetCommonData: Data, workbookCommonData: Data): ValidationContext {
         const context_year = workbookCommonData['contest_year'] || ''
         const context: ValidationContext = {
-            absent: false,
+            absent: (data: Data) => false,
             contest_year: parseInt(context_year, 10),
+            contest_id: NaN,
+            school_external_id: (data: Data) => '',
         }
         const absent_field = this.absent_field
         if (absent_field) {
-            context.absent = data[absent_field] === '1'
+            context.absent = (data: Data) => data[absent_field] === '1'
         } else {
             const variant_field = this.variant_field
             if (variant_field) {
-                const variant = data[variant_field] || ''
-                context.absent =  variant === '000' || variant === '0'
+                context.absent = (data: Data) => {
+                    const variant = data[variant_field] || ''
+                    return variant === '000' || variant === '0'
+                }
             }
         }
+        const primary_contest_field_name = `olimanager_${this.name}_contest_id`
+        const secondary_contest_field_name = `olimanager_contest_id`
+        context.contest_id = parseInt(workbookCommonData[primary_contest_field_name] || workbookCommonData[secondary_contest_field_name] || '', 10)
+
         return context
     }
 
-    computeDerivedData(data: Data, sheetCommonData: Data, workbookCommonData: Data): DerivedData {
+    computeDerivedData(data: Data, context: ValidationContext): DerivedData {
+        const row_context = {
+            absent: context.absent(data),
+            context,
+        }
         let anomalies = 0;
-        // console.log(`Computing derived data for schema "${this.name}" with data:`, data, 'sheetCommonData:', sheetCommonData, 'workbookCommonData:', workbookCommonData)
-        const context = this.validationContext(data, workbookCommonData);
 
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = data[field.name]
-            if (!field.isValid(value, context)) return {
+            if (!field.isValid(value, row_context)) return {
                 error: `campo "${field.header}" non valido`,
                 data,
                 anomalies: 0,
             }
-            const anomalous = field.anomalous(value, context);
+            const anomalous = field.anomalous(value, row_context);
             if (anomalous) anomalies++;
         }
         return {
@@ -152,16 +163,4 @@ export default class Schema {
         const cards: [string,string][] = [] 
         return { tabular, cards }
     }
-
-    get_school_external_id(row_data: Data, sheet_data: Data): string {
-        throw new Error(`lo schema "${this.name}" non ha associata una scuola`)
-    }
-
-    get_contest_id(data: Data): number {
-        const primary_contest_field_name = `olimanager_${this.name}_contest_id`
-        const secondary_contest_field_name = `olimanager_contest_id`
-        const contestId = parseInt(data[primary_contest_field_name] || data[secondary_contest_field_name] || '', 10)
-        if (!contestId || isNaN(contestId)) throw new Error(`campi ${primary_contest_field_name} e ${secondary_contest_field_name} mancanti nella configurazione della competizione`)
-        return contestId
-    }   
 }

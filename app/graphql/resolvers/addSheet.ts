@@ -3,7 +3,7 @@ import { ObjectId } from 'bson'
 
 import { Context } from '../types'
 import { get_authenticated_user, check_admin } from './utils'
-import { Sheet, MutationAddSheetArgs } from '../generated'
+import { MutationAddSheetArgs } from '../generated'
 
 export default async function addSheet (_: unknown, args:MutationAddSheetArgs, context: Context): Promise<ObjectId> {
     const user = await get_authenticated_user(context)

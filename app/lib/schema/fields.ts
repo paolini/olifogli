@@ -1,5 +1,6 @@
 import { __EnumValue } from "graphql"
 import { CSSProperties } from "react"
+import { ValidationContext, RowValidationContext } from "./Context"
 
 type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
 
@@ -25,11 +26,6 @@ type DisplayValue = {
     extra_css: string,
     title: string,
     changed: boolean,
-}
-
-export type ValidationContext = {
-    absent: boolean,
-    contest_year: number,
 }
 
 export class Field {
@@ -93,7 +89,7 @@ export class Field {
         return value
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         if (this.required && !value) return false
         if (this.type === 'number' && value) {
             const n = parseInt(value, 10)
@@ -127,7 +123,7 @@ export class Field {
     }
 
     // valore anomalo anche se valido
-    anomalous(value: string, context: ValidationContext): boolean {
+    anomalous(value: string, context: RowValidationContext): boolean {
         return false
     }
 }
@@ -171,7 +167,7 @@ export class AbsentField extends Field {
         super(name, options)
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         return value === '1' || value === '0' || value === ''
     }
 }    
@@ -183,22 +179,25 @@ export class OptionsField extends Field {
         this.choices = choices
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         if (!super.isValid(value, context)) return false
         if (value === '') return true // non richiesto e vuoto
         return this.choices.includes(value)
     }
 }
 
+export class AnswerField extends Field {
+}
 
-export class ChoiceAnswerField extends Field {
+
+export class ChoiceAnswerField extends AnswerField {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-ChoiceAnswer`
         this.type = 'choice-answer'
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         if (context.absent) {
             return value==='' // se variante 0, lo studente è assente, deve essere vuoto
         } 
@@ -256,7 +255,7 @@ export class ChoiceAnswerField extends Field {
     }
 }
 
-export class NumericAnswerField extends Field {
+export class NumericAnswerField extends AnswerField {
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-NumericAnswer`
@@ -264,7 +263,7 @@ export class NumericAnswerField extends Field {
         this.required = false
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         if (context.absent) return value === '' // se studente assente, il campo deve essere vuoto
         // value: "10 [10]" oppure "- [10] oppure "12"
         const match = value.match(/^(-|\d+)(\s\[\d+\])?$/)
@@ -330,18 +329,25 @@ export class NumericAnswerField extends Field {
     }
 }
 
-export class ScoreAnswerField extends Field {
+export class ScoreAnswerField extends AnswerField {
     constructor(name: string, options: FieldOptions) {
-        super(name, options)
+        super(name, {
+            ...options,
+            css_style: (score) => score_to_color_style(score, 15)
+        })
         this.css_class += ` field-ScoreAnswer`
         this.type = 'number'
         this.required = false
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         if (context.absent) return value === '' // se studente assente, il campo deve essere vuoto
         if (value==='-') return true;
         return super.isValid(value, context)
+    }
+
+    display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
+        return super.display(value, old_value, showStandardAnswers)
     }
 }
 
@@ -406,7 +412,7 @@ export class DateField extends Field {
         return value
     }
 
-    isValid(value: string, context: ValidationContext): boolean {
+    isValid(value: string, context: RowValidationContext): boolean {
         // se non è richiesto e il valore è vuoto, è valido
         if (!this.required && value === '') return true
         
@@ -442,9 +448,9 @@ export class DateField extends Field {
         )
     }
 
-    anomalous(value: string, context: ValidationContext): boolean {
+    anomalous(value: string, context: RowValidationContext): boolean {
         if (this.isValid(value, context)) {
-            const contest_year = context.contest_year;
+            const contest_year = context.context.contest_year;
             if (isNaN(contest_year)) return false;
             const year = parseInt(value.substring(6,10), 10)
             const age = contest_year - year

@@ -2,7 +2,8 @@ import { ReportEntry } from '@/app/graphql/generated'
 import { Sheet } from '../models'
 import { Data, Row, ScanResults } from '../models'
 import Competition from './Competition'
-import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField, NumericField } from './fields'
+import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField, NumericField} from './fields'
+import { ValidationContext } from './Context'
 
 export default class ArchimedeCommon extends Competition {
     constructor(name: string, description: string, expectedMinAge: number=Number.NEGATIVE_INFINITY, expectedMaxAge: number=Number.POSITIVE_INFINITY) {
@@ -127,13 +128,6 @@ export default class ArchimedeCommon extends Competition {
         return { tabular, cards }
     }    
 
-    get_school_external_id(row_data: Data, sheet_data: Data): string {
-        const FIELD_NAME = "Codice_meccanografico"
-        const schoolExternalId = sheet_data[FIELD_NAME]
-        if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
-        return schoolExternalId
-    }
-
     extract_ranking = (row: Row, sheet: Sheet): ReportEntry | undefined => {
         // Estrai il punteggio dal campo 'score'
         const scoreValue = row.data?.score
@@ -159,5 +153,75 @@ export default class ArchimedeCommon extends Competition {
             rank: 0, // Verrà calcolato dopo
             sheet: sheet,
         }
+    }
+
+    validationContext(sheetCommonData: Data, workbookCommonData: Data): ValidationContext {
+        const context = super.validationContext(sheetCommonData, workbookCommonData)
+        const commonData = workbookCommonData
+        
+        // ATTENZIONE: internamente gli array sono 0-based
+        // tranne correct che infatti usa le stringhe '2','3','4','5'.
+    
+        context.permutation_object = {
+            correct: {},
+            questions: {},
+            answers: {},
+            points: {
+                correct: -Infinity,
+                wrong: -Infinity,
+                empty: -Infinity,
+                invalid: -Infinity,
+            }
+        };
+    
+        let empty = true;
+    
+        for (const key in commonData) {
+            if (key.startsWith('permutations_')) {
+                empty = false;
+                const value = commonData[key];
+                const parts = key.split('_');
+                if (parts.length > 3) {
+                    throw new Error(`Invalid permutation key format: ${key}`);
+                }
+    
+                const [, type, index] = parts;
+    
+                if (type === 'correct') {
+                    context.permutation_object.correct[index || ''] = value;
+                } else if (type === 'questions') {
+                    const value_array = JSON.parse(value);
+                    if (!Array.isArray(value_array)) {
+                        throw new Error(`Permutation questions value for key "${key}" is not a valid array.`);
+                    }
+                    context.permutation_object.questions[index] = value_array;
+                } else if (type === 'answers') {
+                    context.permutation_object.answers[index] = value;
+                } else if (type === 'points') {
+                    const value_number = Number(value);
+                    if (isNaN(value_number)) {
+                        throw new Error(`Permutation points value for key "${key}" is not a valid number.`);
+                    }
+                    if (!(index in context.permutation_object.points)) {
+                        throw new Error(`Unknown points index "${index}" in key "${key}"`);
+                    }
+                    context.permutation_object.points[index as keyof typeof context.permutation_object.points] = value_number;
+    
+                } else {
+                    throw new Error(`Unknown permutation type "${type}" in key "${key}"`);
+                }
+            }
+        }
+    
+        if (empty) {
+            throw new Error(`Permutation object is empty, no keys starting with "permutations_" found in common data. Configurazione della raccolta errata?`);
+        }
+
+        const FIELD_NAME = "Codice_meccanografico"
+        const schoolExternalId = sheetCommonData[FIELD_NAME]
+        if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
+        context.school_external_id = (data: Data) => schoolExternalId
+
+        return context;
     }
 }

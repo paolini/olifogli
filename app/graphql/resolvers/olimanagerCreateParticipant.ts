@@ -199,8 +199,9 @@ async function syncDataWithOlimanager(
     contestId?: string,
     rawResult?: unknown 
 }> {
-      const contestId = schema.get_contest_id(workbook.commonData)
-      const schoolExternalId = schema.get_school_external_id(row.data, sheet.commonData)
+      const context = schema.validationContext(sheet.commonData, workbook.commonData)
+      const contestId = context.contest_id;
+      const schoolExternalId = context.school_external_id(row.data)
       console.log('Extracted contestId:', contestId, 'schoolExternalId:', schoolExternalId)
 
       const name = row.data.name

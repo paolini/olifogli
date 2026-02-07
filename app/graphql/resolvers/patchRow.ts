@@ -39,7 +39,8 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     
     data = {...row.data, ...data} // mantiene i campi non modificati
     data = schema.clean(data)
-    const derived_data = await schema.computeDerivedData(data, sheet.commonData, workbook.commonData)
+    const validationContext = schema.validationContext(sheet.commonData, workbook.commonData)
+    const derived_data = await schema.computeDerivedData(data, validationContext)
     
     // calcola l'incremento di nValid e anomalies:
     const nValidRows = (derived_data.error === '' ? 1 : 0) - (row.error === '' ? 1 : 0)

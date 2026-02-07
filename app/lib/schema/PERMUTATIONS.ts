@@ -33,66 +33,6 @@ export type PermutationsObject = {
  * permutations_answers_5:	BADEC
  ******/
 
-export function buildPermutationsObject(sheetCommonData?: Data, workbookCommonData?: Data) {
-    const commonData = {...(workbookCommonData || {}), ...(sheetCommonData || {})};
-
-    // ATTENZIONE: internamente gli array sono 0-based
-    // tranne correct che infatti usa le stringhe '2','3','4','5'.
-
-    const permutations: PermutationsObject = {
-        correct: {},
-        questions: {},
-        answers: {},
-        points: {
-            correct: -Infinity,
-            wrong: -Infinity,
-            empty: -Infinity,
-            invalid: -Infinity,
-        }
-    };
-
-    let empty = true;
-
-    for (const key in commonData) {
-        if (key.startsWith('permutations_')) {
-            empty = false;
-            const value = commonData[key];
-            const parts = key.split('_');
-            if (parts.length > 3) {
-                throw new Error(`Invalid permutation key format: ${key}`);
-            }
-
-            const [, type, index] = parts;
-
-            if (type === 'correct') {
-                permutations.correct[index || ''] = value;
-            } else if (type === 'questions') {
-                const value_array = JSON.parse(value);
-                if (!Array.isArray(value_array)) {
-                    throw new Error(`Permutation questions value for key "${key}" is not a valid array.`);
-                }
-                permutations.questions[index] = value_array;
-            } else if (type === 'answers') {
-                permutations.answers[index] = value;
-            } else if (type === 'points') {
-                const value_number = Number(value);
-                if (isNaN(value_number)) {
-                    throw new Error(`Permutation points value for key "${key}" is not a valid number.`);
-                }
-                if (!(index in permutations.points)) {
-                    throw new Error(`Unknown points index "${index}" in key "${key}"`);
-                }
-                permutations.points[index as keyof typeof permutations.points] = value_number;
-
-            } else {
-                throw new Error(`Unknown permutation type "${type}" in key "${key}"`);
-            }
-        }
-    }
-
-    return permutations;
-}
-
 type MappingResult = {
     answers_mapping: {[key:string]:string},
     answers_inverse_mapping: {[key:string]:string},
