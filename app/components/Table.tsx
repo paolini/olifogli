@@ -178,6 +178,8 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
                 <TableBody 
                     edit={edit}
                     columns={columns}
+                    sheet={sheet}
+                    schema={schema}
                     tableState={tableState}
                     setTableState={setTableState}
                     directInput={directInput} setDirectInput={setDirectInput}
