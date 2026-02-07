@@ -1,6 +1,6 @@
 import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet, Row as RowModel, Permission as PermissionModel } from '@/app/lib/models'
-import { Field } from './fields'
+import { Field, ValidationContext } from './fields'
 
 export type DerivedData = {
     error: string,
@@ -16,7 +16,7 @@ export type Selection = {
 }
 
 export type RowCalculationResult = {
-    totalScore: number;
+    totalScore: number|undefined;
     problemScores: number[]; 
     processedAnswers: Record<string, string>;
     error?: string;
@@ -58,6 +58,8 @@ export default class Schema {
     row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
     extract_olimanager_results: undefined | ((row: RowModel, sheetData: Data, workbookData: Data) => OlimanagerProblemResult[]) = undefined
     extract_ranking: undefined | ((row: RowModel, sheet: Sheet) => ReportEntry | undefined) = undefined
+    variant_field: string = '';
+    absent_field: string = '';
 
     constructor(name: string, header: string, fields: Field[]) {
         this.fields = fields
@@ -73,17 +75,39 @@ export default class Schema {
         return cleaned
     }
 
-    computeDerivedData(data: Data, sheetCommonData?: Data, workbookCommonData?: Data): DerivedData {
+    validationContext(data: Data, workbookCommonData: Data): ValidationContext {
+        const context_year = workbookCommonData['contest_year'] || ''
+        const context: ValidationContext = {
+            absent: false,
+            contest_year: parseInt(context_year, 10),
+        }
+        const absent_field = this.absent_field
+        if (absent_field) {
+            context.absent = data[absent_field] === '1'
+        } else {
+            const variant_field = this.variant_field
+            if (variant_field) {
+                const variant = data[variant_field] || ''
+                context.absent =  variant === '000' || variant === '0'
+            }
+        }
+        return context
+    }
+
+    computeDerivedData(data: Data, sheetCommonData: Data, workbookCommonData: Data): DerivedData {
         let anomalies = 0;
+        // console.log(`Computing derived data for schema "${this.name}" with data:`, data, 'sheetCommonData:', sheetCommonData, 'workbookCommonData:', workbookCommonData)
+        const context = this.validationContext(data, workbookCommonData);
+
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = data[field.name]
-            if (!field.isValid(value, data)) return {
+            if (!field.isValid(value, context)) return {
                 error: `campo "${field.header}" non valido`,
                 data,
                 anomalies: 0,
             }
-            const anomalous = field.anomalous(value);
+            const anomalous = field.anomalous(value, context);
             if (anomalous) anomalies++;
         }
         return {

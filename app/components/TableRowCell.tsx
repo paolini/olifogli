@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import type { ChangeEvent, Dispatch, FocusEvent, KeyboardEvent, RefObject, SetStateAction } from "react"
-import { ChoiceAnswerField, Field } from "../lib/schema/fields"
+import { Field, ValidationContext } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
 import { Row } from "../graphql/generated";
 import { RowSelectionState } from "./TableRow";
@@ -37,7 +37,7 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, directInput, setDirectInput, showStandardAnswers, onClick, cellKeyDownHandler}:{
+export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, directInput, setDirectInput, showStandardAnswers, onClick, cellKeyDownHandler, validationContext}:{
   hasFocus: boolean,
   inputFocus: boolean,
   field: Field,
@@ -49,6 +49,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   showStandardAnswers: boolean,
   onClick: () => void,
   cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
+  validationContext: ValidationContext,
 }) {
   const tdRef = useRef<HTMLTableCellElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,37 +80,11 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   
   const {value, extra_css, title, changed} = field.display(newValue, oldValue, showStandardAnswers);
 
-  /*
-  if (field instanceof ChoiceAnswerField) {
-    oldValue = oldValue.charAt(0);
-    if (value?.length === 7) {
-      // showStandardAnswers decides whether to show 
-      // the corresponding answers in the standard permutation (211/311)
-      correct_value = showStandardAnswers ? value.charAt(5) : value.charAt(3)
-      value = showStandardAnswers ? value.charAt(4) : value.charAt(0);
-      extra_css = value === correct_value
-        ? "correct"
-        : value === '-' 
-          ? "empty" 
-            : ["A", "B", "C", "D", "E"].includes(value) 
-              ? "incorrect" 
-              : "invalid";
-      title = (value === correct_value) ? value : `${value} (invece di ${correct_value})`;
-    }
-  }
-  if (showStandardAnswers && field.name === 'variant') {
-    if (value.length === 3) {
-    // mostra il codice della variante standard
-      value = `${value.charAt(0)}11` 
-    }
-  }
-    */
-
   const style = typeof field.css_style === 'function' 
     ? field.css_style(value) 
     : field.css_style;
 
-  const anomalous = field.anomalous(value);
+  const anomalous = field.anomalous(value, validationContext);
 
   const className = `${field.css_class}${extra_css?` ${extra_css}` : ''}${hasFocus ? ' focus' : ''}${inputFocus && hasFocus ? ' input-focus' : ''}${changed ? ' modified' : ''}${anomalous ? ' anomalous' : ''}`;
 

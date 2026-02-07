@@ -592,7 +592,7 @@ td.field-score {
   text-align: center;
 }
 
-td.field-codice_meccanografico, td.field-Codice_meccanografico {
+td.field-codice_meccanografico, td.field-Codice_meccanografico, td.field-codice_meccanografico input, td.field-Codice_meccanografico input {
   font-family: monospace;
   text-align: center;
 }
@@ -605,7 +605,7 @@ th.field-ScoreAnswer {
   min-width: 6ex;
 }
 
-td.field-NumericAnswer, td.field-ScoreAnswer {
+td.field-NumericAnswer, td.field-NumericAnswer input, td.field-ScoreAnswer, td.field-ScoreAnswer input {
   text-align: center;
 }
 

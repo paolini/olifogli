@@ -4,8 +4,12 @@ import { Column, Line, TableState } from "./Table"
 import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 import { pluralize } from "../lib/util"
+import { Sheet } from "../graphql/generated"
+import Schema from "../lib/schema/Schema"
 
-export default function TableBody({edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode, polling, setPolling} : {
+export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode, polling, setPolling} : {
+    sheet: Sheet,
+    schema: Schema,
     edit: boolean,
     columns: Column[],
     tableState: TableState,
@@ -31,6 +35,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
     return <tbody>
         {tableState.lines.map(line => {
             const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
+            const validationContext = schema.validationContext(line.data, sheet.workbook.commonData)
             if (tableState.focusLineKey === line.key && error) {
               return  <tr key={`error-${line.key}`} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
             }
@@ -48,6 +53,7 @@ export default function TableBody({edit, columns, tableState, setTableState, sho
                   onCellClick={(column: Column) => onCellClick(column,line)}
                   cellKeyDownHandler={cellKeyDownHandler}
                   adminEditMode={adminEditMode}
+                  validationContext={validationContext}
             />}
         )}
         <tr className="hide-print"><td></td><td colSpan={columns.length}>

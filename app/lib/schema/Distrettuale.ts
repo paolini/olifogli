@@ -12,7 +12,7 @@ const common_fields = [
     new Field('surname',{header: "Cognome", titleCase: true}),
     new Field('name',{header: "Nome", titleCase: true}),
     new DateField('birthDate',{header: 'Data di nascita', expectedMinAge: expectedMinAge, expectedMaxAge: expectedMaxAge}),
-    new Field('codice_meccanografico',{header: 'Codice meccanografico'}),
+    new Field('codice_meccanografico',{header: 'Codice meccanografico', upperCase: true}),
     new Field('nome_scuola',{header: 'Scuola', hidden: true, required: false}),
     new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
     new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno', 'classe'], precompileValue: true}),
@@ -132,44 +132,50 @@ export default class Distrettuale extends Competition {
 
     protected calculateRowData(data: Data, sheetCommonData: Data, workbookCommonData: Data): RowCalculationResult {
         const commonData = {...(workbookCommonData || {}), ...(sheetCommonData || {})};
-        const errors: string[] = []
         
         // Parsing delle risposte corrette da 'correct_answers' se presente
         const correctAnswersMap: Record<string, string> = {};
-        if (commonData['correct_answers']) {
-            const raw = commonData['correct_answers'].trim();
-            if (raw.startsWith('[')) {
-                try {
-                    const parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed)) {
-                        const answerFields = this.fields.filter(f => f instanceof ChoiceAnswerField || f instanceof NumericAnswerField);
-                        parsed.forEach((val, i) => {
-                            if (answerFields[i]) correctAnswersMap[answerFields[i].name] = String(val);
-                        });
-                    } 
-                } catch (e) {
-                    errors.push(`Errore nel parsing JSON di correct_answers: ${(e as Error).message}`);
-                }
-            } else {
-                 errors.push(`correct_answers deve essere un array JSON (es. ["A", "B", ...])`);
+
+        function error(msg: string) {
+            return {
+                totalScore: undefined,
+                problemScores: [],
+                processedAnswers: {},
+                error: msg
             }
-        } else {
-            
+        }
+
+        const raw = commonData['correct_answers'];
+        if (!raw) return error('correct_answers non definito o vuoto');
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                const answerFields = this.fields.filter(f => f instanceof ChoiceAnswerField || f instanceof NumericAnswerField);
+                parsed.forEach((val, i) => {
+                    if (answerFields[i]) correctAnswersMap[answerFields[i].name] = String(val);
+                });
+            } else {
+                return error(`correct_answers deve essere un array JSON (es. ["A", "B", ...])`);
+            }
+        } catch (e) {
+            return error(`Errore nel parsing JSON di correct_answers: ${(e as Error).message}`);
         }
     
         let totalScore = 0
         const problemScores: number[] = []
         const processedAnswers: Record<string, string> = {}
-        const missingCorrectAnswers: string[] = []
 
-        const choicePoints = 5;
-        const numericPoints = 5;
+        const correct_score = parseFloat(commonData['points_correct'] || '0')
+        const wrong_score = parseFloat(commonData['points_wrong'] || '0')
+        const empty_score = parseFloat(commonData['points_empty'] || '0')
+        const invalid_score = parseFloat(commonData['points_invalid'] || '0')
 
         // Iterate fields
         for(const field of this.fields) {
-            if (!(field instanceof ChoiceAnswerField || field instanceof NumericAnswerField || field instanceof ScoreAnswerField)) continue;
+            if (!(field instanceof ChoiceAnswerField || field instanceof NumericAnswerField)) continue;
             
             let answer = data[field.name] || '';
+
             // Pulisci l'eventuale formato esteso se già presente
             // Per ChoiceAnswerField il formato è "RISPOSTA [PERMUTAZIONE]" es "A [CAC]"
             // Per NumericAnswerField il formato è "RISPOSTA [CORRETTA]" es "12 [10]"
@@ -178,69 +184,50 @@ export default class Distrettuale extends Competition {
                 answer = formatMatch[1];
             }
 
-            if ((field instanceof NumericAnswerField || field instanceof ScoreAnswerField) && answer === '') {
-                answer = '-';
-            }
-
             let score = 0;
-            let displayString = answer;
+            let extendedAnswer = answer;
 
-            if (field instanceof ScoreAnswerField) {
-                // Il valore è direttamente il punteggio
-                score = parseFloat(answer);
-                if (isNaN(score)) score = 0;
-            } else {
-                // Cerca prima nella mappa globale, poi nella chiave specifica
-                const correctAnswer = correctAnswersMap[field.name] || commonData[`correct_${field.name}`];
-                
-                const pointsKey = `points_${field.name}`;
-                const maxPoints = commonData[pointsKey] ? parseFloat(commonData[pointsKey]) : (field instanceof ChoiceAnswerField ? choicePoints : numericPoints);
-                
-                if (field instanceof ChoiceAnswerField) {
-                     if (!correctAnswer) {
-                         missingCorrectAnswers.push(field.name);
-                     } else {
-                         // Valutazione
-                         if (!answer || answer === '-' || answer === 'X' || answer === '') {
-                             const pointsEmpty = parseFloat(commonData['points_empty'] || '0');
-                             score = pointsEmpty;
-                             displayString = `- [${correctAnswer}-${correctAnswer}]`;
-                         } else if (answer === correctAnswer) {
-                             score = maxPoints;
-                             displayString = `${answer} [${correctAnswer}${answer}${correctAnswer}]`;
-                         } else {
-                             const pointsWrong = parseFloat(commonData['points_wrong'] || '0');
-                             score = pointsWrong;
-                             displayString = `${answer} [${correctAnswer}${answer}${correctAnswer}]`;
-                         }
-                     }
-                } else if (field instanceof NumericAnswerField) {
-                     if (correctAnswer) {
-                         if (parseFloat(answer) === parseFloat(correctAnswer)) {
-                             score = maxPoints;
-                         }
-                         displayString = `${answer} [${correctAnswer}]`;
-                     } else {
-                        missingCorrectAnswers.push(field.name);
-                     }
+            // Cerca prima nella mappa globale, poi nella chiave specifica
+            const correctAnswer = correctAnswersMap[field.name];
+                        
+            if (field instanceof ChoiceAnswerField) {
+                // Valutazione
+                if (answer === 'X') {
+                    score = invalid_score;
+                } else if (answer === '-') {
+                    score = empty_score;
+                } else if (answer === correctAnswer) {
+                    score = correct_score;
+                } else {
+                    score = wrong_score;
                 }
+                extendedAnswer = `${answer} [${correctAnswer}]`;
+            } else if (field instanceof NumericAnswerField) {
+                if (answer === '-') {
+                    score = empty_score;
+                } else if (answer === correctAnswer) {
+                    score = correct_score;
+                } else {
+                    score = wrong_score;
+                }
+                extendedAnswer = `${answer} [${correctAnswer}]`;
+            } else {
+                continue;
             }
             
             problemScores.push(score);
             totalScore += score;
-            processedAnswers[field.name] = displayString;
+            processedAnswers[field.name] = extendedAnswer;
         }
 
-        if (missingCorrectAnswers.length > 0 && errors.length === 0) {
-             errors.push(`Manca risposta corretta per: ${missingCorrectAnswers.join(', ')}`);
-        }
-
-        return {
-            totalScore,
+        const ret = {
+            totalScore: totalScore,
             problemScores,
             processedAnswers,
-            error: errors.length > 0 ? errors.join(', ') : ''
+            error: ''
         }
+        //console.log("calculateRowData:", ret)
+        return ret
     }
 
 

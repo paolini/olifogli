@@ -4,9 +4,6 @@ import { buildPermutationsObject, decodePermutations, computeScoresWithVariants 
 import Schema, { DerivedData, OlimanagerProblemResult, RowCalculationResult } from "./Schema";
 
 export default class Competition extends Schema {
-    variant_field: string = '';
-    absent_field: string = '';
-
     constructor(name: string, header: string, fields: Field[]) {
         super(name, header, fields)
         for (const field of fields) {
@@ -81,7 +78,7 @@ export default class Competition extends Schema {
         }
     }
 
-    computeDerivedData(data: Data, sheetCommonData: Data = {}, workbookCommonData: Data = {}): DerivedData {
+    computeDerivedData(data: Data, sheetCommonData: Data, workbookCommonData: Data): DerivedData {
         const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
         data = validated.data
         data = {...data, score:''}

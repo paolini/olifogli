@@ -1,5 +1,5 @@
 import { Dispatch, KeyboardEvent, RefObject, SetStateAction, useMemo } from "react"
-import { ChoiceAnswerField, Field } from "../lib/schema/fields"
+import { ChoiceAnswerField, Field, ValidationContext } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
 import { Line } from "./Table"
@@ -10,7 +10,7 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, adminEditMode}:{
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, adminEditMode, validationContext}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
@@ -23,6 +23,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     onCellClick: (column: Column) => void,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     adminEditMode: boolean,
+    validationContext: ValidationContext,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -51,19 +52,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
 
     const {className, style } = computeRecentFadeStyling();
 
-    /*
-    // Effetto per gestire il focus dell'input quando si entra in modalità modifica
-    const inputRef = useRef<HTMLInputElement>(null);
-    useEffect(() => {
-        if (focusColumnName && inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-        }
-    }, [focusColumnName]);
-    */
-
     const hasFocus = focusColumnName != ''
-    const modified: boolean = Object.keys(line.data).length > 0;
     const EMPTY_DATA = useMemo(() => columns.filter(c => c instanceof Field).map(c => [c.name,'']), [columns])
     const oldData = useMemo(() => line.row ? line.row.data : EMPTY_DATA, [line.row, EMPTY_DATA])
     const newData = {...oldData, ...line.data}
@@ -82,6 +71,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
             cellKeyDownHandler={cellKeyDownHandler}
+            validationContext={validationContext}
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
