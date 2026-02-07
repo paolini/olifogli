@@ -1,6 +1,6 @@
 import { __EnumValue } from "graphql"
 import { CSSProperties } from "react"
-import { ValidationContext, RowValidationContext } from "./Context"
+import { RowValidationContext } from "./Context"
 
 type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
 
@@ -487,6 +487,7 @@ export function score_to_color_style(scoreStr: string, max_score: number = 80): 
     // Clamp del valore tra 0 e 80
     let score = parseFloat(scoreStr)
     if (isNaN(score) || score < 0) return {}
+    if (score > max_score) score = max_score
     score = score / max_score
 
     let r, g, b;
