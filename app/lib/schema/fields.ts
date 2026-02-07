@@ -168,7 +168,7 @@ export class AbsentField extends Field {
     }
 
     isValid(value: string, context: RowValidationContext): boolean {
-        return value === '1' || value === '0' || value === ''
+        return value === '1' || value === ''
     }
 }    
 

@@ -18,6 +18,7 @@ const common_fields = [
     new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
     new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno', 'classe'], precompileValue: true}),
     new Field('classSection',{header:'Sezione', precompileValue: true}),
+    new OptionsField('taglia', ['S','M','L','XL'], {header:'taglia', upperCase: true, required: false}),
     new AbsentField('absent',{header: "1=assente", additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r02', {header: '2'}),
