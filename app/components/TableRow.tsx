@@ -33,7 +33,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
       const map: Record<string, null | ((v: string | undefined) => void)> = {};
       for (const field of columns.filter(col => col instanceof Field)) {
         if (line?.row?.olimanager?.participantId 
-                && ["name","surname","birthDate","classYear","classSection"].includes(field.name)
+                && ["name","surname","birthDate","classYear","classSection","gender"].includes(field.name)
                 && !adminEditMode
             ) {
             // campo non modificabile perché già sincronizzato da Olimanager
