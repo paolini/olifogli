@@ -598,7 +598,7 @@ td.field-codice_meccanografico, td.field-Codice_meccanografico, td.field-codice_
 }
 
 th.field-NumericAnswer {
-  min-width: 6ex;
+  min-width: 12ex;
 }
 
 th.field-ScoreAnswer {
