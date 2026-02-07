@@ -18,7 +18,7 @@ const common_fields = [
     new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
     new OptionsField('classYear', ['1','2','3','4','5'], {header:'Anno di corso', type: 'number', alternativeNames: ['anno', 'classe'], precompileValue: true}),
     new Field('classSection',{header:'Sezione', precompileValue: true}),
-    new OptionsField('taglia', ['S','M','L','XL'], {header:'taglia', upperCase: true, required: false}),
+    new OptionsField('shirt_size', ['S','M','L','XL'], {header:'taglia', upperCase: true, required: false}),
     new AbsentField('absent',{header: "1=assente", additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
     new ChoiceAnswerField('r02', {header: '2'}),
@@ -64,6 +64,8 @@ export default class Distrettuale extends Competition {
                 TestCode,
                 StudentYear,
                 Section,
+                ShirtSize,
+                Gender,
             } = raw
 
             // pulisco i dati
@@ -82,6 +84,8 @@ export default class Distrettuale extends Competition {
             if (TestCode) data['variant'] = TestCode
             if (StudentYear) data['classYear'] = `${parseInt(StudentYear,10)}`
             if (Section) data['classSection'] = Section
+            if (ShirtSize) data['shirt_size'] = ShirtSize
+            if (Gender) data['gender'] = Gender
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
