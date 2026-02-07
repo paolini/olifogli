@@ -266,7 +266,7 @@ export class NumericAnswerField extends AnswerField {
     isValid(value: string, context: RowValidationContext): boolean {
         if (context.absent) return value === '' // se studente assente, il campo deve essere vuoto
         // value: "10 [10]" oppure "- [10] oppure "12"
-        const match = value.match(/^(-?\d+)(\s\[\d+\])?$/)
+        const match = value.match(/^(-?\d*)(\s\[\d+\])?$/)
         return !!match
     }
 
