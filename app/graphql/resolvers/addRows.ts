@@ -53,7 +53,8 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
     const validatedRows: (WithoutId<Row>)[] = objectRows
         .map(({data, olimanager}) => {
             const validated = schema.clean(data as Data)
-            const derived = schema.computeDerivedData(validated,sheet.commonData,workbook.commonData)
+            const validationContext = schema.validationContext(sheet.commonData, workbook.commonData)
+            const derived = schema.computeDerivedData(validated, validationContext)
             return {
                 data: derived.data,
                 sheetId,

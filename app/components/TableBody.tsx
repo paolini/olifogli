@@ -31,11 +31,15 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
     setPolling: Dispatch<SetStateAction<boolean>>
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
+    const validationContext = schema.validationContext(sheet.commonData, sheet.workbook.commonData)
 
     return <tbody>
         {tableState.lines.map(line => {
+            const rowValidationContext = {
+                absent: validationContext.absent(line.data),
+                context: validationContext,
+            }
             const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
-            const validationContext = schema.validationContext(line.data, sheet.workbook.commonData)
             if (tableState.focusLineKey === line.key && error) {
               return  <tr key={`error-${line.key}`} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
             }
@@ -53,7 +57,7 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
                   onCellClick={(column: Column) => onCellClick(column,line)}
                   cellKeyDownHandler={cellKeyDownHandler}
                   adminEditMode={adminEditMode}
-                  validationContext={validationContext}
+                  validationContext={rowValidationContext}
             />}
         )}
         <tr className="hide-print"><td></td><td colSpan={columns.length}>

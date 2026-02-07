@@ -1,6 +1,7 @@
 import { Data, Row } from "../models";
+import { ValidationContext } from "./Context";
 import { AbsentField, ChoiceAnswerField, Field, VariantField } from "./fields";
-import { buildPermutationsObject, decodePermutations, computeScoresWithVariants } from "./PERMUTATIONS";
+import { decodePermutations, computeScoresWithVariants } from "./PERMUTATIONS";
 import Schema, { DerivedData, OlimanagerProblemResult, RowCalculationResult } from "./Schema";
 
 export default class Competition extends Schema {
@@ -26,7 +27,7 @@ export default class Competition extends Schema {
         }))
     }
 
-    protected calculateRowData(data: Data, sheetCommonData: Data, workbookCommonData: Data): RowCalculationResult {
+    protected calculateRowData(data: Data, context: ValidationContext): RowCalculationResult {
         const variant_field = this.variant_field
         const variant = data[variant_field] || ''
         
@@ -41,7 +42,8 @@ export default class Competition extends Schema {
 
         const answer_items = this.extractAnswerItems(data)
         try {
-            const permutations = buildPermutationsObject(sheetCommonData, workbookCommonData);
+            const permutations = context.permutation_object
+            if (!permutations) throw new Error("permutation_object mancante nel context, configurazione della raccolta errata?")
             const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
             
             if (error) {
@@ -78,20 +80,17 @@ export default class Competition extends Schema {
         }
     }
 
-    computeDerivedData(data: Data, sheetCommonData: Data, workbookCommonData: Data): DerivedData {
-        const validated = super.computeDerivedData(data, sheetCommonData, workbookCommonData)
+    computeDerivedData(data: Data, context: ValidationContext): DerivedData {
+        const validated = super.computeDerivedData(data, context)
         data = validated.data
         data = {...data, score:''}
         if (validated.error) return validated
         
         const anomalies = validated.anomalies
-        const variant_field = this.variant_field
-        const absent_field = this.absent_field
-        const variant = data[variant_field] || ''
-        const absent = data[absent_field] || ''
+        const absent = context.absent(data)
 
         // Gestione assenze/varianti speciali (non chiamano calculateRowData)
-        if (variant === '000' || variant === '0' || absent === '1') {
+        if (absent) {
             return {
                 error: '',
                 data,
@@ -99,7 +98,7 @@ export default class Competition extends Schema {
             }
         }
 
-        const result = this.calculateRowData(data, sheetCommonData, workbookCommonData);
+        const result = this.calculateRowData(data, context);
         
         if (result.error) {
             return {
@@ -119,15 +118,16 @@ export default class Competition extends Schema {
         }
     }   
 
-    extract_olimanager_results = (row: Row, sheetData: Data, workbookData: Data): OlimanagerProblemResult[] => {
+    extract_olimanager_results = (row: Row, context: ValidationContext): OlimanagerProblemResult[] => {
         const variant = row.data['variant'];
         // TODO: generalizzare il controllo su "variant" che potrebbe non esistere
         if (variant === '0' || variant === '000') {
             return [];
         }
 
-        // Contest ID check
-        this.get_contest_id(workbookData);
+        if (isNaN(context.contest_id)) {
+            throw new Error(`contest_id non configurato`);
+        }
 
         if (!row.olimanager || !row.olimanager.participantId) {
             throw new Error(`participantId mancante per la riga ${row._id}`);
@@ -138,7 +138,7 @@ export default class Competition extends Schema {
             throw new Error(`participantId non valido per la riga ${row._id}: ${row.olimanager.participantId}`);
         }
 
-        const result = this.calculateRowData(row.data, sheetData, workbookData);
+        const result = this.calculateRowData(row.data, context);
         if (result.error) {
             throw new Error(result.error);
         }

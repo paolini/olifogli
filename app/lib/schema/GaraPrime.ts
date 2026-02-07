@@ -2,6 +2,7 @@ import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
 import Competition from './Competition'
 import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField, NumericField } from './fields'
+import { ValidationContext } from './Context'
 
 export default class GaraPrime extends Competition {
     constructor() {
@@ -153,11 +154,15 @@ export default class GaraPrime extends Competition {
             sheet: sheet,
         }
     }
-
-    get_school_external_id(row_data: Data, sheet_data: Data): string {
+    
+    validationContext(sheet_data: Data, workbook_data: Data): ValidationContext {
+        const context = super.validationContext(sheet_data, workbook_data)
         const FIELD_NAME = "codice_meccanografico"
-        const schoolExternalId = row_data[FIELD_NAME]
-        if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
-        return schoolExternalId
+        context.school_external_id = (data: Data) => {
+            const x =data[FIELD_NAME]
+            if (!x) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
+            return x
+        }
+        return context
     }
 }

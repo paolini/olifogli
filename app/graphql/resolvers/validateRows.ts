@@ -29,8 +29,9 @@ export default async function validateRows(_: unknown, {sheetId}: MutationValida
         for (const row of objectRows) {
             const wasValid = row.error === '' || !row.error
             
+            const validationContext = schema.validationContext(sheet.commonData, workbook.commonData)
             const cleanedData = schema.clean(row.data)
-            const derivedData = await schema.computeDerivedData(cleanedData, sheet.commonData, workbook.commonData)
+            const derivedData = await schema.computeDerivedData(cleanedData, validationContext)
             
             const isValid = derivedData.error === '' || !derivedData.error
             nValidRows += (isValid ? 1 : 0) - (wasValid ? 1 : 0)

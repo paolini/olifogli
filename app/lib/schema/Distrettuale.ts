@@ -1,8 +1,9 @@
 import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
-import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField, AbsentField } from './fields'
+import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField, AbsentField, AnswerField } from './fields'
 import Schema, { RowToSheetsResult, RowCalculationResult } from './Schema'
 import Competition from './Competition'
+import { ValidationContext } from './Context'
 
 const expectedMinAge = 10
 const expectedMaxAge = 20
@@ -130,9 +131,40 @@ export default class Distrettuale extends Competition {
         }
     }
 
-    protected calculateRowData(data: Data, sheetCommonData: Data, workbookCommonData: Data): RowCalculationResult {
-        const commonData = {...(workbookCommonData || {}), ...(sheetCommonData || {})};
-        
+    validationContext(sheet_data: Data, workbook_data: Data): ValidationContext {
+        const context = super.validationContext(sheet_data, workbook_data)
+        const raw = workbook_data['correct_answers'] || ''
+        if (!raw) return context
+
+        context.answers_object = {
+            correct: {},
+            points: {
+                correct: parseFloat(workbook_data['points_correct'] || '0'),
+                wrong: parseFloat(workbook_data['points_wrong'] || '0'),
+                empty: parseFloat(workbook_data['points_empty'] || '0'),
+                invalid: parseFloat(workbook_data['points_invalid'] || '0'),
+            }
+        }
+
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                const correct = context.answers_object.correct;
+                const answerFields = this.fields.filter(f => f instanceof AnswerField);
+                parsed.forEach((val, i) => {
+                    if (answerFields[i]) correct[answerFields[i].name] = String(val);
+                });
+            } else {
+                throw new Error(`correct_answers deve essere un array JSON (es. ["A", "B", ...])`);
+            }
+        } catch (e) {
+            throw new Error(`Errore nel parsing JSON di correct_answers: ${(e as Error).message}`);
+        }
+
+        return context;
+    }
+
+    protected calculateRowData(data: Data, context: ValidationContext): RowCalculationResult {
         // Parsing delle risposte corrette da 'correct_answers' se presente
         const correctAnswersMap: Record<string, string> = {};
 
@@ -145,35 +177,18 @@ export default class Distrettuale extends Competition {
             }
         }
 
-        const raw = commonData['correct_answers'];
-        if (!raw) return error('correct_answers non definito o vuoto');
-        try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-                const answerFields = this.fields.filter(f => f instanceof ChoiceAnswerField || f instanceof NumericAnswerField);
-                parsed.forEach((val, i) => {
-                    if (answerFields[i]) correctAnswersMap[answerFields[i].name] = String(val);
-                });
-            } else {
-                return error(`correct_answers deve essere un array JSON (es. ["A", "B", ...])`);
-            }
-        } catch (e) {
-            return error(`Errore nel parsing JSON di correct_answers: ${(e as Error).message}`);
+        if (!context.answers_object) {
+            return error('risposte corrette non configurate')
         }
-    
+
+        const points = context.answers_object.points;
         let totalScore = 0
         const problemScores: number[] = []
         const processedAnswers: Record<string, string> = {}
 
-        const correct_score = parseFloat(commonData['points_correct'] || '0')
-        const wrong_score = parseFloat(commonData['points_wrong'] || '0')
-        const empty_score = parseFloat(commonData['points_empty'] || '0')
-        const invalid_score = parseFloat(commonData['points_invalid'] || '0')
-
         // Iterate fields
         for(const field of this.fields) {
-            if (!(field instanceof ChoiceAnswerField || field instanceof NumericAnswerField)) continue;
-            
+            if (!(field instanceof AnswerField)) continue;
             let answer = data[field.name] || '';
 
             // Pulisci l'eventuale formato esteso se già presente
@@ -186,38 +201,57 @@ export default class Distrettuale extends Competition {
 
             let score = 0;
             let extendedAnswer = answer;
-
-            // Cerca prima nella mappa globale, poi nella chiave specifica
-            const correctAnswer = correctAnswersMap[field.name];
+            const correctAnswer = context.answers_object.correct[field.name];
                         
             if (field instanceof ChoiceAnswerField) {
                 // Valutazione
                 if (answer === 'X') {
-                    score = invalid_score;
+                    score = points.invalid;
                 } else if (answer === '-') {
-                    score = empty_score;
+                    score = points.empty;
                 } else if (answer === correctAnswer) {
-                    score = correct_score;
+                    score = points.correct;
                 } else {
-                    score = wrong_score;
+                    score = points.wrong;
                 }
                 extendedAnswer = `${answer} [${correctAnswer}]`;
             } else if (field instanceof NumericAnswerField) {
                 if (answer === '-') {
-                    score = empty_score;
+                    score = points.empty;
                 } else if (answer === correctAnswer) {
-                    score = correct_score;
+                    score = points.correct;
                 } else {
-                    score = wrong_score;
+                    score = points.wrong;
                 }
                 extendedAnswer = `${answer} [${correctAnswer}]`;
+            } else if (field instanceof ScoreAnswerField) {
+                if (answer === '-' || answer === '') {
+                    score = 0;
+                } else {
+                    score = parseFloat(answer);
+                    if (isNaN(score) || score < 0 || score > 15) {
+                        return error(`risposta non valida per campo ${field.header}: "${answer}"`);
+                    }
+                }
             } else {
-                continue;
+                throw new Error(`Tipo di campo non supportato in calculateRowData: ${field.constructor.name}`);
             }
             
             problemScores.push(score);
+            console.log(`Campo ${field.name}: risposta="${answer}", corretta="${correctAnswer}", score=${score}`);
             totalScore += score;
+            console.log(`Total score parziale: ${totalScore}`);
             processedAnswers[field.name] = extendedAnswer;
+        }
+
+        if (problemScores.length !== Object.keys(context.answers_object.correct).length) {
+            console.log("Mismatch tra numero di risposte corrette e numero di campi di risposta:", {
+                problemScoresLength: problemScores.length,
+                correctAnswersLength: Object.keys(context.answers_object.correct).length,
+                problemScores,
+                correctAnswers: context.answers_object.correct,
+            });
+            return error(`il numero di risposte corrette configurate (${Object.keys(context.answers_object.correct).length}) non corrisponde al numero di risposte presenti nello schema (${problemScores.length})`);
         }
 
         const ret = {
@@ -226,7 +260,7 @@ export default class Distrettuale extends Competition {
             processedAnswers,
             error: ''
         }
-        //console.log("calculateRowData:", ret)
+        console.log("calculateRowData:", ret)
         return ret
     }
 

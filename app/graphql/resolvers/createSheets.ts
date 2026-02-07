@@ -222,7 +222,8 @@ export default async function createSheets(
         }
 
         const schema = schemas[sheet.schema];
-        const derivedData = await schema.computeDerivedData(data.row.data, sheet.commonData, workbook!.commonData);
+        const validationContext = schema.validationContext(sheet.commonData, workbook!.commonData);
+        const derivedData = await schema.computeDerivedData(data.row.data, validationContext);
         const rowData = derivedData.data;
         const error = derivedData.error || '';
         const anomalies = derivedData.anomalies || 0;
