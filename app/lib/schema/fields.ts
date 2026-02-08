@@ -331,13 +331,12 @@ export class NumericAnswerField extends AnswerField {
 
 export class ScoreAnswerField extends AnswerField {
     constructor(name: string, options: FieldOptions) {
-        super(name, {
+        super(name, {            
             ...options,
             css_style: (score) => score_to_color_style(score, 15)
         })
         this.css_class += ` field-ScoreAnswer`
         this.type = 'number'
-        this.required = false
     }
 
     isValid(value: string, context: RowValidationContext): boolean {
