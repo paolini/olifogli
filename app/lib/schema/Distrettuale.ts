@@ -64,6 +64,9 @@ export default class Distrettuale extends Competition {
                 TestCode,
                 StudentYear,
                 Section,
+            } = raw
+
+            const {
                 ShirtSize,
                 Gender,
             } = raw

@@ -113,8 +113,9 @@ export default class Schema {
         for (let i=0; i < this.fields.length; i++) {
             const field = this.fields[i]
             const value = data[field.name]
-            if (!field.isValid(value, row_context)) return {
-                error: `campo "${field.header}" non valido`,
+            const error = field.checkValid(value, row_context)
+            if (error) return {
+                error: `campo "${field.header}": ${error}`,
                 data,
                 anomalies: 0,
             }
