@@ -89,13 +89,15 @@ export class Field {
         return value
     }
 
-    isValid(value: string, context: RowValidationContext): boolean {
-        if (this.required && !value) return false
+    // controlla se il valore è valido per questo campo, eventualmente usando il contesto della riga
+    // restituisce '' se è valido, altrimenti un messaggio di errore
+    checkValid(value: string, context: RowValidationContext): string {
+        if (this.required && !value) return 'valore richiesto'
         if (this.type === 'number' && value) {
             const n = parseInt(value, 10)
-            if (isNaN(n)) return false
+            if (isNaN(n)) return 'richiesto numero'
         }
-        return true
+        return ''
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
@@ -167,8 +169,9 @@ export class AbsentField extends Field {
         super(name, options)
     }
 
-    isValid(value: string, context: RowValidationContext): boolean {
-        return value === '1' || value === ''
+    checkValid(value: string, context: RowValidationContext): string {
+        if (value !== '1' && value !== '') return 'inserisci 1 se lo studente è assente, altrimenti lascia vuoto'
+        return ''
     }
 }    
 
@@ -179,14 +182,24 @@ export class OptionsField extends Field {
         this.choices = choices
     }
 
-    isValid(value: string, context: RowValidationContext): boolean {
-        if (!super.isValid(value, context)) return false
-        if (value === '') return true // non richiesto e vuoto
-        return this.choices.includes(value)
+    checkValid(value: string, context: RowValidationContext): string {
+        const s = super.checkValid(value, context)
+        if (s) return s
+        if (value === '') return '' // non richiesto e vuoto
+        if (this.choices.includes(value)) return ''
+        return `valore non valido, deve essere uno di: ${this.choices.join(', ')}`
     }
 }
 
 export class AnswerField extends Field {
+    checkValid(value: string, context: RowValidationContext): string {
+        if (context.absent) {
+            if (value !== '') return 'se lo studente è assente, il campo deve essere vuoto'
+            return ''
+        }
+        if (value === '-') return '' // trattino indica risposta vuota, è valido
+        return super.checkValid(value, context)
+    }
 }
 
 
@@ -195,13 +208,6 @@ export class ChoiceAnswerField extends AnswerField {
         super(name, options)
         this.css_class += ` field-ChoiceAnswer`
         this.type = 'choice-answer'
-    }
-
-    isValid(value: string, context: RowValidationContext): boolean {
-        if (context.absent) {
-            return value==='' // se variante 0, lo studente è assente, deve essere vuoto
-        } 
-        return super.isValid(value, context)
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
@@ -263,11 +269,16 @@ export class NumericAnswerField extends AnswerField {
         this.required = false
     }
 
-    isValid(value: string, context: RowValidationContext): boolean {
-        if (context.absent) return value === '' // se studente assente, il campo deve essere vuoto
+    checkValid(value: string, context: RowValidationContext): string {
+        const s = super.checkValid(value, context)
+        if (s) return s
+
+        if (value === '-') return '' // trattino indica risposta vuota, è valido
+
         // value: "10 [10]" oppure "- [10] oppure "12"
-        const match = value.match(/^(-?\d*)(\s\[\d+\])?$/)
-        return !!match
+        const match = value.match(/^(-?\d+)(\s\[-?\d+\])?$/)
+        if (!match) return 'valore non valido, deve essere un numero intero o \'-\'';
+        return ''
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
@@ -339,12 +350,6 @@ export class ScoreAnswerField extends AnswerField {
         this.type = 'number'
     }
 
-    isValid(value: string, context: RowValidationContext): boolean {
-        if (context.absent) return value === '' // se studente assente, il campo deve essere vuoto
-        if (value==='-') return true;
-        return super.isValid(value, context)
-    }
-
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
         return super.display(value, old_value, showStandardAnswers)
     }
@@ -411,13 +416,13 @@ export class DateField extends Field {
         return value
     }
 
-    isValid(value: string, context: RowValidationContext): boolean {
+    checkValid(value: string, context: RowValidationContext): string {
         // se non è richiesto e il valore è vuoto, è valido
-        if (!this.required && value === '') return true
+        if (!this.required && value === '') return ''
         
         // deve essere della forma gg/mm/yyyy ed estrae i valori
         const match = value.match(/^([0-9]{2})\/([0-9]{2})\/([0-9]{4})$/)
-        if (!match) return false
+        if (!match) return 'valore non valido, deve essere della forma gg/mm/yyyy'
 
         const day = parseInt(match[1], 10)
         const month = parseInt(match[2], 10)
@@ -429,9 +434,9 @@ export class DateField extends Field {
         // Verifica che la data creata corrisponda ai valori inseriti
         // (questo gestisce automaticamente anni bisestili e giorni per mese)
         if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
-            return false
+            return 'valore non valido, giorno, mese o anno non valido'
         }
-        return true;
+        return '';
     }
 
     compare(value1: string, value2: string): number {
@@ -448,7 +453,7 @@ export class DateField extends Field {
     }
 
     anomalous(value: string, context: RowValidationContext): boolean {
-        if (this.isValid(value, context)) {
+        if (this.checkValid(value, context) === '') {
             const contest_year = context.context.contest_year;
             if (isNaN(contest_year)) return false;
             const year = parseInt(value.substring(6,10), 10)
