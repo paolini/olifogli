@@ -609,6 +609,10 @@ td.field-NumericAnswer, td.field-NumericAnswer input, td.field-ScoreAnswer, td.f
   text-align: center;
 }
 
+td.field-shirt_size, td.field-shirt_size input {
+  text-align: center;
+}
+
 col.actions-cell {
   max-width: 15ex;
 }
