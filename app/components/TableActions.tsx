@@ -153,6 +153,13 @@ const actions: Record<string, Action> = {
     disabled: ctx => false, //ctx => !ctx.checkboxesState.showHiddenColumns,
     handler: handleGenerateStudentIds
   },
+  'delete_ids':
+  {
+    label: 'Elimina ID studenti',
+    hidden: ctx => !ctx.edit || !ctx.schema.fields.some(field => field.name === 'id'),
+    disabled: ctx => false, //ctx => !ctx.checkboxesState.showHiddenColumns,
+    handler: handleDeleteStudentIds,
+  },
   'olimanager': {
     hidden: ctx => !ctx.profile?.isAdmin,
     label: '⚙ Crea/abbina partecipanti (Olimanager)',
@@ -398,6 +405,45 @@ async function handleCsvDownload(ctx: TableActionContext) {
     .map(line => (line.row as Row))
   if (ctx.csvDownload) {
     await ctx.csvDownload(rows)
+  }
+}
+
+async function handleDeleteStudentIds(ctx: TableActionContext) {
+  const selectedLines = ctx.tableState.selectedLineKeys.size === 0 
+    ? ctx.tableState.lines.filter(line => line.row)
+    : ctx.tableState.lines.filter(line => line.row && ctx.tableState.selectedLineKeys.has(line.key))
+
+  const rowsWithId = selectedLines.filter(line => line.row && line.row.data.id)
+
+  if (rowsWithId.length === 0) {
+    alert('Non ci sono righe con ID studente tra quelle selezionate')
+    return
+  }
+
+  const confirmed = confirm(
+    `Vuoi eliminare gli ID studenti da ${rowsWithId.length} righe?`
+  )
+  
+  if (!confirmed) return
+
+  try {
+    await Promise.all(
+      rowsWithId.map(line => {
+        if (!line.row) return Promise.resolve()
+        return ctx.mutations.patchRow({
+          variables: {
+            _id: line.row._id,
+            updatedOn: line.row.updatedOn,
+            data: {
+              id: ''
+            }
+          }
+        })
+      })
+    )
+    alert(`Eliminati ID studenti da ${rowsWithId.length} righe`)
+  } catch (error) {
+    alert(`Errore durante l'eliminazione degli ID: ${error}`)
   }
 }
 
