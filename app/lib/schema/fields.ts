@@ -95,7 +95,7 @@ export class Field {
         if (this.required && !value) return 'valore richiesto'
         if (this.type === 'number' && value) {
             const n = parseInt(value, 10)
-            if (isNaN(n)) return 'richiesto numero'
+            if (isNaN(n)) return `"${value}" non è un numero valido`
         }
         return ''
     }
@@ -197,7 +197,11 @@ export class AnswerField extends Field {
             if (value !== '') return 'se lo studente è assente, il campo deve essere vuoto'
             return ''
         }
-        if (value === '-') return '' // trattino indica risposta vuota, è valido
+        const m = value.match(/^(.*)\s\[(.*)\]$/)
+        if (m) {
+            value = m[1] // se è nel formato "VALORE [CORRETTO]", prendi solo VALORE per la validazione
+        }
+        if (value === '-') return '' // trattino è considerato valido (studente presente ma senza risposta)
         return super.checkValid(value, context)
     }
 }
@@ -263,23 +267,12 @@ export class ChoiceAnswerField extends AnswerField {
 
 export class NumericAnswerField extends AnswerField {
     constructor(name: string, options: FieldOptions) {
-        super(name, options)
+        super(name, {
+            required: true,
+            type: 'number',
+            ...options
+        })
         this.css_class += ` field-NumericAnswer`
-        this.type = 'number'
-        this.required = false
-    }
-
-    checkValid(value: string, context: RowValidationContext): string {
-        const s = super.checkValid(value, context)
-        if (s) return s
-
-        if (value === '' && context.absent) return '' // se è assente, il campo può essere vuoto
-        if (value === '-') return '' // trattino indica risposta vuota, è valido
-
-        // value: "10 [10]" oppure "- [10] oppure "12"
-        const match = value.match(/^(-?\d+)(\s\[-?\d+\])?$/)
-        if (!match) return 'valore non valido, deve essere un numero intero o \'-\'';
-        return ''
     }
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
