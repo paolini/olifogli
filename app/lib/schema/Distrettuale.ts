@@ -233,7 +233,7 @@ export default class Distrettuale extends Competition {
                 }
                 extendedAnswer = `${answer} [${correctAnswer}]`;
             } else if (field instanceof ScoreAnswerField) {
-                if (answer === '-' || answer === '') {
+                if (answer === '-' || answer === '' || answer === 'X') {
                     score = 0;
                 } else {
                     score = parseFloat(answer);
