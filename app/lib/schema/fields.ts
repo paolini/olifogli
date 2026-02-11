@@ -273,6 +273,7 @@ export class NumericAnswerField extends AnswerField {
         const s = super.checkValid(value, context)
         if (s) return s
 
+        if (value === '' && context.absent) return '' // se è assente, il campo può essere vuoto
         if (value === '-') return '' // trattino indica risposta vuota, è valido
 
         // value: "10 [10]" oppure "- [10] oppure "12"
