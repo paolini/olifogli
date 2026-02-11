@@ -188,17 +188,19 @@ type RankingReport {
   ranking: [ReportEntry!]!
 }
 
+type ExerciseDistributionAnswers {
+  answer: String!
+  count: Int!
+}
+
 type ExerciseDistributionItem {
   exercise: String!
   correct: Int!
   wrong: Int!
   empty: Int!
   invalid: Int!
-  A: Int!
-  B: Int!
-  C: Int!
-  D: Int!
-  E: Int!
+  correct_answer: String!
+  answers: [ExerciseDistributionAnswers!]!
 }
 
 type ExerciseReport {

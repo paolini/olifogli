@@ -54,14 +54,17 @@ export type DistributionReport = {
   variance?: Maybe<Scalars['Float']['output']>;
 };
 
+export type ExerciseDistributionAnswers = {
+  __typename?: 'ExerciseDistributionAnswers';
+  answer: Scalars['String']['output'];
+  count: Scalars['Int']['output'];
+};
+
 export type ExerciseDistributionItem = {
   __typename?: 'ExerciseDistributionItem';
-  A: Scalars['Int']['output'];
-  B: Scalars['Int']['output'];
-  C: Scalars['Int']['output'];
-  D: Scalars['Int']['output'];
-  E: Scalars['Int']['output'];
+  answers: Array<ExerciseDistributionAnswers>;
   correct: Scalars['Int']['output'];
+  correct_answer: Scalars['String']['output'];
   empty: Scalars['Int']['output'];
   exercise: Scalars['String']['output'];
   invalid: Scalars['Int']['output'];
@@ -869,7 +872,7 @@ export type GetWorkbookExerciseReportQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookExerciseReportQuery = { __typename?: 'Query', workbookExerciseReport: Array<{ __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, A: number, B: number, C: number, D: number, E: number }> }> };
+export type GetWorkbookExerciseReportQuery = { __typename?: 'Query', workbookExerciseReport: Array<{ __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, correct_answer: string, answers: Array<{ __typename?: 'ExerciseDistributionAnswers', answer: string, count: number }> }> }> };
 
 export type GetWorkbookRankingReportQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -2320,11 +2323,11 @@ export const GetWorkbookExerciseReportDocument = gql`
       wrong
       empty
       invalid
-      A
-      B
-      C
-      D
-      E
+      correct_answer
+      answers {
+        answer
+        count
+      }
     }
   }
 }
@@ -3057,6 +3060,7 @@ export type ResolversTypes = {
   Config: ResolverTypeWrapper<Config>;
   Data: ResolverTypeWrapper<Scalars['Data']['output']>;
   DistributionReport: ResolverTypeWrapper<DistributionReport>;
+  ExerciseDistributionAnswers: ResolverTypeWrapper<ExerciseDistributionAnswers>;
   ExerciseDistributionItem: ResolverTypeWrapper<ExerciseDistributionItem>;
   ExerciseReport: ResolverTypeWrapper<ExerciseReport>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
@@ -3101,6 +3105,7 @@ export type ResolversParentTypes = {
   Config: Config;
   Data: Scalars['Data']['output'];
   DistributionReport: DistributionReport;
+  ExerciseDistributionAnswers: ExerciseDistributionAnswers;
   ExerciseDistributionItem: ExerciseDistributionItem;
   ExerciseReport: ExerciseReport;
   Float: Scalars['Float']['output'];
@@ -3169,13 +3174,16 @@ export type DistributionReportResolvers<ContextType = any, ParentType extends Re
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ExerciseDistributionAnswersResolvers<ContextType = any, ParentType extends ResolversParentTypes['ExerciseDistributionAnswers'] = ResolversParentTypes['ExerciseDistributionAnswers']> = {
+  answer?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  count?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ExerciseDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['ExerciseDistributionItem'] = ResolversParentTypes['ExerciseDistributionItem']> = {
-  A?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  B?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  C?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  D?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  E?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  answers?: Resolver<Array<ResolversTypes['ExerciseDistributionAnswers']>, ParentType, ContextType>;
   correct?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  correct_answer?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   empty?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   exercise?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   invalid?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -3449,6 +3457,7 @@ export type Resolvers<ContextType = any> = {
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
   DistributionReport?: DistributionReportResolvers<ContextType>;
+  ExerciseDistributionAnswers?: ExerciseDistributionAnswersResolvers<ContextType>;
   ExerciseDistributionItem?: ExerciseDistributionItemResolvers<ContextType>;
   ExerciseReport?: ExerciseReportResolvers<ContextType>;
   JSON?: GraphQLScalarType;

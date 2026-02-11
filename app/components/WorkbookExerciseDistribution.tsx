@@ -11,7 +11,6 @@ import {
   Legend,
 } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
-import { useState } from 'react'
 import Error from './Error'
 import Loading from './Loading'
 import { gql } from '@apollo/client'
@@ -29,14 +28,6 @@ ChartJS.register(
   Tooltip,
   Legend
 )
-
-const CHOICE_LABELS = {
-    A: 'A',
-    B: 'B',
-    C: 'C',
-    D: 'D',
-    E: 'E'
-}
 
 const CORRECTNESS_LABELS = {
     correct: 'giuste',
@@ -56,11 +47,11 @@ const _ = gql`
                 wrong
                 empty
                 invalid
-                A
-                B
-                C
-                D
-                E
+                correct_answer
+                answers {
+                    answer
+                    count
+                }
             }
         }
     }
@@ -81,8 +72,6 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
         pollInterval: 10000, // millisecondi
     })
 
-    const [viewMode, setViewMode] = useState<'choices' | 'correctness'>('correctness')
-
     if (loading || loadingSheets) return <Loading />
     if (error) return <Error error={error} />
     if (sheetsError) return <Error error={sheetsError} />
@@ -92,22 +81,14 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
             <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
-            <label className="flex items-center space-x-2">
-                <input
-                    type="checkbox"
-                    checked={viewMode === 'choices'}
-                    onChange={e => setViewMode(e.target.checked ? 'choices' : 'correctness')}
-                />
-                <span>mostra distrattori</span>
-            </label>
             {reports?.map(report => (
-                <ExerciseDistributionSection key={report.schema} report={report} viewMode={viewMode} />
+                <ExerciseDistributionSection key={report.schema} report={report} />
             ))}
         </div>
     )
 }
 
-function ExerciseDistributionSection({ report, viewMode }: { report: ExerciseReport, viewMode: 'choices' | 'correctness' }) {
+function ExerciseDistributionSection({ report }: { report: ExerciseReport }) {
     const schemaName = schemas[report.schema].header
 
     return (
@@ -116,13 +97,21 @@ function ExerciseDistributionSection({ report, viewMode }: { report: ExerciseRep
                 <h3 className="text-xl font-semibold">{schemaName} - Distribuzione per Esercizio</h3>
                 <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
             </div>
-
-            <ExerciseDistributionChart distribution={report.exerciseDistribution} viewMode={viewMode} totalStudents={report.totalStudents} />
+            <ExerciseDistributionChart distribution={report.exerciseDistribution} totalStudents={report.totalStudents} />
+            {
+                report.exerciseDistribution.map(item => (
+                    <div key={item.exercise} className="text-sm">
+                        <strong>Esercizio {item.exercise}: </strong> 
+                            {item.correct} giuste, {item.wrong} sbagliate, {item.empty} vuote, {item.invalid} nulle
+                            <AnswerDistributionChart item={item} />
+                    </div>
+                ))
+            }
         </div>
     )
 }
 
-function ExerciseDistributionChart({ distribution, viewMode, totalStudents }: { distribution: ExerciseReport['exerciseDistribution'], viewMode: 'choices' | 'correctness', totalStudents: number }) {
+function ExerciseDistributionChart({ distribution, totalStudents }: { distribution: ExerciseReport['exerciseDistribution'], totalStudents: number }) {
     if (distribution.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
@@ -133,57 +122,11 @@ function ExerciseDistributionChart({ distribution, viewMode, totalStudents }: { 
     // Prepare data for Chart.js
     const labels = distribution.map(item => item.exercise.toString())
     
-    const datasets = viewMode === 'choices' ? [
-        {
-            label: CHOICE_LABELS.A,
-            data: distribution.map(item => item.A),
-            backgroundColor: '#4f2a0aff',
-            stack: 'stack1'
-        },
-        {
-            label: CHOICE_LABELS.B,
-            data: distribution.map(item => item.B),
-            backgroundColor: '#3b82f6',
-            stack: 'stack1'
-        },
-        {
-            label: CHOICE_LABELS.C,
-            data: distribution.map(item => item.C),
-            backgroundColor: '#ef4444',
-            stack: 'stack1'
-        },
-        {
-            label: CHOICE_LABELS.D,
-            data: distribution.map(item => item.D),
-            backgroundColor: '#f59e0b',
-            stack: 'stack1'
-        },
-        {
-            label: CHOICE_LABELS.E,
-            data: distribution.map(item => item.E),
-            backgroundColor: '#8b5cf6',
-            stack: 'stack1'
-        },
-        {
-            label: CORRECTNESS_LABELS.correct,
-            data: distribution.map(item => item.correct),
-            backgroundColor: '#10b981',
-            stack: 'stack1'
-        },
-       {
-            label: CORRECTNESS_LABELS.empty,
-            data: distribution.map(item => item.empty),
-            backgroundColor: '#6b7280',
-            stack: 'stack1'
-        },
-        {
-            label: CORRECTNESS_LABELS.invalid,
-            data: distribution.map(item => item.invalid),
-            backgroundColor: '#000000ff',
-            stack: 'stack1'
-        }
+    const answers = Array.from(new Set(distribution.flatMap(item => item.answers.map(a => a.answer)))).sort()
 
-    ] : [
+    console.log(`Unique answers across distribution:`, answers.sort())
+
+    const datasets = [
         {
             label: CORRECTNESS_LABELS.correct,
             data: distribution.map(item => item.correct),
@@ -231,9 +174,7 @@ function ExerciseDistributionChart({ distribution, viewMode, totalStudents }: { 
                     label: function(context: any) {
                         const value = context.parsed.y
                         const item = distribution[context.dataIndex]
-                        const total = viewMode === 'choices' 
-                            ? item.A + item.B + item.C + item.D + item.E
-                            : item.correct + item.wrong + item.empty + item.invalid
+                        const total = item.correct + item.wrong + item.empty + item.invalid
                         const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
                         return `${context.dataset.label}: ${value} risposte (${percentage}%)`
                     },
@@ -262,9 +203,85 @@ function ExerciseDistributionChart({ distribution, viewMode, totalStudents }: { 
         }
     }
 
+    console.log(`Chart data:`, chartData)
+
     return (
         <div className="space-y-4">
             <Bar data={chartData} options={options} width={chartWidth} height={400} />
+        </div>
+    )
+}
+
+function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistribution'][0] }) {
+    if (item.answers.length === 0) {
+        return null
+    }
+
+    const answers = [...item.answers].sort(function(a, b) {
+        if (a.answer === '' || a.answer === '-') return 1
+        if (b.answer === '' || b.answer === '-') return -1
+        return a.answer.localeCompare(b.answer)
+    })
+
+    const labels = answers.map(a => {
+        const answer = a.answer
+        if (answer === '' || answer === '-') return 'bianca'
+        return answer
+    })
+
+    const data = answers.map(a => a.count)
+
+    const chartData = {
+        labels,
+        datasets: [
+            {
+                label: 'Risposte sbagliate',
+                data,
+                backgroundColor: '#ef4444'
+            }
+        ]
+    }
+
+    const options = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            title: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    label: function(context: any) {
+                        const value = context.parsed.y
+                        const percentage = item.correct + item.wrong + item.empty + item.invalid > 0 ? ((value / (item.correct + item.wrong + item.empty + item.invalid)) * 100).toFixed(1) : '0.0'
+                        return `${context.dataset.label}: ${value} risposte (${percentage}%)`
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Risposta'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Numero di risposte'
+                },
+                beginAtZero: true
+            }
+        }
+    }
+
+    return (
+        <div className="mt-2" style={{ maxWidth: '400px' }}>
+            <Bar data={chartData} options={options} />
         </div>
     )
 }
