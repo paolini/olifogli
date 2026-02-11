@@ -202,6 +202,7 @@ export class AnswerField extends Field {
             value = m[1] // se è nel formato "VALORE [CORRETTO]", prendi solo VALORE per la validazione
         }
         if (value === '-') return '' // trattino è considerato valido (studente presente ma senza risposta)
+        if (value === 'X') return '' // X è considerato valido (studente presente ma risposta non valutabile)
         return super.checkValid(value, context)
     }
 }
