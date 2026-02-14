@@ -43,6 +43,7 @@ const _ = gql`
             totalStudents
             exerciseDistribution {
                 exercise
+                field_type
                 correct
                 wrong
                 empty
@@ -62,9 +63,9 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
         variables: { workbookId },
         pollInterval: 10000, // millisecondi
     })
-    const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
+    const { filterState } = useSheetsFilterWithQuerystring({})
     const sheets = (sheetsData?.sheets || [])
-        .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
+        // .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
     const { loading, error, data } = useGetWorkbookExerciseReportQuery({
@@ -102,7 +103,10 @@ function ExerciseDistributionSection({ report }: { report: ExerciseReport }) {
                 report.exerciseDistribution.map(item => (
                     <div key={item.exercise} className="text-sm">
                         <strong>Esercizio {item.exercise}: </strong> 
-                            {item.correct} giuste, {item.wrong} sbagliate, {item.empty} vuote, {item.invalid} nulle
+                            {item.correct} giuste, {}
+                            {item.wrong} sbagliate, {}
+                            {item.empty} vuote, {}
+                            {item.invalid} nulle {}
                             <AnswerDistributionChart item={item} />
                     </div>
                 ))
@@ -124,7 +128,7 @@ function ExerciseDistributionChart({ distribution, totalStudents }: { distributi
     
     const answers = Array.from(new Set(distribution.flatMap(item => item.answers.map(a => a.answer)))).sort()
 
-    console.log(`Unique answers across distribution:`, answers.sort())
+    // console.log(`Unique answers across distribution:`, answers.sort())
 
     const datasets = [
         {
@@ -218,9 +222,13 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
     }
 
     const answers = [...item.answers].sort(function(a, b) {
-        if (a.answer === '' || a.answer === '-') return 1
-        if (b.answer === '' || b.answer === '-') return -1
-        return a.answer.localeCompare(b.answer)
+        if (item.field_type === 'NumericAnswerField' || item.field_type === 'ScoreAnswerField') {
+            // Ordina le risposte numericamente
+            return parseFloat(a.answer) - parseFloat(b.answer)
+        } else {
+            // Ordina le risposte in ordine alfabetico per default
+            return a.answer.localeCompare(b.answer)
+        }
     })
 
     const labels = answers.map(a => {
@@ -237,7 +245,7 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
             {
                 label: 'Risposte sbagliate',
                 data,
-                backgroundColor: '#ef4444'
+                //backgroundColor: '#ef4444'
             }
         ]
     }
@@ -272,7 +280,7 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
             y: {
                 title: {
                     display: true,
-                    text: 'Numero di risposte'
+                    text: 'Conteggio'
                 },
                 beginAtZero: true
             }
