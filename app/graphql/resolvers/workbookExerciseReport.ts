@@ -51,6 +51,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     }).toArray()
 
     type Counts = {
+        field_type: string;
         correct: number;
         wrong: number;
         empty: number;
@@ -63,6 +64,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     const exerciseCounts = new Map<string, Counts>()
     for (const field of fields) {
         exerciseCounts.set(field.name, {
+            field_type: field.constructor.name,
             correct: 0, wrong: 0, empty: 0, invalid: 0, 
             correct_answer: '',
             answers: {}})
@@ -94,18 +96,15 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
                 console.warn(`    Warning: different correct answers found for field ${field.name}: "${counts.correct_answer}" vs "${correct}"`)
             }
 
-            if (given !== correct) {
-                counts.answers[given] = (counts.answers[given] || 0) + 1
-            }
-
             if (given === '-') {
                 counts.empty++
-            } else if (!/[A-Z]/.test(given)) {
+            } else if (given === 'X') {
                 counts.invalid++
             } else if (given === correct) {
                 counts.correct++
             } else {
                 counts.wrong++
+                counts.answers[given] = (counts.answers[given] || 0) + 1
             }
         }
     }
@@ -114,6 +113,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     const exerciseDistribution: ExerciseDistributionItem[] = Array.from(exerciseCounts.entries())
         .map(([exercise, item]) => (
             { exercise, 
+                field_type: item.field_type,
                 correct: item.correct,
                 wrong: item.wrong,
                 empty: item.empty,
