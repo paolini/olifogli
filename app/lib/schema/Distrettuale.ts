@@ -317,7 +317,7 @@ export default class Distrettuale extends Competition {
             school: row.data?.nome_scuola || '',
             city: row.data?.città_scuola || '',
             district: sheet.name || '',
-            classYear: '1',
+            classYear: row.data?.classYear || '',
             classSection: row.data?.classSection || '',
             score,
             rowId: row._id,

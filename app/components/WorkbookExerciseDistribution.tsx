@@ -240,12 +240,14 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
     const data = answers.map(a => a.count)
 
     const chartData = {
-        labels,
+        labels: labels as string[],
         datasets: [
             {
                 label: 'Risposte sbagliate',
-                data,
-                //backgroundColor: '#ef4444'
+                data: data,
+                backgroundColor: '#3b82f6',
+                borderColor: '#2563eb',
+                borderWidth: 1
             }
         ]
     }
