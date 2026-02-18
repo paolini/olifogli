@@ -195,7 +195,6 @@ type ExerciseDistributionAnswers {
 
 type ExerciseDistributionItem {
   exercise: String!
-  field_type: String!
   correct: Int!
   wrong: Int!
   empty: Int!

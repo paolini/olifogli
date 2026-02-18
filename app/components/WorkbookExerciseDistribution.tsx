@@ -43,7 +43,6 @@ const _ = gql`
             totalStudents
             exerciseDistribution {
                 exercise
-                field_type
                 correct
                 wrong
                 empty
@@ -221,15 +220,8 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
         return null
     }
 
-    const answers = [...item.answers].sort(function(a, b) {
-        if (item.field_type === 'NumericAnswerField' || item.field_type === 'ScoreAnswerField') {
-            // Ordina le risposte numericamente
-            return parseFloat(a.answer) - parseFloat(b.answer)
-        } else {
-            // Ordina le risposte in ordine alfabetico per default
-            return a.answer.localeCompare(b.answer)
-        }
-    })
+    // Le risposte sono già ordinate server-side usando field.cmp()
+    const answers = item.answers
 
     const labels = answers.map(a => {
         const answer = a.answer

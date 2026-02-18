@@ -4,7 +4,7 @@ import { QueryWorkbookExerciseReportArgs, ExerciseReport, ExerciseDistributionIt
 import { WithId } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
 import { schemas } from '@/app/lib/schema'
-import { AnswerField, ChoiceAnswerField } from '@/app/lib/schema/fields'
+import { AnswerField, ChoiceAnswerField, Field } from '@/app/lib/schema/fields'
 import { getAllSheets } from './sheetsReportHelper'
 import { ObjectId } from 'bson'
 import Competition from '@/app/lib/schema/Competition'
@@ -51,7 +51,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     }).toArray()
 
     type Counts = {
-        field_type: string;
+        field: Field;
         correct: number;
         wrong: number;
         empty: number;
@@ -64,7 +64,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     const exerciseCounts = new Map<string, Counts>()
     for (const field of fields) {
         exerciseCounts.set(field.name, {
-            field_type: field.constructor.name,
+            field,
             correct: 0, wrong: 0, empty: 0, invalid: 0, 
             correct_answer: '',
             answers: {}})
@@ -113,16 +113,14 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     const exerciseDistribution: ExerciseDistributionItem[] = Array.from(exerciseCounts.entries())
         .map(([exercise, item]) => (
             { exercise, 
-                field_type: item.field_type,
                 correct: item.correct,
                 wrong: item.wrong,
                 empty: item.empty,
                 invalid: item.invalid,
                 correct_answer: item.correct_answer,
-                answers: Object.entries(item.answers).map(([answer, count]) => ({ 
-                    answer, 
-                    count 
-                }))
+                answers: Object.entries(item.answers)
+                    .map(([answer, count]) => ({ answer, count }))
+                    .sort((a, b) => item.field.cmp(a.answer, b.answer))
              }))
         .sort((a, b) => a.exercise.localeCompare(b.exercise))
 
