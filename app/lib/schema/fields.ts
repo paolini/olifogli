@@ -65,6 +65,21 @@ export class Field {
         return [this.name, this.header, ...this.alternativeNames]
     }
 
+    // Confronta due valori per l'ordinamento (numerico se type === 'number', altrimenti alfabetico)
+    cmp(a: string, b: string): number {
+        if (this.type === 'number') {
+            const aNum = parseFloat(a)
+            const bNum = parseFloat(b)
+            const aIsNaN = Number.isNaN(aNum)
+            const bIsNaN = Number.isNaN(bNum)
+            if (aIsNaN && bIsNaN) return a < b ? -1 : a > b ? 1 : 0
+            if (aIsNaN) return 1
+            if (bIsNaN) return -1
+            return aNum - bNum
+        }
+        return a < b ? -1 : a > b ? 1 : 0
+    }
+
     clean(value: string): string {
         value = value.trim()
         if (this.titleCase) {

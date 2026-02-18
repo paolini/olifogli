@@ -67,7 +67,6 @@ export type ExerciseDistributionItem = {
   correct_answer: Scalars['String']['output'];
   empty: Scalars['Int']['output'];
   exercise: Scalars['String']['output'];
-  field_type: Scalars['String']['output'];
   invalid: Scalars['Int']['output'];
   wrong: Scalars['Int']['output'];
 };
@@ -873,7 +872,7 @@ export type GetWorkbookExerciseReportQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookExerciseReportQuery = { __typename?: 'Query', workbookExerciseReport: Array<{ __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, field_type: string, correct: number, wrong: number, empty: number, invalid: number, correct_answer: string, answers: Array<{ __typename?: 'ExerciseDistributionAnswers', answer: string, count: number }> }> }> };
+export type GetWorkbookExerciseReportQuery = { __typename?: 'Query', workbookExerciseReport: Array<{ __typename?: 'ExerciseReport', schema: string, totalStudents: number, exerciseDistribution: Array<{ __typename?: 'ExerciseDistributionItem', exercise: string, correct: number, wrong: number, empty: number, invalid: number, correct_answer: string, answers: Array<{ __typename?: 'ExerciseDistributionAnswers', answer: string, count: number }> }> }> };
 
 export type GetWorkbookRankingReportQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -2320,7 +2319,6 @@ export const GetWorkbookExerciseReportDocument = gql`
     totalStudents
     exerciseDistribution {
       exercise
-      field_type
       correct
       wrong
       empty
@@ -3188,7 +3186,6 @@ export type ExerciseDistributionItemResolvers<ContextType = any, ParentType exte
   correct_answer?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   empty?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   exercise?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  field_type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   invalid?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   wrong?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
