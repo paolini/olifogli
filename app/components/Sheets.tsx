@@ -7,7 +7,7 @@ import FilterIcon from './FilterIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation } from '../graphql/generated';
+import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation, useOlimanagerUpdateExtraFieldsMutation } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SheetsCreation';
@@ -39,12 +39,6 @@ const UPDATE_SHEETS = gql`
     }
 `
 
-const _DELETE_SHEETS = gql`
-    mutation DeleteSheets($ids: [ObjectId!]!) {
-        deleteSheets(ids: $ids)
-    }
-`
-
 const UPDATE_SHEET_PERMISSIONS = gql`
     mutation UpdateSheetPermissions($_id: ObjectId!, $permissions: [PermissionInput!]) {
         updateSheet(_id: $_id, permissions: $permissions)
@@ -66,6 +60,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET_PERMISSIONS)
     const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
     const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateResultsLoading, error: olimanagerBulkUpdateResultsError }] = useOlimanagerBulkUpdateResultsMutation()
+    const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError}] = useOlimanagerUpdateExtraFieldsMutation()
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [displayLimit, setDisplayLimit] = useState(20)

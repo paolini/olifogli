@@ -267,6 +267,13 @@ type OlimanagerCreateResult {
   converted: Boolean
 }
 
+type OlimanagerUpdateExtraFieldsResult {
+  success: Boolean!
+  error: String
+  participantId: String
+  skipped: Boolean
+}
+
 type Mutation {
   updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId
@@ -331,6 +338,13 @@ type Mutation {
     username: String
     password: String!
   ): Boolean!
+
+  olimanagerUpdateExtraFields(
+    rowIds: [ObjectId!]
+    sheetIds: [ObjectId!]
+    username: String
+    password: String!
+  ): [OlimanagerUpdateExtraFieldsResult!]!
 
   updateSetting(key: String!, value: String!): Setting!
 }

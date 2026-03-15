@@ -1,5 +1,5 @@
 import { ObjectId } from "bson"
-import { CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useCreateSheetsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, MutationCreateSheetsArgs, MutationOlimanagerCreateParticipantArgs, MutationOlimanagerBulkUpdateResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs } from "../graphql/generated"
+import { CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useCreateSheetsMutation, useOlimanagerCreateParticipantMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, useOlimanagerUpdateExtraFieldsMutation, MutationCreateSheetsArgs, MutationOlimanagerCreateParticipantArgs, MutationOlimanagerBulkUpdateResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs, MutationOlimanagerUpdateExtraFieldsArgs } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
 import { TableState } from "./Table"
@@ -9,6 +9,7 @@ import ErrorElement from "./Error"
 import { pluralize } from "../lib/util"
 import Button from "./Button"
 import GlobalMessage from "./GlobalMessage"
+
 
 type TableActionInput = {
   profile?: { isAdmin: boolean, email: string},
@@ -81,6 +82,7 @@ type TableActionContext = TableActionInput & {
     createSheets: (args: { variables: MutationCreateSheetsArgs }) => Promise<FetchResult<CreateSheetsMutation>>,
     olimanagerCreateParticipant: (args: { variables: MutationOlimanagerCreateParticipantArgs }) => Promise<unknown>,
     olimanagerBulkUpdateResults: (args: { variables: MutationOlimanagerBulkUpdateResultsArgs }) => Promise<unknown>,
+    olimanagerUpdateExtraFields: (args: { variables: MutationOlimanagerUpdateExtraFieldsArgs }) => Promise<unknown>,
     loading: boolean,
     errors: ApolloError[],
   }
@@ -100,6 +102,7 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
   const [createSheets, { loading: createSheetsLoading, error: createSheetsError }] = useCreateSheetsMutation()
   const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
   const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
+  const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError }] = useOlimanagerUpdateExtraFieldsMutation()
   const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
   const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
 
@@ -114,8 +117,9 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
             createSheets,
             olimanagerCreateParticipant,
             olimanagerBulkUpdateResults,
-            loading: scanSheetLoading || createSheetsLoading || olimanagerCreateParticipantLoading || olimanagerBulkUpdateLoading || patchLoading || deleteLoading,
-            errors: [olimanagerCreateParticipantError,olimanagerBulkUpdateError,scanSheetError,createSheetsError].filter(e => e !== undefined),
+            olimanagerUpdateExtraFields,
+            loading: scanSheetLoading || createSheetsLoading || olimanagerCreateParticipantLoading || olimanagerBulkUpdateLoading || olimanagerUpdateExtraFieldsLoading || patchLoading || deleteLoading,
+            errors: [olimanagerCreateParticipantError,olimanagerBulkUpdateError,olimanagerUpdateExtraFieldsError,scanSheetError,createSheetsError].filter(e => e !== undefined),
         },
 
         olimanagerEmail, setOlimanagerEmail,
@@ -171,6 +175,12 @@ const actions: Record<string, Action> = {
     label: '⚙ Aggiorna risultati (Olimanager)',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerUpdateScores
+  },
+  'udpate_extra_fields': {
+    hidden: ctx => !ctx.profile?.isAdmin,
+    label: '⚙ Aggiorna extra fields (Olimanager)',
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
+    handler: handleOlimanagerUpdateExtraFields,
   },
   'csv_download': {
     hidden: ctx => false,
@@ -395,6 +405,36 @@ async function handleOlimanagerUpdateScores(ctx: TableActionContext) {
   const res = await ctx.mutations.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
   alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
   
+  if (ctx.refresh) await ctx.refresh()
+}
+
+async function handleOlimanagerUpdateExtraFields(ctx: TableActionContext) {
+  const valid_rows = filterValidRowsAndConfirm(ctx)
+  if (!valid_rows || !confirm(`Aggiornare gli extra fields su Olimanager per ${valid_rows.length} righe selezionate?`)) {
+    return
+  }
+  const ids = valid_rows.map(row => new ObjectId(row._id))
+  const {username, password} = askOlimanagerCredentials(ctx)
+
+  const res = await ctx.mutations.olimanagerUpdateExtraFields({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerUpdateExtraFields?: {success: boolean, skipped: boolean, error: string}[]}}
+  const arr = res.data?.olimanagerUpdateExtraFields || []
+  
+  const totalSuccess = arr.filter(r => r.success).length
+  const skipped = arr.filter(r => r.skipped).length
+  const ok = totalSuccess - skipped
+  const ko = arr.length - totalSuccess
+  
+  const errorMessages = arr.filter(r => !r.success).map(r => r.error).filter(Boolean)
+  
+  let msg = `Esito Olimanager: ${ok} aggiornati con successo`
+  if (skipped > 0) msg += `, ${skipped} saltati`
+  msg += `, ${ko} errori`
+  
+  if (errorMessages.length > 0) {
+      msg += '\n\nErrori:\n' + errorMessages.join('\n')
+  }
+  
+  alert(msg)
   if (ctx.refresh) await ctx.refresh()
 }
 

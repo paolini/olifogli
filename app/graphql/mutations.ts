@@ -16,6 +16,15 @@ export const OLIMANAGER_CREATE_PARTICIPANT_MUTATION = gql`
   }
 `;
 
+export const OLIMANAGER_UPDATE_EXTRA_FIELDS_MUTATION = gql`
+  mutation OlimanagerUpdateExtraFields($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
+    olimanagerUpdateExtraFields(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password) {
+      success
+      error
+    }
+  }
+`
+
 export const REQUEST_SCAN_SHEET_GENERATION_MUTATION = gql`
   mutation RequestScanSheetGeneration($sheetId: ObjectId!, $selectedRowIds: [ObjectId!]) {
     requestScanSheetGeneration(sheetId: $sheetId, selectedRowIds: $selectedRowIds)
@@ -27,3 +36,10 @@ export const CREATE_SHEETS_MUTATION = gql`
     createSheets(sheetId: $sheetId, rowIds: $rowIds) 
   }
 `;
+
+const DELETE_SHEETS = gql`
+    mutation DeleteSheets($ids: [ObjectId!]!) {
+        deleteSheets(ids: $ids)
+    }
+`
+
