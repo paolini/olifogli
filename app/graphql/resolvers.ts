@@ -47,6 +47,7 @@ import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
+import olimanagerUpdateExtraFieldsResults from './resolvers/olimanagerUpdateExtraFields'
 import workbookExerciseReport from './resolvers/workbookExerciseReport'
 import createSheets from './resolvers/createSheets'
 
@@ -134,6 +135,7 @@ export const resolvers: Resolvers = {
     olimanagerCreateParticipant: olimanagerCreateParticipant as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
+    olimanagerUpdateExtraFields: olimanagerUpdateExtraFieldsResults as any,
     updateSetting: settingsResolvers.Mutation.updateSetting,
   },
 
