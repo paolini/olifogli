@@ -20,6 +20,8 @@ export const OLIMANAGER_UPDATE_EXTRA_FIELDS_MUTATION = gql`
   mutation OlimanagerUpdateExtraFields($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
     olimanagerUpdateExtraFields(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password) {
       success
+      skipped
+      participantId
       error
     }
   }

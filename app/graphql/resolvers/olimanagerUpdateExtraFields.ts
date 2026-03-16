@@ -6,13 +6,12 @@ import { Collection, ObjectId, WithoutId } from "mongodb";
 import { OlimanagerApi } from "./olimanagerApi";
 import { Row, Sheet, Workbook } from "@/app/lib/models";
 import Schema from "@/app/lib/schema/Schema";
-import { set } from "date-fns";
 
 export default async function olimanagerUploadExtraFields(
   _: unknown,
   { rowIds, sheetIds, username, password }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[]; username?: string; password: string },
   context: Context
-): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]> {
+): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean}[]> {
   console.log('=== olimanagerUploadExtraFields START ===')
   console.log('Input params:', { rowIds: rowIds?.length, sheetIds: sheetIds?.length, username, passwordProvided: !!password })
 
@@ -61,7 +60,7 @@ export default async function olimanagerUploadExtraFields(
   await api.login()
   console.log('Olimanager login successful')
 
-  const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[] = []
+  const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean}[] = []
   console.log('Starting processing', finalRowIds.length, 'rows')
 
   for (let i = 0; i < finalRowIds.length; i++) {
@@ -109,7 +108,6 @@ export default async function olimanagerUploadExtraFields(
     success: results.filter(r => r.success).length, 
     failures: results.filter(r => !r.success).length,
     skipped: results.filter(r => r.skipped).length,
-    converted: results.filter(r => r.converted).length
   })
   return results
 }
@@ -123,23 +121,18 @@ async function processRow(
   schema: Schema
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean }> {
       const rowId = row._id;
-
       const shirt_size = row.data["shirt_size"]
-
       const variant = row.data['variant'];
 
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
 
       console.log(`syncDataWithOlimanager result: ${JSON.stringify(result)}`)
 
-      if (result.skipped) {
-          return { success: true, participantId: result.participantId, skipped: true };
-      }
-
       return {
           success: result.success,
           error: result.error,
           participantId: result.participantId,
+          skipped: result?.skipped,
       }
 }
 

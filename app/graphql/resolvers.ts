@@ -135,6 +135,7 @@ export const resolvers: Resolvers = {
     olimanagerCreateParticipant: olimanagerCreateParticipant as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerUpdateExtraFields: olimanagerUpdateExtraFieldsResults as any,
     updateSetting: settingsResolvers.Mutation.updateSetting,
   },
