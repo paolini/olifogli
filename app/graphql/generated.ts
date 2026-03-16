@@ -979,7 +979,7 @@ export type OlimanagerUpdateExtraFieldsMutationVariables = Exact<{
 }>;
 
 
-export type OlimanagerUpdateExtraFieldsMutation = { __typename?: 'Mutation', olimanagerUpdateExtraFields: Array<{ __typename?: 'OlimanagerUpdateExtraFieldsResult', success: boolean, error?: string | null }> };
+export type OlimanagerUpdateExtraFieldsMutation = { __typename?: 'Mutation', olimanagerUpdateExtraFields: Array<{ __typename?: 'OlimanagerUpdateExtraFieldsResult', success: boolean, skipped?: boolean | null, participantId?: string | null, error?: string | null }> };
 
 export type RequestScanSheetGenerationMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -2842,6 +2842,8 @@ export const OlimanagerUpdateExtraFieldsDocument = gql`
     password: $password
   ) {
     success
+    skipped
+    participantId
     error
   }
 }
