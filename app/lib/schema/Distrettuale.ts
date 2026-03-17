@@ -169,6 +169,9 @@ export default class Distrettuale extends Competition {
             throw new Error(`Errore nel parsing JSON di correct_answers: ${(e as Error).message}`);
         }
 
+        const FIELD_NAME = "codice_meccanografico"
+        context.school_external_id = (data: Data) => (data[FIELD_NAME] || '')
+
         return context;
     }
 
