@@ -120,9 +120,15 @@ async function processRow(
   workbook: Workbook,
   schema: Schema
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean }> {
-      const rowId = row._id;
       const shirt_size = row.data["shirt_size"]
-      const variant = row.data['variant'];
+
+      if (!shirt_size) {
+        console.log(`no shirt_size provided, skipping...`)
+        return {
+          success: true,
+          skipped: true,
+        }
+      }
 
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
 
