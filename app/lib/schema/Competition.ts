@@ -119,11 +119,17 @@ export default class Competition extends Schema {
     }   
 
     extract_olimanager_results = (row: Row, context: ValidationContext): OlimanagerProblemResult[] => {
+        if (context.absent(row.data)) {
+            return [];
+        }
+
+        /*
         const variant = row.data['variant'];
         // TODO: generalizzare il controllo su "variant" che potrebbe non esistere
         if (variant === '0' || variant === '000') {
             return [];
         }
+        */
 
         if (isNaN(context.contest_id)) {
             throw new Error(`contest_id non configurato`);
