@@ -464,7 +464,7 @@ export class DateField extends Field {
 
     anomalous(value: string, context: RowValidationContext): boolean {
         if (this.checkValid(value, context) === '') {
-            const contest_year = context.context.contest_year;
+            const contest_year = context.context?.contest_year || NaN;
             if (isNaN(contest_year)) return false;
             const year = parseInt(value.substring(6,10), 10)
             const age = contest_year - year
