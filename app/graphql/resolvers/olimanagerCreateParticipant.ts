@@ -215,7 +215,7 @@ async function syncDataWithOlimanager(
       const row_participant_id = parseInt(row.olimanager?.participantId || '', 10)
       const row_contest_id = parseInt(row.olimanager?.contestId || '', 10)
 
-      if (!isNaN(row_participant_id) && row_contest_id === contestId) {
+      if (!isNaN(row_participant_id) && (!row_contest_id || row_contest_id === contestId)) {
         console.log(`  SKIPPING: la riga ha già un participantId (${row_participant_id}) per questo contestId (${row_contest_id})`)
         return {success: true, participantId: `${row_participant_id}`, skipped: true}
       }
