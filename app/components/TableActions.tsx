@@ -426,7 +426,7 @@ async function handleOlimanagerUpdateExtraFields(ctx: TableActionContext) {
   
   const errorMessages = arr.filter(r => !r.success).map(r => r.error).filter(Boolean)
   
-  let msg = `Esito Olimanager: ${ok} aggiornati con successo`
+  let msg = `Esito Olimanager: ${ok} extra-fields aggiornati con successo`
   if (skipped > 0) msg += `, ${skipped} saltati`
   msg += `, ${ko} errori`
   
