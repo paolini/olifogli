@@ -98,7 +98,7 @@ function providers() {
   return providers
 }
 
-const authOptions: AuthOptions = {
+export const authOptions: AuthOptions = {
   secret: NEXTAUTH_SECRET, // FONDAMENTALE per produzione per firmare i JWT di sessione!
   debug: false,
   // Configure one or more authentication providers

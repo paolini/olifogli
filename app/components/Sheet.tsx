@@ -120,11 +120,52 @@ function SheetBody({sheet,profile}: {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
     const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin')) || false;
-    const [polling, setPolling ] = useState<boolean>(!(tab === 'table' && canEdit));
-    const { loading, error, data, refetch, stopPolling, startPolling } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const { loading, error, data, refetch } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
-        pollInterval: (polling || tab === 'info') ? 5000 : 0
+        pollInterval: 0
     });
+
+    // SSE: subscribe to server-sent events when polling is enabled
+    useEffect(() => {
+        console.log('[Sheet] Setting up SSE connection for real-time updates')
+        let es: EventSource | null = null
+        try {
+            es = new EventSource('/api/events')
+            try { console.log('[Sheet] Setting up SSE connection for real-time updates') } catch (e) {}
+        } catch (e) {
+            try { console.error('[Sheet] Failed to create EventSource', e) } catch (e) {}
+        }
+        if (es) {
+        es.onopen = () => { try { console.log('[SSE client] connection opened') } catch (e) {} }
+        const handleEvent = (ev: MessageEvent) => {
+            try {
+                const d = JSON.parse(ev.data)
+                const channel: string | undefined = d?.channel
+                const payload = d?.payload
+                // client-side debug log for SSE messages
+                try { console.log('[SSE client] message', { raw: ev.data, channel, payload }) } catch (e) {}
+                if (!channel) return
+                // If the event is about rows for this sheet, refetch
+                if (channel === `sheet:${sheet._id}:rows` || (payload && `${payload.sheetId}` === `${sheet._id}`)) {
+                    try { console.log('[SSE client] triggering refetch for sheet', `${sheet._id}`) } catch (e) {}
+                    refetch()
+                }
+                // also handle scanJob counts/updates if needed
+                if (channel?.startsWith('scanJob:') && payload?.sheetId && `${payload.sheetId}` === `${sheet._id}`) {
+                    refetch()
+                }
+            } catch (e) {
+                // ignore parse errors
+            }
+        }
+        // listen for named events (server sends `event: rows.updated`)
+        es.addEventListener('rows.updated', handleEvent as EventListener)
+        // fallback for unnamed/default message events
+        es.onmessage = handleEvent
+        es.onerror = (err) => { try { console.error('[SSE client] error', err) } catch (e) {} ; es.close() }
+        }
+        return () => { if (es) es.close() }
+        }, [sheet._id, refetch])
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
     const [csvImport, setCsvImport] = useState<boolean>(false)
 
@@ -188,14 +229,12 @@ function SheetBody({sheet,profile}: {
         </div>
         }
         { tab === 'table' && !csvImport &&
-            <Table 
+                <Table 
                 edit={canEdit} 
                 sheet={sheet} 
                 rows={data.rows} 
                 refresh={refresh} 
                 refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -210,8 +249,6 @@ function SheetBody({sheet,profile}: {
                 rows={data.rows} 
                 refresh={refresh} 
                 refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -226,8 +263,6 @@ function SheetBody({sheet,profile}: {
                 rows={data.rows} 
                 refresh={refresh} 
                 refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
