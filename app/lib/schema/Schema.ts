@@ -1,3 +1,4 @@
+// Schema does not import crypto directly; caller provides cipher/encoder
 import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet, Row as RowModel, Permission as PermissionModel } from '@/app/lib/models'
 import { Field } from './fields'
@@ -47,6 +48,11 @@ export type RowToSheetsResult = {
     }
 }
 
+export type EncryptedData = {
+    encrypted_data: string,
+    truncated_fields: Record<string, string>
+}
+
 export default class Schema {
     fields: Field[]
     name: string // da usare nel codice
@@ -55,6 +61,8 @@ export default class Schema {
     scan_fields: Field[] // nome dei campi presi dalla scansione
     fields_to_be_copied_on_new_row: string[] = [] // nomi dei campi da copiare quando si crea una nuova riga
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
+    fields_sensitive_names: string[] = [] // nomi dei campi contenenti dati sensibili da crittografare
+    fields_sensitive_dates: string[] = [] // nomi dei campi contenenti date sensibili da crittografare
     selections: Selection[] = [] // selezioni possibili per questo schema
     row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
     extract_olimanager_results: undefined | ((row: RowModel, context: ValidationContext) => OlimanagerProblemResult[]) = undefined
@@ -163,5 +171,36 @@ export default class Schema {
         const tabular: [string,string][] = Object.entries(data)
         const cards: [string,string][] = [] 
         return { tabular, cards }
+    }
+
+    encrypt(data: Data, encrypt_function: (payload: string) => string): EncryptedData {
+        if (this.fields_sensitive_names.length + this.fields_sensitive_dates.length === 0) {
+            return {
+                encrypted_data: '',
+                truncated_fields: {},
+            }
+        }
+        const source_string = JSON.stringify(Object.fromEntries(
+            [...this.fields_sensitive_names, ...this.fields_sensitive_dates].map(field_name => [field_name, data[field_name] || ''])
+        ))
+
+        const encrypted_string = encrypt_function(source_string)
+        // mantiene le iniziali di nome e cognome e l'anno della data, 
+        const truncated_fields = Object.fromEntries([
+            ...this.fields_sensitive_names.map(field_name => {
+                const value = data[field_name] || ''
+                const truncated = value.split(' ').map(part => part[0] || '').join('')
+                return [field_name, truncated]
+            }),
+            ...this.fields_sensitive_dates.map(field_name => {
+                const value = data[field_name] || ''
+                const truncated = value.length === 10 ? `01/01/${value.slice(6,10)}` : ''
+                return [field_name, truncated]
+            })
+        ])
+        return {
+            encrypted_data: encrypted_string,
+            truncated_fields,
+        }
     }
 }

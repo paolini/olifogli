@@ -42,6 +42,7 @@ export default class AmmissioneSenior extends Schema {
         this.scan_fields = this.fields.filter(f => 
             ["scan_id","variante"].includes(f.name) || (f instanceof ChoiceAnswerField)
         )
+        this.fields_sensitive_names = ["cognome", "nome"]
     }
 
     csv_header(): string[] {

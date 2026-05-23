@@ -38,6 +38,8 @@ export default class GaraPrime extends Competition {
             new ChoiceAnswerField('r18', {header: '18', additionalCssStyle: 'thick-border-right'}),
             new ScoreField('score', 90, {additionalCssStyle: 'thick-border-right'}),
         ])
+        this.fields_sensitive_names = ['surname', 'name']
+        this.fields_sensitive_dates = ['birthDate']
     }
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {

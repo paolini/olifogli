@@ -346,5 +346,8 @@ type Mutation {
     password: String!
   ): [OlimanagerUpdateExtraFieldsResult!]!
 
+  cryptSheets(sheetIds: [ObjectId!]!, password: String!): Boolean
+  decryptSheets(sheetIds: [ObjectId!]!, password: String!): Boolean
+
   updateSetting(key: String!, value: String!): Setting!
 }
