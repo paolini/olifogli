@@ -45,7 +45,7 @@ export default async function decryptSheets(_: unknown, { sheetIds, password }: 
                         decipher.setAuthTag(tag)
                         const decrypted = Buffer.concat([decipher.update(ct), decipher.final()])
                         const obj = JSON.parse(decrypted.toString('utf8'))
-                        const setObj: any = {}
+                        const setObj: Record<string, unknown> = {}
                         for (const [k, v] of Object.entries(obj)) {
                             setObj[`data.${k}`] = v
                         }
