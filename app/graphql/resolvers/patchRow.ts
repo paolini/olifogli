@@ -5,6 +5,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data } from '@/app/lib/models'
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
+import Redis from 'ioredis'
 
 export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     _id: ObjectId,
@@ -79,6 +80,17 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
         return updatedRow
     })
     
+    // publish update to redis so SSE clients get notified
+    try {
+        const r = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379')
+        const channel = `sheet:${row.sheetId}:rows`
+        const message = JSON.stringify({ type: 'rows.updated', channel, payload: { sheetId: row.sheetId, row: updatedRow }, timestamp: new Date().toISOString() })
+        await r.publish(channel, message)
+        r.quit()
+    } catch (e) {
+        console.error('Failed to publish redis event for patchRow', e)
+    }
+
     return updatedRow
 }
 

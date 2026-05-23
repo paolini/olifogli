@@ -316,6 +316,48 @@ npm run migrate:create    # Crea nuova migrazione
 ### GraphQL Endpoint
 - `POST /app/graphql/route`: Single GraphQL endpoint
 
+
+## Real-time Notifications (SSE + Redis)
+
+### Obiettivo
+Ridurre/abolire il polling lato client per aggiornamenti (scan jobs, rows, sheet state) usando Server-Sent Events (SSE) con Redis Pub/Sub come broker tra processi.
+
+### Architettura proposta
+- Endpoint SSE `GET /api/events` in Next.js che mantiene connessioni long-lived e inoltra eventi server→client.
+- Redis usato come broker Pub/Sub: worker (archiomr) e processi server pubblicano aggiornamenti su canali (es. `scanJob:{jobId}`, `sheet:{sheetId}:rows`). Il processo Next.js si sottoscrive ai canali e mappa gli eventi verso le connessioni SSE appropriate.
+- Client (React) apre un `EventSource('/api/events')`, riceve eventi e aggiorna cache Apollo o effettua refetch mirati quando necessario.
+Note: l'implementazione prevede connessioni SSE come modalità predefinita per gli aggiornamenti automatici; un fallback polling può essere mantenuto come opzione di emergenza lato server se necessario.
+
+### Schema dei messaggi (SSE)
+- Eventi SSE testuali con campo `event` e `data` JSON. Il `event` può essere `scanJob.update`, `rows.updated`, `sheet.state`.
+- Payload JSON minimale contenente `channel` e `payload`:
+  - `channel`: string (es. `scanJob:507f1f...`, `sheet:...`)
+  - `payload`: object (dati specifici dell'evento)
+  - `timestamp`: ISO8601
+
+Esempio SSE data (campo `data`):
+  { "channel": "scanJob:507f1f...", "payload": { "jobId": "...", "status": "completed" }, "timestamp": "..." }
+
+### Flusso (high-level)
+1. Worker o API modifica risorsa → pubblica evento su Redis Pub/Sub.
+2. Next.js process sottoscritto ai canali Redis riceve evento.
+3. Next.js inoltra evento via SSE alle connessioni client autorizzate (filtrando per permessi e canali sottoscritti internamente).
+4. Client riceve evento e aggiorna UI/Cache.
+
+### Sicurezza e autorizzazioni
+- Autenticazione: usare sessioni NextAuth (cookie) nella route SSE; la route verifica la sessione all'apertura e associa la connessione all'utente.
+- Autorizzazione: mappare la connessione a risorse autorizzate (es. fogli visibili) e filtrare gli eventi prima dell'invio. Non esporre canali Redis direttamente ai client.
+
+### Deployment e configurazione
+- Aggiungere servizio Redis nel `docker-compose.yml` (se non già presente) e variabili d'ambiente: `REDIS_URL`.
+- L'endpoint SSE funziona anche in container e con server long-running; è più compatibile con deployment server-side rispetto a WebSocket in ambienti serverless.
+
+### Migrazione graduale
+- Implementare `GET /api/events` SSE e aggiornare componenti critici (`ScansImport`, `ScansSheetExport`, `Sheet/Table`) per usare `EventSource` invece di `pollInterval`.
+- Pubblicare eventi Redis nei punti server/worker (es. dopo `addRow`, dopo aggiornamenti `scan_jobs`) e testare in staging.
+
+
+
 ## Performance e Scalabilità
 
 ### Ottimizzazioni Frontend

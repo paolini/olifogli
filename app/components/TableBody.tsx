@@ -7,7 +7,7 @@ import { pluralize } from "../lib/util"
 import { Sheet } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 
-export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode, polling, setPolling} : {
+export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, refresh, refreshLoading, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode} : {
     sheet: Sheet,
     schema: Schema,
     edit: boolean,
@@ -27,8 +27,6 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
     setDirectInput: Dispatch<SetStateAction<boolean>>,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     adminEditMode: boolean,
-    polling: boolean,
-    setPolling: Dispatch<SetStateAction<boolean>>
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
     const validationContext = schema.validationContext(sheet.commonData, sheet.workbook.commonData)
@@ -65,14 +63,7 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
           <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>
             aggiungi nuova riga
           </Button>}
-        {!polling && 
-            <Button title="carica eventuali righe inserite da altri" onClick={refresh} disabled={refreshLoading} className="px-8 ml-8" variant="alert">
-                Aggiorna
-            </Button>}
-          <label title="se attivato vedrai comparire automaticamente le righe aggiunte da altri" className="ml-4">
-            <input type="checkbox" checked={!!polling} onChange={e => setPolling(e.target.checked)} /> 
-            {} aggiornamento automatico
-          </label>
+          
         <span className="mx-8">{pluralize(tableState.lines.length,"riga","righe")}, {pluralize(tableState.lines.filter(line => !line?.row?.error).length,"valida","valide")}</span>
         </td></tr>
     </tbody>

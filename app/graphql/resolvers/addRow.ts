@@ -1,4 +1,5 @@
 import { getSheetsCollection, getRowsCollection, getWorkbooksCollection, withTransaction } from '@/app/lib/mongodb'
+import Redis from 'ioredis'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 
@@ -67,5 +68,16 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
         return insertedRow
     })
     
-    return row
+        // publish update to redis so SSE subscribers can be notified
+        try {
+            const r = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379')
+            const channel = `sheet:${args.sheetId}:rows`
+            const message = JSON.stringify({ type: 'rows.updated', channel, payload: { sheetId: args.sheetId, row: row }, timestamp: new Date().toISOString() })
+            await r.publish(channel, message)
+            r.quit()
+        } catch (e) {
+            console.error('Failed to publish redis event for addRow', e)
+        }
+
+        return row
 }
