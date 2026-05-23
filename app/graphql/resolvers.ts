@@ -1,4 +1,5 @@
 import { Context } from './types'
+import { ObjectId } from 'bson'
 import { ObjectIdType, Timestamp, DataType } from './types'
 import { GraphQLJSON } from "graphql-type-json"
 import { Resolvers } from './generated'
@@ -139,12 +140,8 @@ export const resolvers: Resolvers = {
     olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerUpdateExtraFields: olimanagerUpdateExtraFieldsResults as any,
-    // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cryptSheets: cryptSheets as any,
-    // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    decryptSheets: decryptSheets as any,
+    cryptSheets: cryptSheets, 
+    decryptSheets: decryptSheets,
     updateSetting: settingsResolvers.Mutation.updateSetting,
   },
 
