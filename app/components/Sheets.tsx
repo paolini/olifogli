@@ -263,10 +263,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     ⚙ Invia risultati (Olimanager)
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => cryptSelectedSheets()}>
-                    ⚙ Critta
+                    ⚙ Cripta
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => decryptSelectedSheets()}>
-                    ⚙ Decritta
+                    ⚙ Decripta
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta
@@ -377,6 +377,11 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         if (!profile?.isAdmin) return
         if (!confirm(`Applicare crittografia sui ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')} selezionati?`)) return
         const password = prompt('Password per crittografia') || ''
+        const confirmPassword = prompt('Conferma password') || ''
+        if (password !== confirmPassword) {
+            alert('Le password non corrispondono')
+            return
+        }
         if (!password) return
         try {
             await cryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
