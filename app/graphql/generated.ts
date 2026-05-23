@@ -87,6 +87,8 @@ export type Mutation = {
   addWorkbook?: Maybe<Workbook>;
   closeSheet?: Maybe<Scalars['Boolean']['output']>;
   createSheets: Scalars['String']['output'];
+  cryptSheets?: Maybe<Scalars['Boolean']['output']>;
+  decryptSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteAllRows?: Maybe<Scalars['Int']['output']>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteRows?: Maybe<Scalars['Int']['output']>;
@@ -152,6 +154,18 @@ export type MutationCreateSheetsArgs = {
   dry?: InputMaybe<Scalars['Boolean']['input']>;
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationCryptSheetsArgs = {
+  password: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
+export type MutationDecryptSheetsArgs = {
+  password: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
 };
 
 
@@ -781,6 +795,22 @@ export type UpdateSheetPermissionsMutationVariables = Exact<{
 
 
 export type UpdateSheetPermissionsMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
+
+export type CryptSheetsMutationVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+
+export type CryptSheetsMutation = { __typename?: 'Mutation', cryptSheets?: boolean | null };
+
+export type DecryptSheetsMutationVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+
+export type DecryptSheetsMutation = { __typename?: 'Mutation', decryptSheets?: boolean | null };
 
 export type AddSheetsMutationVariables = Exact<{
   sheets: Array<SheetInput> | SheetInput;
@@ -1810,6 +1840,70 @@ export function useUpdateSheetPermissionsMutation(baseOptions?: Apollo.MutationH
 export type UpdateSheetPermissionsMutationHookResult = ReturnType<typeof useUpdateSheetPermissionsMutation>;
 export type UpdateSheetPermissionsMutationResult = Apollo.MutationResult<UpdateSheetPermissionsMutation>;
 export type UpdateSheetPermissionsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>;
+export const CryptSheetsDocument = gql`
+    mutation CryptSheets($sheetIds: [ObjectId!]!, $password: String!) {
+  cryptSheets(sheetIds: $sheetIds, password: $password)
+}
+    `;
+export type CryptSheetsMutationFn = Apollo.MutationFunction<CryptSheetsMutation, CryptSheetsMutationVariables>;
+
+/**
+ * __useCryptSheetsMutation__
+ *
+ * To run a mutation, you first call `useCryptSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCryptSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [cryptSheetsMutation, { data, loading, error }] = useCryptSheetsMutation({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useCryptSheetsMutation(baseOptions?: Apollo.MutationHookOptions<CryptSheetsMutation, CryptSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CryptSheetsMutation, CryptSheetsMutationVariables>(CryptSheetsDocument, options);
+      }
+export type CryptSheetsMutationHookResult = ReturnType<typeof useCryptSheetsMutation>;
+export type CryptSheetsMutationResult = Apollo.MutationResult<CryptSheetsMutation>;
+export type CryptSheetsMutationOptions = Apollo.BaseMutationOptions<CryptSheetsMutation, CryptSheetsMutationVariables>;
+export const DecryptSheetsDocument = gql`
+    mutation DecryptSheets($sheetIds: [ObjectId!]!, $password: String!) {
+  decryptSheets(sheetIds: $sheetIds, password: $password)
+}
+    `;
+export type DecryptSheetsMutationFn = Apollo.MutationFunction<DecryptSheetsMutation, DecryptSheetsMutationVariables>;
+
+/**
+ * __useDecryptSheetsMutation__
+ *
+ * To run a mutation, you first call `useDecryptSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDecryptSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [decryptSheetsMutation, { data, loading, error }] = useDecryptSheetsMutation({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useDecryptSheetsMutation(baseOptions?: Apollo.MutationHookOptions<DecryptSheetsMutation, DecryptSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DecryptSheetsMutation, DecryptSheetsMutationVariables>(DecryptSheetsDocument, options);
+      }
+export type DecryptSheetsMutationHookResult = ReturnType<typeof useDecryptSheetsMutation>;
+export type DecryptSheetsMutationResult = Apollo.MutationResult<DecryptSheetsMutation>;
+export type DecryptSheetsMutationOptions = Apollo.BaseMutationOptions<DecryptSheetsMutation, DecryptSheetsMutationVariables>;
 export const AddSheetsDocument = gql`
     mutation AddSheets($sheets: [SheetInput!]!) {
   addSheets(sheets: $sheets)
@@ -3283,6 +3377,8 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
   closeSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCloseSheetArgs, '_id'>>;
   createSheets?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationCreateSheetsArgs, 'sheetId'>>;
+  cryptSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCryptSheetsArgs, 'password' | 'sheetIds'>>;
+  decryptSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDecryptSheetsArgs, 'password' | 'sheetIds'>>;
   deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteRowsArgs, 'ids'>>;

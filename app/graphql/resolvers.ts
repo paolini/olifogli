@@ -50,6 +50,8 @@ import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults
 import olimanagerUpdateExtraFieldsResults from './resolvers/olimanagerUpdateExtraFields'
 import workbookExerciseReport from './resolvers/workbookExerciseReport'
 import createSheets from './resolvers/createSheets'
+import cryptSheets from './resolvers/cryptSheets'
+import decryptSheets from './resolvers/decryptSheets'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -137,6 +139,12 @@ export const resolvers: Resolvers = {
     olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerUpdateExtraFields: olimanagerUpdateExtraFieldsResults as any,
+    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cryptSheets: cryptSheets as any,
+    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    decryptSheets: decryptSheets as any,
     updateSetting: settingsResolvers.Mutation.updateSetting,
   },
 

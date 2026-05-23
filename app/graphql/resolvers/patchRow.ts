@@ -36,7 +36,16 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
         throw new Error(`La riga è stata modificata da qualcun altro`);
     }
 
-    
+    // if the row is encrypted, disallow changing sensitive fields
+    const sensitiveFields = [...schema.fields_sensitive_names, ...schema.fields_sensitive_dates]
+    if (row.encrypted_data) {
+        for (const f of sensitiveFields) {
+            if (data[f] !== undefined && data[f] !== (row.data && row.data[f])) {
+                throw new Error(`Non è possibile modificare il campo sensibile ${f} su una riga criptata`)
+            }
+        }
+    }
+
     data = {...row.data, ...data} // mantiene i campi non modificati
     data = schema.clean(data)
     const validationContext = schema.validationContext(sheet.commonData, workbook.commonData)

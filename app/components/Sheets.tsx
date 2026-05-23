@@ -14,7 +14,6 @@ import SchoolSheetsCreation from './SheetsCreation';
 import { useRouter } from 'next/navigation';
 import { Lock, Archive, Unlock } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
-import '@uiw/react-md-editor/markdown-editor.css';
 import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
@@ -45,6 +44,18 @@ const UPDATE_SHEET_PERMISSIONS = gql`
     }
 `
 
+const CRYPT_SHEETS = gql`
+    mutation CryptSheets($sheetIds: [ObjectId!]!, $password: String!) {
+        cryptSheets(sheetIds: $sheetIds, password: $password)
+    }
+`
+
+const DECRYPT_SHEETS = gql`
+    mutation DecryptSheets($sheetIds: [ObjectId!]!, $password: String!) {
+        decryptSheets(sheetIds: $sheetIds, password: $password)
+    }
+`
+
 export default function Sheets({ sheets, profile, workbookId, refetch }: { 
     sheets: GetSheetsQuery['sheets'], 
     profile?: { isAdmin?: boolean|null, email?: string } | null,
@@ -61,6 +72,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
     const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateResultsLoading, error: olimanagerBulkUpdateResultsError }] = useOlimanagerBulkUpdateResultsMutation()
     const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError}] = useOlimanagerUpdateExtraFieldsMutation()
+    const [cryptSheetsMutation, { loading: cryptSheetsLoading, error: cryptSheetsError }] = useMutation(CRYPT_SHEETS)
+    const [decryptSheetsMutation, { loading: decryptSheetsLoading, error: decryptSheetsError }] = useMutation(DECRYPT_SHEETS)
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [displayLimit, setDisplayLimit] = useState(20)
@@ -249,6 +262,12 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 <Button disabled={selectedIds.length === 0 || olimanagerBulkUpdateResultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
                     ⚙ Invia risultati (Olimanager)
                 </Button>
+                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => cryptSelectedSheets()}>
+                    ⚙ Critta
+                </Button>
+                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => decryptSelectedSheets()}>
+                    ⚙ Decritta
+                </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta
                 </Button>
@@ -351,6 +370,34 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             locked: false
         }))
         await updateSheets({ variables: { sheets: updates } })
+        refetch()
+    }
+
+    async function cryptSelectedSheets() {
+        if (!profile?.isAdmin) return
+        if (!confirm(`Applicare crittografia sui ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')} selezionati?`)) return
+        const password = prompt('Password per crittografia') || ''
+        if (!password) return
+        try {
+            await cryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
+            alert('Crittografia richiesta inviata')
+        } catch (e) {
+            alert('Errore durante la richiesta di crittografia')
+        }
+        refetch()
+    }
+
+    async function decryptSelectedSheets() {
+        if (!profile?.isAdmin) return
+        if (!confirm(`Rimuovere crittografia dai ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')} selezionati?`)) return
+        const password = prompt('Password per decrittazione') || ''
+        if (!password) return
+        try {
+            await decryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
+            alert('Decrittazione richiesta inviata')
+        } catch (e) {
+            alert('Errore durante la richiesta di decrittazione')
+        }
         refetch()
     }
 

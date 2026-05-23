@@ -35,6 +35,8 @@ export default class ArchimedeCommon extends Competition {
         ])
         this.fields_to_be_copied_on_new_row = ['classYear', 'classSection']
         this.fields_to_be_ignored_on_inport = ['Nome concorrente', 'Email', 'ID utente', 'Genere', 'Codice fiscale', 'Ruolo', 'Verificato', 'Approvato/a', 'Approvato/a il', 'Idoneo/a', 'Codice meccanografico', 'Tipo scuola', 'Nome scuola', 'Città scuola', 'Provincia scuola', 'Sigla provincia scuola', 'Regione scuola', 'Email scuola', 'Data creazione membro'];
+        this.fields_sensitive_names = ['surname', 'name']
+        this.fields_sensitive_dates = ['birthDate']
     }
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
