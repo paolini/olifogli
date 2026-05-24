@@ -38,7 +38,7 @@ export function InfoCell({line, column}:{
     </td>
 }
 
-export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, directInput, setDirectInput, showStandardAnswers, onClick, cellKeyDownHandler, validationContext}:{
+export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNewValue, directInput, setDirectInput, showStandardAnswers, onClick, cellKeyDownHandler, validationContext, cursorColor}:{
   hasFocus: boolean,
   inputFocus: boolean,
   field: Field,
@@ -51,6 +51,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
   onClick: () => void,
   cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
   validationContext: RowValidationContext,
+  cursorColor?: string,
 }) {
   const tdRef = useRef<HTMLTableCellElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +90,7 @@ export function DataCell({hasFocus, inputFocus, field, oldValue, newValue, setNe
 
   const className = `${field.css_class}${extra_css?` ${extra_css}` : ''}${hasFocus ? ' focus' : ''}${inputFocus && hasFocus ? ' input-focus' : ''}${changed ? ' modified' : ''}${anomalous ? ' anomalous' : ''}`;
 
-  return <td className={className} tabIndex={1} title={title} onClick={onClick} style={style} ref={tdRef}>
+  return <td className={className} tabIndex={1} title={title} onClick={onClick} style={cursorColor ? {...style, boxShadow: `inset 0 0 0 2px ${cursorColor}`} : style} ref={tdRef}>
       {(hasFocus && field.editable && inputFocus && setNewValue)
         ? <TableCellInput 
             field={field}

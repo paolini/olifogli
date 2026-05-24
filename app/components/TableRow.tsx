@@ -63,14 +63,22 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     const {className, style } = computeRecentFadeStyling();
 
     const hasFocus = focusColumnName != ''
-    const cursorColor = cursorUsers && cursorUsers.length > 0 ? emailToColor(cursorUsers[0].email) : undefined
+    const cursorColorByField: Record<string, string> = {}
+    if (cursorUsers) {
+        for (const u of cursorUsers) {
+            if (u.fieldName && !(u.fieldName in cursorColorByField)) {
+                cursorColorByField[u.fieldName] = emailToColor(u.email)
+            }
+        }
+    }
+    const anyCursorColor = cursorUsers && cursorUsers.length > 0 ? emailToColor(cursorUsers[0].email) : undefined
     const EMPTY_DATA = useMemo(() => columns.filter(c => c instanceof Field).map(c => [c.name,'']), [columns])
     const oldData = useMemo(() => line.row ? line.row.data : EMPTY_DATA, [line.row, EMPTY_DATA])
     const newData = {...oldData, ...line.data}
     
     return <tr 
         className={`${className} clickable ${hasFocus ? 'focus' : ''}`} 
-        style={cursorColor ? {...style, boxShadow: `inset 4px 0 0 0 ${cursorColor}`} : style}
+        style={anyCursorColor ? {...style, boxShadow: `inset 4px 0 0 0 ${anyCursorColor}`} : style}
         title={cursorUsers && cursorUsers.length > 0 ? `In uso da: ${cursorUsers.map(u => u.email).join(', ')}` : undefined}
     >
         <CheckboxCell selectionState={selectionState} />
@@ -87,6 +95,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
             onClick={() => onCellClick(column)}
             cellKeyDownHandler={cellKeyDownHandler}
             validationContext={validationContext}
+            cursorColor={cursorColorByField[column.name]}
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
