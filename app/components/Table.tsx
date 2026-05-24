@@ -92,13 +92,11 @@ export const EMPTY_TABLE_STATE: TableState = {
     inputFocus: false,
 }
 
-export default function Table({edit, standardAnswers, rows, sheet, refresh, refreshLoading, lastCsvDownload, csvDownload, setCsvImport, adminEditMode}: {
+export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownload, csvDownload, setCsvImport, adminEditMode}: {
     edit: boolean,
     standardAnswers: boolean,
     rows: Row[],
     sheet: Sheet,
-    refresh?: () => Promise<void>,
-    refreshLoading?: boolean,
     lastCsvDownload?: Date,
     csvDownload: (rows: Row[], standardAnswers: boolean) => void,
     setCsvImport: Dispatch<SetStateAction<boolean>>,
@@ -142,14 +140,10 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
     useEffect(() => {
         // avvia un timer per il salvataggio automatico della riga in modifica
         const intervalId = setInterval(() => {
-            setTableState(prev => {
-                // console.log(`automatic save...`);
-                saveLineIfNeeded(focusLine)
-                return prev
-        })
+            saveLineIfNeeded(focusLine)
         }, 5000)
         return () => clearInterval(intervalId);
-    }, [focusLine,lastAlive,setTableState]);
+    }, [focusLine,lastAlive]);
 
 
     if (!schema) {
@@ -182,8 +176,6 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
                     setTableState={setTableState}
                     directInput={directInput} setDirectInput={setDirectInput}
                     showStandardAnswers={standardAnswers}
-                    refresh={refresh}
-                    refreshLoading={refreshLoading}
                     error={error}
                     dismissErrors={dismissErrors}
                     onCellClick={(column: Column, line: Line) => moveFocusTo(column, line)}
@@ -235,7 +227,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
               // rimuovi dal dizionario per controllare alla fine cosa resta
               delete rowFromId[id]
               // confronta le Date convertendole in millisecondi
-              if (incomingRow.updatedOn == l.row.updatedOn) {
+              if (incomingRow.updatedOn === l.row.updatedOn) {
                 // la riga non è stata modificata
                 lines.push(l);
               } else {
@@ -881,11 +873,12 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
 
     async function saveRow(row: Row, data: Data) {
         // console.log(`saving row ${row._id} with data`, data)
+        const key = row._id.toString()
         
         function updateLineState(update: Partial<Line>) {
             setTableState(prev => {
                 // console.log(`updateLineState called in saveRow`)
-                const lines: Line[] = prev.lines.map(line => line.row === row 
+                const lines: Line[] = prev.lines.map(line => line.key === key
                     ? {...line, ...update}
                     : line)
                 return {...prev, lines }
