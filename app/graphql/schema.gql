@@ -350,9 +350,19 @@ type Mutation {
   decryptSheets(sheetIds: [ObjectId!]!, password: String!): Boolean
 
   updateSetting(key: String!, value: String!): Setting!
+
+  moveCursor(sheetId: ObjectId!, lineKey: String, fieldName: String, tabId: String!): Boolean
+}
+
+type UserCursor {
+  email: String!
+  lineKey: String
+  fieldName: String
+  tabId: String!
 }
 
 type Subscription {
   sheetUpdated(sheetId: ObjectId!): Sheet!
   rowChanged(sheetId: ObjectId!): Row!
+  cursorChanged(sheetId: ObjectId!): UserCursor!
 }

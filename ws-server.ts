@@ -42,20 +42,34 @@ async function start() {
   const serverCleanup = useServer({
     schema,
     context: async (ctx) => {
-      // Extract token from connectionParams for WebSocket authentication
       const sessionToken = ctx.connectionParams?.sessionToken;
       let user_id;
       let email;
       if (sessionToken) {
-        // In un'applicazione reale, dovresti verificare questo token usando NEXTAUTH_SECRET.
-        // Per semplicità, lo decodifichiamo solamente.
-        // La struttura del payload del token dovrebbe corrispondere a OLIMANAGER_TOKEN.
         const decodedToken = jwt.decode(sessionToken) || {};
         user_id = decodedToken.user_id ? new ObjectId(decodedToken.user_id) : undefined;
         email = decodedToken.email;
       }
       return get_context({ user_id, email, pubsub });
-    }
+    },
+    onConnect: (ctx) => {
+      console.log('[ws] client connected', ctx.connectionParams ?? '');
+    },
+    onDisconnect: () => {
+      console.log('[ws] client disconnected');
+    },
+    onSubscribe: (ctx, id) => {
+      console.log('[ws] subscribe id=%s', id);
+    },
+    onNext: (ctx, id, payload, args, result) => {
+      console.log('[ws] → id=%s payload=%s', id, JSON.stringify(result.data));
+    },
+    onError: (ctx, id, errors) => {
+      console.error('[ws] error id=%s', id, errors);
+    },
+    onComplete: (ctx, id) => {
+      console.log('[ws] complete id=%s', id);
+    },
   }, wsServer);
 
   const serverInstance = httpServer.listen(PORT, () => {

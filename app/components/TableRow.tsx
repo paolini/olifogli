@@ -11,7 +11,15 @@ export type RowSelectionState = {
     doDeselect: (shift: boolean) => void,
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, adminEditMode, validationContext}:{
+function emailToColor(email: string): string {
+    let hash = 0
+    for (let i = 0; i < email.length; i++) {
+        hash = (hash * 31 + email.charCodeAt(i)) & 0x7fffffff
+    }
+    return `hsl(${hash % 360}, 70%, 45%)`
+}
+
+export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, adminEditMode, validationContext, cursorUsers}:{
     line: Line,
     setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
@@ -25,6 +33,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     adminEditMode: boolean,
     validationContext: RowValidationContext,
+    cursorUsers?: Array<{ email: string, fieldName: string | null }>,
 }) {
     // memoized setters per ogni campo
     // evita che il setter venga ricreato ad ogni render
@@ -54,11 +63,16 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
     const {className, style } = computeRecentFadeStyling();
 
     const hasFocus = focusColumnName != ''
+    const cursorColor = cursorUsers && cursorUsers.length > 0 ? emailToColor(cursorUsers[0].email) : undefined
     const EMPTY_DATA = useMemo(() => columns.filter(c => c instanceof Field).map(c => [c.name,'']), [columns])
     const oldData = useMemo(() => line.row ? line.row.data : EMPTY_DATA, [line.row, EMPTY_DATA])
     const newData = {...oldData, ...line.data}
     
-    return <tr className={`${className} clickable ${hasFocus ? 'focus' : ''}`} style={style}>
+    return <tr 
+        className={`${className} clickable ${hasFocus ? 'focus' : ''}`} 
+        style={cursorColor ? {...style, boxShadow: `inset 4px 0 0 0 ${cursorColor}`} : style}
+        title={cursorUsers && cursorUsers.length > 0 ? `In uso da: ${cursorUsers.map(u => u.email).join(', ')}` : undefined}
+    >
         <CheckboxCell selectionState={selectionState} />
         {columns.map(column => (column instanceof Field) 
         ? <DataCell 

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { gql, useQuery } from '@apollo/client'
+import { useState, useEffect, useRef } from 'react'
+import { gql, useQuery, useSubscription } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ObjectId } from 'bson'
@@ -126,6 +126,17 @@ const ROW_CHANGED_SUBSCRIPTION = gql`
   }
 `
 
+const CURSOR_CHANGED_SUBSCRIPTION = gql`
+  subscription OnCursorChanged($sheetId: ObjectId!) {
+    cursorChanged(sheetId: $sheetId) {
+      email
+      lineKey
+      fieldName
+      tabId
+    }
+  }
+`
+
 function SheetBody({sheet,profile}: {
     sheet: Sheet
     profile: User|null
@@ -146,6 +157,27 @@ function SheetBody({sheet,profile}: {
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
     const [csvImport, setCsvImport] = useState<boolean>(false)
+    const tabIdRef = useRef<string>('')
+    if (!tabIdRef.current) tabIdRef.current = crypto.randomUUID()
+    const tabId = tabIdRef.current
+    const [otherCursors, setOtherCursors] = useState<Record<string, { email: string, lineKey: string | null, fieldName: string | null }>>({})
+
+    useSubscription(CURSOR_CHANGED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onData: ({ data }) => {
+            const cursor = data.data?.cursorChanged
+            console.log('[cursorChanged] onData (ownTabId=%s):', tabId, JSON.stringify(cursor))
+            if (!cursor || cursor.tabId === tabId) return
+            console.log('[cursorChanged] aggiorno otherCursors con', cursor.email, cursor.lineKey, cursor.fieldName)
+            setOtherCursors(prev => ({
+                ...prev,
+                [cursor.tabId]: { email: cursor.email, lineKey: cursor.lineKey ?? null, fieldName: cursor.fieldName ?? null }
+            }))
+        },
+        onError: (err) => {
+            console.error('[cursorChanged] subscription error:', err)
+        },
+    })
 
     // Configura la sottoscrizione WebSocket
     useEffect(() => {
@@ -238,6 +270,8 @@ function SheetBody({sheet,profile}: {
                 setCsvImport={setCsvImport}
                 standardAnswers={false}
                 adminEditMode={false}
+                otherCursors={otherCursors}
+                tabId={tabId}
             />
         }
         { tab === 'edit' &&
@@ -250,6 +284,8 @@ function SheetBody({sheet,profile}: {
                 setCsvImport={setCsvImport}
                 standardAnswers={false}
                 adminEditMode={true}
+                otherCursors={otherCursors}
+                tabId={tabId}
             />
         }
         { tab === 'standardAnswers' && !csvImport &&
@@ -262,6 +298,8 @@ function SheetBody({sheet,profile}: {
                 setCsvImport={setCsvImport}
                 standardAnswers={true}
                 adminEditMode={false}
+                otherCursors={otherCursors}
+                tabId={tabId}
             />
         }
         { (tab === 'table' || tab === 'edit') && csvImport &&

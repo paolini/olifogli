@@ -11,6 +11,7 @@ export const pubsub = new RedisPubSub({ publisher, subscriber })
 export const TOPICS = {
 	ROW_CHANGED: (sheetId: string) => `ROW_CHANGED.${sheetId}`,
 	SHEET_UPDATED: (sheetId: string) => `SHEET_UPDATED.${sheetId}`,
+	CURSOR_CHANGED: (sheetId: string) => `CURSOR_CHANGED.${sheetId}`,
 }
 
 export default pubsub
