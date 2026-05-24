@@ -1,13 +1,13 @@
 import { Dispatch, KeyboardEvent, SetStateAction } from "react"
 import TableRow, { RowSelectionState } from "./TableRow"
-import { Column, Line, TableState } from "./Table"
+import { Column, Line, OtherCursors, TableState } from "./Table"
 import { ApolloError } from "@apollo/client"
 import Button from "./Button"
 import { pluralize } from "../lib/util"
 import { Sheet } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 
-export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode} : {
+export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode, otherCursors} : {
     sheet: Sheet,
     schema: Schema,
     edit: boolean,
@@ -25,6 +25,7 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
     setDirectInput: Dispatch<SetStateAction<boolean>>,
     cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
     adminEditMode: boolean,
+    otherCursors: OtherCursors,
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
     const validationContext = schema.validationContext(sheet.commonData, sheet.workbook.commonData)
@@ -54,6 +55,10 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
                   cellKeyDownHandler={cellKeyDownHandler}
                   adminEditMode={adminEditMode}
                   validationContext={rowValidationContext}
+                  cursorUsers={Object.entries(otherCursors)
+                    .filter(([, c]) => c.lineKey === line.key)
+                    .map(([, c]) => ({ email: c.email, fieldName: c.fieldName }))
+                  }
             />}
         )}
         <tr className="hide-print"><td></td><td colSpan={columns.length}>

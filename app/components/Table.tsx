@@ -13,7 +13,7 @@ import TableHeader from './TableHeader'
 import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
-import { gql } from '@apollo/client'
+import { gql, useMutation } from '@apollo/client'
 
 export type SortCriterium = {
     field: string|Field,
@@ -92,7 +92,15 @@ export const EMPTY_TABLE_STATE: TableState = {
     inputFocus: false,
 }
 
-export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownload, csvDownload, setCsvImport, adminEditMode}: {
+const MOVE_CURSOR_MUTATION = gql`
+  mutation MoveCursor($sheetId: ObjectId!, $lineKey: String, $fieldName: String, $tabId: String!) {
+    moveCursor(sheetId: $sheetId, lineKey: $lineKey, fieldName: $fieldName, tabId: $tabId)
+  }
+`
+
+export type OtherCursors = Record<string, { email: string, lineKey: string | null, fieldName: string | null }>
+
+export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownload, csvDownload, setCsvImport, adminEditMode, otherCursors, tabId}: {
     edit: boolean,
     standardAnswers: boolean,
     rows: Row[],
@@ -101,6 +109,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     csvDownload: (rows: Row[], standardAnswers: boolean) => void,
     setCsvImport: Dispatch<SetStateAction<boolean>>,
     adminEditMode: boolean,
+    otherCursors?: OtherCursors,
+    tabId?: string,
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
@@ -118,9 +128,35 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
     const [directInput, setDirectInput] = useState<boolean>(false);
 
+    const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
+    const moveCursorRef = useRef(moveCursorMutation)
+    moveCursorRef.current = moveCursorMutation
+    const moveCursorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
     useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
     useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
     useEffect(effectFunction, [rows, setTableState]);
+
+    // Invia la posizione del cursore al server (debounced)
+    useEffect(() => {
+        if (!tabId) return
+        if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current)
+        moveCursorTimerRef.current = setTimeout(() => {
+            console.log('[moveCursor] firing mutation: sheetId=%s lineKey=%s fieldName=%s tabId=%s', sheet._id, tableState.focusLineKey, tableState.focusFieldName, tabId)
+            moveCursorRef.current({ variables: { sheetId: sheet._id, lineKey: tableState.focusLineKey || null, fieldName: tableState.focusFieldName || null, tabId } })
+                .then((res: {data?: unknown}) => console.log('[moveCursor] response:', JSON.stringify(res.data)))
+                .catch((err: unknown) => console.error('[moveCursor] error:', err))
+            moveCursorTimerRef.current = null
+        }, 300)
+        return () => { if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tableState.focusLineKey, tableState.focusFieldName])
+
+    // Al dismount, pulisce il cursore
+    useEffect(() => {
+        return () => { if (tabId) moveCursorRef.current({ variables: { sheetId: sheet._id, lineKey: null, fieldName: null, tabId } }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const columns: Column[] = useMemo(() => [
         ...(checkboxesState.showAdditionalColumns ? ADDITIONAL_COLUMNS : []),
@@ -184,6 +220,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
                     setLineData={setLineData}
                     cellKeyDownHandler={cellKeyDownHandler}
                     adminEditMode={adminEditMode}
+                    otherCursors={otherCursors ?? {}}
                 />
             </table>
         </div>

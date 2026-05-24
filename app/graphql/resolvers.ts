@@ -48,6 +48,7 @@ import lockSheet from './resolvers/lockSheet'
 import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
+import moveCursor from './resolvers/moveCursor'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
 import olimanagerUpdateExtraFieldsResults from './resolvers/olimanagerUpdateExtraFields'
 import workbookExerciseReport from './resolvers/workbookExerciseReport'
@@ -144,6 +145,9 @@ export const resolvers: Resolvers = {
     cryptSheets: cryptSheets, 
     decryptSheets: decryptSheets,
     updateSetting: settingsResolvers.Mutation.updateSetting,
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore -- moveCursor not yet in generated types (run codegen to fix)
+    moveCursor: moveCursor,
   },
 
   Subscription: {
@@ -153,6 +157,10 @@ export const resolvers: Resolvers = {
     rowChanged: {
       subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROW_CHANGED(sheetId.toString())),
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cursorChanged: {
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.CURSOR_CHANGED(sheetId.toString())),
+    } as any,
   },
 
   Timestamp,
