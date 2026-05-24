@@ -48,8 +48,10 @@ export const Timestamp = new GraphQLScalarType({
   },
 
   serialize(value: unknown): string | null {
-    if (value instanceof Date) return value.toISOString(); // Converte in stringa ISO
-    return null; // Se non è una data valida, ritorna null
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'string') return value; // già stringa ISO (es. dopo Redis)
+    if (typeof value === 'number') return new Date(value).toISOString();
+    return null;
   },
 
   parseLiteral(ast: ValueNode): Date | null {
@@ -80,7 +82,8 @@ export const ObjectIdType = new GraphQLScalarType({
   },
 
   serialize(value: unknown): string {
-    if (value instanceof ObjectId) return value.toString(); // Converte in stringa
+    if (value instanceof ObjectId) return value.toString();
+    if (typeof value === 'string') return value; // già stringa (es. dopo Redis)
     throw new Error("ObjectId expected");
   },
 
