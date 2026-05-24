@@ -14,7 +14,7 @@
     "migrate:down": "npx migrate-mongo down",
     "migrate:create": "npx migrate-mongo create",
     "consistency-check": "node scripts/consistency-check.js",
-    "ws-server": "tsx ws-server.ts"
+    "ws-server": "fuser -k 4001/tcp 2>/dev/null; tsx ws-server.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.13.9",
