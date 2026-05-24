@@ -5,6 +5,7 @@ import { GraphQLJSON } from "graphql-type-json"
 import { Resolvers } from './generated'
 import { getSheetsCollection } from '../lib/mongodb'
 
+import { pubsub, TOPICS } from '../lib/pubsub'
 import { get_authenticated_user } from './resolvers/utils'
 
 import users from './resolvers/users'
@@ -143,6 +144,15 @@ export const resolvers: Resolvers = {
     cryptSheets: cryptSheets, 
     decryptSheets: decryptSheets,
     updateSetting: settingsResolvers.Mutation.updateSetting,
+  },
+
+  Subscription: {
+    sheetUpdated: {
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SHEET_UPDATED(sheetId.toString())),
+    },
+    rowChanged: {
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROW_CHANGED(sheetId.toString())),
+    },
   },
 
   Timestamp,

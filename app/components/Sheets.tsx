@@ -395,8 +395,14 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     async function decryptSelectedSheets() {
         if (!profile?.isAdmin) return
         if (!confirm(`Rimuovere crittografia dai ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')} selezionati?`)) return
-        const password = prompt('Password per decrittazione') || ''
-        if (!password) return
+        const pw1 = prompt('Password per decrittazione') || ''
+        if (!pw1) return
+        const pw2 = prompt('Ripeti la password per conferma') || ''
+        if (pw1 !== pw2) {
+            alert('Le password non corrispondono')
+            return
+        }
+        const password = pw1
         try {
             await decryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
             alert('Decrittazione richiesta inviata')

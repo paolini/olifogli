@@ -2,6 +2,7 @@ import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { get_authenticated_user, check_admin, check_user_can_update_sheet } from './utils'
 import { MutationUpdateSheetArgs } from '../generated'
+import { TOPICS } from '@/app/lib/pubsub'
 
 export default async function updateSheet(_: unknown, args: MutationUpdateSheetArgs, context: Context): Promise<boolean> {
   const user = await get_authenticated_user(context)
@@ -37,5 +38,11 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
 
   const res = await sheets.updateOne({ _id: args._id }, { $set: update })
   if (!res.acknowledged) throw new Error('update failed')
+
+  // Fetch the updated sheet to publish the full payload
+  const updatedSheet = await sheets.findOne({ _id: args._id });
+  if (updatedSheet) {
+    context.pubsub.publish(TOPICS.SHEET_UPDATED(updatedSheet._id.toString()), { sheetUpdated: updatedSheet });
+  }
   return true
 }
