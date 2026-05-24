@@ -3,21 +3,37 @@ import { ObjectId } from 'mongodb';
 import { GraphQLScalarType, Kind, ValueNode } from "graphql";
 import { OLIMANAGER_TOKEN } from '@/app/api/auth/[...nextauth]/route'
 import { getToken } from "next-auth/jwt"
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 export type Context = {
-  req: NextRequest
+  req?: NextRequest // Optional for WebSocket connections
   user_id?: ObjectId
   email?: string
+  pubsub: RedisPubSub
 }
 
-export async function get_context(req: NextRequest): Promise<Context> {
-  const token = await getToken({ req }) as OLIMANAGER_TOKEN
-  const user_id = token?.user_id
-  const email = token?.email ?? undefined
+export async function get_context({ req, user_id, email, pubsub }: {
+  req?: NextRequest,
+  user_id?: ObjectId, // For WebSocket context, if already authenticated
+  email?: string,     // For WebSocket context, if already authenticated
+  pubsub: RedisPubSub
+}): Promise<Context> {
+  let authenticated_user_id = user_id;
+  let authenticated_email = email;
+
+  if (req) {
+    const token = await getToken({ req }) as OLIMANAGER_TOKEN | undefined;
+    if (token?.user_id) {
+      authenticated_user_id = token.user_id;
+      authenticated_email = token.email ?? undefined;
+    }
+  }
+
   return {
     req,
-    user_id: user_id ? new ObjectId(user_id) : undefined,
-    email
+    user_id: authenticated_user_id ? new ObjectId(authenticated_user_id) : undefined,
+    email: authenticated_email,
+    pubsub,
   };
 }
 

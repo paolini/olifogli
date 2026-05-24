@@ -4,6 +4,7 @@ import { schemas } from '@/app/lib/schema'
 
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { MutationAddRowArgs } from '../generated'
+import { TOPICS } from '../../lib/pubsub'
 
 export default async function addRow(_: unknown, args: MutationAddRowArgs, context: Context) {
     const user = await get_authenticated_user(context)
@@ -67,5 +68,9 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
         return insertedRow
     })
     
+    context.pubsub.publish(TOPICS.ROW_CHANGED(args.sheetId.toString()), {
+        rowChanged: row
+    })
+
     return row
 }

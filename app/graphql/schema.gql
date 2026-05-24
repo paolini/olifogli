@@ -351,3 +351,8 @@ type Mutation {
 
   updateSetting(key: String!, value: String!): Setting!
 }
+
+type Subscription {
+  sheetUpdated(sheetId: ObjectId!): Sheet!
+  rowChanged(sheetId: ObjectId!): Row!
+}

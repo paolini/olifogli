@@ -399,6 +399,29 @@ Il sistema utilizza un **plugin Apollo Server** per logging automatico di tutte 
 
 **Rotazione**: File giornalieri automatici (`graphql-YYYY-MM-DD.log`)
 
+## Real-time updates (GraphQL Subscriptions)
+
+Planned integration: use `ApolloServer` for HTTP queries/mutations and `graphql-ws` (`useServer`) to serve GraphQL subscriptions on a WebSocket transport, with `graphql-redis-subscriptions` (`RedisPubSub`) as the production-ready PubSub backend.
+
+Architecture summary:
+- Single executable `schema` (created with `makeExecutableSchema`) is passed to both `ApolloServer` (HTTP handler) and `useServer` (WebSocket server). This ensures queries/mutations and subscriptions use the same types and resolvers.
+- `RedisPubSub` (configured with `ioredis` publisher/subscriber) is injected into resolver `context` so mutation resolvers call `pubsub.publish(ROW_CHANGED, { rowChanged: payload })` and subscription resolvers use `pubsub.asyncIterator(ROW_CHANGED)` or a per-sheet topic `ROW_CHANGED.<sheetId>`.
+- `useServer` is attached to the same underlying `http.Server` as the HTTP handler (or to a dedicated server) and uses `context` / `connectionParams` for authentication when clients open WS connections.
+- Client-side: `ApolloClient` uses `GraphQLWsLink` (from `graphql-ws`) for subscriptions and `HttpLink` for queries/mutations; `split` routes subscription operations to the WS link.
+
+Implementation notes:
+- Prefer topic namespaced by sheet (e.g. `ROW_CHANGED.<sheetId>`) to reduce server-side filtering and Redis message volume.
+- Add `ApolloServer` plugins to gracefully drain both the HTTP server and the WebSocket server on shutdown.
+- Ensure `graphql-ws` protocol version matches client (use `graphql-ws` on both client and server). For Next.js App Router, run a small custom Node process (or extend the Next server) to attach the `WebSocketServer` and `useServer` to the same `http.Server` that serves the app.
+- For development, a lightweight fallback (Redis → simple WebSocket broadcaster) can be used temporarily while integrating `useServer`.
+
+Operational checklist before enabling in production:
+- Run Redis in durable configuration and verify `publisher`/`subscriber` connections and retry strategy.
+- Load-test the subscription throughput (per-sheet topics preferred) and tune Redis and connection limits.
+- Add authentication/authorization to subscription context (verify that subscribers have permissions to the requested `sheetId`).
+- Remove or keep SSE fallback endpoints depending on deployment needs.
+
+
 **Volume Docker**: 
 ```yaml
 volumes:

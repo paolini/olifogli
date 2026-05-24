@@ -5,6 +5,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data } from '@/app/lib/models'
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
+import { TOPICS } from '../../lib/pubsub'
 
 export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     _id: ObjectId,
@@ -79,6 +80,9 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
         return updatedRow
     })
     
+    context.pubsub.publish(TOPICS.ROW_CHANGED(row.sheetId.toString()), {
+        rowChanged: updatedRow
+    })
+
     return updatedRow
 }
-

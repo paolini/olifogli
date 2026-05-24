@@ -105,6 +105,27 @@ const GET_ROWS = gql`
   }
 `
 
+const ROW_CHANGED_SUBSCRIPTION = gql`
+  subscription OnRowChanged($sheetId: ObjectId!) {
+    rowChanged(sheetId: $sheetId) {
+      _id
+      error
+      anomalies
+      data
+      createdOn
+      createdBy
+      updatedOn
+      updatedBy
+      olimanager {
+        participantId
+        contestId
+        resultsUpdatedOn
+        error
+      }
+    }
+  }
+`
+
 function SheetBody({sheet,profile}: {
     sheet: Sheet
     profile: User|null
@@ -120,13 +141,37 @@ function SheetBody({sheet,profile}: {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
     const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin')) || false;
-    const [polling, setPolling ] = useState<boolean>(!(tab === 'table' && canEdit));
-    const { loading, error, data, refetch, stopPolling, startPolling } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const { loading, error, data, refetch, subscribeToMore } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
-        pollInterval: (polling || tab === 'info') ? 5000 : 0
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
     const [csvImport, setCsvImport] = useState<boolean>(false)
+
+    // Configura la sottoscrizione WebSocket
+    useEffect(() => {
+        const unsubscribe = subscribeToMore({
+            document: ROW_CHANGED_SUBSCRIPTION,
+            variables: { sheetId: sheet._id },
+            updateQuery: (prev, { subscriptionData }) => {
+                if (!subscriptionData.data) return prev;
+                const newRow = subscriptionData.data.rowChanged;
+                
+                const exists = prev.rows.find(r => r._id.toString() === newRow._id.toString());
+                if (exists) {
+                    return {
+                        ...prev,
+                        rows: prev.rows.map(r => r._id.toString() === newRow._id.toString() ? newRow : r)
+                    };
+                } else {
+                    return {
+                        ...prev,
+                        rows: [...prev.rows, newRow]
+                    };
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, [subscribeToMore, sheet._id]);
 
     const refresh = async () => {
         await refetch()
@@ -194,8 +239,6 @@ function SheetBody({sheet,profile}: {
                 rows={data.rows} 
                 refresh={refresh} 
                 refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -210,8 +253,6 @@ function SheetBody({sheet,profile}: {
                 rows={data.rows} 
                 refresh={refresh} 
                 refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -226,8 +267,6 @@ function SheetBody({sheet,profile}: {
                 rows={data.rows} 
                 refresh={refresh} 
                 refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -291,4 +330,3 @@ function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dat
     link.click();
     document.body.removeChild(link);
 }
-
