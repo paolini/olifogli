@@ -141,7 +141,7 @@ function SheetBody({sheet,profile}: {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
     const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin')) || false;
-    const { loading, error, data, refetch, subscribeToMore } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const { loading, error, data, subscribeToMore } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
@@ -173,10 +173,6 @@ function SheetBody({sheet,profile}: {
         return () => unsubscribe();
     }, [subscribeToMore, sheet._id]);
 
-    const refresh = async () => {
-        await refetch()
-    }
-    
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
     
@@ -237,8 +233,6 @@ function SheetBody({sheet,profile}: {
                 edit={canEdit} 
                 sheet={sheet} 
                 rows={data.rows} 
-                refresh={refresh} 
-                refreshLoading={loading}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -251,8 +245,6 @@ function SheetBody({sheet,profile}: {
                 edit={true} 
                 sheet={sheet} 
                 rows={data.rows} 
-                refresh={refresh} 
-                refreshLoading={loading}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
@@ -265,8 +257,6 @@ function SheetBody({sheet,profile}: {
                 edit={false} 
                 sheet={sheet} 
                 rows={data.rows} 
-                refresh={refresh} 
-                refreshLoading={loading}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
