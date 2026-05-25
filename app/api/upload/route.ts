@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const SCANS_SPOOL_DIR = await getSCANS_SPOOL_DIR()
     if (!SCANS_SPOOL_DIR) return NextResponse.json({ error: 'upload disabled' }, { status: 503 });
     
-    const context = await get_context(req) 
+    const context = await get_context({ req })
     const user = await get_authenticated_user(context)
   
     try {

@@ -25,15 +25,24 @@ RUN npm ci --only=production
 
 # Rebuild the source code only when needed
 FROM base AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+RUN npm ci
 COPY . .
 # Create a dummy .env file for build
 RUN echo "MONGODB_URI=mongodb://dummy:27017/dummy" > .env && \
     echo "NEXTAUTH_SECRET=dummysecret" >> .env && \
     echo "NEXTAUTH_URL=http://localhost:3000" >> .env && \
     echo "OLIMANAGER_URL=https://olimpiadi-scientifiche.it" >> .env
-RUN npm run build 
+RUN npm run build
+# Bundle ws-server with all local TypeScript imports; node_modules remain external
+RUN node_modules/.bin/esbuild ws-server.ts \
+    --bundle \
+    --platform=node \
+    --target=node22 \
+    --packages=external \
+    --outfile=ws-server.bundle.js
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -48,14 +57,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/migrate-mongo-config.js ./migrate-mongo-config.js
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-# Copy node_modules needed for scripts (papaparse and dotenv for import-rows.js)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/papaparse ./node_modules/papaparse
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
+# Copy full production node_modules (needed by ws-server; superset of standalone's slim node_modules)
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Copy ws-server bundle and the schema file it reads at runtime via readFileSync
+COPY --from=builder --chown=nextjs:nodejs /app/ws-server.bundle.js ./ws-server.js
+COPY --from=builder --chown=nextjs:nodejs /app/app/graphql/schema.gql ./app/graphql/schema.gql
 # Install migrate-mongo globally
 RUN npm install -g migrate-mongo
 RUN chmod +x ./start.sh
 USER nextjs
 EXPOSE 3000
+EXPOSE 4001
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 CMD ["./start.sh"]

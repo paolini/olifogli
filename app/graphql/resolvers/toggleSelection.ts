@@ -61,7 +61,7 @@ export default async function toggleSelection(_: unknown, {rowId, label}: {
         return await rowsCollection.findOne({ _id: rowId }, { session })
     })
 
-    context.pubsub.publish(TOPICS.ROW_CHANGED(sheet._id.toString()), {
+    context.pubsub?.publish(TOPICS.ROW_CHANGED(sheet._id.toString()), {
         rowChanged: updatedRow
     })
 

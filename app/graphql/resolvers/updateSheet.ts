@@ -42,7 +42,7 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
   // Fetch the updated sheet to publish the full payload
   const updatedSheet = await sheets.findOne({ _id: args._id });
   if (updatedSheet) {
-    context.pubsub.publish(TOPICS.SHEET_UPDATED(updatedSheet._id.toString()), { sheetUpdated: updatedSheet });
+    context.pubsub?.publish(TOPICS.SHEET_UPDATED(updatedSheet._id.toString()), { sheetUpdated: updatedSheet });
   }
   return true
 }

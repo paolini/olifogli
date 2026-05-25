@@ -108,6 +108,7 @@ olifogli/
 - `Report`: Report aggregato con classifica e distribuzione punteggi
 - `ReportEntry`: Singola entry nella classifica con dati studente e punteggio
 - `ScoreDistribution`: Distribuzione dei punteggi per grafico
+- `UserCursor`: Posizione cursore di un utente `{ email, lineKey, fieldName, tabId }`
 
 #### Queries Principali
 - `workbooks`: Lista workbook utente
@@ -128,6 +129,11 @@ olifogli/
 - `openSheet(_id)`: Riapre un foglio (solo admin del foglio)
 - `lockSheet(_id)`: Blocca un foglio (solo admin di sistema)
 - `unlockSheet(_id)`: Sblocca un foglio (solo admin di sistema)
+- `moveCursor(sheetId, lineKey, fieldName, tabId)`: Pubblica la posizione cursore dell'utente (ephemeral, via Redis)
+
+#### Subscriptions
+- `rowChanged(sheetId)`: Notifica in tempo reale quando una riga viene modificata
+- `cursorChanged(sheetId)`: Notifica la posizione cursore degli altri utenti connessi allo stesso foglio
 
 ## Gestione Stato dei Fogli
 
@@ -193,7 +199,70 @@ Olifogli si integra con archiomr tramite:
 
 Per dettagli sul sistema OMR e generazione fogli, consultare la documentazione del progetto **archiomr**.
 
-## Componenti Frontend
+## Real-time (WebSocket)
+
+### Architettura
+Il sistema real-time si basa su **due processi Node separati** che comunicano tramite Redis:
+
+```
+Browser ──HTTP──► Next.js (port 3000)  ──publish──► Redis
+Browser ──WS───► ws-server (port 4001) ◄─subscribe── Redis
+```
+
+- **Next.js** gestisce le mutation GraphQL via HTTP (es. `moveCursor`, `patchRow`)
+- **ws-server** (`ws-server.ts`) gestisce le subscription GraphQL via WebSocket
+- **Redis** è il broker pub/sub che disaccoppia i due processi
+
+Questo design è necessario perché Next.js in produzione può girare su più istanze (`app1`, `app2`, `app3`) dietro nginx: Redis garantisce che le notifiche raggiungano tutti i client connessi indipendentemente da quale istanza ha processato la mutation.
+
+### WebSocket Server (`ws-server.ts`)
+- Porta: `WS_SERVER_PORT` (default `4001`)
+- Libreria: `graphql-ws` v6 con `useServer` da `graphql-ws/use/ws`
+- Carica lo stesso `schema.gql` e `resolvers.ts` del Next.js app
+- Espone anche un endpoint HTTP GraphQL su `/graphql` (stesso path)
+- Autenticazione opzionale via JWT in `connectionParams.sessionToken`
+- Avvio: `npm run ws-server` (script: `fuser -k 4001/tcp; tsx ws-server.ts`)
+
+### Redis PubSub (`app/lib/pubsub.ts`)
+- Libreria: `graphql-redis-subscriptions` (`RedisPubSub`)
+- Usa due connessioni ioredis (publish + subscribe)
+- URL: variabile d'ambiente `REDIS_URL` (default `redis://127.0.0.1:6379`)
+- Topics: `CURSOR_CHANGED.<sheetId>`, `ROW_CHANGED.<sheetId>`
+
+### Cursor Presence (Presenza Cursore Collaborativa)
+Permette agli utenti che guardano lo stesso foglio di vedere la posizione del cursore degli altri in tempo reale.
+
+**Flusso:**
+1. L'utente sposta il cursore su una cella → `Table.tsx` invia `moveCursor` mutation (debounced 300ms)
+2. Il resolver pubblica `{ email, lineKey, fieldName, tabId }` su Redis topic `CURSOR_CHANGED.<sheetId>`
+3. Il ws-server riceve da Redis e invia `cursorChanged` a tutti i subscriber del foglio
+4. `Sheet.tsx` riceve l'evento, filtra il proprio cursore (via `tabId` univoco per tab browser) e aggiorna `otherCursors` state
+5. `TableRow.tsx` riceve `cursorUsers` e applica `box-shadow: inset` colorato sulla cella attiva
+
+**Identificazione tab:** ogni tab browser genera un `tabId` univoco (`crypto.randomUUID()`, stabile via `useRef`) che viene inviato con ogni mutation e usato per filtrare i propri eventi in ingresso. Questo consente di mostrare cursori anche tra tab dello stesso utente.
+
+**Colore cursore:** derivato dall'hash dell'email con funzione `emailToColor` → `hsl(hash % 360, 70%, 45%)`. Ogni utente ha sempre lo stesso colore.
+
+### ⚠️ Gap in Produzione
+Il `docker-compose-production.yml` attuale **non include** il servizio `ws-server` né il servizio `redis`. Per abilitare le feature real-time in produzione è necessario aggiungere:
+```yaml
+redis:
+  image: redis:7-alpine
+  restart: unless-stopped
+  networks: [backend]
+
+ws-server:
+  image: paolini/olifogli:latest
+  command: ["node", "-e", "require('./ws-server.js')"]
+  environment:
+    <<: *common-env
+    REDIS_URL: "redis://redis:6379"
+    WS_SERVER_PORT: "4001"
+  networks: [backend]
+```
+E aggiungere `REDIS_URL: redis://redis:6379` alle app instances.
+
+
 
 ### Layout e Navigation
 - **RootLayout**: Setup globale con SessionProvider
@@ -258,6 +327,12 @@ OLIMANAGER_URL=https://olimpiadi-scientifiche.it
 
 # Admin
 ADMIN_EMAILS=emanuele.paolini@unipi.it
+
+# Redis PubSub (real-time subscriptions)
+REDIS_URL=redis://127.0.0.1:6379
+
+# ws-server
+WS_SERVER_PORT=4001
 
 # Worker Integration (directory condivise con archiomr)
 SCANS_SPOOL_DIR=/app/spool

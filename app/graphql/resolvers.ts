@@ -152,14 +152,17 @@ export const resolvers: Resolvers = {
 
   Subscription: {
     sheetUpdated: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SHEET_UPDATED(sheetId.toString())),
     },
     rowChanged: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROW_CHANGED(sheetId.toString())),
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cursorChanged: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.CURSOR_CHANGED(sheetId.toString())),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
   },
 

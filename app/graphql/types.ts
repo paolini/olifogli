@@ -9,14 +9,14 @@ export type Context = {
   req?: NextRequest // Optional for WebSocket connections
   user_id?: ObjectId
   email?: string
-  pubsub: RedisPubSub
+  pubsub?: RedisPubSub
 }
 
 export async function get_context({ req, user_id, email, pubsub }: {
   req?: NextRequest,
   user_id?: ObjectId, // For WebSocket context, if already authenticated
   email?: string,     // For WebSocket context, if already authenticated
-  pubsub: RedisPubSub
+  pubsub?: RedisPubSub
 }): Promise<Context> {
   let authenticated_user_id = user_id;
   let authenticated_email = email;
@@ -24,7 +24,7 @@ export async function get_context({ req, user_id, email, pubsub }: {
   if (req) {
     const token = await getToken({ req }) as OLIMANAGER_TOKEN | undefined;
     if (token?.user_id) {
-      authenticated_user_id = token.user_id;
+      authenticated_user_id = new ObjectId(token.user_id);
       authenticated_email = token.email ?? undefined;
     }
   }

@@ -9,7 +9,7 @@ export default async function moveCursor(
   context: Context
 ) {
   const user = await get_authenticated_user(context)
-  context.pubsub.publish(TOPICS.CURSOR_CHANGED(sheetId.toString()), {
+  context.pubsub?.publish(TOPICS.CURSOR_CHANGED(sheetId.toString()), {
     cursorChanged: { email: user.email, lineKey: lineKey ?? null, fieldName: fieldName ?? null, tabId }
   })
   return true
