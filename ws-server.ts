@@ -34,7 +34,7 @@ async function start() {
   // Apollo Server for HTTP
   const server = new ApolloServer({ schema, plugins: [] });
   await server.start();
-  app.use('/graphql', expressMiddleware(server, { context: async ({ req }) => get_context({ req, pubsub }) }));
+  app.use('/graphql', expressMiddleware(server, { context: async () => get_context({ pubsub }) }));
 
   // WebSocket server
   const wsServer = new WebSocketServer({ server: httpServer, path: '/graphql' });
@@ -42,13 +42,13 @@ async function start() {
   const serverCleanup = useServer({
     schema,
     context: async (ctx) => {
-      const sessionToken = ctx.connectionParams?.sessionToken;
+      const sessionToken = ctx.connectionParams?.sessionToken as string | undefined;
       let user_id;
       let email;
       if (sessionToken) {
-        const decodedToken = jwt.decode(sessionToken) || {};
-        user_id = decodedToken.user_id ? new ObjectId(decodedToken.user_id) : undefined;
-        email = decodedToken.email;
+        const decodedToken = jwt.decode(sessionToken) as { user_id?: string; email?: string } | null;
+        user_id = decodedToken?.user_id ? new ObjectId(decodedToken.user_id) : undefined;
+        email = decodedToken?.email;
       }
       return get_context({ user_id, email, pubsub });
     },

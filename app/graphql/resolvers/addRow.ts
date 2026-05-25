@@ -68,7 +68,7 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
         return insertedRow
     })
     
-    context.pubsub.publish(TOPICS.ROW_CHANGED(args.sheetId.toString()), {
+    context.pubsub?.publish(TOPICS.ROW_CHANGED(args.sheetId.toString()), {
         rowChanged: row
     })
 

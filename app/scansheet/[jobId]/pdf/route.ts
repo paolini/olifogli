@@ -13,7 +13,7 @@ const SHEETGENDATA_DIR = process.env.SHEETGENDATA_DIR || '/app/sheetgendata';
 export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
     const { jobId } = await params
     
-    const context = await get_context(req) 
+    const context = await get_context({ req }) 
     const user = await get_authenticated_user(context)
 
     

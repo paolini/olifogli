@@ -80,7 +80,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
         return updatedRow
     })
     
-    context.pubsub.publish(TOPICS.ROW_CHANGED(row.sheetId.toString()), {
+    context.pubsub?.publish(TOPICS.ROW_CHANGED(row.sheetId.toString()), {
         rowChanged: updatedRow
     })
 

@@ -186,7 +186,7 @@ function SheetBody({sheet,profile}: {
             variables: { sheetId: sheet._id },
             updateQuery: (prev, { subscriptionData }) => {
                 if (!subscriptionData.data) return prev;
-                const newRow = subscriptionData.data.rowChanged;
+                const newRow = (subscriptionData.data as unknown as { rowChanged: Row }).rowChanged;
                 
                 const exists = prev.rows.find(r => r._id.toString() === newRow._id.toString());
                 if (exists) {

@@ -11,8 +11,11 @@ const createApolloClient = () => {
 
   const wsLink = typeof window !== 'undefined'
     ? new GraphQLWsLink(createClient({
-        // Usiamo la porta 4001 esposta dal ws-server
-        url: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:4001/graphql`,
+        // In development connect directly to ws-server port 4001;
+        // in production route through nginx at /ws/ (same origin, SSL handled by reverse proxy)
+        url: window.location.hostname === 'localhost'
+          ? `ws://localhost:4001/graphql`
+          : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/graphql`,
       }))
     : null;
 
