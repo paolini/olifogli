@@ -2,6 +2,7 @@ import { ApolloClient, InMemoryCache, HttpLink, split } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 import { getMainDefinition } from '@apollo/client/utilities';
+import { getTabId } from './tabId';
 
 const createApolloClient = () => {
   const httpLink = new HttpLink({
@@ -16,6 +17,9 @@ const createApolloClient = () => {
         url: window.location.hostname === 'localhost'
           ? `ws://localhost:4001/graphql`
           : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/graphql`,
+        connectionParams: () => ({
+          tabId: getTabId(),
+        }),
       }))
     : null;
 
