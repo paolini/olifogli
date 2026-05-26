@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { gql, useQuery, useSubscription } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -18,6 +18,7 @@ import SheetInfo from './SheetInfo'
 import ScansSheetExport from './ScansSheetExport'
 import GlobalMessage from './GlobalMessage'
 import GaraPrime from '../lib/schema/GaraPrime'
+import { getTabId } from '../lib/tabId'
 import SheetSelectionImport from './SheetSelectionImport'
 
 const _ = gql`
@@ -157,9 +158,7 @@ function SheetBody({sheet,profile}: {
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
     const [csvImport, setCsvImport] = useState<boolean>(false)
-    const tabIdRef = useRef<string>('')
-    if (!tabIdRef.current) tabIdRef.current = crypto.randomUUID()
-    const tabId = tabIdRef.current
+    const tabId = getTabId()
     const [otherCursors, setOtherCursors] = useState<Record<string, { email: string, lineKey: string | null, fieldName: string | null }>>({})
 
     useSubscription(CURSOR_CHANGED_SUBSCRIPTION, {
@@ -169,10 +168,16 @@ function SheetBody({sheet,profile}: {
             console.log('[cursorChanged] onData (ownTabId=%s):', tabId, JSON.stringify(cursor))
             if (!cursor || cursor.tabId === tabId) return
             console.log('[cursorChanged] aggiorno otherCursors con', cursor.email, cursor.lineKey, cursor.fieldName)
-            setOtherCursors(prev => ({
-                ...prev,
-                [cursor.tabId]: { email: cursor.email, lineKey: cursor.lineKey ?? null, fieldName: cursor.fieldName ?? null }
-            }))
+            setOtherCursors(prev => {
+                if (cursor.lineKey === null && cursor.fieldName === null) {
+                    const { [cursor.tabId]: _, ...rest } = prev
+                    return rest
+                }
+                return {
+                    ...prev,
+                    [cursor.tabId]: { email: cursor.email, lineKey: cursor.lineKey ?? null, fieldName: cursor.fieldName ?? null }
+                }
+            })
         },
         onError: (err) => {
             console.error('[cursorChanged] subscription error:', err)

@@ -39,6 +39,14 @@ async function start() {
   // WebSocket server
   const wsServer = new WebSocketServer({ server: httpServer, path: '/graphql' });
 
+  // Per-connection state: tracks tabId, email, and subscribed sheetIds
+  interface ConnectionState {
+    tabId: string | undefined
+    email: string | undefined
+    sheetIds: Set<string>
+  }
+  const connectionData = new Map<object, ConnectionState>()
+
   const serverCleanup = useServer({
     schema,
     context: async (ctx) => {
@@ -50,18 +58,37 @@ async function start() {
         user_id = decodedToken?.user_id ? new ObjectId(decodedToken.user_id) : undefined;
         email = decodedToken?.email;
       }
+      // Store email in connection data for use on disconnect
+      const conn = connectionData.get(ctx)
+      if (conn) conn.email = email
       return get_context({ user_id, email, pubsub });
     },
     onConnect: (ctx) => {
-      console.log('[ws] client connected', ctx.connectionParams ?? '');
+      const tabId = ctx.connectionParams?.tabId as string | undefined
+      connectionData.set(ctx, { tabId, email: undefined, sheetIds: new Set() })
+      console.log('[ws] client connected tabId=%s', tabId ?? '(none)');
     },
-    onDisconnect: () => {
-      console.log('[ws] client disconnected');
+    onDisconnect: async (ctx) => {
+      const conn = connectionData.get(ctx)
+      if (conn?.tabId) {
+        for (const sheetId of conn.sheetIds) {
+          await pubsub.publish(TOPICS.CURSOR_CHANGED(sheetId), {
+            cursorChanged: { email: conn.email ?? null, lineKey: null, fieldName: null, tabId: conn.tabId }
+          })
+        }
+      }
+      connectionData.delete(ctx)
+      console.log('[ws] client disconnected tabId=%s', conn?.tabId ?? '(unknown)');
     },
-    onSubscribe: (ctx, id) => {
+    onSubscribe: (ctx, id, payload) => {
+      const conn = connectionData.get(ctx)
+      if (conn) {
+        const sheetId = payload.variables?.sheetId
+        if (sheetId) conn.sheetIds.add(sheetId.toString())
+      }
       console.log('[ws] subscribe id=%s', id);
     },
-    onNext: (ctx, id, payload, args, result) => {
+    onNext: (ctx, id, _payload, _args, result) => {
       console.log('[ws] → id=%s payload=%s', id, JSON.stringify(result.data));
     },
     onError: (ctx, id, errors) => {
