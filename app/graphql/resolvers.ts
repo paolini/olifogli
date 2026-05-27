@@ -7,6 +7,7 @@ import { getSheetsCollection } from '../lib/mongodb'
 
 import { pubsub, TOPICS } from '../lib/pubsub'
 import { get_authenticated_user } from './resolvers/utils'
+import { withFilter } from 'graphql-subscriptions'
 
 import users from './resolvers/users'
 import workbooks from './resolvers/workbooks'
@@ -159,11 +160,32 @@ export const resolvers: Resolvers = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROW_CHANGED(sheetId.toString())),
     },
+    rowsDeleted: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROWS_DELETED(sheetId.toString())),
+    },
     cursorChanged: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.CURSOR_CHANGED(sheetId.toString())),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
+    workbookUpdated: {
+      subscribe: withFilter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (_: any, args: any) => pubsub.asyncIterator(TOPICS.WORKBOOK_UPDATED((args.workbookId as ObjectId).toString())),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any, _variables: any, context: Context | undefined) => {
+          if (!context) return false
+          if (context.isAdmin || context.isSupervisor) return true
+          const email = context.email
+          if (!email) return false
+          const allowedEmails = payload._allowedEmails as string[] | undefined
+          if (!allowedEmails) return true  // payload senza filtro → passa (retrocompatibilità)
+          return allowedEmails.includes(email)
+        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ) as any,
+    },
   },
 
   Timestamp,

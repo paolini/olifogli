@@ -127,6 +127,12 @@ const ROW_CHANGED_SUBSCRIPTION = gql`
   }
 `
 
+const ROWS_DELETED_SUBSCRIPTION = gql`
+  subscription OnRowsDeleted($sheetId: ObjectId!) {
+    rowsDeleted(sheetId: $sheetId)
+  }
+`
+
 const CURSOR_CHANGED_SUBSCRIPTION = gql`
   subscription OnCursorChanged($sheetId: ObjectId!) {
     cursorChanged(sheetId: $sheetId) {
@@ -153,7 +159,7 @@ function SheetBody({sheet,profile}: {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
     const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin')) || false;
-    const { loading, error, data, subscribeToMore } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const { loading, error, data, subscribeToMore, refetch } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
@@ -209,6 +215,22 @@ function SheetBody({sheet,profile}: {
         });
         return () => unsubscribe();
     }, [subscribeToMore, sheet._id]);
+
+    useSubscription(ROWS_DELETED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onData: ({ client, data }) => {
+            const deletedIds: string[] = (data.data?.rowsDeleted ?? []).map((id: unknown) => id!.toString())
+            if (deletedIds.length === 0) return
+            if (deletedIds.length > 20) {
+                refetch()
+            } else {
+                client.cache.updateQuery<{ rows: Row[] }>(
+                    { query: GET_ROWS, variables: { sheetId: sheet._id } },
+                    (prev) => prev ? { rows: prev.rows.filter(r => !deletedIds.includes(r._id.toString())) } : prev
+                )
+            }
+        },
+    })
 
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />

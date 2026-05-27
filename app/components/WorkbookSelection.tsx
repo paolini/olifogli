@@ -10,6 +10,7 @@ import { schemas } from '../lib/schema'
 import Button from './Button'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { useWorkbookUpdated } from './useWorkbookUpdated'
 import SheetsSortIcon from './SheetsSortIcon'
 import { score_to_color_style } from '../lib/schema/fields'
 
@@ -66,9 +67,8 @@ type SelectionOption = {
 export default function WorkbookSelection({ workbookId, profile }: { workbookId: ObjectId, profile?: User }) {
     const [limit, setLimit] = useState<number>(100);
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
-    const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch: refetchSheets } = useGetSheetsQuery({
         variables: { workbookId },
-        pollInterval: 10000, // millisecondi
     });
 
     const querySheets = sheetsData?.sheets || [];
@@ -116,9 +116,10 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
             orderBy: sortRanking?.field,
             orderDirection: sortRanking?.direction,
         },
-        pollInterval: 0, // Disabilitato
         skip: !selectedSelection, // Non eseguire la query se non c'è selezione
     });
+
+    useWorkbookUpdated(workbookId, () => { refetchSheets(); if (!selectedSelection) return; refetch() });
 
     const [toggleSelectionMutation] = useMutation(TOGGLE_SELECTION);
 

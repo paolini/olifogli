@@ -4,6 +4,7 @@ import { Context } from '../types'
 
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { schemas } from '@/app/lib/schema'
+import { TOPICS } from '@/app/lib/pubsub'
 
 export default async function deleteRows(_: unknown, {ids}: {
     ids: ObjectId[]}, context: Context) {
@@ -21,10 +22,13 @@ export default async function deleteRows(_: unknown, {ids}: {
     const workbooksCollection = await getWorkbooksCollection();
     const sheetsCollection = await getSheetsCollection();
     const sheetIds = [...new Set(rows.map(row => row.sheetId.toString()))];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sheetMap = new Map<string, any>();
     
     for (const sheetId of sheetIds) {
         const sheet = await sheetsCollection.findOne({_id: new ObjectId(sheetId)});
         check_user_can_edit_rows(user, sheet);
+        sheetMap.set(sheetId, sheet);
     }
     
     // Usa una transazione per garantire la consistenza
@@ -70,5 +74,20 @@ export default async function deleteRows(_: unknown, {ids}: {
         }
     })
     
+    for (const [sheetIdStr, sheetRows] of Object.entries(
+        rows.reduce((acc, row) => { (acc[row.sheetId.toString()] ??= []).push(row._id); return acc }, {} as Record<string, typeof rows[0]['_id'][]>)
+    )) {
+        context.pubsub?.publish(TOPICS.ROWS_DELETED(sheetIdStr), {
+            rowsDeleted: sheetRows
+        })
+    }
+    for (const [sheetIdStr, sheet] of sheetMap.entries()) {
+        if (!sheet) continue
+        context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
+            workbookUpdated: true,
+            _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
+        })
+    }
+
     return rows.length;
 }

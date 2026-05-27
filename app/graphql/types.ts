@@ -10,13 +10,17 @@ export type Context = {
   user_id?: ObjectId
   email?: string
   pubsub?: RedisPubSub
+  isAdmin?: boolean
+  isSupervisor?: boolean
 }
 
-export async function get_context({ req, user_id, email, pubsub }: {
+export async function get_context({ req, user_id, email, pubsub, isAdmin, isSupervisor }: {
   req?: NextRequest,
-  user_id?: ObjectId, // For WebSocket context, if already authenticated
-  email?: string,     // For WebSocket context, if already authenticated
+  user_id?: ObjectId,
+  email?: string,
   pubsub?: RedisPubSub
+  isAdmin?: boolean
+  isSupervisor?: boolean
 }): Promise<Context> {
   let authenticated_user_id = user_id;
   let authenticated_email = email;
@@ -34,6 +38,8 @@ export async function get_context({ req, user_id, email, pubsub }: {
     user_id: authenticated_user_id ? new ObjectId(authenticated_user_id) : undefined,
     email: authenticated_email,
     pubsub,
+    isAdmin,
+    isSupervisor,
   };
 }
 

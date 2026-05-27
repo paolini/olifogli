@@ -4,6 +4,7 @@ import { Context } from '../types'
 
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { schemas } from '@/app/lib/schema'
+import { TOPICS } from '@/app/lib/pubsub'
 
 export default async function deleteRow(_: unknown, {_id}: {
     _id: ObjectId}, context: Context) {
@@ -44,5 +45,15 @@ export default async function deleteRow(_: unknown, {_id}: {
         )
     })
     
+    context.pubsub?.publish(TOPICS.ROWS_DELETED(row.sheetId.toString()), {
+        rowsDeleted: [row._id]
+    })
+    if (sheet) {
+        context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
+            workbookUpdated: true,
+            _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
+        })
+    }
+
     return _id;
 }

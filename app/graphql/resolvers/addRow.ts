@@ -71,6 +71,10 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     context.pubsub?.publish(TOPICS.ROW_CHANGED(args.sheetId.toString()), {
         rowChanged: row
     })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
+        workbookUpdated: true,
+        _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
+    })
 
     return row
 }
