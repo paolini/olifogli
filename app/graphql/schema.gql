@@ -364,5 +364,7 @@ type UserCursor {
 type Subscription {
   sheetUpdated(sheetId: ObjectId!): Sheet!
   rowChanged(sheetId: ObjectId!): Row!
+  rowsDeleted(sheetId: ObjectId!): [ObjectId!]!
   cursorChanged(sheetId: ObjectId!): UserCursor!
+  workbookUpdated(workbookId: ObjectId!): Boolean!
 }

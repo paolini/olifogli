@@ -23,6 +23,7 @@ import { DistributionReport, useGetSheetsQuery, useGetWorkbookDistributionReport
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { useWorkbookUpdated } from './useWorkbookUpdated'
 import { zhCN } from 'date-fns/locale'
 
 // Register Chart.js components
@@ -55,9 +56,8 @@ const _ = gql`
 `
 
 export default function WorkbookDistribution({ workbookId }: { workbookId: ObjectId }) {
-    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch } = useGetSheetsQuery({
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch: refetchSheets } = useGetSheetsQuery({
         variables: { workbookId },
-        pollInterval: 10000, // millisecondi
     })
     const { filterState } = useSheetsFilterWithQuerystring();
     const sheets = (sheetsData?.sheets || [])
@@ -66,10 +66,11 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
 
     const [useBinning, setUseBinning] = useState(false)
 
-    const { loading, error, data } = useGetWorkbookDistributionReportQuery({
+    const { loading, error, data, refetch: refetchReport } = useGetWorkbookDistributionReportQuery({
         variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
-        pollInterval: 10000, // millisecondi
     })
+
+    useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })
 
     if (loading || loadingSheets) return <Loading />
     if (error) return <Error error={error} />

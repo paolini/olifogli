@@ -15,6 +15,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import jwt from 'jsonwebtoken'; // For WebSocket token decoding
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
 import { pubsub, TOPICS } from './app/lib/pubsub.js'; // Import the singleton pubsub
+import { getUsersCollection } from './app/lib/mongodb.js';
 
 import { typeDefs } from './app/graphql/typedefs.js';
 import { resolvers } from './app/graphql/resolvers.js';
@@ -44,6 +45,8 @@ async function start() {
     tabId: string | undefined
     email: string | undefined
     sheetIds: Set<string>
+    isAdmin?: boolean
+    isSupervisor?: boolean
   }
   const connectionData = new Map<object, ConnectionState>()
 
@@ -58,10 +61,29 @@ async function start() {
         user_id = decodedToken?.user_id ? new ObjectId(decodedToken.user_id) : undefined;
         email = decodedToken?.email;
       }
-      // Store email in connection data for use on disconnect
       const conn = connectionData.get(ctx)
-      if (conn) conn.email = email
-      return get_context({ user_id, email, pubsub });
+      if (conn) {
+        conn.email = email
+        // Cache isAdmin/isSupervisor once per connection (avoid repeated DB queries)
+        if (user_id !== undefined && conn.isAdmin === undefined) {
+          try {
+            const usersCollection = await getUsersCollection()
+            const user = await usersCollection.findOne(
+              { _id: user_id },
+              { projection: { isAdmin: 1, isSupervisor: 1 } }
+            )
+            conn.isAdmin = user?.isAdmin ?? false
+            conn.isSupervisor = user?.isSupervisor ?? false
+          } catch {
+            conn.isAdmin = false
+            conn.isSupervisor = false
+          }
+        } else if (!user_id) {
+          conn.isAdmin = false
+          conn.isSupervisor = false
+        }
+      }
+      return get_context({ user_id, email, pubsub, isAdmin: conn?.isAdmin, isSupervisor: conn?.isSupervisor });
     },
     onConnect: (ctx) => {
       const tabId = ctx.connectionParams?.tabId as string | undefined

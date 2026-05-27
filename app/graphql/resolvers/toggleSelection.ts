@@ -64,6 +64,10 @@ export default async function toggleSelection(_: unknown, {rowId, label}: {
     context.pubsub?.publish(TOPICS.ROW_CHANGED(sheet._id.toString()), {
         rowChanged: updatedRow
     })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
+        workbookUpdated: true,
+        _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
+    })
 
     return updatedRow
 }

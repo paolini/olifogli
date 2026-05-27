@@ -43,6 +43,10 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
   const updatedSheet = await sheets.findOne({ _id: args._id });
   if (updatedSheet) {
     context.pubsub?.publish(TOPICS.SHEET_UPDATED(updatedSheet._id.toString()), { sheetUpdated: updatedSheet });
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(updatedSheet.workbookId.toString()), {
+      workbookUpdated: true,
+      _allowedEmails: (updatedSheet.permissions ?? []).map((p: { email: string }) => p.email),
+    });
   }
   return true
 }

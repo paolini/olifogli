@@ -17,6 +17,7 @@ import Loading from './Loading'
 import { AgeDistributionReport, SheetState, useGetSheetsQuery, useGetWorkbookAgeDistributionReportQuery } from '../graphql/generated'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { useWorkbookUpdated } from './useWorkbookUpdated'
 import { schemas } from '../lib/schema'
 
 // Register Chart.js components
@@ -45,19 +46,19 @@ const _ = gql`
 `
 
 export default function WorkbookAgeDistribution({ workbookId }: { workbookId: ObjectId }) {
-    const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch: refetchSheets } = useGetSheetsQuery({
         variables: { workbookId },
-        pollInterval: 10000, // millisecondi
     })
     const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
     const sheets = (sheetsData?.sheets || [])
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
-    const { loading, error, data } = useGetWorkbookAgeDistributionReportQuery({
+    const { loading, error, data, refetch: refetchReport } = useGetWorkbookAgeDistributionReportQuery({
         variables: { workbookId, schema: filterState?.schemaFilter, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
-        pollInterval: 10000, // millisecondi
     })
+
+    useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })
 
     if (loading || loadingSheets) return <Loading />
     if (error) return <Error error={error} />

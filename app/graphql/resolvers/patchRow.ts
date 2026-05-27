@@ -83,6 +83,10 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     context.pubsub?.publish(TOPICS.ROW_CHANGED(row.sheetId.toString()), {
         rowChanged: updatedRow
     })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
+        workbookUpdated: true,
+        _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
+    })
 
     return updatedRow
 }

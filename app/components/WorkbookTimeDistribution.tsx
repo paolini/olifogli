@@ -21,6 +21,7 @@ import { useGetSheetsQuery, TimeDistributionReport, TimeDistributionItem, SheetS
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { useWorkbookUpdated } from './useWorkbookUpdated'
 
 // Register Chart.js components
 ChartJS.register(
@@ -52,19 +53,19 @@ const _ = gql`
 `
 
 export default function WorkbookTimeDistribution({ workbookId }: { workbookId: ObjectId }) {
-    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch } = useGetSheetsQuery({
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch: refetchSheets } = useGetSheetsQuery({
         variables: { workbookId },
-        pollInterval: 10000, // millisecondi
     })
     const { filterState } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' })
     const sheets = (sheetsData?.sheets || [])
         .filter(s => ["archimede_biennio","archimede_triennio"].includes(s.schema))
     const filteredSheets = filterSheets(filterState, sheets)
 
-    const { loading, error, data } = useGetWorkbookTimeDistributionReportQuery({
+    const { loading, error, data, refetch: refetchReport } = useGetWorkbookTimeDistributionReportQuery({
         variables: { workbookId, schema: filterState?.schemaFilter, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
-        pollInterval: 10000, // millisecondi
     })
+
+    useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })
 
     if (loading || loadingSheets) return <Loading />
     if (error) return <Error error={error} />
