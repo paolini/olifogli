@@ -354,6 +354,7 @@ export type PermissionInput = {
 export type Query = {
   __typename?: 'Query';
   config?: Maybe<Config>;
+  cursors: Array<UserCursor>;
   getSetting?: Maybe<Setting>;
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
@@ -372,6 +373,11 @@ export type Query = {
   workbookRankingReport: Array<RankingReport>;
   workbookTimeDistributionReport: Array<TimeDistributionReport>;
   workbooks: Array<Workbook>;
+};
+
+
+export type QueryCursorsArgs = {
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -773,6 +779,13 @@ export type OnCursorChangedSubscriptionVariables = Exact<{
 
 
 export type OnCursorChangedSubscription = { __typename?: 'Subscription', cursorChanged: { __typename?: 'UserCursor', email: string, lineKey?: string | null, fieldName?: string | null, tabId: string } };
+
+export type GetActiveCursorsQueryVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type GetActiveCursorsQuery = { __typename?: 'Query', cursors: Array<{ __typename?: 'UserCursor', email: string, lineKey?: string | null, fieldName?: string | null, tabId: string }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -1638,6 +1651,49 @@ export function useOnCursorChangedSubscription(baseOptions: Apollo.SubscriptionH
       }
 export type OnCursorChangedSubscriptionHookResult = ReturnType<typeof useOnCursorChangedSubscription>;
 export type OnCursorChangedSubscriptionResult = Apollo.SubscriptionResult<OnCursorChangedSubscription>;
+export const GetActiveCursorsDocument = gql`
+    query GetActiveCursors($sheetId: ObjectId!) {
+  cursors(sheetId: $sheetId) {
+    email
+    lineKey
+    fieldName
+    tabId
+  }
+}
+    `;
+
+/**
+ * __useGetActiveCursorsQuery__
+ *
+ * To run a query within a React component, call `useGetActiveCursorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetActiveCursorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetActiveCursorsQuery({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useGetActiveCursorsQuery(baseOptions: Apollo.QueryHookOptions<GetActiveCursorsQuery, GetActiveCursorsQueryVariables> & ({ variables: GetActiveCursorsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>(GetActiveCursorsDocument, options);
+      }
+export function useGetActiveCursorsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>(GetActiveCursorsDocument, options);
+        }
+export function useGetActiveCursorsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>(GetActiveCursorsDocument, options);
+        }
+export type GetActiveCursorsQueryHookResult = ReturnType<typeof useGetActiveCursorsQuery>;
+export type GetActiveCursorsLazyQueryHookResult = ReturnType<typeof useGetActiveCursorsLazyQuery>;
+export type GetActiveCursorsSuspenseQueryHookResult = ReturnType<typeof useGetActiveCursorsSuspenseQuery>;
+export type GetActiveCursorsQueryResult = Apollo.QueryResult<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>;
 export const AddSheetDocument = gql`
     mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
   addSheet(
@@ -3707,6 +3763,7 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   config?: Resolver<Maybe<ResolversTypes['Config']>, ParentType, ContextType>;
+  cursors?: Resolver<Array<ResolversTypes['UserCursor']>, ParentType, ContextType, RequireFields<QueryCursorsArgs, 'sheetId'>>;
   getSetting?: Resolver<Maybe<ResolversTypes['Setting']>, ParentType, ContextType, RequireFields<QueryGetSettingArgs, 'key'>>;
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;

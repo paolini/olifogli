@@ -253,6 +253,7 @@ type Query {
   workbookRankingReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState, limit: Int, selectionLabel: String, onlySelected: Boolean, orderBy: String, orderDirection: Int): [RankingReport!]!
   workbookAgeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [AgeDistributionReport!]!
   workbookTimeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [TimeDistributionReport!]!
+  cursors(sheetId: ObjectId!): [UserCursor!]!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!
