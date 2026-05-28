@@ -16,6 +16,7 @@ import jwt from 'jsonwebtoken'; // For WebSocket token decoding
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
 import { pubsub, TOPICS } from './app/lib/pubsub.js'; // Import the singleton pubsub
 import { getUsersCollection } from './app/lib/mongodb.js';
+import { redis, CURSOR_KEY } from './app/lib/redis.js';
 
 import { typeDefs } from './app/graphql/typedefs.js';
 import { resolvers } from './app/graphql/resolvers.js';
@@ -94,8 +95,9 @@ async function start() {
       const conn = connectionData.get(ctx)
       if (conn?.tabId) {
         for (const sheetId of conn.sheetIds) {
+          await redis.hdel(CURSOR_KEY(sheetId), conn.tabId)
           await pubsub.publish(TOPICS.CURSOR_CHANGED(sheetId), {
-            cursorChanged: { email: conn.email ?? null, lineKey: null, fieldName: null, tabId: conn.tabId }
+            cursorChanged: { email: conn.email ?? '', lineKey: null, fieldName: null, tabId: conn.tabId }
           })
         }
       }

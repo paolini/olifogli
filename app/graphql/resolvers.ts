@@ -6,6 +6,7 @@ import { Resolvers } from './generated'
 import { getSheetsCollection } from '../lib/mongodb'
 
 import { pubsub, TOPICS } from '../lib/pubsub'
+import { redis, CURSOR_KEY } from '../lib/redis'
 import { get_authenticated_user } from './resolvers/utils'
 import { withFilter } from 'graphql-subscriptions'
 
@@ -84,6 +85,11 @@ export const resolvers: Resolvers = {
     workbookTimeDistributionReport,
     workbookAgeDistributionReport,
     getSetting: settingsResolvers.Query.getSetting,
+    cursors: async (_: unknown, { sheetId }: { sheetId: ObjectId }) => {
+      const data = await redis.hgetall(CURSOR_KEY(sheetId.toString()))
+      if (!data) return []
+      return Object.values(data).map((v: string) => JSON.parse(v))
+    },
   },
 
   Workbook: {
