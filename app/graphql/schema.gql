@@ -100,6 +100,7 @@ type Row {
   data: Data!
   olimanager: OlimanagerRowData
   selections: [RowSelection]
+  sourceTabId: String
 }
 
 type User {
@@ -283,8 +284,8 @@ type Mutation {
   updateSheets(sheets: [UpdateSheetInput!]!): Boolean
   deleteSheets(ids: [ObjectId!]!): Boolean
 
-  addRow(sheetId: ObjectId!, data: Data!): Row
-  patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row
+  addRow(sheetId: ObjectId!, data: Data!, tabId: String): Row
+  patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!, tabId: String): Row
   toggleSelection(rowId: ObjectId!, label: String!): Row
   deleteRow(_id: ObjectId!): ObjectId
   deleteRows(ids: [ObjectId!]!): Int

@@ -7,10 +7,11 @@ import { Data } from '@/app/lib/models'
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { TOPICS } from '../../lib/pubsub'
 
-export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
+export default async function patchRow(_: unknown, {_id, updatedOn, data, tabId}: {
     _id: ObjectId,
     updatedOn: Date,
-    data: Data }, context: Context) {
+    data: Data,
+    tabId?: string | null }, context: Context) {
     const user = await get_authenticated_user(context)
     const rowsCollection = await getRowsCollection();
     const row = await rowsCollection.findOne({ _id });
@@ -81,7 +82,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data}: {
     })
     
     context.pubsub?.publish(TOPICS.ROW_CHANGED(row.sheetId.toString()), {
-        rowChanged: updatedRow
+        rowChanged: { ...updatedRow, sourceTabId: tabId ?? null }
     })
     context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
         workbookUpdated: true,

@@ -142,9 +142,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         if (!tabId) return
         if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current)
         moveCursorTimerRef.current = setTimeout(() => {
-            console.log('[moveCursor] firing mutation: sheetId=%s lineKey=%s fieldName=%s tabId=%s', sheet._id, tableState.focusLineKey, tableState.focusFieldName, tabId)
             moveCursorRef.current({ variables: { sheetId: sheet._id, lineKey: tableState.focusLineKey || null, fieldName: tableState.focusFieldName || null, tabId } })
-                .then((res: {data?: unknown}) => console.log('[moveCursor] response:', JSON.stringify(res.data)))
                 .catch((err: unknown) => console.error('[moveCursor] error:', err))
             moveCursorTimerRef.current = null
         }, 300)
@@ -926,6 +924,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             _id: row._id,
             updatedOn: row.updatedOn || new Date(),
             data,
+            tabId: tabId,
         }})
         // console.log('saveRow result', res)
 
@@ -961,6 +960,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         const res = await addRow({variables: {
             sheetId: sheet._id,
             data: data,
+            tabId: tabId,
         }})
 
         const row = res.data?.addRow
@@ -983,8 +983,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
 } // fine Table component
 
 const _ = gql`
-  mutation addRow($sheetId: ObjectId!, $data: Data!) {
-    addRow(sheetId: $sheetId, data: $data) {
+  mutation addRow($sheetId: ObjectId!, $data: Data!, $tabId: String) {
+    addRow(sheetId: $sheetId, data: $data, tabId: $tabId) {
       _id
       error
       anomalies
@@ -998,8 +998,8 @@ const _ = gql`
 `
 
 const __ = gql`
-  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
-    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
+  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!, $tabId: String) {
+    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data, tabId: $tabId) {
       _id
       __typename
       createdOn
