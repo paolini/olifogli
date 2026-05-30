@@ -114,6 +114,7 @@ olifogli/
 - `workbooks`: Lista workbook utente
 - `sheets(workbookId)`: Fogli in un workbook
 - `rows(sheetId)`: Righe in un foglio
+- `cursors(sheetId)`: Cursori attivi sul foglio (da Redis hash, per stato iniziale)
 - `scanJobs(sheetId)`: Job di scansione per un foglio
 - `workbookReports(workbookId)`: Report aggregati per workbook (archimede_biennio e archimede_triennio)
 
@@ -125,15 +126,21 @@ olifogli/
 - `updateSheet(_id, ...)`: Aggiorna foglio
 - `addRow(sheetId, data)`: Aggiunge riga
 - `addRows(sheetId, columns, rows)`: Import bulk CSV
+- `patchRow(_id, data)`: Modifica riga
+- `deleteRow(_id)`: Cancella riga (pubblica `rowsDeleted` e `workbookUpdated`)
+- `deleteRows(ids)`: Cancella righe bulk (pubblica `rowsDeleted` per sheet e `workbookUpdated` per workbook)
+- `toggleSelection(_id)`: Seleziona/deseleziona riga
 - `closeSheet(_id)`: Chiude un foglio (solo admin del foglio)
 - `openSheet(_id)`: Riapre un foglio (solo admin del foglio)
 - `lockSheet(_id)`: Blocca un foglio (solo admin di sistema)
 - `unlockSheet(_id)`: Sblocca un foglio (solo admin di sistema)
-- `moveCursor(sheetId, lineKey, fieldName, tabId)`: Pubblica la posizione cursore dell'utente (ephemeral, via Redis)
+- `moveCursor(sheetId, lineKey, fieldName, tabId)`: Pubblica la posizione cursore e aggiorna hash Redis `ACTIVE_CURSORS.<sheetId>`
 
 #### Subscriptions
-- `rowChanged(sheetId)`: Notifica in tempo reale quando una riga viene modificata
+- `rowChanged(sheetId)`: Notifica in tempo reale quando una riga viene modificata o aggiunta
+- `rowsDeleted(sheetId)`: Array di ObjectId delle righe cancellate
 - `cursorChanged(sheetId)`: Notifica la posizione cursore degli altri utenti connessi allo stesso foglio
+- `workbookUpdated(workbookId)`: Segnala che qualcosa nel workbook è cambiato; filtrato via `withFilter` per mostrare solo eventi da fogli a cui l'utente ha accesso
 
 ## Gestione Stato dei Fogli
 
@@ -182,7 +189,10 @@ I fogli possono trovarsi in tre stati:
 ### Security Features
 - Structured permissions system per sheet with roles (admin/editor/view)
 - Owner-based permissions
-- Admin override capabilities
+- Admin override capabilities (`isAdmin` flag su utente)
+- Supervisor override (`isSupervisor` flag): accesso in lettura a tutti i fogli
+- `isAdmin`/`isSupervisor` caricati una volta per connessione WS e cached in `ConnectionState`
+- Subscription `workbookUpdated` filtrata da `withFilter`: solo eventi per fogli accessibili all'utente
 
 ## Sistema di Processing OMR
 
@@ -221,27 +231,66 @@ Questo design è necessario perché Next.js in produzione può girare su più is
 - Carica lo stesso `schema.gql` e `resolvers.ts` del Next.js app
 - Espone anche un endpoint HTTP GraphQL su `/graphql` (stesso path)
 - Autenticazione opzionale via JWT in `connectionParams.sessionToken`
-- Avvio: `npm run ws-server` (script: `fuser -k 4001/tcp; tsx ws-server.ts`)
+- Avvio: `npm run ws-server` (script: `fuser -k 4001/tcp; tsx watch ws-server.ts`)
+- **Contesto per subscriber**: alla prima subscription di ogni connessione, il ws-server recupera da MongoDB `isAdmin` e `isSupervisor` dell'utente e li caches in memoria per la durata della connessione
 
 ### Redis PubSub (`app/lib/pubsub.ts`)
 - Libreria: `graphql-redis-subscriptions` (`RedisPubSub`)
 - Usa due connessioni ioredis (publish + subscribe)
 - URL: variabile d'ambiente `REDIS_URL` (default `redis://127.0.0.1:6379`)
-- Topics: `CURSOR_CHANGED.<sheetId>`, `ROW_CHANGED.<sheetId>`
+- Topics:
+  - `ROW_CHANGED.<sheetId>` — riga aggiunta/modificata/cancellata
+  - `ROWS_DELETED.<sheetId>` — una o più righe cancellate (payload: array di ObjectId)
+  - `SHEET_UPDATED.<sheetId>` — metadati foglio aggiornati
+  - `CURSOR_CHANGED.<sheetId>` — posizione cursore utente
+  - `WORKBOOK_UPDATED.<workbookId>` — qualcosa nel workbook è cambiato (contatori, righe, fogli)
+
+### Redis KV (`app/lib/redis.ts`)
+- Client ioredis separato per operazioni chiave-valore (non pubsub)
+- Usato per mantenere lo stato attuale dei cursori per sheet: `ACTIVE_CURSORS.<sheetId>` (hash Redis: `tabId → JSON cursor`)
+- Aggiornato da `moveCursor` mutation; ripulito dal disconnect handler del ws-server
 
 ### Cursor Presence (Presenza Cursore Collaborativa)
 Permette agli utenti che guardano lo stesso foglio di vedere la posizione del cursore degli altri in tempo reale.
 
-**Flusso:**
+**Flusso (aggiornamento live):**
 1. L'utente sposta il cursore su una cella → `Table.tsx` invia `moveCursor` mutation (debounced 300ms)
 2. Il resolver pubblica `{ email, lineKey, fieldName, tabId }` su Redis topic `CURSOR_CHANGED.<sheetId>`
-3. Il ws-server riceve da Redis e invia `cursorChanged` a tutti i subscriber del foglio
-4. `Sheet.tsx` riceve l'evento, filtra il proprio cursore (via `tabId` univoco per tab browser) e aggiorna `otherCursors` state
-5. `TableRow.tsx` riceve `cursorUsers` e applica `box-shadow: inset` colorato sulla cella attiva
+3. Il resolver salva il cursore in `ACTIVE_CURSORS.<sheetId>` (hash Redis, chiave `tabId`); se `lineKey` è null lo rimuove
+4. Il ws-server riceve da Redis e invia `cursorChanged` a tutti i subscriber del foglio
+5. `Sheet.tsx` riceve l'evento, filtra il proprio cursore (via `tabId`) e aggiorna `otherCursors` state
+6. `TableRow.tsx` riceve `cursorUsers` e applica `box-shadow: inset` colorato sulla cella attiva
 
-**Identificazione tab:** ogni tab browser genera un `tabId` univoco (`crypto.randomUUID()`, stabile via `useRef`) che viene inviato con ogni mutation e usato per filtrare i propri eventi in ingresso. Questo consente di mostrare cursori anche tra tab dello stesso utente.
+**Stato iniziale (nuovi visitatori):**
+- Al montaggio di `Sheet.tsx` viene eseguita la query `cursors(sheetId)` che legge l'hash `ACTIVE_CURSORS.<sheetId>` da Redis
+- I cursori già presenti vengono mostrati immediatamente, senza aspettare movimenti
+
+**Disconnessione:**
+- L'`onDisconnect` del ws-server esegue `redis.hdel(ACTIVE_CURSORS.<sheetId>, tabId)` e pubblica un evento `cursorChanged` con `lineKey: null, fieldName: null` per rimuovere il cursore dai client connessi
+
+**Identificazione tab:** ogni tab browser genera un `tabId` univoco (`crypto.randomUUID()`) al montaggio, **solo in memoria** (non persistito in sessionStorage, per evitare che tab duplicate ereditino lo stesso ID). Questo consente di mostrare cursori anche tra tab dello stesso utente.
 
 **Colore cursore:** derivato dall'hash dell'email con funzione `emailToColor` → `hsl(hash % 360, 70%, 45%)`. Ogni utente ha sempre lo stesso colore.
+
+### Cancellazione Righe Real-time
+Quando una riga viene cancellata (`deleteRow` / `deleteRows`), il foglio si aggiorna in tempo reale:
+- `deleteRow`: pubblica `ROWS_DELETED.<sheetId>` con `[_id]`
+- `deleteRows`: raggruppa gli ID per sheetId e pubblica un singolo `ROWS_DELETED` per sheet (es. 100 righe → 1 publish per sheet, non 100)
+- `Sheet.tsx` si iscrive a `rowsDeleted` e, all'evento:
+  - se ≤ 20 ID: rimuove direttamente dalla cache Apollo (`client.cache.updateQuery`)
+  - se > 20 ID: esegue `refetch()` per efficienza
+
+### Workbook Real-time (`workbookUpdated`)
+Le pagine workbook (distribuzione, classifica, selezione, ecc.) si aggiornano in tempo reale senza polling.
+
+**Flusso:**
+1. Una mutation che modifica dati del workbook (`addRow`, `patchRow`, `toggleSelection`, `deleteRow`, `deleteRows`, `updateSheet`) pubblica `WORKBOOK_UPDATED.<workbookId>` su Redis, con `_allowedEmails: sheet.permissions[].email` nel payload
+2. Il ws-server riceve l'evento e applica `withFilter` prima di inviarlo al subscriber:
+   - utenti `isAdmin` o `isSupervisor` ricevono sempre l'evento
+   - altri utenti ricevono l'evento solo se la propria email è in `_allowedEmails`
+3. I componenti workbook (`WorkbookSheets`, `WorkbookDistribution`, `WorkbookRanking`, ecc.) usano l'hook condiviso `useWorkbookUpdated(workbookId, callback, delay=500ms)` che chiama `refetch()` con un debounce di 500ms per assorbire burst di eventi (es. import bulk)
+
+**Sicurezza:** gli utenti non-admin vedono solo eventi per fogli di cui hanno esplicitamente il permesso, grazie al `withFilter` sul resolver della subscription.
 
 ### ⚠️ Gap in Produzione
 Il `docker-compose-production.yml` attuale **non include** il servizio `ws-server` né il servizio `redis`. Per abilitare le feature real-time in produzione è necessario aggiungere:

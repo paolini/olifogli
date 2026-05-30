@@ -123,6 +123,7 @@ const ROW_CHANGED_SUBSCRIPTION = gql`
         resultsUpdatedOn
         error
       }
+      sourceTabId
     }
   }
 `
@@ -197,9 +198,7 @@ function SheetBody({sheet,profile}: {
         variables: { sheetId: sheet._id },
         onData: ({ data }) => {
             const cursor = data.data?.cursorChanged
-            console.log('[cursorChanged] onData (ownTabId=%s):', tabId, JSON.stringify(cursor))
             if (!cursor || cursor.tabId === tabId) return
-            console.log('[cursorChanged] aggiorno otherCursors con', cursor.email, cursor.lineKey, cursor.fieldName)
             setOtherCursors(prev => {
                 if (cursor.lineKey === null && cursor.fieldName === null) {
                     const { [cursor.tabId]: _, ...rest } = prev
@@ -224,6 +223,7 @@ function SheetBody({sheet,profile}: {
             updateQuery: (prev, { subscriptionData }) => {
                 if (!subscriptionData.data) return prev;
                 const newRow = (subscriptionData.data as unknown as { rowChanged: Row }).rowChanged;
+                if (newRow.sourceTabId === tabId) return prev;
                 
                 const exists = prev.rows.find(r => r._id.toString() === newRow._id.toString());
                 if (exists) {

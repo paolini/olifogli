@@ -118,6 +118,7 @@ export type Mutation = {
 export type MutationAddRowArgs = {
   data: Scalars['Data']['input'];
   sheetId: Scalars['ObjectId']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -250,6 +251,7 @@ export type MutationOpenSheetArgs = {
 export type MutationPatchRowArgs = {
   _id: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
   updatedOn: Scalars['Timestamp']['input'];
 };
 
@@ -508,6 +510,7 @@ export type Row = {
   error?: Maybe<Scalars['String']['output']>;
   olimanager?: Maybe<OlimanagerRowData>;
   selections?: Maybe<Array<Maybe<RowSelection>>>;
+  sourceTabId?: Maybe<Scalars['String']['output']>;
   updatedBy: Scalars['String']['output'];
   updatedOn: Scalars['Timestamp']['output'];
 };
@@ -764,7 +767,7 @@ export type OnRowChangedSubscriptionVariables = Exact<{
 }>;
 
 
-export type OnRowChangedSubscription = { __typename?: 'Subscription', rowChanged: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null } };
+export type OnRowChangedSubscription = { __typename?: 'Subscription', rowChanged: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, sourceTabId?: string | null, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null } };
 
 export type OnRowsDeletedSubscriptionVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -917,6 +920,7 @@ export type MoveCursorMutation = { __typename?: 'Mutation', moveCursor?: boolean
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -926,6 +930,7 @@ export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
   updatedOn: Scalars['Timestamp']['input'];
   data: Scalars['Data']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -1564,6 +1569,7 @@ export const OnRowChangedDocument = gql`
       resultsUpdatedOn
       error
     }
+    sourceTabId
   }
 }
     `;
@@ -2224,8 +2230,8 @@ export type MoveCursorMutationHookResult = ReturnType<typeof useMoveCursorMutati
 export type MoveCursorMutationResult = Apollo.MutationResult<MoveCursorMutation>;
 export type MoveCursorMutationOptions = Apollo.BaseMutationOptions<MoveCursorMutation, MoveCursorMutationVariables>;
 export const AddRowDocument = gql`
-    mutation addRow($sheetId: ObjectId!, $data: Data!) {
-  addRow(sheetId: $sheetId, data: $data) {
+    mutation addRow($sheetId: ObjectId!, $data: Data!, $tabId: String) {
+  addRow(sheetId: $sheetId, data: $data, tabId: $tabId) {
     _id
     error
     anomalies
@@ -2254,6 +2260,7 @@ export type AddRowMutationFn = Apollo.MutationFunction<AddRowMutation, AddRowMut
  *   variables: {
  *      sheetId: // value for 'sheetId'
  *      data: // value for 'data'
+ *      tabId: // value for 'tabId'
  *   },
  * });
  */
@@ -2265,8 +2272,8 @@ export type AddRowMutationHookResult = ReturnType<typeof useAddRowMutation>;
 export type AddRowMutationResult = Apollo.MutationResult<AddRowMutation>;
 export type AddRowMutationOptions = Apollo.BaseMutationOptions<AddRowMutation, AddRowMutationVariables>;
 export const PatchRowDocument = gql`
-    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
-  patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
+    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!, $tabId: String) {
+  patchRow(_id: $_id, updatedOn: $updatedOn, data: $data, tabId: $tabId) {
     _id
     __typename
     createdOn
@@ -2297,6 +2304,7 @@ export type PatchRowMutationFn = Apollo.MutationFunction<PatchRowMutation, Patch
  *      _id: // value for '_id'
  *      updatedOn: // value for 'updatedOn'
  *      data: // value for 'data'
+ *      tabId: // value for 'tabId'
  *   },
  * });
  */
@@ -3825,6 +3833,7 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['OlimanagerRowData']>, ParentType, ContextType>;
   selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
+  sourceTabId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
