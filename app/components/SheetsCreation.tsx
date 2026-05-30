@@ -12,7 +12,7 @@ type Job = {
     rowId: ObjectId|null,
     sheet: Partial<Sheet>|null,
     name: string,
-    schema: "archimede_biennio"|"archimede_triennio"|"gara_prime",
+    schema: "archimede_biennio"|"archimede_triennio"|"gara_prime"|"ammissione_senior",
     permissions: Permission[],
     commonData: Data,
     action?: string,
@@ -31,7 +31,7 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
     workbookId: ObjectId,
     done: () => void
 }) {
-    const [mode, setMode] = useState<""|"archimede"|"gara_prime">("")
+    const [mode, setMode] = useState<""|"archimede"|"gara_prime"|"ammissione_senior">("")
     const { data: sheetsData, loading: sheetsLoading, error: sheetsError } = useGetSheetsQuery({ variables: { workbookId } })
     const { data: rowsData, loading: rowsLoading, error: rowsError } = useGetRowsQuery({ variables: { sheetId } })
     const sheets: Partial<Sheet>[]|undefined = sheetsData?.sheets
@@ -182,6 +182,34 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                     }
                 })
             }
+        } else if (mode === 'ammissione_senior') {
+            const distretti = new Map<string, {name: string, codice: string, permissions: Permission[], rowId: ObjectId}>()
+            for (const row of rows || []) {
+                const nomeDistretto = (row.data["Nome_distretto"] || '').replace('Distretto di ','')
+                const codiceDistretto = row.data?.Codice_distretto || ''
+                const emailReferente = (row.data?.Email_referente || '').toLowerCase().trim()
+                const permissions: Permission[] = [{
+                    email: emailReferente,
+                    role: 'admin',
+                }]
+                if (!distretti.has(nomeDistretto)) {
+                    console.log(`Aggiungo distretto ${nomeDistretto} [${codiceDistretto}] con referenti: ${permissions.map(p => p.email).join(', ')}`)
+                    distretti.set(nomeDistretto, { name: nomeDistretto, codice: codiceDistretto, permissions, rowId: row._id })
+                }
+            }
+            for (const [_, distretto] of distretti) {
+                addJob({
+                    rowId: distretto.rowId,
+                    name: distretto.name,
+                    schema: 'ammissione_senior',
+                    permissions: distretto.permissions,
+                    sheet: null,
+                    commonData: {
+                        Distretto: distretto.name,
+                        Codice_distretto: distretto.codice
+                    }
+                })
+            }
         }
         return jobs
     }, [mode, rows, sheets])
@@ -191,6 +219,8 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
             <option value="" disabled>Seleziona il tipo di fogli da creare</option>
             <option value="archimede" onClick={() => setMode("archimede")}>Fogli Scuole Archimede (biennio e triennio)</option>
             <option value="gara_prime" onClick={() => setMode("gara_prime")}>Fogli Distretti Gara Prime</option>
+            <option value="ammissione_senior" onClick={() => setMode("ammissione_senior")}>Fogli Ammissione Senior</option>
+            
         </select>
         <br />
         <Button onClick={() => done()}>Annulla creazione fogli</Button>
