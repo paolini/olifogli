@@ -224,22 +224,18 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
     const ids = selected_lines
       .filter(line => line?.row?._id)
       .map(line => new ObjectId(line?.row?._id))
-    const lines_without_row = selected_lines.filter(line => !line?.row?._id)
+    const selectedLineKeys = ctx.tableState.selectedLineKeys
+    const currentFocusLineKey = ctx.tableState.focusLineKey
     await ctx.mutations.deleteRows({ variables: { ids } })
-    if (lines_without_row.length > 0) {
-        let focusLineKey = ctx.tableState.focusLineKey
-        if (focusLineKey && ctx.tableState.selectedLineKeys.has(focusLineKey)) {
-            focusLineKey = ''
-        }
-        // righe da mantenere: tutte quello con line.row (che verranno cancellate dalla mutazione)
-        // e quelle che non erano state selezionate
-        ctx.setTableState(prev => ({
-          ...prev,
-          lines: prev.lines.filter(line => line.row || !ctx.tableState.selectedLineKeys.has(line.key)),
-          focusLineKey: '',
-          focusColumnName: '',
-        }))
-    }
+    // Rimuovi subito tutte le righe selezionate dallo stato locale,
+    // senza aspettare la subscription WebSocket (che potrebbe non essere attiva)
+    ctx.setTableState(prev => ({
+      ...prev,
+      lines: prev.lines.filter(line => !selectedLineKeys.has(line.key)),
+      focusLineKey: selectedLineKeys.has(currentFocusLineKey) ? '' : prev.focusLineKey,
+      focusFieldName: selectedLineKeys.has(currentFocusLineKey) ? '' : prev.focusFieldName,
+      selectedLineKeys: new Set(),
+    }))
   } catch (error) {
     alert(`Errore durante l'eliminazione: ${error}`)
   }
