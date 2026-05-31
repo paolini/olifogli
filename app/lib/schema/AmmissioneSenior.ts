@@ -8,9 +8,9 @@ export default class AmmissioneSenior extends Schema {
         super('ammissione_senior', 'ammissione Senior', [
             new Field('id', {csv_import_ignore: true}),
 //            new Field('id_short', {header: 'id breve', csv_import_ignore: true}),
-            new Field('cognome', {header: 'cognome'}),
-            new Field('nome', {header: 'nome'}),
-            new DateField('data_nascita', {header: 'data di nascita'}),
+            new Field('surname', {header: 'cognome'}),
+            new Field('name', {header: 'nome'}),
+            new DateField('birthDate', {header: 'data di nascita'}),
 //            new Field('scuola_id', {header: 'scuola_id'}),
 //            new Field('scuola', {header: 'scuola'}),
 //            new Field('zona_id', {header: 'zona_id'}),
@@ -43,8 +43,8 @@ export default class AmmissioneSenior extends Schema {
         this.scan_fields = this.fields.filter(f => 
             ["scan_id","variante"].includes(f.name) || (f instanceof ChoiceAnswerField)
         )
-        this.fields_sensitive_names = ["cognome", "nome"]
-        this.fields_to_be_ignored_on_inport = ["nome concorrente", "email", "genere", "sede ufficiale", "nome scuola", "tipo scuola", "classe 25/26", "sigla provincia scuola", "pise", "check", "città scuola"]
+        this.fields_sensitive_names = ["surname", "name"]
+        this.fields_to_be_ignored_on_inport = ["nome concorrente", "genere", "email", "pise", "check", "tipo scuola", "nome scuola", "città scuola", "sigla provincia scuola","sede ufficiale", "stringa risposte", "classe 25/26"]
     }
 
     csv_header(): string[] {
