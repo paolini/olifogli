@@ -14,6 +14,8 @@ export const TOPICS = {
 	SHEET_UPDATED: (sheetId: string) => `SHEET_UPDATED.${sheetId}`,
 	CURSOR_CHANGED: (sheetId: string) => `CURSOR_CHANGED.${sheetId}`,
 	WORKBOOK_UPDATED: (workbookId: string) => `WORKBOOK_UPDATED.${workbookId}`,
+	SCAN_JOB_UPDATED: (sheetId: string) => `SCAN_JOB_UPDATED.${sheetId}`,
+	SCAN_SHEET_JOB_UPDATED: (sheetId: string) => `SCAN_SHEET_JOB_UPDATED.${sheetId}`,
 }
 
 export default pubsub

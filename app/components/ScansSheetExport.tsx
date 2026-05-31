@@ -1,4 +1,5 @@
-import { gql } from "graphql-request";
+import { gql } from "@apollo/client";
+import { useSubscription } from "@apollo/client";
 import { Sheet, useScanSheetJobsQuery } from "../graphql/generated"
 import Error from "./Error"
 import { ObjectId } from "bson"
@@ -18,13 +19,22 @@ const _ = gql`
     }
 `;
 
+const SCAN_SHEET_JOB_UPDATED_SUBSCRIPTION = gql`
+    subscription OnScanSheetJobUpdated($sheetId: ObjectId!) {
+        scanSheetJobUpdated(sheetId: $sheetId)
+    }
+`;
+
 export default function ScansPdfExport({sheet}:{
     sheet: Sheet
 }) {
-    const { data: jobsData, loading: jobsLoading, error: jobsError } = useScanSheetJobsQuery({
+    const { data: jobsData, loading: jobsLoading, error: jobsError, refetch: refetchJobs } = useScanSheetJobsQuery({
         variables: { sheetId: new ObjectId(sheet._id) },
-        pollInterval: 5000, // Poll every 5 seconds to update job status
     })
+    useSubscription(SCAN_SHEET_JOB_UPDATED_SUBSCRIPTION, {
+        variables: { sheetId: new ObjectId(sheet._id) },
+        onData: () => { refetchJobs() },
+    });
 
     return <div>
         <h2>PDF fogli generati</h2>

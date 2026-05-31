@@ -192,6 +192,14 @@ export const resolvers: Resolvers = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as any,
     },
+    scanJobUpdated: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SCAN_JOB_UPDATED(sheetId.toString())),
+    },
+    scanSheetJobUpdated: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SCAN_SHEET_JOB_UPDATED(sheetId.toString())),
+    },
   },
 
   Timestamp,
