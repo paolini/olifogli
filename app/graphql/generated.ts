@@ -616,6 +616,8 @@ export type Subscription = {
   cursorChanged: UserCursor;
   rowChanged: Row;
   rowsDeleted: Array<Scalars['ObjectId']['output']>;
+  scanJobUpdated: Scalars['Boolean']['output'];
+  scanSheetJobUpdated: Scalars['Boolean']['output'];
   sheetUpdated: Sheet;
   workbookUpdated: Scalars['Boolean']['output'];
 };
@@ -632,6 +634,16 @@ export type SubscriptionRowChangedArgs = {
 
 
 export type SubscriptionRowsDeletedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionScanJobUpdatedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionScanSheetJobUpdatedArgs = {
   sheetId: Scalars['ObjectId']['input'];
 };
 
@@ -727,6 +739,13 @@ export type ScanJobsQueryVariables = Exact<{
 
 export type ScanJobsQuery = { __typename?: 'Query', scanJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, timestamp: Date, sheetId: ObjectId, ownerId: ObjectId, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
 
+export type OnScanJobUpdatedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnScanJobUpdatedSubscription = { __typename?: 'Subscription', scanJobUpdated: boolean };
+
 export type DeleteScanMutationVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
 }>;
@@ -747,6 +766,13 @@ export type ScanSheetJobsQueryVariables = Exact<{
 
 
 export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string }> };
+
+export type OnScanSheetJobUpdatedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnScanSheetJobUpdatedSubscription = { __typename?: 'Subscription', scanSheetJobUpdated: boolean };
 
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1315,6 +1341,34 @@ export type ScanJobsQueryHookResult = ReturnType<typeof useScanJobsQuery>;
 export type ScanJobsLazyQueryHookResult = ReturnType<typeof useScanJobsLazyQuery>;
 export type ScanJobsSuspenseQueryHookResult = ReturnType<typeof useScanJobsSuspenseQuery>;
 export type ScanJobsQueryResult = Apollo.QueryResult<ScanJobsQuery, ScanJobsQueryVariables>;
+export const OnScanJobUpdatedDocument = gql`
+    subscription OnScanJobUpdated($sheetId: ObjectId!) {
+  scanJobUpdated(sheetId: $sheetId)
+}
+    `;
+
+/**
+ * __useOnScanJobUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useOnScanJobUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnScanJobUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnScanJobUpdatedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnScanJobUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnScanJobUpdatedSubscription, OnScanJobUpdatedSubscriptionVariables> & ({ variables: OnScanJobUpdatedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnScanJobUpdatedSubscription, OnScanJobUpdatedSubscriptionVariables>(OnScanJobUpdatedDocument, options);
+      }
+export type OnScanJobUpdatedSubscriptionHookResult = ReturnType<typeof useOnScanJobUpdatedSubscription>;
+export type OnScanJobUpdatedSubscriptionResult = Apollo.SubscriptionResult<OnScanJobUpdatedSubscription>;
 export const DeleteScanDocument = gql`
     mutation DeleteScan($jobId: ObjectId!) {
   deleteScan(jobId: $jobId)
@@ -1434,6 +1488,34 @@ export type ScanSheetJobsQueryHookResult = ReturnType<typeof useScanSheetJobsQue
 export type ScanSheetJobsLazyQueryHookResult = ReturnType<typeof useScanSheetJobsLazyQuery>;
 export type ScanSheetJobsSuspenseQueryHookResult = ReturnType<typeof useScanSheetJobsSuspenseQuery>;
 export type ScanSheetJobsQueryResult = Apollo.QueryResult<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>;
+export const OnScanSheetJobUpdatedDocument = gql`
+    subscription OnScanSheetJobUpdated($sheetId: ObjectId!) {
+  scanSheetJobUpdated(sheetId: $sheetId)
+}
+    `;
+
+/**
+ * __useOnScanSheetJobUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useOnScanSheetJobUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnScanSheetJobUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnScanSheetJobUpdatedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnScanSheetJobUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnScanSheetJobUpdatedSubscription, OnScanSheetJobUpdatedSubscriptionVariables> & ({ variables: OnScanSheetJobUpdatedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnScanSheetJobUpdatedSubscription, OnScanSheetJobUpdatedSubscriptionVariables>(OnScanSheetJobUpdatedDocument, options);
+      }
+export type OnScanSheetJobUpdatedSubscriptionHookResult = ReturnType<typeof useOnScanSheetJobUpdatedSubscription>;
+export type OnScanSheetJobUpdatedSubscriptionResult = Apollo.SubscriptionResult<OnScanSheetJobUpdatedSubscription>;
 export const GetSheetDocument = gql`
     query getSheet($sheetId: ObjectId!) {
   sheet(sheetId: $sheetId) {
@@ -3924,6 +4006,8 @@ export type SubscriptionResolvers<ContextType = any, ParentType extends Resolver
   cursorChanged?: SubscriptionResolver<ResolversTypes['UserCursor'], "cursorChanged", ParentType, ContextType, RequireFields<SubscriptionCursorChangedArgs, 'sheetId'>>;
   rowChanged?: SubscriptionResolver<ResolversTypes['Row'], "rowChanged", ParentType, ContextType, RequireFields<SubscriptionRowChangedArgs, 'sheetId'>>;
   rowsDeleted?: SubscriptionResolver<Array<ResolversTypes['ObjectId']>, "rowsDeleted", ParentType, ContextType, RequireFields<SubscriptionRowsDeletedArgs, 'sheetId'>>;
+  scanJobUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "scanJobUpdated", ParentType, ContextType, RequireFields<SubscriptionScanJobUpdatedArgs, 'sheetId'>>;
+  scanSheetJobUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "scanSheetJobUpdated", ParentType, ContextType, RequireFields<SubscriptionScanSheetJobUpdatedArgs, 'sheetId'>>;
   sheetUpdated?: SubscriptionResolver<ResolversTypes['Sheet'], "sheetUpdated", ParentType, ContextType, RequireFields<SubscriptionSheetUpdatedArgs, 'sheetId'>>;
   workbookUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "workbookUpdated", ParentType, ContextType, RequireFields<SubscriptionWorkbookUpdatedArgs, 'workbookId'>>;
 };
