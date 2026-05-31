@@ -1,5 +1,5 @@
 "use client"
-import { useApolloClient, gql, useQuery, TypedDocumentNode, useMutation } from '@apollo/client'
+import { useApolloClient, gql, useQuery, useSubscription, TypedDocumentNode, useMutation } from '@apollo/client'
 import { useState, useRef, Dispatch, SetStateAction } from "react"
 import { ObjectId } from "bson"
 
@@ -79,11 +79,21 @@ const SCAN_JOBS_QUERY = gql`
         }
     }`
 
+const SCAN_JOB_UPDATED_SUBSCRIPTION = gql`
+    subscription OnScanJobUpdated($sheetId: ObjectId!) {
+        scanJobUpdated(sheetId: $sheetId)
+    }
+`
+
 function ScansLog({sheet,data_rows}:{
     sheet: Sheet,
     data_rows: Row[],
 }) {
-    const { data, error } = useScanJobsQuery({ variables: { sheetId: sheet._id }, pollInterval: 3000 });
+    const { data, error, refetch } = useScanJobsQuery({ variables: { sheetId: sheet._id } });
+    useSubscription(SCAN_JOB_UPDATED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onData: () => { refetch() },
+    });
     const jobs = data?.scanJobs
 
     if (!jobs || error) return <ErrorElement error={error} />

@@ -369,4 +369,6 @@ type Subscription {
   rowsDeleted(sheetId: ObjectId!): [ObjectId!]!
   cursorChanged(sheetId: ObjectId!): UserCursor!
   workbookUpdated(workbookId: ObjectId!): Boolean!
+  scanJobUpdated(sheetId: ObjectId!): Boolean!
+  scanSheetJobUpdated(sheetId: ObjectId!): Boolean!
 }

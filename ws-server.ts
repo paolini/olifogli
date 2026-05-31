@@ -15,7 +15,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import jwt from 'jsonwebtoken'; // For WebSocket token decoding
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
 import { pubsub, TOPICS } from './app/lib/pubsub.js'; // Import the singleton pubsub
-import { getUsersCollection } from './app/lib/mongodb.js';
+import { getUsersCollection, getScanJobsCollection, getScanSheetJobsCollection } from './app/lib/mongodb.js';
 import { redis, CURSOR_KEY } from './app/lib/redis.js';
 
 import { typeDefs } from './app/graphql/typedefs.js';
@@ -125,6 +125,27 @@ async function start() {
 
   const serverInstance = httpServer.listen(PORT, () => {
     console.log(`GraphQL HTTP+WS server listening on http://localhost:${PORT}/graphql`);
+  });
+
+  // MongoDB Change Streams: pubblica eventi WS quando scan_jobs o scan_sheet_jobs vengono aggiornati dall'OMR worker
+  const scanJobsCollection = await getScanJobsCollection();
+  scanJobsCollection.watch([], { fullDocument: 'updateLookup' }).on('change', (change) => {
+    if (change.operationType === 'update' || change.operationType === 'insert') {
+      const doc = (change as { fullDocument?: { sheetId?: { toString(): string } } }).fullDocument;
+      if (doc?.sheetId) {
+        pubsub.publish(TOPICS.SCAN_JOB_UPDATED(doc.sheetId.toString()), { scanJobUpdated: true });
+      }
+    }
+  });
+
+  const scanSheetJobsCollection = await getScanSheetJobsCollection();
+  scanSheetJobsCollection.watch([], { fullDocument: 'updateLookup' }).on('change', (change) => {
+    if (change.operationType === 'update' || change.operationType === 'insert') {
+      const doc = (change as { fullDocument?: { sheetId?: { toString(): string } } }).fullDocument;
+      if (doc?.sheetId) {
+        pubsub.publish(TOPICS.SCAN_SHEET_JOB_UPDATED(doc.sheetId.toString()), { scanSheetJobUpdated: true });
+      }
+    }
   });
 
   // Gestione della chiusura pulita del server e delle connessioni Redis
