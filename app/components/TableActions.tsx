@@ -206,10 +206,12 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
 
   const nLines = ctx.tableState.selectedLineKeys.size
 
+  /* disabilitato
   if (nLines > 1 && (!ctx.tableState.lastCsvDownload || (new Date().getTime() - ctx.tableState.lastCsvDownload.getTime()) > 60*1000)) {
     alert(`L'eliminazione delle righe è una operazione irreversibile. Prima di procedere, usa la funzione "scarica CSV" per archiviare i dati inseriti.`)
     return
   }
+  */
 
   const confirmed = confirm(
     `Sei sicuro di voler eliminare ${pluralize(nLines, 'riga', 'righe')}? L'operazione è irreversibile.`

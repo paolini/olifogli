@@ -18,6 +18,7 @@ type FieldOptions = {
     titleCase?: boolean
     upperCase?: boolean
     precompileValue?: boolean
+    csv_import_ignore?: boolean
 }
 
 type DisplayValue = {
@@ -41,8 +42,9 @@ export class Field {
     titleCase: boolean = false
     upperCase: boolean = false
     precompileValue: boolean = false
+    csv_import_ignore: boolean = false
 
-    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, upperCase, precompileValue}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, upperCase, precompileValue, csv_import_ignore}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_class = `field-${this.name}`
@@ -58,6 +60,7 @@ export class Field {
         this.titleCase = titleCase || false
         this.upperCase = upperCase || false
         this.precompileValue = precompileValue || false
+        this.csv_import_ignore = csv_import_ignore || false
     }
 
     // Get all possible names for this field (main name + alternatives)

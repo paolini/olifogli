@@ -1,4 +1,4 @@
-import { Field, ChoiceAnswerField } from './fields'
+import { Field, ChoiceAnswerField, DateField } from './fields'
 import Schema from './Schema'
 import { Row, ScanResults } from '@/app/graphql/generated'
 import { Data } from '@/app/lib/models'
@@ -6,16 +6,17 @@ import { Data } from '@/app/lib/models'
 export default class AmmissioneSenior extends Schema {
     constructor() {
         super('ammissione_senior', 'ammissione Senior', [
-            new Field('id'),
-            new Field('id_short', {header: 'id breve'}),
+            new Field('id', {csv_import_ignore: true}),
+//            new Field('id_short', {header: 'id breve', csv_import_ignore: true}),
             new Field('cognome', {header: 'cognome'}),
             new Field('nome', {header: 'nome'}),
-            new Field('scuola_id', {header: 'scuola_id'}),
-            new Field('scuola', {header: 'scuola'}),
-            new Field('zona_id', {header: 'zona_id'}),
-            new Field('zona', {header: 'zona'}),
-            new Field('variante', {header: 'variante'}),
-            new Field('risposte', {header: 'risposte', editable: false}),
+            new DateField('data_nascita', {header: 'data di nascita'}),
+//            new Field('scuola_id', {header: 'scuola_id'}),
+//            new Field('scuola', {header: 'scuola'}),
+//            new Field('zona_id', {header: 'zona_id'}),
+//            new Field('zona', {header: 'zona'}),
+            new Field('variante', {header: 'variante', alternativeNames: ['ntest']}),
+//            new Field('risposte', {header: 'risposte', editable: false}),
             new ChoiceAnswerField('r01', {header: '01'}),
             new ChoiceAnswerField('r02', {header: '02'}),
             new ChoiceAnswerField('r03', {header: '03'}),
@@ -43,6 +44,7 @@ export default class AmmissioneSenior extends Schema {
             ["scan_id","variante"].includes(f.name) || (f instanceof ChoiceAnswerField)
         )
         this.fields_sensitive_names = ["cognome", "nome"]
+        this.fields_to_be_ignored_on_inport = ["nome concorrente", "email", "genere", "sede ufficiale", "nome scuola", "tipo scuola", "classe 25/26", "sigla provincia scuola", "pise", "check", "città scuola"]
     }
 
     csv_header(): string[] {

@@ -37,7 +37,8 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [headerMode, setHeaderMode] = useState<'auto'|'yes'|'no'>('auto');
   const [columnMapping, setColumnMapping] = useState<number[]|null>(null);
 
-  const fieldList = columns.filter(field => field.editable)
+  const fieldList = columns
+    .filter(field => field.editable && !field.csv_import_ignore)
     .map(field => field.name).join(', ');
 
   return <div className="p-4 border rounded-lg shadow-md">
@@ -178,9 +179,11 @@ export default function CsvImport({schemaName, sheetId, done}:{
     // Create a mapping from all possible field names (including alternatives) to their preferred positions
     const fieldNameToIndex = new Map<string, number>();
     schema.fields.forEach((field, index) => {
-      field.getAllNames().forEach(name => {
-        fieldNameToIndex.set(name.toLowerCase(), index);
-      });
+      if (!field.csv_import_ignore) {
+        field.getAllNames().forEach(name => {
+          fieldNameToIndex.set(name.toLowerCase(), index);
+        });
+      }
     });
     schema.fields_to_be_ignored_on_inport.forEach(name => {
       const key = name.toLowerCase();
