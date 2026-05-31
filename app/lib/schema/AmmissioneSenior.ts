@@ -44,7 +44,7 @@ export default class AmmissioneSenior extends Schema {
             ["scan_id","variante"].includes(f.name) || (f instanceof ChoiceAnswerField)
         )
         this.fields_sensitive_names = ["surname", "name"]
-        this.fields_to_be_ignored_on_inport = ["name", "email", "gender", "official_office", "school_name", "school_type", "class 25/26", "province_code", "pise", "check", "school_city"]
+        this.fields_to_be_ignored_on_inport = ["nome concorrente", "genere", "email", "pise", "check", "tipo scuola", "nome scuola", "città scuola", "sigla provincia scuola","sede ufficiale", "stringa risposte", "classe 25/26"]
     }
 
     csv_header(): string[] {
