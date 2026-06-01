@@ -476,7 +476,7 @@ export class DateField extends Field {
         return false
     }
 
-    // Approssimazione delGiorgiola funzione errore (erf) per x >= 0
+    // Approssimazione della funzione errore (erf) per x >= 0
     private erf(x: number): number {
         const a1 = 0.254829592
         const a2 = -0.284496736
