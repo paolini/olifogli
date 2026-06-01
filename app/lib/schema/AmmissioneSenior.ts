@@ -1,4 +1,4 @@
-import { Field, ChoiceAnswerField, DateField } from './fields'
+import { Field, ChoiceAnswerField, DateField, VariantField } from './fields'
 import Schema from './Schema'
 import { Row, ScanResults } from '@/app/graphql/generated'
 import { Data } from '@/app/lib/models'
@@ -15,7 +15,7 @@ export default class AmmissioneSenior extends Schema {
 //            new Field('scuola', {header: 'scuola'}),
 //            new Field('zona_id', {header: 'zona_id'}),
 //            new Field('zona', {header: 'zona'}),
-            new Field('variante', {header: 'variante', alternativeNames: ['ntest']}),
+            new VariantField('variante', {header: 'variante', alternativeNames: ['ntest']}),
 //            new Field('risposte', {header: 'risposte', editable: false}),
             new ChoiceAnswerField('r01', {header: '01'}),
             new ChoiceAnswerField('r02', {header: '02'}),
@@ -37,7 +37,7 @@ export default class AmmissioneSenior extends Schema {
             new ChoiceAnswerField('r18', {header: '18'}),
             new ChoiceAnswerField('r19', {header: '19'}),
             new ChoiceAnswerField('r20', {header: '20'}),
-            new Field('punti', {header: 'punti', type: "number",editable: false, required: false, additionalCssStyle: 'thick-border-right'}),
+            // new Field('punti', {header: 'punti', type: "number",editable: false, required: false, additionalCssStyle: 'thick-border-right'}),
         ])
         this.name = "ammissione_senior"
         this.scan_fields = this.fields.filter(f => 
@@ -64,30 +64,32 @@ export default class AmmissioneSenior extends Schema {
     }
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
-        const data_dict = Object.fromEntries(rows
-            .map(row => [parseInt(row.data.id) % 1000, row] as [number,Row])
-            .filter(([short_id,_]) => !isNaN(short_id))
-            .map(([short_id, data]) => [short_id.toString().padStart(3, '0'), data] as [string,Row])
-        )
+        const data_dict: Record<string,Row> = {}
+        for (const row of rows) {
+            const id = parseInt(row.data.id, 10)
+            if (!isNaN(id)) {
+                data_dict[`${id}`] = row
+            }
+        }
 
         return Object.fromEntries(scan.map(scan => {
             const raw = scan.rawData || {}
-            const id_short = raw?.StudentCode || ''
-            const row = data_dict[id_short]
+            // remove initial zeroes
+            const id = `${parseInt(raw?.StudentCode || '',10) || ''}`
+            const row = data_dict[id]
             const data: Data = {...(row?.data || {})}
-            data.id_short = id_short
+            data.id = id
             data.variante = raw?.TestCode || ''
             this.fields.filter(field => field instanceof ChoiceAnswerField)
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
                 })
-            return [scan._id,{row, data: this.clean(data)}]
+            return [scan._id, {row, data: this.clean(data)}]
         }))
 
         function convert_answer(s: string) {
             return {
                 '': '-',
-                'X': '-',
                 'A': 'A',
                 'B': 'B',
                 'C': 'C',
@@ -99,7 +101,7 @@ export default class AmmissioneSenior extends Schema {
                 'ABCE': 'D',
                 'ABCD': 'E',
                 'ABCDE': '-',
-            }[s] ?? s
+            }[s] ?? 'X'
         }
     }
 }
