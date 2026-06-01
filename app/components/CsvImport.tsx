@@ -417,6 +417,7 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
             </tr>
             {
               header_row && <tr style={{background: '#ffeeba'}}>
+                  <td></td>
                     {header_row.map((value, colIndex) => 
                         <td key={colIndex}>
                           <b>{value}</b>   
