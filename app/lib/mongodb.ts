@@ -51,8 +51,11 @@ async function main(client: MongoClient) {
         { email: { $in: admin_emails } },
         { $set: { isAdmin: true } }
       );    
-    const adminExists = await users.findOne({ isAdmin: true })
-    if (!adminExists) {
+    const admins = await users.find({ isAdmin: true }).toArray()
+    if (admins.length > 0) {
+        console.log("Admin users found in the database:")
+        admins.forEach(u => console.log("* " + u.email))
+    } else {
         const userExists = await users.findOne()
         if (!userExists) console.log("No users found in the database. Login to create one.")
         else console.log("No admin users found in the database. Set ADMIN_EMAILS in environment variables to create one.")
