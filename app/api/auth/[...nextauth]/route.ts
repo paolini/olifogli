@@ -78,7 +78,7 @@ function providers() {
       clientSecret: OLIMANAGER_OAUTH_CLIENT_SECRET,
       authorization: {
         url: `${OLIMANAGER_URL}/o/authorize/`,
-        params: { scope: "openid email profile" },
+        params: { scope: "openid email profile api" },
       },
       token: `${OLIMANAGER_URL}/o/token/`,
       userinfo: `${OLIMANAGER_URL}/o/userinfo/`,
@@ -130,7 +130,7 @@ const authOptions: AuthOptions = {
     }) {
       // console.log("Session callback:", JSON.stringify({ session, token }, null, 2))
       if (token.user_id && session.user) session.user._id = token.user_id
-      // session.accessToken = token.accessToken // se servisse...
+      session.accessToken = token.accessToken // da non passare mai al client!
       return session
     },
 
@@ -202,4 +202,4 @@ const authOptions: AuthOptions = {
 }
 
 const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+export { handler as GET, handler as POST, authOptions }
