@@ -1,4 +1,10 @@
-## Getting Started
+Olifogli è un sistema web per l'introduzione dei risultati delle gare di matematica da parte dei docenti delle scuole partecipanti. Il sistema è progettato per essere modulare, scalabile e sicuro, con un'architettura basata su Next.js, GraphQL e MongoDB.
+I docenti e gli amministratori utilizzano le credenziali del sistema 
+olimanager https://olimpiadi-scientifiche.it per autenticarsi tramite OAuth2. Il sistema supporta la gestione di più workbook, fogli e righe di dati, con un sistema di permessi strutturato per garantire la sicurezza e l'integrità dei dati.
+
+## 
+
+## Local development
 
 Store your local configuration in the `.env` file. Adjust the followings lines to your needs:
 
@@ -51,3 +57,6 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Deployment
+
+Tested deployment with docker-compose-production.yml for a template configuration file.
