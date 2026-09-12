@@ -15,6 +15,7 @@ export default class Scuole extends Schema {
             new Field('Nome_distretto', {header: 'Nome distretto', alternativeNames: ['venue.name']}),
             new Field('Email_coordinatori', {header: 'Email coordinatori', alternativeNames: ['coordinatori']}),
         ])
+        this.fields_sensitive_names = ['Nome_referente', 'Cognome_referente']
     }
 
     row_to_sheet_data(row: Row) {

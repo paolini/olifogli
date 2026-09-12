@@ -3,21 +3,43 @@ import { ObjectId } from 'mongodb';
 import { GraphQLScalarType, Kind, ValueNode } from "graphql";
 import { OLIMANAGER_TOKEN } from '@/app/api/auth/[...nextauth]/route'
 import { getToken } from "next-auth/jwt"
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 export type Context = {
-  req: NextRequest
+  req?: NextRequest // Optional for WebSocket connections
   user_id?: ObjectId
   email?: string
+  pubsub?: RedisPubSub
+  isAdmin?: boolean
+  isSupervisor?: boolean
 }
 
-export async function get_context(req: NextRequest): Promise<Context> {
-  const token = await getToken({ req }) as OLIMANAGER_TOKEN
-  const user_id = token?.user_id
-  const email = token?.email ?? undefined
+export async function get_context({ req, user_id, email, pubsub, isAdmin, isSupervisor }: {
+  req?: NextRequest,
+  user_id?: ObjectId,
+  email?: string,
+  pubsub?: RedisPubSub
+  isAdmin?: boolean
+  isSupervisor?: boolean
+}): Promise<Context> {
+  let authenticated_user_id = user_id;
+  let authenticated_email = email;
+
+  if (req) {
+    const token = await getToken({ req }) as OLIMANAGER_TOKEN | undefined;
+    if (token?.user_id) {
+      authenticated_user_id = new ObjectId(token.user_id);
+      authenticated_email = token.email ?? undefined;
+    }
+  }
+
   return {
     req,
-    user_id: user_id ? new ObjectId(user_id) : undefined,
-    email
+    user_id: authenticated_user_id ? new ObjectId(authenticated_user_id) : undefined,
+    email: authenticated_email,
+    pubsub,
+    isAdmin,
+    isSupervisor,
   };
 }
 
@@ -32,8 +54,10 @@ export const Timestamp = new GraphQLScalarType({
   },
 
   serialize(value: unknown): string | null {
-    if (value instanceof Date) return value.toISOString(); // Converte in stringa ISO
-    return null; // Se non è una data valida, ritorna null
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'string') return value; // già stringa ISO (es. dopo Redis)
+    if (typeof value === 'number') return new Date(value).toISOString();
+    return null;
   },
 
   parseLiteral(ast: ValueNode): Date | null {
@@ -64,7 +88,8 @@ export const ObjectIdType = new GraphQLScalarType({
   },
 
   serialize(value: unknown): string {
-    if (value instanceof ObjectId) return value.toString(); // Converte in stringa
+    if (value instanceof ObjectId) return value.toString();
+    if (typeof value === 'string') return value; // già stringa (es. dopo Redis)
     throw new Error("ObjectId expected");
   },
 

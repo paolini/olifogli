@@ -1,10 +1,14 @@
 import { Context } from './types'
+import { ObjectId } from 'bson'
 import { ObjectIdType, Timestamp, DataType } from './types'
 import { GraphQLJSON } from "graphql-type-json"
 import { Resolvers } from './generated'
 import { getSheetsCollection } from '../lib/mongodb'
 
+import { pubsub, TOPICS } from '../lib/pubsub'
+import { redis, CURSOR_KEY } from '../lib/redis'
 import { get_authenticated_user } from './resolvers/utils'
+import { withFilter } from 'graphql-subscriptions'
 
 import users from './resolvers/users'
 import workbooks from './resolvers/workbooks'
@@ -46,10 +50,13 @@ import lockSheet from './resolvers/lockSheet'
 import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
+import moveCursor from './resolvers/moveCursor'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
 import olimanagerUpdateExtraFieldsResults from './resolvers/olimanagerUpdateExtraFields'
 import workbookExerciseReport from './resolvers/workbookExerciseReport'
 import createSheets from './resolvers/createSheets'
+import cryptSheets from './resolvers/cryptSheets'
+import decryptSheets from './resolvers/decryptSheets'
 
 // Definizione dei resolver
 export const resolvers: Resolvers = {
@@ -78,6 +85,11 @@ export const resolvers: Resolvers = {
     workbookTimeDistributionReport,
     workbookAgeDistributionReport,
     getSetting: settingsResolvers.Query.getSetting,
+    cursors: async (_: unknown, { sheetId }: { sheetId: ObjectId }) => {
+      const data = await redis.hgetall(CURSOR_KEY(sheetId.toString()))
+      if (!data) return []
+      return Object.values(data).map((v: string) => JSON.parse(v))
+    },
   },
 
   Workbook: {
@@ -137,7 +149,57 @@ export const resolvers: Resolvers = {
     olimanagerBulkUpdateResults: olimanagerBulkUpdateResults as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     olimanagerUpdateExtraFields: olimanagerUpdateExtraFieldsResults as any,
+    cryptSheets: cryptSheets, 
+    decryptSheets: decryptSheets,
     updateSetting: settingsResolvers.Mutation.updateSetting,
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore -- moveCursor not yet in generated types (run codegen to fix)
+    moveCursor: moveCursor,
+  },
+
+  Subscription: {
+    sheetUpdated: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SHEET_UPDATED(sheetId.toString())),
+    },
+    rowChanged: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROW_CHANGED(sheetId.toString())),
+    },
+    rowsDeleted: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROWS_DELETED(sheetId.toString())),
+    },
+    cursorChanged: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.CURSOR_CHANGED(sheetId.toString())),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
+    workbookUpdated: {
+      subscribe: withFilter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (_: any, args: any) => pubsub.asyncIterator(TOPICS.WORKBOOK_UPDATED((args.workbookId as ObjectId).toString())),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any, _variables: any, context: Context | undefined) => {
+          if (!context) return false
+          if (context.isAdmin || context.isSupervisor) return true
+          const email = context.email
+          if (!email) return false
+          const allowedEmails = payload._allowedEmails as string[] | undefined
+          if (!allowedEmails) return true  // payload senza filtro → passa (retrocompatibilità)
+          return allowedEmails.includes(email)
+        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ) as any,
+    },
+    scanJobUpdated: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SCAN_JOB_UPDATED(sheetId.toString())),
+    },
+    scanSheetJobUpdated: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SCAN_SHEET_JOB_UPDATED(sheetId.toString())),
+    },
   },
 
   Timestamp,

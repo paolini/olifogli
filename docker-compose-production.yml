@@ -36,6 +36,7 @@ x-common-env: &common-env
     OLI_GRAPHQL_ENDPOINT: "https://olimpiadi-scientifiche.it/graphql/"
     ADMIN_EMAILS: "emanuele.paolini@unipi.it"
     LOG_DIR: "/app/logs"
+    REDIS_URL: "redis://redis:6379"
 
 x-app-common: &app-common
   image: paolini/olifogli:latest
@@ -70,6 +71,24 @@ services:
       <<: *common-env
       NEXT_PUBLIC_APP_INSTANCE: "app3"
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - backend
+
+  ws-server:
+    image: paolini/olifogli:latest
+    command: ["node", "ws-server.js"]
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+
   nginx:
     image: nginx:latest
     restart: unless-stopped
@@ -82,6 +101,7 @@ services:
       - app1
       - app2
       - app3
+      - ws-server
     networks:
       - backend
 

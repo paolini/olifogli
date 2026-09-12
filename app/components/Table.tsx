@@ -13,7 +13,7 @@ import TableHeader from './TableHeader'
 import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
-import { gql } from '@apollo/client'
+import { gql, useMutation } from '@apollo/client'
 
 export type SortCriterium = {
     field: string|Field,
@@ -92,19 +92,25 @@ export const EMPTY_TABLE_STATE: TableState = {
     inputFocus: false,
 }
 
-export default function Table({edit, standardAnswers, rows, sheet, refresh, refreshLoading, polling, setPolling, lastCsvDownload, csvDownload, setCsvImport, adminEditMode}: {
+const MOVE_CURSOR_MUTATION = gql`
+  mutation MoveCursor($sheetId: ObjectId!, $lineKey: String, $fieldName: String, $tabId: String!) {
+    moveCursor(sheetId: $sheetId, lineKey: $lineKey, fieldName: $fieldName, tabId: $tabId)
+  }
+`
+
+export type OtherCursors = Record<string, { email: string, lineKey: string | null, fieldName: string | null }>
+
+export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownload, csvDownload, setCsvImport, adminEditMode, otherCursors, tabId}: {
     edit: boolean,
     standardAnswers: boolean,
     rows: Row[],
     sheet: Sheet,
-    refresh?: () => Promise<void>,
-    refreshLoading?: boolean,
-    polling: boolean,
-    setPolling: Dispatch<SetStateAction<boolean>>,
     lastCsvDownload?: Date,
     csvDownload: (rows: Row[], standardAnswers: boolean) => void,
     setCsvImport: Dispatch<SetStateAction<boolean>>,
     adminEditMode: boolean,
+    otherCursors?: OtherCursors,
+    tabId?: string,
 }) {
     const schema = schemas[sheet.schema]
     const profile = useProfile();
@@ -122,9 +128,33 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
     const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
     const [directInput, setDirectInput] = useState<boolean>(false);
 
+    const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
+    const moveCursorRef = useRef(moveCursorMutation)
+    moveCursorRef.current = moveCursorMutation
+    const moveCursorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
     useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
     useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
     useEffect(effectFunction, [rows, setTableState]);
+
+    // Invia la posizione del cursore al server (debounced)
+    useEffect(() => {
+        if (!tabId) return
+        if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current)
+        moveCursorTimerRef.current = setTimeout(() => {
+            moveCursorRef.current({ variables: { sheetId: sheet._id, lineKey: tableState.focusLineKey || null, fieldName: tableState.focusFieldName || null, tabId } })
+                .catch((err: unknown) => console.error('[moveCursor] error:', err))
+            moveCursorTimerRef.current = null
+        }, 300)
+        return () => { if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tableState.focusLineKey, tableState.focusFieldName])
+
+    // Al dismount, pulisce il cursore
+    useEffect(() => {
+        return () => { if (tabId) moveCursorRef.current({ variables: { sheetId: sheet._id, lineKey: null, fieldName: null, tabId } }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const columns: Column[] = useMemo(() => [
         ...(checkboxesState.showAdditionalColumns ? ADDITIONAL_COLUMNS : []),
@@ -144,14 +174,10 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
     useEffect(() => {
         // avvia un timer per il salvataggio automatico della riga in modifica
         const intervalId = setInterval(() => {
-            setTableState(prev => {
-                // console.log(`automatic save...`);
-                saveLineIfNeeded(focusLine)
-                return prev
-        })
+            saveLineIfNeeded(focusLine)
         }, 5000)
         return () => clearInterval(intervalId);
-    }, [focusLine,lastAlive,setTableState]);
+    }, [focusLine,lastAlive]);
 
 
     if (!schema) {
@@ -184,8 +210,6 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
                     setTableState={setTableState}
                     directInput={directInput} setDirectInput={setDirectInput}
                     showStandardAnswers={standardAnswers}
-                    refresh={refresh}
-                    refreshLoading={refreshLoading}
                     error={error}
                     dismissErrors={dismissErrors}
                     onCellClick={(column: Column, line: Line) => moveFocusTo(column, line)}
@@ -194,8 +218,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
                     setLineData={setLineData}
                     cellKeyDownHandler={cellKeyDownHandler}
                     adminEditMode={adminEditMode}
-                    polling={polling}
-                    setPolling={setPolling}
+                    otherCursors={otherCursors ?? {}}
                 />
             </table>
         </div>
@@ -239,7 +262,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
               // rimuovi dal dizionario per controllare alla fine cosa resta
               delete rowFromId[id]
               // confronta le Date convertendole in millisecondi
-              if (incomingRow.updatedOn == l.row.updatedOn) {
+              if (incomingRow.updatedOn === l.row.updatedOn) {
                 // la riga non è stata modificata
                 lines.push(l);
               } else {
@@ -885,11 +908,12 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
 
     async function saveRow(row: Row, data: Data) {
         // console.log(`saving row ${row._id} with data`, data)
+        const key = row._id.toString()
         
         function updateLineState(update: Partial<Line>) {
             setTableState(prev => {
                 // console.log(`updateLineState called in saveRow`)
-                const lines: Line[] = prev.lines.map(line => line.row === row 
+                const lines: Line[] = prev.lines.map(line => line.key === key
                     ? {...line, ...update}
                     : line)
                 return {...prev, lines }
@@ -900,6 +924,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
             _id: row._id,
             updatedOn: row.updatedOn || new Date(),
             data,
+            tabId: tabId,
         }})
         // console.log('saveRow result', res)
 
@@ -935,6 +960,7 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
         const res = await addRow({variables: {
             sheetId: sheet._id,
             data: data,
+            tabId: tabId,
         }})
 
         const row = res.data?.addRow
@@ -957,8 +983,8 @@ export default function Table({edit, standardAnswers, rows, sheet, refresh, refr
 } // fine Table component
 
 const _ = gql`
-  mutation addRow($sheetId: ObjectId!, $data: Data!) {
-    addRow(sheetId: $sheetId, data: $data) {
+  mutation addRow($sheetId: ObjectId!, $data: Data!, $tabId: String) {
+    addRow(sheetId: $sheetId, data: $data, tabId: $tabId) {
       _id
       error
       anomalies
@@ -972,8 +998,8 @@ const _ = gql`
 `
 
 const __ = gql`
-  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
-    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
+  mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!, $tabId: String) {
+    patchRow(_id: $_id, updatedOn: $updatedOn, data: $data, tabId: $tabId) {
       _id
       __typename
       createdOn

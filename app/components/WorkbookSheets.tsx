@@ -6,6 +6,7 @@ import { useGetSheetsQuery } from '../graphql/generated'
 import Loading from './Loading'
 import Error from './Error'
 import { gql } from 'graphql-tag'
+import { useWorkbookUpdated } from './useWorkbookUpdated'
 
 const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
@@ -36,8 +37,9 @@ export default function WorkbookSheets({ workbookId, profile }: {
 }) {
     const { loading, error, data, refetch } = useGetSheetsQuery({
         variables: { workbookId },
-        pollInterval: 10000 // millisecondi
     })
+
+    useWorkbookUpdated(workbookId, () => { refetch() })
 
     if (loading) return <Loading />
     if (error) return <Error error={error.message} />

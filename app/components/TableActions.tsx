@@ -16,7 +16,6 @@ type TableActionInput = {
   sheet: Sheet,
   edit: boolean,
   standardAnswers: boolean,
-  refresh?: () => Promise<void>,
   schema: Schema,
   checkboxesState: CheckboxesState, setCheckboxesState: Dispatch<SetStateAction<CheckboxesState>>,
   userHasSheetAdminPrivileges: boolean,
@@ -92,7 +91,7 @@ type TableActionContext = TableActionInput & {
   setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
-export function useTableActionsContext({profile, sheet, refresh, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload, setCsvImport, edit, standardAnswers}: TableActionInput): TableActionContext {
+export function useTableActionsContext({profile, sheet, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload, setCsvImport, edit, standardAnswers}: TableActionInput): TableActionContext {
   const [deleteRows, { loading: deleteLoading }] = useDeleteRowsMutation()
   const [patchRow, { loading: patchLoading }] = usePatchRowMutation()
 
@@ -107,7 +106,7 @@ export function useTableActionsContext({profile, sheet, refresh, schema, checkbo
   const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
 
   return {
-      profile, sheet, refresh, schema, 
+      profile, sheet, schema, 
       checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, 
       tableState, setTableState,
       mutations: {
@@ -207,10 +206,12 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
 
   const nLines = ctx.tableState.selectedLineKeys.size
 
+  /* disabilitato
   if (nLines > 1 && (!ctx.tableState.lastCsvDownload || (new Date().getTime() - ctx.tableState.lastCsvDownload.getTime()) > 60*1000)) {
     alert(`L'eliminazione delle righe è una operazione irreversibile. Prima di procedere, usa la funzione "scarica CSV" per archiviare i dati inseriti.`)
     return
   }
+  */
 
   const confirmed = confirm(
     `Sei sicuro di voler eliminare ${pluralize(nLines, 'riga', 'righe')}? L'operazione è irreversibile.`
@@ -223,22 +224,18 @@ async function handleDeleteSelectedRows(ctx: TableActionContext) {
     const ids = selected_lines
       .filter(line => line?.row?._id)
       .map(line => new ObjectId(line?.row?._id))
-    const lines_without_row = selected_lines.filter(line => !line?.row?._id)
+    const selectedLineKeys = ctx.tableState.selectedLineKeys
+    const currentFocusLineKey = ctx.tableState.focusLineKey
     await ctx.mutations.deleteRows({ variables: { ids } })
-    if (lines_without_row.length > 0) {
-        let focusLineKey = ctx.tableState.focusLineKey
-        if (focusLineKey && ctx.tableState.selectedLineKeys.has(focusLineKey)) {
-            focusLineKey = ''
-        }
-        // righe da mantenere: tutte quello con line.row (che verranno cancellate dalla mutazione)
-        // e quelle che non erano state selezionate
-        ctx.setTableState(prev => ({
-          ...prev,
-          lines: prev.lines.filter(line => line.row || !ctx.tableState.selectedLineKeys.has(line.key)),
-          focusLineKey: '',
-          focusColumnName: '',
-        }))
-    }
+    // Rimuovi subito tutte le righe selezionate dallo stato locale,
+    // senza aspettare la subscription WebSocket (che potrebbe non essere attiva)
+    ctx.setTableState(prev => ({
+      ...prev,
+      lines: prev.lines.filter(line => !selectedLineKeys.has(line.key)),
+      focusLineKey: selectedLineKeys.has(currentFocusLineKey) ? '' : prev.focusLineKey,
+      focusFieldName: selectedLineKeys.has(currentFocusLineKey) ? '' : prev.focusFieldName,
+      selectedLineKeys: new Set(),
+    }))
   } catch (error) {
     alert(`Errore durante l'eliminazione: ${error}`)
   }
@@ -391,7 +388,6 @@ async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
   }
   
   alert(msg)
-  if (ctx.refresh) await ctx.refresh()
 }
 
 async function handleOlimanagerUpdateScores(ctx: TableActionContext) {
@@ -404,8 +400,6 @@ async function handleOlimanagerUpdateScores(ctx: TableActionContext) {
 
   const res = await ctx.mutations.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
   alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
-  
-  if (ctx.refresh) await ctx.refresh()
 }
 
 async function handleOlimanagerUpdateExtraFields(ctx: TableActionContext) {
@@ -435,7 +429,6 @@ async function handleOlimanagerUpdateExtraFields(ctx: TableActionContext) {
   }
   
   alert(msg)
-  if (ctx.refresh) await ctx.refresh()
 }
 
 async function handleCsvDownload(ctx: TableActionContext) {
@@ -545,7 +538,6 @@ async function handleAnonymizeNames(ctx: TableActionContext) {
       })
     )
     alert(`Anonimizzati i nomi in ${rowsToAnonymize.length} righe.`)
-    if (ctx.refresh) await ctx.refresh()
   } catch (error) {
     alert(`Errore durante l'anonimizzazione: ${error}`)
   }

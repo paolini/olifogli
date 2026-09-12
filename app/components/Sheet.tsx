@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { gql, useQuery } from '@apollo/client'
+import { gql, useQuery, useSubscription } from '@apollo/client'
 import Papa from "papaparse"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ObjectId } from 'bson'
@@ -18,6 +18,7 @@ import SheetInfo from './SheetInfo'
 import ScansSheetExport from './ScansSheetExport'
 import GlobalMessage from './GlobalMessage'
 import GaraPrime from '../lib/schema/GaraPrime'
+import { getTabId } from '../lib/tabId'
 import SheetSelectionImport from './SheetSelectionImport'
 
 const _ = gql`
@@ -105,6 +106,56 @@ const GET_ROWS = gql`
   }
 `
 
+const ROW_CHANGED_SUBSCRIPTION = gql`
+  subscription OnRowChanged($sheetId: ObjectId!) {
+    rowChanged(sheetId: $sheetId) {
+      _id
+      error
+      anomalies
+      data
+      createdOn
+      createdBy
+      updatedOn
+      updatedBy
+      olimanager {
+        participantId
+        contestId
+        resultsUpdatedOn
+        error
+      }
+      sourceTabId
+    }
+  }
+`
+
+const ROWS_DELETED_SUBSCRIPTION = gql`
+  subscription OnRowsDeleted($sheetId: ObjectId!) {
+    rowsDeleted(sheetId: $sheetId)
+  }
+`
+
+const CURSOR_CHANGED_SUBSCRIPTION = gql`
+  subscription OnCursorChanged($sheetId: ObjectId!) {
+    cursorChanged(sheetId: $sheetId) {
+      email
+      lineKey
+      fieldName
+      tabId
+    }
+  }
+`
+
+const CURSORS_QUERY = gql`
+  query GetActiveCursors($sheetId: ObjectId!) {
+    cursors(sheetId: $sheetId) {
+      email
+      lineKey
+      fieldName
+      tabId
+    }
+  }
+`
+
 function SheetBody({sheet,profile}: {
     sheet: Sheet
     profile: User|null
@@ -120,18 +171,93 @@ function SheetBody({sheet,profile}: {
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
     const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin')) || false;
-    const [polling, setPolling ] = useState<boolean>(!(tab === 'table' && canEdit));
-    const { loading, error, data, refetch, stopPolling, startPolling } = useQuery<{rows:Row[]}>(GET_ROWS, {
+    const { loading, error, data, subscribeToMore, refetch } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
-        pollInterval: (polling || tab === 'info') ? 5000 : 0
     });
     const [lastCsvDownload, setLastCsvDownload] = useState<Date|undefined>(undefined);
     const [csvImport, setCsvImport] = useState<boolean>(false)
+    const tabId = getTabId()
+    const [otherCursors, setOtherCursors] = useState<Record<string, { email: string, lineKey: string | null, fieldName: string | null }>>({})
 
-    const refresh = async () => {
-        await refetch()
-    }
-    
+    // Carica i cursori attivi al montaggio del componente
+    useQuery<{ cursors: { email: string, lineKey: string | null, fieldName: string | null, tabId: string }[] }>(CURSORS_QUERY, {
+        variables: { sheetId: sheet._id },
+        onCompleted: (data) => {
+            const initial: Record<string, { email: string, lineKey: string | null, fieldName: string | null }> = {}
+            for (const c of data.cursors) {
+                if (c.tabId === tabId) continue
+                if (c.lineKey !== null || c.fieldName !== null) {
+                    initial[c.tabId] = { email: c.email, lineKey: c.lineKey, fieldName: c.fieldName }
+                }
+            }
+            setOtherCursors(prev => ({ ...initial, ...prev }))
+        },
+    })
+
+    useSubscription(CURSOR_CHANGED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onData: ({ data }) => {
+            const cursor = data.data?.cursorChanged
+            if (!cursor || cursor.tabId === tabId) return
+            setOtherCursors(prev => {
+                if (cursor.lineKey === null && cursor.fieldName === null) {
+                    const { [cursor.tabId]: _, ...rest } = prev
+                    return rest
+                }
+                return {
+                    ...prev,
+                    [cursor.tabId]: { email: cursor.email, lineKey: cursor.lineKey ?? null, fieldName: cursor.fieldName ?? null }
+                }
+            })
+        },
+        onError: (err) => {
+            console.error('[cursorChanged] subscription error:', err)
+        },
+    })
+
+    // Configura la sottoscrizione WebSocket
+    useEffect(() => {
+        const unsubscribe = subscribeToMore({
+            document: ROW_CHANGED_SUBSCRIPTION,
+            variables: { sheetId: sheet._id },
+            updateQuery: (prev, { subscriptionData }) => {
+                if (!subscriptionData.data) return prev;
+                const newRow = (subscriptionData.data as unknown as { rowChanged: Row }).rowChanged;
+                if (newRow.sourceTabId === tabId) return prev;
+                
+                const exists = prev.rows.find(r => r._id.toString() === newRow._id.toString());
+                if (exists) {
+                    return {
+                        ...prev,
+                        rows: prev.rows.map(r => r._id.toString() === newRow._id.toString() ? newRow : r)
+                    };
+                } else {
+                    return {
+                        ...prev,
+                        rows: [...prev.rows, newRow]
+                    };
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, [subscribeToMore, sheet._id]);
+
+    useSubscription(ROWS_DELETED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onData: ({ client, data }) => {
+            const deletedIds: string[] = (data.data?.rowsDeleted ?? []).map((id: unknown) => id!.toString())
+            if (deletedIds.length === 0) return
+            if (deletedIds.length > 20) {
+                refetch()
+            } else {
+                client.cache.updateQuery<{ rows: Row[] }>(
+                    { query: GET_ROWS, variables: { sheetId: sheet._id } },
+                    (prev) => prev ? { rows: prev.rows.filter(r => !deletedIds.includes(r._id.toString())) } : prev
+                )
+            }
+        },
+    })
+
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
     
@@ -192,15 +318,13 @@ function SheetBody({sheet,profile}: {
                 edit={canEdit} 
                 sheet={sheet} 
                 rows={data.rows} 
-                refresh={refresh} 
-                refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
                 standardAnswers={false}
                 adminEditMode={false}
+                otherCursors={otherCursors}
+                tabId={tabId}
             />
         }
         { tab === 'edit' &&
@@ -208,15 +332,13 @@ function SheetBody({sheet,profile}: {
                 edit={true} 
                 sheet={sheet} 
                 rows={data.rows} 
-                refresh={refresh} 
-                refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
                 standardAnswers={false}
                 adminEditMode={true}
+                otherCursors={otherCursors}
+                tabId={tabId}
             />
         }
         { tab === 'standardAnswers' && !csvImport &&
@@ -224,15 +346,13 @@ function SheetBody({sheet,profile}: {
                 edit={false} 
                 sheet={sheet} 
                 rows={data.rows} 
-                refresh={refresh} 
-                refreshLoading={loading}
-                polling={polling}
-                setPolling={setPolling}
                 lastCsvDownload={lastCsvDownload}
                 csvDownload={csvDownload}
                 setCsvImport={setCsvImport}
                 standardAnswers={true}
                 adminEditMode={false}
+                otherCursors={otherCursors}
+                tabId={tabId}
             />
         }
         { (tab === 'table' || tab === 'edit') && csvImport &&
@@ -291,4 +411,3 @@ function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dat
     link.click();
     document.body.removeChild(link);
 }
-

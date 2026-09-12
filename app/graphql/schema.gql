@@ -100,6 +100,7 @@ type Row {
   data: Data!
   olimanager: OlimanagerRowData
   selections: [RowSelection]
+  sourceTabId: String
 }
 
 type User {
@@ -253,6 +254,7 @@ type Query {
   workbookRankingReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState, limit: Int, selectionLabel: String, onlySelected: Boolean, orderBy: String, orderDirection: Int): [RankingReport!]!
   workbookAgeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [AgeDistributionReport!]!
   workbookTimeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [TimeDistributionReport!]!
+  cursors(sheetId: ObjectId!): [UserCursor!]!
   scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!
@@ -282,8 +284,8 @@ type Mutation {
   updateSheets(sheets: [UpdateSheetInput!]!): Boolean
   deleteSheets(ids: [ObjectId!]!): Boolean
 
-  addRow(sheetId: ObjectId!, data: Data!): Row
-  patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!): Row
+  addRow(sheetId: ObjectId!, data: Data!, tabId: String): Row
+  patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!, tabId: String): Row
   toggleSelection(rowId: ObjectId!, label: String!): Row
   deleteRow(_id: ObjectId!): ObjectId
   deleteRows(ids: [ObjectId!]!): Int
@@ -346,5 +348,27 @@ type Mutation {
     password: String!
   ): [OlimanagerUpdateExtraFieldsResult!]!
 
+  cryptSheets(sheetIds: [ObjectId!]!, password: String!): Boolean
+  decryptSheets(sheetIds: [ObjectId!]!, password: String!): Boolean
+
   updateSetting(key: String!, value: String!): Setting!
+
+  moveCursor(sheetId: ObjectId!, lineKey: String, fieldName: String, tabId: String!): Boolean
+}
+
+type UserCursor {
+  email: String!
+  lineKey: String
+  fieldName: String
+  tabId: String!
+}
+
+type Subscription {
+  sheetUpdated(sheetId: ObjectId!): Sheet!
+  rowChanged(sheetId: ObjectId!): Row!
+  rowsDeleted(sheetId: ObjectId!): [ObjectId!]!
+  cursorChanged(sheetId: ObjectId!): UserCursor!
+  workbookUpdated(workbookId: ObjectId!): Boolean!
+  scanJobUpdated(sheetId: ObjectId!): Boolean!
+  scanSheetJobUpdated(sheetId: ObjectId!): Boolean!
 }
