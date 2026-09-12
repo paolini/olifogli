@@ -87,6 +87,8 @@ export type Mutation = {
   addWorkbook?: Maybe<Workbook>;
   closeSheet?: Maybe<Scalars['Boolean']['output']>;
   createSheets: Scalars['String']['output'];
+  cryptSheets?: Maybe<Scalars['Boolean']['output']>;
+  decryptSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteAllRows?: Maybe<Scalars['Int']['output']>;
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteRows?: Maybe<Scalars['Int']['output']>;
@@ -95,6 +97,7 @@ export type Mutation = {
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
+  moveCursor?: Maybe<Scalars['Boolean']['output']>;
   olimanagerBulkUpdateResults: Scalars['Boolean']['output'];
   olimanagerCreateParticipant: Array<OlimanagerCreateResult>;
   olimanagerUpdateExtraFields: Array<OlimanagerUpdateExtraFieldsResult>;
@@ -115,6 +118,7 @@ export type Mutation = {
 export type MutationAddRowArgs = {
   data: Scalars['Data']['input'];
   sheetId: Scalars['ObjectId']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -152,6 +156,18 @@ export type MutationCreateSheetsArgs = {
   dry?: InputMaybe<Scalars['Boolean']['input']>;
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationCryptSheetsArgs = {
+  password: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
+};
+
+
+export type MutationDecryptSheetsArgs = {
+  password: Scalars['String']['input'];
+  sheetIds: Array<Scalars['ObjectId']['input']>;
 };
 
 
@@ -195,6 +211,14 @@ export type MutationLockSheetArgs = {
 };
 
 
+export type MutationMoveCursorArgs = {
+  fieldName?: InputMaybe<Scalars['String']['input']>;
+  lineKey?: InputMaybe<Scalars['String']['input']>;
+  sheetId: Scalars['ObjectId']['input'];
+  tabId: Scalars['String']['input'];
+};
+
+
 export type MutationOlimanagerBulkUpdateResultsArgs = {
   password: Scalars['String']['input'];
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
@@ -227,6 +251,7 @@ export type MutationOpenSheetArgs = {
 export type MutationPatchRowArgs = {
   _id: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
   updatedOn: Scalars['Timestamp']['input'];
 };
 
@@ -331,6 +356,7 @@ export type PermissionInput = {
 export type Query = {
   __typename?: 'Query';
   config?: Maybe<Config>;
+  cursors: Array<UserCursor>;
   getSetting?: Maybe<Setting>;
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
@@ -349,6 +375,11 @@ export type Query = {
   workbookRankingReport: Array<RankingReport>;
   workbookTimeDistributionReport: Array<TimeDistributionReport>;
   workbooks: Array<Workbook>;
+};
+
+
+export type QueryCursorsArgs = {
+  sheetId: Scalars['ObjectId']['input'];
 };
 
 
@@ -479,6 +510,7 @@ export type Row = {
   error?: Maybe<Scalars['String']['output']>;
   olimanager?: Maybe<OlimanagerRowData>;
   selections?: Maybe<Array<Maybe<RowSelection>>>;
+  sourceTabId?: Maybe<Scalars['String']['output']>;
   updatedBy: Scalars['String']['output'];
   updatedOn: Scalars['Timestamp']['output'];
 };
@@ -579,6 +611,52 @@ export enum SheetState {
   Open = 'open'
 }
 
+export type Subscription = {
+  __typename?: 'Subscription';
+  cursorChanged: UserCursor;
+  rowChanged: Row;
+  rowsDeleted: Array<Scalars['ObjectId']['output']>;
+  scanJobUpdated: Scalars['Boolean']['output'];
+  scanSheetJobUpdated: Scalars['Boolean']['output'];
+  sheetUpdated: Sheet;
+  workbookUpdated: Scalars['Boolean']['output'];
+};
+
+
+export type SubscriptionCursorChangedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionRowChangedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionRowsDeletedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionScanJobUpdatedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionScanSheetJobUpdatedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionSheetUpdatedArgs = {
+  sheetId: Scalars['ObjectId']['input'];
+};
+
+
+export type SubscriptionWorkbookUpdatedArgs = {
+  workbookId: Scalars['ObjectId']['input'];
+};
+
 export type TimeDistributionItem = {
   __typename?: 'TimeDistributionItem';
   closedSheets: Scalars['Int']['output'];
@@ -611,6 +689,14 @@ export type User = {
   isSupervisor?: Maybe<Scalars['Boolean']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   uid?: Maybe<Scalars['Int']['output']>;
+};
+
+export type UserCursor = {
+  __typename?: 'UserCursor';
+  email: Scalars['String']['output'];
+  fieldName?: Maybe<Scalars['String']['output']>;
+  lineKey?: Maybe<Scalars['String']['output']>;
+  tabId: Scalars['String']['output'];
 };
 
 export type Workbook = {
@@ -653,6 +739,13 @@ export type ScanJobsQueryVariables = Exact<{
 
 export type ScanJobsQuery = { __typename?: 'Query', scanJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, timestamp: Date, sheetId: ObjectId, ownerId: ObjectId, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
 
+export type OnScanJobUpdatedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnScanJobUpdatedSubscription = { __typename?: 'Subscription', scanJobUpdated: boolean };
+
 export type DeleteScanMutationVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
 }>;
@@ -674,6 +767,13 @@ export type ScanSheetJobsQueryVariables = Exact<{
 
 export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string }> };
 
+export type OnScanSheetJobUpdatedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnScanSheetJobUpdatedSubscription = { __typename?: 'Subscription', scanSheetJobUpdated: boolean };
+
 export type GetSheetQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
@@ -687,6 +787,34 @@ export type GetRowsQueryVariables = Exact<{
 
 
 export type GetRowsQuery = { __typename?: 'Query', rows: Array<{ __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null }> };
+
+export type OnRowChangedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnRowChangedSubscription = { __typename?: 'Subscription', rowChanged: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, sourceTabId?: string | null, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null } };
+
+export type OnRowsDeletedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnRowsDeletedSubscription = { __typename?: 'Subscription', rowsDeleted: Array<ObjectId> };
+
+export type OnCursorChangedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnCursorChangedSubscription = { __typename?: 'Subscription', cursorChanged: { __typename?: 'UserCursor', email: string, lineKey?: string | null, fieldName?: string | null, tabId: string } };
+
+export type GetActiveCursorsQueryVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type GetActiveCursorsQuery = { __typename?: 'Query', cursors: Array<{ __typename?: 'UserCursor', email: string, lineKey?: string | null, fieldName?: string | null, tabId: string }> };
 
 export type AddSheetMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -782,6 +910,22 @@ export type UpdateSheetPermissionsMutationVariables = Exact<{
 
 export type UpdateSheetPermissionsMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
 
+export type CryptSheetsMutationVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+
+export type CryptSheetsMutation = { __typename?: 'Mutation', cryptSheets?: boolean | null };
+
+export type DecryptSheetsMutationVariables = Exact<{
+  sheetIds: Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+
+export type DecryptSheetsMutation = { __typename?: 'Mutation', decryptSheets?: boolean | null };
+
 export type AddSheetsMutationVariables = Exact<{
   sheets: Array<SheetInput> | SheetInput;
 }>;
@@ -789,9 +933,20 @@ export type AddSheetsMutationVariables = Exact<{
 
 export type AddSheetsMutation = { __typename?: 'Mutation', addSheets?: boolean | null };
 
+export type MoveCursorMutationVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+  lineKey?: InputMaybe<Scalars['String']['input']>;
+  fieldName?: InputMaybe<Scalars['String']['input']>;
+  tabId: Scalars['String']['input'];
+}>;
+
+
+export type MoveCursorMutation = { __typename?: 'Mutation', moveCursor?: boolean | null };
+
 export type AddRowMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
   data: Scalars['Data']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -801,6 +956,7 @@ export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
   updatedOn: Scalars['Timestamp']['input'];
   data: Scalars['Data']['input'];
+  tabId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -950,6 +1106,13 @@ export type AddWorkbookMutationVariables = Exact<{
 
 
 export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
+
+export type WorkbookUpdatedSubscriptionVariables = Exact<{
+  workbookId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type WorkbookUpdatedSubscription = { __typename?: 'Subscription', workbookUpdated: boolean };
 
 export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
@@ -1178,6 +1341,34 @@ export type ScanJobsQueryHookResult = ReturnType<typeof useScanJobsQuery>;
 export type ScanJobsLazyQueryHookResult = ReturnType<typeof useScanJobsLazyQuery>;
 export type ScanJobsSuspenseQueryHookResult = ReturnType<typeof useScanJobsSuspenseQuery>;
 export type ScanJobsQueryResult = Apollo.QueryResult<ScanJobsQuery, ScanJobsQueryVariables>;
+export const OnScanJobUpdatedDocument = gql`
+    subscription OnScanJobUpdated($sheetId: ObjectId!) {
+  scanJobUpdated(sheetId: $sheetId)
+}
+    `;
+
+/**
+ * __useOnScanJobUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useOnScanJobUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnScanJobUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnScanJobUpdatedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnScanJobUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnScanJobUpdatedSubscription, OnScanJobUpdatedSubscriptionVariables> & ({ variables: OnScanJobUpdatedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnScanJobUpdatedSubscription, OnScanJobUpdatedSubscriptionVariables>(OnScanJobUpdatedDocument, options);
+      }
+export type OnScanJobUpdatedSubscriptionHookResult = ReturnType<typeof useOnScanJobUpdatedSubscription>;
+export type OnScanJobUpdatedSubscriptionResult = Apollo.SubscriptionResult<OnScanJobUpdatedSubscription>;
 export const DeleteScanDocument = gql`
     mutation DeleteScan($jobId: ObjectId!) {
   deleteScan(jobId: $jobId)
@@ -1297,6 +1488,34 @@ export type ScanSheetJobsQueryHookResult = ReturnType<typeof useScanSheetJobsQue
 export type ScanSheetJobsLazyQueryHookResult = ReturnType<typeof useScanSheetJobsLazyQuery>;
 export type ScanSheetJobsSuspenseQueryHookResult = ReturnType<typeof useScanSheetJobsSuspenseQuery>;
 export type ScanSheetJobsQueryResult = Apollo.QueryResult<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>;
+export const OnScanSheetJobUpdatedDocument = gql`
+    subscription OnScanSheetJobUpdated($sheetId: ObjectId!) {
+  scanSheetJobUpdated(sheetId: $sheetId)
+}
+    `;
+
+/**
+ * __useOnScanSheetJobUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useOnScanSheetJobUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnScanSheetJobUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnScanSheetJobUpdatedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnScanSheetJobUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnScanSheetJobUpdatedSubscription, OnScanSheetJobUpdatedSubscriptionVariables> & ({ variables: OnScanSheetJobUpdatedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnScanSheetJobUpdatedSubscription, OnScanSheetJobUpdatedSubscriptionVariables>(OnScanSheetJobUpdatedDocument, options);
+      }
+export type OnScanSheetJobUpdatedSubscriptionHookResult = ReturnType<typeof useOnScanSheetJobUpdatedSubscription>;
+export type OnScanSheetJobUpdatedSubscriptionResult = Apollo.SubscriptionResult<OnScanSheetJobUpdatedSubscription>;
 export const GetSheetDocument = gql`
     query getSheet($sheetId: ObjectId!) {
   sheet(sheetId: $sheetId) {
@@ -1415,6 +1634,154 @@ export type GetRowsQueryHookResult = ReturnType<typeof useGetRowsQuery>;
 export type GetRowsLazyQueryHookResult = ReturnType<typeof useGetRowsLazyQuery>;
 export type GetRowsSuspenseQueryHookResult = ReturnType<typeof useGetRowsSuspenseQuery>;
 export type GetRowsQueryResult = Apollo.QueryResult<GetRowsQuery, GetRowsQueryVariables>;
+export const OnRowChangedDocument = gql`
+    subscription OnRowChanged($sheetId: ObjectId!) {
+  rowChanged(sheetId: $sheetId) {
+    _id
+    error
+    anomalies
+    data
+    createdOn
+    createdBy
+    updatedOn
+    updatedBy
+    olimanager {
+      participantId
+      contestId
+      resultsUpdatedOn
+      error
+    }
+    sourceTabId
+  }
+}
+    `;
+
+/**
+ * __useOnRowChangedSubscription__
+ *
+ * To run a query within a React component, call `useOnRowChangedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnRowChangedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnRowChangedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnRowChangedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnRowChangedSubscription, OnRowChangedSubscriptionVariables> & ({ variables: OnRowChangedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnRowChangedSubscription, OnRowChangedSubscriptionVariables>(OnRowChangedDocument, options);
+      }
+export type OnRowChangedSubscriptionHookResult = ReturnType<typeof useOnRowChangedSubscription>;
+export type OnRowChangedSubscriptionResult = Apollo.SubscriptionResult<OnRowChangedSubscription>;
+export const OnRowsDeletedDocument = gql`
+    subscription OnRowsDeleted($sheetId: ObjectId!) {
+  rowsDeleted(sheetId: $sheetId)
+}
+    `;
+
+/**
+ * __useOnRowsDeletedSubscription__
+ *
+ * To run a query within a React component, call `useOnRowsDeletedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnRowsDeletedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnRowsDeletedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnRowsDeletedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnRowsDeletedSubscription, OnRowsDeletedSubscriptionVariables> & ({ variables: OnRowsDeletedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnRowsDeletedSubscription, OnRowsDeletedSubscriptionVariables>(OnRowsDeletedDocument, options);
+      }
+export type OnRowsDeletedSubscriptionHookResult = ReturnType<typeof useOnRowsDeletedSubscription>;
+export type OnRowsDeletedSubscriptionResult = Apollo.SubscriptionResult<OnRowsDeletedSubscription>;
+export const OnCursorChangedDocument = gql`
+    subscription OnCursorChanged($sheetId: ObjectId!) {
+  cursorChanged(sheetId: $sheetId) {
+    email
+    lineKey
+    fieldName
+    tabId
+  }
+}
+    `;
+
+/**
+ * __useOnCursorChangedSubscription__
+ *
+ * To run a query within a React component, call `useOnCursorChangedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnCursorChangedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnCursorChangedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnCursorChangedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnCursorChangedSubscription, OnCursorChangedSubscriptionVariables> & ({ variables: OnCursorChangedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnCursorChangedSubscription, OnCursorChangedSubscriptionVariables>(OnCursorChangedDocument, options);
+      }
+export type OnCursorChangedSubscriptionHookResult = ReturnType<typeof useOnCursorChangedSubscription>;
+export type OnCursorChangedSubscriptionResult = Apollo.SubscriptionResult<OnCursorChangedSubscription>;
+export const GetActiveCursorsDocument = gql`
+    query GetActiveCursors($sheetId: ObjectId!) {
+  cursors(sheetId: $sheetId) {
+    email
+    lineKey
+    fieldName
+    tabId
+  }
+}
+    `;
+
+/**
+ * __useGetActiveCursorsQuery__
+ *
+ * To run a query within a React component, call `useGetActiveCursorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetActiveCursorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetActiveCursorsQuery({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useGetActiveCursorsQuery(baseOptions: Apollo.QueryHookOptions<GetActiveCursorsQuery, GetActiveCursorsQueryVariables> & ({ variables: GetActiveCursorsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>(GetActiveCursorsDocument, options);
+      }
+export function useGetActiveCursorsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>(GetActiveCursorsDocument, options);
+        }
+export function useGetActiveCursorsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>(GetActiveCursorsDocument, options);
+        }
+export type GetActiveCursorsQueryHookResult = ReturnType<typeof useGetActiveCursorsQuery>;
+export type GetActiveCursorsLazyQueryHookResult = ReturnType<typeof useGetActiveCursorsLazyQuery>;
+export type GetActiveCursorsSuspenseQueryHookResult = ReturnType<typeof useGetActiveCursorsSuspenseQuery>;
+export type GetActiveCursorsQueryResult = Apollo.QueryResult<GetActiveCursorsQuery, GetActiveCursorsQueryVariables>;
 export const AddSheetDocument = gql`
     mutation AddSheet($name: String!, $schema: String!, $workbookId: ObjectId!, $permissions: [PermissionInput!]) {
   addSheet(
@@ -1810,6 +2177,70 @@ export function useUpdateSheetPermissionsMutation(baseOptions?: Apollo.MutationH
 export type UpdateSheetPermissionsMutationHookResult = ReturnType<typeof useUpdateSheetPermissionsMutation>;
 export type UpdateSheetPermissionsMutationResult = Apollo.MutationResult<UpdateSheetPermissionsMutation>;
 export type UpdateSheetPermissionsMutationOptions = Apollo.BaseMutationOptions<UpdateSheetPermissionsMutation, UpdateSheetPermissionsMutationVariables>;
+export const CryptSheetsDocument = gql`
+    mutation CryptSheets($sheetIds: [ObjectId!]!, $password: String!) {
+  cryptSheets(sheetIds: $sheetIds, password: $password)
+}
+    `;
+export type CryptSheetsMutationFn = Apollo.MutationFunction<CryptSheetsMutation, CryptSheetsMutationVariables>;
+
+/**
+ * __useCryptSheetsMutation__
+ *
+ * To run a mutation, you first call `useCryptSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCryptSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [cryptSheetsMutation, { data, loading, error }] = useCryptSheetsMutation({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useCryptSheetsMutation(baseOptions?: Apollo.MutationHookOptions<CryptSheetsMutation, CryptSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CryptSheetsMutation, CryptSheetsMutationVariables>(CryptSheetsDocument, options);
+      }
+export type CryptSheetsMutationHookResult = ReturnType<typeof useCryptSheetsMutation>;
+export type CryptSheetsMutationResult = Apollo.MutationResult<CryptSheetsMutation>;
+export type CryptSheetsMutationOptions = Apollo.BaseMutationOptions<CryptSheetsMutation, CryptSheetsMutationVariables>;
+export const DecryptSheetsDocument = gql`
+    mutation DecryptSheets($sheetIds: [ObjectId!]!, $password: String!) {
+  decryptSheets(sheetIds: $sheetIds, password: $password)
+}
+    `;
+export type DecryptSheetsMutationFn = Apollo.MutationFunction<DecryptSheetsMutation, DecryptSheetsMutationVariables>;
+
+/**
+ * __useDecryptSheetsMutation__
+ *
+ * To run a mutation, you first call `useDecryptSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDecryptSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [decryptSheetsMutation, { data, loading, error }] = useDecryptSheetsMutation({
+ *   variables: {
+ *      sheetIds: // value for 'sheetIds'
+ *      password: // value for 'password'
+ *   },
+ * });
+ */
+export function useDecryptSheetsMutation(baseOptions?: Apollo.MutationHookOptions<DecryptSheetsMutation, DecryptSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DecryptSheetsMutation, DecryptSheetsMutationVariables>(DecryptSheetsDocument, options);
+      }
+export type DecryptSheetsMutationHookResult = ReturnType<typeof useDecryptSheetsMutation>;
+export type DecryptSheetsMutationResult = Apollo.MutationResult<DecryptSheetsMutation>;
+export type DecryptSheetsMutationOptions = Apollo.BaseMutationOptions<DecryptSheetsMutation, DecryptSheetsMutationVariables>;
 export const AddSheetsDocument = gql`
     mutation AddSheets($sheets: [SheetInput!]!) {
   addSheets(sheets: $sheets)
@@ -1841,9 +2272,48 @@ export function useAddSheetsMutation(baseOptions?: Apollo.MutationHookOptions<Ad
 export type AddSheetsMutationHookResult = ReturnType<typeof useAddSheetsMutation>;
 export type AddSheetsMutationResult = Apollo.MutationResult<AddSheetsMutation>;
 export type AddSheetsMutationOptions = Apollo.BaseMutationOptions<AddSheetsMutation, AddSheetsMutationVariables>;
+export const MoveCursorDocument = gql`
+    mutation MoveCursor($sheetId: ObjectId!, $lineKey: String, $fieldName: String, $tabId: String!) {
+  moveCursor(
+    sheetId: $sheetId
+    lineKey: $lineKey
+    fieldName: $fieldName
+    tabId: $tabId
+  )
+}
+    `;
+export type MoveCursorMutationFn = Apollo.MutationFunction<MoveCursorMutation, MoveCursorMutationVariables>;
+
+/**
+ * __useMoveCursorMutation__
+ *
+ * To run a mutation, you first call `useMoveCursorMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useMoveCursorMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [moveCursorMutation, { data, loading, error }] = useMoveCursorMutation({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *      lineKey: // value for 'lineKey'
+ *      fieldName: // value for 'fieldName'
+ *      tabId: // value for 'tabId'
+ *   },
+ * });
+ */
+export function useMoveCursorMutation(baseOptions?: Apollo.MutationHookOptions<MoveCursorMutation, MoveCursorMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<MoveCursorMutation, MoveCursorMutationVariables>(MoveCursorDocument, options);
+      }
+export type MoveCursorMutationHookResult = ReturnType<typeof useMoveCursorMutation>;
+export type MoveCursorMutationResult = Apollo.MutationResult<MoveCursorMutation>;
+export type MoveCursorMutationOptions = Apollo.BaseMutationOptions<MoveCursorMutation, MoveCursorMutationVariables>;
 export const AddRowDocument = gql`
-    mutation addRow($sheetId: ObjectId!, $data: Data!) {
-  addRow(sheetId: $sheetId, data: $data) {
+    mutation addRow($sheetId: ObjectId!, $data: Data!, $tabId: String) {
+  addRow(sheetId: $sheetId, data: $data, tabId: $tabId) {
     _id
     error
     anomalies
@@ -1872,6 +2342,7 @@ export type AddRowMutationFn = Apollo.MutationFunction<AddRowMutation, AddRowMut
  *   variables: {
  *      sheetId: // value for 'sheetId'
  *      data: // value for 'data'
+ *      tabId: // value for 'tabId'
  *   },
  * });
  */
@@ -1883,8 +2354,8 @@ export type AddRowMutationHookResult = ReturnType<typeof useAddRowMutation>;
 export type AddRowMutationResult = Apollo.MutationResult<AddRowMutation>;
 export type AddRowMutationOptions = Apollo.BaseMutationOptions<AddRowMutation, AddRowMutationVariables>;
 export const PatchRowDocument = gql`
-    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!) {
-  patchRow(_id: $_id, updatedOn: $updatedOn, data: $data) {
+    mutation PatchRow($_id: ObjectId!, $updatedOn: Timestamp!, $data: Data!, $tabId: String) {
+  patchRow(_id: $_id, updatedOn: $updatedOn, data: $data, tabId: $tabId) {
     _id
     __typename
     createdOn
@@ -1915,6 +2386,7 @@ export type PatchRowMutationFn = Apollo.MutationFunction<PatchRowMutation, Patch
  *      _id: // value for '_id'
  *      updatedOn: // value for 'updatedOn'
  *      data: // value for 'data'
+ *      tabId: // value for 'tabId'
  *   },
  * });
  */
@@ -2751,6 +3223,34 @@ export function useAddWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<
 export type AddWorkbookMutationHookResult = ReturnType<typeof useAddWorkbookMutation>;
 export type AddWorkbookMutationResult = Apollo.MutationResult<AddWorkbookMutation>;
 export type AddWorkbookMutationOptions = Apollo.BaseMutationOptions<AddWorkbookMutation, AddWorkbookMutationVariables>;
+export const WorkbookUpdatedDocument = gql`
+    subscription WorkbookUpdated($workbookId: ObjectId!) {
+  workbookUpdated(workbookId: $workbookId)
+}
+    `;
+
+/**
+ * __useWorkbookUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useWorkbookUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWorkbookUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWorkbookUpdatedSubscription({
+ *   variables: {
+ *      workbookId: // value for 'workbookId'
+ *   },
+ * });
+ */
+export function useWorkbookUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<WorkbookUpdatedSubscription, WorkbookUpdatedSubscriptionVariables> & ({ variables: WorkbookUpdatedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<WorkbookUpdatedSubscription, WorkbookUpdatedSubscriptionVariables>(WorkbookUpdatedDocument, options);
+      }
+export type WorkbookUpdatedSubscriptionHookResult = ReturnType<typeof useWorkbookUpdatedSubscription>;
+export type WorkbookUpdatedSubscriptionResult = Apollo.SubscriptionResult<WorkbookUpdatedSubscription>;
 export const OlimanagerBulkUpdateResultsDocument = gql`
     mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
   olimanagerBulkUpdateResults(
@@ -3161,11 +3661,13 @@ export type ResolversTypes = {
   SheetInput: SheetInput;
   SheetState: SheetState;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  Subscription: ResolverTypeWrapper<{}>;
   TimeDistributionItem: ResolverTypeWrapper<TimeDistributionItem>;
   TimeDistributionReport: ResolverTypeWrapper<TimeDistributionReport>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   UpdateSheetInput: UpdateSheetInput;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
+  UserCursor: ResolverTypeWrapper<UserCursor>;
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
 };
 
@@ -3206,11 +3708,13 @@ export type ResolversParentTypes = {
   Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
   String: Scalars['String']['output'];
+  Subscription: {};
   TimeDistributionItem: TimeDistributionItem;
   TimeDistributionReport: TimeDistributionReport;
   Timestamp: Scalars['Timestamp']['output'];
   UpdateSheetInput: UpdateSheetInput;
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
+  UserCursor: UserCursor;
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
 };
 
@@ -3283,6 +3787,8 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addWorkbook?: Resolver<Maybe<ResolversTypes['Workbook']>, ParentType, ContextType, RequireFields<MutationAddWorkbookArgs, 'name'>>;
   closeSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCloseSheetArgs, '_id'>>;
   createSheets?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationCreateSheetsArgs, 'sheetId'>>;
+  cryptSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationCryptSheetsArgs, 'password' | 'sheetIds'>>;
+  decryptSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDecryptSheetsArgs, 'password' | 'sheetIds'>>;
   deleteAllRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteAllRowsArgs, 'sheetId'>>;
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteRowsArgs, 'ids'>>;
@@ -3291,6 +3797,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
+  moveCursor?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationMoveCursorArgs, 'sheetId' | 'tabId'>>;
   olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password'>>;
   olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['OlimanagerCreateResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password'>>;
   olimanagerUpdateExtraFields?: Resolver<Array<ResolversTypes['OlimanagerUpdateExtraFieldsResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerUpdateExtraFieldsArgs, 'password'>>;
@@ -3346,6 +3853,7 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   config?: Resolver<Maybe<ResolversTypes['Config']>, ParentType, ContextType>;
+  cursors?: Resolver<Array<ResolversTypes['UserCursor']>, ParentType, ContextType, RequireFields<QueryCursorsArgs, 'sheetId'>>;
   getSetting?: Resolver<Maybe<ResolversTypes['Setting']>, ParentType, ContextType, RequireFields<QueryGetSettingArgs, 'key'>>;
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
@@ -3407,6 +3915,7 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['OlimanagerRowData']>, ParentType, ContextType>;
   selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
+  sourceTabId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3493,6 +4002,16 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
+  cursorChanged?: SubscriptionResolver<ResolversTypes['UserCursor'], "cursorChanged", ParentType, ContextType, RequireFields<SubscriptionCursorChangedArgs, 'sheetId'>>;
+  rowChanged?: SubscriptionResolver<ResolversTypes['Row'], "rowChanged", ParentType, ContextType, RequireFields<SubscriptionRowChangedArgs, 'sheetId'>>;
+  rowsDeleted?: SubscriptionResolver<Array<ResolversTypes['ObjectId']>, "rowsDeleted", ParentType, ContextType, RequireFields<SubscriptionRowsDeletedArgs, 'sheetId'>>;
+  scanJobUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "scanJobUpdated", ParentType, ContextType, RequireFields<SubscriptionScanJobUpdatedArgs, 'sheetId'>>;
+  scanSheetJobUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "scanSheetJobUpdated", ParentType, ContextType, RequireFields<SubscriptionScanSheetJobUpdatedArgs, 'sheetId'>>;
+  sheetUpdated?: SubscriptionResolver<ResolversTypes['Sheet'], "sheetUpdated", ParentType, ContextType, RequireFields<SubscriptionSheetUpdatedArgs, 'sheetId'>>;
+  workbookUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "workbookUpdated", ParentType, ContextType, RequireFields<SubscriptionWorkbookUpdatedArgs, 'workbookId'>>;
+};
+
 export type TimeDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['TimeDistributionItem'] = ResolversParentTypes['TimeDistributionItem']> = {
   closedSheets?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   cumulativeClosedSheets?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -3521,6 +4040,14 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
   isSupervisor?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   uid?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type UserCursorResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserCursor'] = ResolversParentTypes['UserCursor']> = {
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  fieldName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lineKey?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  tabId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3562,10 +4089,12 @@ export type Resolvers<ContextType = any> = {
   ScoreDistributionItem?: ScoreDistributionItemResolvers<ContextType>;
   Setting?: SettingResolvers<ContextType>;
   Sheet?: SheetResolvers<ContextType>;
+  Subscription?: SubscriptionResolvers<ContextType>;
   TimeDistributionItem?: TimeDistributionItemResolvers<ContextType>;
   TimeDistributionReport?: TimeDistributionReportResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
   User?: UserResolvers<ContextType>;
+  UserCursor?: UserCursorResolvers<ContextType>;
   Workbook?: WorkbookResolvers<ContextType>;
 };
 

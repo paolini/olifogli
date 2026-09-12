@@ -37,7 +37,8 @@ export default function CsvImport({schemaName, sheetId, done}:{
   const [headerMode, setHeaderMode] = useState<'auto'|'yes'|'no'>('auto');
   const [columnMapping, setColumnMapping] = useState<number[]|null>(null);
 
-  const fieldList = columns.filter(field => field.editable)
+  const fieldList = columns
+    .filter(field => field.editable && !field.csv_import_ignore)
     .map(field => field.name).join(', ');
 
   return <div className="p-4 border rounded-lg shadow-md">
@@ -178,9 +179,11 @@ export default function CsvImport({schemaName, sheetId, done}:{
     // Create a mapping from all possible field names (including alternatives) to their preferred positions
     const fieldNameToIndex = new Map<string, number>();
     schema.fields.forEach((field, index) => {
-      field.getAllNames().forEach(name => {
-        fieldNameToIndex.set(name.toLowerCase(), index);
-      });
+      if (!field.csv_import_ignore) {
+        field.getAllNames().forEach(name => {
+          fieldNameToIndex.set(name.toLowerCase(), index);
+        });
+      }
     });
     schema.fields_to_be_ignored_on_inport.forEach(name => {
       const key = name.toLowerCase();
@@ -357,6 +360,7 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
     const [selectedLastCol, setSelectedLastCol] = useState<number>(-1)
     const [maxShownRows, setMaxShownRows] = useState<number>(20)
     const [removedLineCount, setRemovedLineCount] = useState<number>(0)
+    const [dateFormat, setDateFormat] = useState<'gg/mm/aa'|'mm/gg/aa'>('gg/mm/aa')
 
     if (data.length === 0) return <Error error="tabella vuota" />
     const first_row = data[0];
@@ -367,15 +371,22 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
         filled_column_headers[i] = ''
     }
 
-    const crop_data = data.slice(0, maxShownRows)
+    const header_row = hasHeaderRow ? data[0] : null
+    const crop_data = data
+      .slice(hasHeaderRow ? 1 : 0, maxShownRows)
+      .map(convertRow)
 
     return <>
         Numero righe: <b>{data.length}</b>
         { removedLineCount > 0 && <>
             <br />
             <span className="bg-alert p-1">Righe eliminate:</span> <b>{removedLineCount}</b>
-        </>}
-        <br/>
+        </>} {}
+        <select value={dateFormat} onChange={e => setDateFormat(e.target.value as 'gg/mm/aa'|'mm/gg/aa')}>
+            <option value="gg/mm/aa">Formato date: gg/mm/aa</option>
+            <option value="mm/gg/aa">Formato date: mm/gg/aa</option>
+        </select>
+        <br />
         <select className="my-1 p-1" disabled={action==="busy"} value={action} onChange={(e) => selectAction(e.target.value as Action)}>
             {Object.entries(actions).map(([key, value]) =>
                 (key !== 'restoreColumns' || columnMapping) ? <option key={key} value={key}>{value}</option> : null
@@ -404,17 +415,29 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
             {/* Riga vuota per separazione visiva */}
             <tr className="h-1">
             </tr>
-
-            {crop_data.map((row, index) => <tr key={index} style={hasHeaderRow && index === 0 ? {background: '#ffeeba'} : {}}>
+            {
+              header_row && <tr style={{background: '#ffeeba'}}>
+                  <td></td>
+                    {header_row.map((value, colIndex) => 
+                        <td key={colIndex}>
+                          <b>{value}</b>   
+                        </td>)
+                    }
+                </tr>
+            }
+            {crop_data.map((row, index) => <tr key={index}>
                     { action==="deleteRow" 
                         ? <td><button onClick={() => deleteRow(index)}>elimina</button></td>
                         : <td><i>{index+1}</i></td>
                     }
-                    {row.map((value, colIndex) => (
-                        <td key={colIndex} style={{backgroundColor: ((selectedFirstCol <= colIndex && colIndex <= selectedLastCol) ? "#f3ff7a":"")}}>
-                            {hasHeaderRow && index === 0 ? <b>{value}</b> : value}
-                        </td>
-                    ))}
+                    {row.map((value, colIndex) => {
+                      const isSelected = selectedFirstCol <= colIndex && colIndex <= selectedLastCol;
+                      const isWarning = columns[colIndex] && columns[colIndex].type === 'date' && value && !validDate(value);                      
+                      return (
+                        <td key={colIndex} style={{backgroundColor: (isSelected ? "#f3ff7a": isWarning ? "#ffb3b3" : "transparent")}}>
+                          {value}
+                        </td>)
+                    })}
                 </tr>
             )}
             {crop_data.length < data.length &&
@@ -473,12 +496,29 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
         setRemovedLineCount(removedLineCount + 1)
     }
 
+    // converte le date da formato gg/mm/aa a mm/gg/aa o viceversa, a seconda del formato selezionato
+    function convertRow(row: string[]): string[] {
+      return row.map((value, column_index) => {
+        if (columns[column_index] && columns[column_index].type === 'date' && value) {
+          if (dateFormat === 'mm/gg/aa') {
+              const m = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+              if (m) {
+                return `${m[2]}/${m[1]}/${m[3]}`
+              }
+          }
+        }
+        return value;
+      })
+    }
+
     async function doImport() {
         setAction('busy')
         // Scarta la prima riga se ci sono le intestazioni
         const hasHeader = hasHeaderRow;
         const rowsToImport = hasHeader ? data.slice(1) : data;
-        const res = await importRows(rowsToImport.map(row => row.slice(0,columns.length)))
+        const res = await importRows(rowsToImport
+          .map(convertRow)
+          .map(row => row.slice(0,columns.length)))
         if (res) {
           setAction('done')
           done()
@@ -499,6 +539,20 @@ function CsvTable({data, columns, setData, importRows, done, columnMapping, hasH
         });
         setData(restored);
         setAction('move');
+    }
+
+    function validDate(s: string): boolean {
+      // esempio: 1/2/2008
+      const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+      if (!m) return false;
+      const day = parseInt(m[1], 10);
+      const month = parseInt(m[2], 10);
+      const year = parseInt(m[3], 10);
+      if (month < 1 || month > 12) return false;
+      if (day < 1) return false;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      if (day > daysInMonth) return false;
+      return true;
     }
 
 }

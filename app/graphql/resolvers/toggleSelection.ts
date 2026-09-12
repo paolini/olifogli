@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { get_authenticated_user, check_user_can_edit_rows, check_user_can_view_sheet } from './utils'
+import { TOPICS } from '../../lib/pubsub'
 
 export default async function toggleSelection(_: unknown, {rowId, label}: {
     rowId: ObjectId,
@@ -58,6 +59,14 @@ export default async function toggleSelection(_: unknown, {rowId, label}: {
         )
         
         return await rowsCollection.findOne({ _id: rowId }, { session })
+    })
+
+    context.pubsub?.publish(TOPICS.ROW_CHANGED(sheet._id.toString()), {
+        rowChanged: updatedRow
+    })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
+        workbookUpdated: true,
+        _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
     })
 
     return updatedRow

@@ -11,7 +11,7 @@ const SCANS_DATA_DIR = process.env.SCANS_DATA_DIR || '';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string, filename: string }> }) {
     const {jobId, filename} = await params
-    const context = await get_context(req) 
+    const context = await get_context({ req }) 
     const user = await get_authenticated_user(context)
 
     if (!SCANS_DATA_DIR) {

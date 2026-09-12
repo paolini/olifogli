@@ -94,6 +94,7 @@ export type Row = {
         error: string
     }
     selections?: RowSelection[]
+    encrypted_data?: string // se presente, i dati originali della riga criptati
 }
 
 export type Workbook = {

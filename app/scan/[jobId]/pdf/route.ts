@@ -14,7 +14,7 @@ const SCANS_SPOOL_DIR = process.env.SCANS_SPOOL_DIR || '/app/scanspool';
 export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
     const { jobId } = await params
 
-    const context = await get_context(req)
+    const context = await get_context({ req })
     const user = await get_authenticated_user(context)
 
     const jobs = await getScanJobsCollection()

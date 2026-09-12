@@ -10,6 +10,7 @@ import type { RankingReport } from '../graphql/generated'
 import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
+import { useWorkbookUpdated } from './useWorkbookUpdated'
 import Papa from 'papaparse'
 import SheetsSortIcon from './SheetsSortIcon'
 import Button from './Button'
@@ -44,20 +45,20 @@ const _ = gql`
 export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }) {
     const [limit, setLimit] = useState<number>(100);
     const [sortRanking, setSortRanking] = useState<{field: string, direction: number} | null>(null);
-    const { loading: loadingSheets, error: sheetsError, data: sheetsData } = useGetSheetsQuery({
+    const { loading: loadingSheets, error: sheetsError, data: sheetsData, refetch: refetchSheets } = useGetSheetsQuery({
         variables: { workbookId },
-        pollInterval: 10000, // millisecondi
     });
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring({ schema: 'archimede_biennio' });
     const sheets = (sheetsData?.sheets || [])
         .filter(s => schemas[s.schema].extract_ranking);
     const filteredSheets = filterSheets(filterState, sheets);
 
-    const { loading, error, data } = useGetWorkbookRankingReportQuery({
+    const { loading, error, data, refetch: refetchRanking } = useGetWorkbookRankingReportQuery({
         variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null, limit, selectionLabel: null, onlySelected: false, orderBy: sortRanking?.field, orderDirection: sortRanking?.direction },
         skip: !filterState?.schemaFilter,
-        pollInterval: 10000, // millisecondi
     });
+    
+    useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchRanking() });
     
     const [getFullRanking] = useGetWorkbookRankingReportLazyQuery();
     

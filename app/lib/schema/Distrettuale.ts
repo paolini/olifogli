@@ -46,6 +46,8 @@ export default class Distrettuale extends Competition {
             new NumericField('id',{header: "codice studente", alternativeNames: ["ID concorrente"], hidden: true, required: false}),
             ...common_fields
         ])
+        this.fields_sensitive_names = ['surname', 'name']
+        this.fields_sensitive_dates = ['birthDate']
     }
 
     scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
@@ -346,8 +348,9 @@ export class ImportazionePartecipantiDistrettuale extends Schema {
 
             ...common_fields, // campi della gara distrettuale
         ])
-
         this.TargetSchema = new Distrettuale()
+        this.fields_sensitive_names = ['surname', 'name']
+        this.fields_sensitive_dates = ['birthDate']
     }
 
     // estrae da una riga di questo schema i dati 

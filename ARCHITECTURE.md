@@ -108,11 +108,13 @@ olifogli/
 - `Report`: Report aggregato con classifica e distribuzione punteggi
 - `ReportEntry`: Singola entry nella classifica con dati studente e punteggio
 - `ScoreDistribution`: Distribuzione dei punteggi per grafico
+- `UserCursor`: Posizione cursore di un utente `{ email, lineKey, fieldName, tabId }`
 
 #### Queries Principali
 - `workbooks`: Lista workbook utente
 - `sheets(workbookId)`: Fogli in un workbook
 - `rows(sheetId)`: Righe in un foglio
+- `cursors(sheetId)`: Cursori attivi sul foglio (da Redis hash, per stato iniziale)
 - `scanJobs(sheetId)`: Job di scansione per un foglio
 - `workbookReports(workbookId)`: Report aggregati per workbook (archimede_biennio e archimede_triennio)
 
@@ -124,10 +126,21 @@ olifogli/
 - `updateSheet(_id, ...)`: Aggiorna foglio
 - `addRow(sheetId, data)`: Aggiunge riga
 - `addRows(sheetId, columns, rows)`: Import bulk CSV
+- `patchRow(_id, data)`: Modifica riga
+- `deleteRow(_id)`: Cancella riga (pubblica `rowsDeleted` e `workbookUpdated`)
+- `deleteRows(ids)`: Cancella righe bulk (pubblica `rowsDeleted` per sheet e `workbookUpdated` per workbook)
+- `toggleSelection(_id)`: Seleziona/deseleziona riga
 - `closeSheet(_id)`: Chiude un foglio (solo admin del foglio)
 - `openSheet(_id)`: Riapre un foglio (solo admin del foglio)
 - `lockSheet(_id)`: Blocca un foglio (solo admin di sistema)
 - `unlockSheet(_id)`: Sblocca un foglio (solo admin di sistema)
+- `moveCursor(sheetId, lineKey, fieldName, tabId)`: Pubblica la posizione cursore e aggiorna hash Redis `ACTIVE_CURSORS.<sheetId>`
+
+#### Subscriptions
+- `rowChanged(sheetId)`: Notifica in tempo reale quando una riga viene modificata o aggiunta
+- `rowsDeleted(sheetId)`: Array di ObjectId delle righe cancellate
+- `cursorChanged(sheetId)`: Notifica la posizione cursore degli altri utenti connessi allo stesso foglio
+- `workbookUpdated(workbookId)`: Segnala che qualcosa nel workbook è cambiato; filtrato via `withFilter` per mostrare solo eventi da fogli a cui l'utente ha accesso
 
 ## Gestione Stato dei Fogli
 
@@ -176,7 +189,10 @@ I fogli possono trovarsi in tre stati:
 ### Security Features
 - Structured permissions system per sheet with roles (admin/editor/view)
 - Owner-based permissions
-- Admin override capabilities
+- Admin override capabilities (`isAdmin` flag su utente)
+- Supervisor override (`isSupervisor` flag): accesso in lettura a tutti i fogli
+- `isAdmin`/`isSupervisor` caricati una volta per connessione WS e cached in `ConnectionState`
+- Subscription `workbookUpdated` filtrata da `withFilter`: solo eventi per fogli accessibili all'utente
 
 ## Sistema di Processing OMR
 
@@ -193,7 +209,109 @@ Olifogli si integra con archiomr tramite:
 
 Per dettagli sul sistema OMR e generazione fogli, consultare la documentazione del progetto **archiomr**.
 
-## Componenti Frontend
+## Real-time (WebSocket)
+
+### Architettura
+Il sistema real-time si basa su **due processi Node separati** che comunicano tramite Redis:
+
+```
+Browser ──HTTP──► Next.js (port 3000)  ──publish──► Redis
+Browser ──WS───► ws-server (port 4001) ◄─subscribe── Redis
+```
+
+- **Next.js** gestisce le mutation GraphQL via HTTP (es. `moveCursor`, `patchRow`)
+- **ws-server** (`ws-server.ts`) gestisce le subscription GraphQL via WebSocket
+- **Redis** è il broker pub/sub che disaccoppia i due processi
+
+Questo design è necessario perché Next.js in produzione può girare su più istanze (`app1`, `app2`, `app3`) dietro nginx: Redis garantisce che le notifiche raggiungano tutti i client connessi indipendentemente da quale istanza ha processato la mutation.
+
+### WebSocket Server (`ws-server.ts`)
+- Porta: `WS_SERVER_PORT` (default `4001`)
+- Libreria: `graphql-ws` v6 con `useServer` da `graphql-ws/use/ws`
+- Carica lo stesso `schema.gql` e `resolvers.ts` del Next.js app
+- Espone anche un endpoint HTTP GraphQL su `/graphql` (stesso path)
+- Autenticazione opzionale via JWT in `connectionParams.sessionToken`
+- Avvio: `npm run ws-server` (script: `fuser -k 4001/tcp; tsx watch ws-server.ts`)
+- **Contesto per subscriber**: alla prima subscription di ogni connessione, il ws-server recupera da MongoDB `isAdmin` e `isSupervisor` dell'utente e li caches in memoria per la durata della connessione
+
+### Redis PubSub (`app/lib/pubsub.ts`)
+- Libreria: `graphql-redis-subscriptions` (`RedisPubSub`)
+- Usa due connessioni ioredis (publish + subscribe)
+- URL: variabile d'ambiente `REDIS_URL` (default `redis://127.0.0.1:6379`)
+- Topics:
+  - `ROW_CHANGED.<sheetId>` — riga aggiunta/modificata/cancellata
+  - `ROWS_DELETED.<sheetId>` — una o più righe cancellate (payload: array di ObjectId)
+  - `SHEET_UPDATED.<sheetId>` — metadati foglio aggiornati
+  - `CURSOR_CHANGED.<sheetId>` — posizione cursore utente
+  - `WORKBOOK_UPDATED.<workbookId>` — qualcosa nel workbook è cambiato (contatori, righe, fogli)
+
+### Redis KV (`app/lib/redis.ts`)
+- Client ioredis separato per operazioni chiave-valore (non pubsub)
+- Usato per mantenere lo stato attuale dei cursori per sheet: `ACTIVE_CURSORS.<sheetId>` (hash Redis: `tabId → JSON cursor`)
+- Aggiornato da `moveCursor` mutation; ripulito dal disconnect handler del ws-server
+
+### Cursor Presence (Presenza Cursore Collaborativa)
+Permette agli utenti che guardano lo stesso foglio di vedere la posizione del cursore degli altri in tempo reale.
+
+**Flusso (aggiornamento live):**
+1. L'utente sposta il cursore su una cella → `Table.tsx` invia `moveCursor` mutation (debounced 300ms)
+2. Il resolver pubblica `{ email, lineKey, fieldName, tabId }` su Redis topic `CURSOR_CHANGED.<sheetId>`
+3. Il resolver salva il cursore in `ACTIVE_CURSORS.<sheetId>` (hash Redis, chiave `tabId`); se `lineKey` è null lo rimuove
+4. Il ws-server riceve da Redis e invia `cursorChanged` a tutti i subscriber del foglio
+5. `Sheet.tsx` riceve l'evento, filtra il proprio cursore (via `tabId`) e aggiorna `otherCursors` state
+6. `TableRow.tsx` riceve `cursorUsers` e applica `box-shadow: inset` colorato sulla cella attiva
+
+**Stato iniziale (nuovi visitatori):**
+- Al montaggio di `Sheet.tsx` viene eseguita la query `cursors(sheetId)` che legge l'hash `ACTIVE_CURSORS.<sheetId>` da Redis
+- I cursori già presenti vengono mostrati immediatamente, senza aspettare movimenti
+
+**Disconnessione:**
+- L'`onDisconnect` del ws-server esegue `redis.hdel(ACTIVE_CURSORS.<sheetId>, tabId)` e pubblica un evento `cursorChanged` con `lineKey: null, fieldName: null` per rimuovere il cursore dai client connessi
+
+**Identificazione tab:** ogni tab browser genera un `tabId` univoco (`crypto.randomUUID()`) al montaggio, **solo in memoria** (non persistito in sessionStorage, per evitare che tab duplicate ereditino lo stesso ID). Questo consente di mostrare cursori anche tra tab dello stesso utente.
+
+**Colore cursore:** derivato dall'hash dell'email con funzione `emailToColor` → `hsl(hash % 360, 70%, 45%)`. Ogni utente ha sempre lo stesso colore.
+
+### Cancellazione Righe Real-time
+Quando una riga viene cancellata (`deleteRow` / `deleteRows`), il foglio si aggiorna in tempo reale:
+- `deleteRow`: pubblica `ROWS_DELETED.<sheetId>` con `[_id]`
+- `deleteRows`: raggruppa gli ID per sheetId e pubblica un singolo `ROWS_DELETED` per sheet (es. 100 righe → 1 publish per sheet, non 100)
+- `Sheet.tsx` si iscrive a `rowsDeleted` e, all'evento:
+  - se ≤ 20 ID: rimuove direttamente dalla cache Apollo (`client.cache.updateQuery`)
+  - se > 20 ID: esegue `refetch()` per efficienza
+
+### Workbook Real-time (`workbookUpdated`)
+Le pagine workbook (distribuzione, classifica, selezione, ecc.) si aggiornano in tempo reale senza polling.
+
+**Flusso:**
+1. Una mutation che modifica dati del workbook (`addRow`, `patchRow`, `toggleSelection`, `deleteRow`, `deleteRows`, `updateSheet`) pubblica `WORKBOOK_UPDATED.<workbookId>` su Redis, con `_allowedEmails: sheet.permissions[].email` nel payload
+2. Il ws-server riceve l'evento e applica `withFilter` prima di inviarlo al subscriber:
+   - utenti `isAdmin` o `isSupervisor` ricevono sempre l'evento
+   - altri utenti ricevono l'evento solo se la propria email è in `_allowedEmails`
+3. I componenti workbook (`WorkbookSheets`, `WorkbookDistribution`, `WorkbookRanking`, ecc.) usano l'hook condiviso `useWorkbookUpdated(workbookId, callback, delay=500ms)` che chiama `refetch()` con un debounce di 500ms per assorbire burst di eventi (es. import bulk)
+
+**Sicurezza:** gli utenti non-admin vedono solo eventi per fogli di cui hanno esplicitamente il permesso, grazie al `withFilter` sul resolver della subscription.
+
+### ⚠️ Gap in Produzione
+Il `docker-compose-production.yml` attuale **non include** il servizio `ws-server` né il servizio `redis`. Per abilitare le feature real-time in produzione è necessario aggiungere:
+```yaml
+redis:
+  image: redis:7-alpine
+  restart: unless-stopped
+  networks: [backend]
+
+ws-server:
+  image: paolini/olifogli:latest
+  command: ["node", "-e", "require('./ws-server.js')"]
+  environment:
+    <<: *common-env
+    REDIS_URL: "redis://redis:6379"
+    WS_SERVER_PORT: "4001"
+  networks: [backend]
+```
+E aggiungere `REDIS_URL: redis://redis:6379` alle app instances.
+
+
 
 ### Layout e Navigation
 - **RootLayout**: Setup globale con SessionProvider
@@ -258,6 +376,12 @@ OLIMANAGER_URL=https://olimpiadi-scientifiche.it
 
 # Admin
 ADMIN_EMAILS=emanuele.paolini@unipi.it
+
+# Redis PubSub (real-time subscriptions)
+REDIS_URL=redis://127.0.0.1:6379
+
+# ws-server
+WS_SERVER_PORT=4001
 
 # Worker Integration (directory condivise con archiomr)
 SCANS_SPOOL_DIR=/app/spool
@@ -398,6 +522,29 @@ Il sistema utilizza un **plugin Apollo Server** per logging automatico di tutte 
   ```
 
 **Rotazione**: File giornalieri automatici (`graphql-YYYY-MM-DD.log`)
+
+## Real-time updates (GraphQL Subscriptions)
+
+Planned integration: use `ApolloServer` for HTTP queries/mutations and `graphql-ws` (`useServer`) to serve GraphQL subscriptions on a WebSocket transport, with `graphql-redis-subscriptions` (`RedisPubSub`) as the production-ready PubSub backend.
+
+Architecture summary:
+- Single executable `schema` (created with `makeExecutableSchema`) is passed to both `ApolloServer` (HTTP handler) and `useServer` (WebSocket server). This ensures queries/mutations and subscriptions use the same types and resolvers.
+- `RedisPubSub` (configured with `ioredis` publisher/subscriber) is injected into resolver `context` so mutation resolvers call `pubsub.publish(ROW_CHANGED, { rowChanged: payload })` and subscription resolvers use `pubsub.asyncIterator(ROW_CHANGED)` or a per-sheet topic `ROW_CHANGED.<sheetId>`.
+- `useServer` is attached to the same underlying `http.Server` as the HTTP handler (or to a dedicated server) and uses `context` / `connectionParams` for authentication when clients open WS connections.
+- Client-side: `ApolloClient` uses `GraphQLWsLink` (from `graphql-ws`) for subscriptions and `HttpLink` for queries/mutations; `split` routes subscription operations to the WS link.
+
+Implementation notes:
+- Prefer topic namespaced by sheet (e.g. `ROW_CHANGED.<sheetId>`) to reduce server-side filtering and Redis message volume.
+- Add `ApolloServer` plugins to gracefully drain both the HTTP server and the WebSocket server on shutdown.
+- Ensure `graphql-ws` protocol version matches client (use `graphql-ws` on both client and server). For Next.js App Router, run a small custom Node process (or extend the Next server) to attach the `WebSocketServer` and `useServer` to the same `http.Server` that serves the app.
+- For development, a lightweight fallback (Redis → simple WebSocket broadcaster) can be used temporarily while integrating `useServer`.
+
+Operational checklist before enabling in production:
+- Run Redis in durable configuration and verify `publisher`/`subscriber` connections and retry strategy.
+- Load-test the subscription throughput (per-sheet topics preferred) and tune Redis and connection limits.
+- Add authentication/authorization to subscription context (verify that subscribers have permissions to the requested `sheetId`).
+- Remove or keep SSE fallback endpoints depending on deployment needs.
+
 
 **Volume Docker**: 
 ```yaml
