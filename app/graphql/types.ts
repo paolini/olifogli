@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'; // Usa i tipi corretti per Next.js 13+
 import { ObjectId } from 'mongodb';
 import { GraphQLScalarType, Kind, ValueNode } from "graphql";
-import { OLIMANAGER_TOKEN } from '@/app/api/auth/[...nextauth]/route'
+import type { OLIMANAGER_TOKEN } from '@/app/lib/auth'
 import { getToken } from "next-auth/jwt"
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 

@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const ts = require('typescript');
-const { buildSchema, graphql } = require('graphql');
+const { buildSchema, graphql, parse, subscribe } = require('graphql');
 const { encode } = require('next-auth/jwt');
 const SECRET = 'synthetic-test-secret-not-used-outside-tests';
 
@@ -202,4 +202,34 @@ test('checks authentication again when starting an operation', async () => {
   const result = await options.onSubscribe(ctx, 'test', { query: 'subscription { changed }' });
   assert.equal(result[0].message, 'Unauthorized');
   await assert.rejects(options.context(ctx), /Unauthorized/);
+});
+
+test('an authenticated subscription receives an authorized event', async () => {
+  const options = await loadWebSocketOptions();
+  const ctx = { connectionParams: {}, extra: { request: { headers: { cookie: await sessionCookie() } } } };
+  const query = 'subscription { changed }';
+  assert.notEqual(await options.onConnect(ctx), false);
+  assert.equal(await options.onSubscribe(ctx, 'authorized', { query }), undefined);
+  const context = await options.context(ctx);
+  const events = await subscribe({
+    schema: buildSchema('type Query { unused: Boolean } type Subscription { changed: String! }'),
+    document: parse(query),
+    contextValue: context,
+    rootValue: {
+      async *changed(_args, identity) {
+        assert.equal(identity.user_id.toString(), ADMIN_ID);
+        assert.equal(identity.isAdmin, true);
+        yield { changed: 'authorized event' };
+      },
+    },
+  });
+  assert.equal(typeof events[Symbol.asyncIterator], 'function');
+  try {
+    const event = await events.next();
+    assert.equal(event.done, false);
+    assert.equal(event.value.errors, undefined);
+    assert.equal(event.value.data.changed, 'authorized event');
+  } finally {
+    await events.return();
+  }
 });

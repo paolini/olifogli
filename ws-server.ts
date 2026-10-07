@@ -12,7 +12,9 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import jwt from 'jsonwebtoken'; // For WebSocket token decoding
+import { getToken } from 'next-auth/jwt';
+import { NextRequest } from 'next/server';
+import { GraphQLError, getOperationAST, parse } from 'graphql';
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
 import { pubsub, TOPICS } from './app/lib/pubsub.js'; // Import the singleton pubsub
 import { getUsersCollection, getScanJobsCollection, getScanSheetJobsCollection } from './app/lib/mongodb.js';
@@ -51,17 +53,30 @@ async function start() {
   }
   const connectionData = new Map<object, ConnectionState>()
 
+  // Use the same encrypted session cookie and secret as the NextAuth app.
+  // NextRequest parses cookies, including the numbered chunks used for large JWTs.
+  async function authenticate(cookie: string | undefined) {
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) return null;
+    const url = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const token = await getToken({
+      req: new NextRequest(url, { headers: { cookie: cookie ?? '' } }),
+      secret,
+      secureCookie: url.startsWith('https://'),
+    });
+    if (typeof token?.user_id !== 'string' || !/^[a-fA-F0-9]{24}$/.test(token.user_id)) return null;
+    return {
+      user_id: new ObjectId(token.user_id),
+      email: typeof token.email === 'string' ? token.email : undefined,
+    };
+  }
+
   const serverCleanup = useServer({
     schema,
     context: async (ctx) => {
-      const sessionToken = ctx.connectionParams?.sessionToken as string | undefined;
-      let user_id;
-      let email;
-      if (sessionToken) {
-        const decodedToken = jwt.decode(sessionToken) as { user_id?: string; email?: string } | null;
-        user_id = decodedToken?.user_id ? new ObjectId(decodedToken.user_id) : undefined;
-        email = decodedToken?.email;
-      }
+      const identity = await authenticate(ctx.extra.request.headers.cookie);
+      if (!identity) throw new GraphQLError('Unauthorized');
+      const { user_id, email } = identity;
       const conn = connectionData.get(ctx)
       if (conn) {
         conn.email = email
@@ -86,7 +101,8 @@ async function start() {
       }
       return get_context({ user_id, email, pubsub, isAdmin: conn?.isAdmin, isSupervisor: conn?.isSupervisor });
     },
-    onConnect: (ctx) => {
+    onConnect: async (ctx) => {
+      if (!await authenticate(ctx.extra.request.headers.cookie)) return false;
       const tabId = ctx.connectionParams?.tabId as string | undefined
       connectionData.set(ctx, { tabId, email: undefined, sheetIds: new Set() })
       console.log('[ws] client connected tabId=%s', tabId ?? '(none)');
@@ -104,7 +120,18 @@ async function start() {
       connectionData.delete(ctx)
       console.log('[ws] client disconnected tabId=%s', conn?.tabId ?? '(unknown)');
     },
-    onSubscribe: (ctx, id, payload) => {
+    onSubscribe: async (ctx, id, payload) => {
+      if (!await authenticate(ctx.extra.request.headers.cookie)) {
+        return [new GraphQLError('Unauthorized')];
+      }
+      try {
+        const operation = getOperationAST(parse(payload.query), payload.operationName);
+        if (operation?.operation !== 'subscription') {
+          return [new GraphQLError('Only subscription operations are allowed over WebSocket')];
+        }
+      } catch {
+        return [new GraphQLError('Invalid GraphQL document')];
+      }
       const conn = connectionData.get(ctx)
       if (conn) {
         const sheetId = payload.variables?.sheetId

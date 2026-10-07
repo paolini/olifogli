@@ -1,6 +1,6 @@
 // app/lib/olimanager-graphql.ts
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/app/lib/auth"
 
 // Declare module augmentation for next-auth to add accessToken to Session
 declare module "next-auth" {
@@ -12,7 +12,7 @@ const OLIMANAGER_GRAPHQL_URL = `${process.env.OLIMANAGER_GRAPHQL_ENDPOINT}`
 
 interface GraphQLResponse<T> {
   data?: T
-  errors?: { message: string; extensions?: any }[]
+  errors?: { message: string; extensions?: Record<string, unknown> }[]
 }
 
 export class OlimanagerGraphQLError extends Error {
@@ -27,7 +27,7 @@ export class OlimanagerGraphQLError extends Error {
   }
 }
 
-export async function queryOlimanager<T = any>(
+export async function queryOlimanager<T = unknown>(
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
@@ -50,7 +50,7 @@ export async function queryOlimanager<T = any>(
   })
 
   const rawBody = await res.text()
-  let parsedBody: any = null
+  let parsedBody: GraphQLResponse<T> | null = null
   try {
     parsedBody = rawBody ? JSON.parse(rawBody) : null
   } catch {}
@@ -61,7 +61,11 @@ export async function queryOlimanager<T = any>(
   }
 
   if (parsedBody?.errors) {
-    throw new Error(parsedBody.errors.map((e: any) => e.message).join(", "))
+    throw new Error(parsedBody.errors.map((e) => e.message).join(", "))
+  }
+
+  if (!parsedBody || parsedBody.data === undefined) {
+    throw new Error("Risposta GraphQL di Olimanager priva di dati")
   }
 
   return parsedBody.data
