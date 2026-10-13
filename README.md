@@ -10,6 +10,7 @@ Store your local configuration in the `.env` file. Adjust the followings lines t
 
 ```
 MONGODB_URI=mongodb://127.0.0.1:27017/olifogli?directConnection=true
+REDIS_URL=redis://127.0.0.1:6379
 NEXTAUTH_SECRET=<random_string>
 NEXTAUTH_URL=http://localhost:3000
 OLIMANAGER_OAUTH_CLIENT_ID=...
@@ -20,26 +21,63 @@ SCANS_SPOOL_DIR=<path_to_worker_spool_directory>
 SCANS_DATA_DIR=<path_to_worker_data_directory>
 ```
 
-Then run the development server:
+### Avvio locale
 
-```bash
-npm ci
-npm run dev
-```
+Servono quattro processi: MongoDB (porta 27017), Redis (porta 6379),
+Next.js (porta 3000) e il server WebSocket (porta 4001).
+`npm run dev` avvia soltanto Next.js.
 
-Or
-```
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Con Docker e Docker Compose installati, avvia MongoDB e Redis dalla radice
+   del repository usando il file `docker-compose.yml` di esempio:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   ```bash
+   docker compose up -d --wait db redis
+   docker compose exec redis redis-cli ping
+   ```
+
+   Redis deve rispondere `PONG`. Il Compose configura MongoDB come replica
+   set, necessario per i change stream del server WebSocket, e conserva i dati
+   MongoDB nella directory `database/`. Entrambi i servizi sono esposti solo
+   sull'interfaccia locale. Se hai già MongoDB e Redis disponibili, puoi usare
+   quelli configurando `MONGODB_URI` e `REDIS_URL` in `.env`; MongoDB deve comunque
+   essere un replica set. Le porte 27017 e 6379 devono essere libere per avviare
+   i servizi dell'esempio.
+
+2. Dalla radice di Olifogli, installa le dipendenze al primo avvio o dopo un
+   aggiornamento del lockfile:
+
+   ```bash
+   npm ci
+   ```
+
+3. Avvia Next.js in un terminale, dalla radice di Olifogli:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Avvia il server WebSocket in un secondo terminale, sempre dalla radice di
+   Olifogli, e lascia entrambi i terminali aperti:
+
+   ```bash
+   npm run ws-server
+   ```
+
+5. Apri [http://localhost:3000](http://localhost:3000) ed effettua il login.
+   Usa `localhost` anche nell'URL del browser: il client locale si collega a
+   `ws://localhost:4001/graphql`. Se Next.js usa un'altra porta, adegua
+   `NEXTAUTH_URL` e l'URI di callback OAuth; il WebSocket resta sulla porta 4001.
+
+In caso di `Socket closed`, controlla il terminale WebSocket: deve mostrare
+`GraphQL HTTP+WS server listening on http://localhost:4001/graphql` e non
+segnalare errori successivi di MongoDB o Redis. Verifica inoltre che il login
+sia valido e che i due server ricevano la stessa configurazione NextAuth.
 
 Il server WebSocket deve ricevere gli stessi `NEXTAUTH_SECRET` e `NEXTAUTH_URL`
-dell'app Next.js. Autentica le connessioni tramite il cookie di sessione NextAuth
+dell'app Next.js. Avviarlo dalla radice del progetto con `npm run ws-server` in
+un terminale separato: carica `.env` senza sovrascrivere le variabili già presenti
+nell'ambiente e si arresta con un errore esplicito se manca `NEXTAUTH_SECRET`.
+Autentica le connessioni tramite il cookie di sessione NextAuth
 inviato dal browser (anche nella variante HTTPS `__Secure-` e suddiviso in chunk).
 I token nei parametri di connessione non vengono usati per autenticare l'utente.
 Il trasporto WebSocket accetta solo subscription; query e mutation passano via

@@ -31,6 +31,7 @@ async function loadWebSocketOptions(env = {}) {
   const httpServer = { listen() { return { close() {} }; } };
   const express = () => ({ use() {} });
   const stubs = {
+    'dotenv/config': {}, // Keep tests isolated from local credentials.
     http: { createServer: () => httpServer },
     ws: { WebSocketServer: class {} },
     'graphql-ws/use/ws': {
@@ -162,7 +163,7 @@ test('rejects tampered encrypted session cookie', async () => {
 });
 
 test('fails closed when NEXTAUTH_SECRET is missing', async () => {
-  assert.equal((await probe({}, await sessionCookie(), { NEXTAUTH_SECRET: '' })).rejected, true);
+  await assert.rejects(loadWebSocketOptions({ NEXTAUTH_SECRET: '' }), /Missing environment variable: NEXTAUTH_SECRET/);
 });
 
 test('connection parameters cannot override the cookie identity', async () => {

@@ -3,6 +3,7 @@
   Simple standalone server that exposes HTTP GraphQL endpoint and a WebSocket server
   using graphql-ws `useServer`. It loads the same schema/resolvers as the Next app.
 */
+import 'dotenv/config';
 import http from 'http';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/use/ws'; // <-- Cambiato da 'graphql-ws' a 'graphql-ws/use/ws'
@@ -27,6 +28,9 @@ import { get_context } from './app/graphql/types.js';
 const PORT = process.env.WS_SERVER_PORT || 4001;
 
 async function start() {
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('Missing environment variable: NEXTAUTH_SECRET. Configure the same secret as Next.js in .env or the server environment.');
+  }
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
   const app = express();
