@@ -28,7 +28,7 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
     otherCursors: OtherCursors,
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
-    const validationContext = schema.validationContext(sheet.commonData, sheet.workbook.commonData)
+    const validationContext = schema.displayValidationContext(sheet.workbook.commonData ?? {})
 
     return <tbody>
         {tableState.lines.map(line => {

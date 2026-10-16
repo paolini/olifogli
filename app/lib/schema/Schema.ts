@@ -84,7 +84,8 @@ export default class Schema {
         return cleaned
     }
 
-    validationContext(sheetCommonData: Data, workbookCommonData: Data): ValidationContext {
+    // Browser-only checks need no correction keys or server configuration.
+    displayValidationContext(workbookCommonData: Data): ValidationContext {
         const context_year = workbookCommonData['contest_year'] || ''
         const context: ValidationContext = {
             absent: (data: Data) => false,
@@ -104,10 +105,14 @@ export default class Schema {
                 }
             }
         }
+        return context
+    }
+
+    validationContext(sheetCommonData: Data, workbookCommonData: Data): ValidationContext {
+        const context = this.displayValidationContext(workbookCommonData)
         const primary_contest_field_name = `olimanager_${this.name}_contest_id`
         const secondary_contest_field_name = `olimanager_contest_id`
         context.contest_id = parseInt(workbookCommonData[primary_contest_field_name] || workbookCommonData[secondary_contest_field_name] || '', 10)
-
         return context
     }
 

@@ -13,6 +13,7 @@ import { withFilter } from 'graphql-subscriptions'
 import users from './resolvers/users'
 import workbooks from './resolvers/workbooks'
 import workbook from './resolvers/workbook'
+import workbookCommonData from './resolvers/workbookCommonData'
 import sheets from './resolvers/sheets'
 import sheet from './resolvers/sheet'
 import rows from './resolvers/rows'
@@ -93,6 +94,7 @@ export const resolvers: Resolvers = {
   },
 
   Workbook: {
+    commonData: workbookCommonData,
     sheetsCount: async (parent, _, context: Context) => {
       const user = await get_authenticated_user(context)
       if (!user) throw new Error("Not authenticated")

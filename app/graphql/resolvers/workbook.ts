@@ -16,9 +16,11 @@ export default async function workbook(_: unknown, { workbookId }: QueryWorkbook
     if (!workbook) return null;
     // se è admin o supervisore restituisce tutte le informazioni
     if (user.isAdmin || user.isSupervisor) return workbook;
-    // altrimenti limita i dati al nome 
+    // Gli altri utenti ricevono i metadati pubblici; il resolver del campo
+    // Workbook.commonData applica la lista dei campi consentiti.
     return {
         _id: workbook._id,
         name: workbook.name,
+        commonData: workbook.commonData,
     } as WithId<Workbook>;
 }

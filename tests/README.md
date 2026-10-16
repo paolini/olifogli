@@ -32,3 +32,14 @@ controllo e codifiche annidate. MongoDB e la verifica JWT della callback sono
 sostituiti da dipendenze isolate: questi test verificano i redirect e i cookie,
 non il protocollo OAuth completo. La callback personalizzata è mantenuta perché
 è ancora referenziata da `OlimanagerLoginButton`, usato nella pagina `/login`.
+
+`workbook-common-data.test.cjs` esegue query GraphQL sui resolver reali di
+`workbook`, `workbooks`, `sheet` e `sheets`, con database e autenticazione isolati.
+Verifica che `Workbook.commonData` esponga ai docenti soltanto i campi della
+costante `TEACHER_READABLE_WORKBOOK_FIELDS` (`contest_year` e
+`selection_workbook_id`), anche attraverso alias e frammenti. Amministratori e
+supervisori mantengono tutti i campi; `Sheet.commonData` rimane invariato.
+Il test del contesto di visualizzazione verifica che Archimede possa essere
+visualizzato senza chiavi di correzione, mantenendo rigorosa la validazione
+server. Questa protezione riguarda la configurazione del workbook: le risposte
+corrette già incluse nei risultati delle righe restano visibili come previsto.
