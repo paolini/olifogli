@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { gql, useQuery, useSubscription } from '@apollo/client'
-import Papa from "papaparse"
+import { unparseCsv } from '../lib/csv'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ObjectId } from 'bson'
 
@@ -396,7 +396,7 @@ function SheetBody({sheet,profile}: {
 }
 
 function downloadCSVWithPapa(fields: string[], rows: string[][], filename = "dati.csv") {
-    const csv = Papa.unparse({
+    const csv = unparseCsv({
         fields: fields,
         data: rows
     }); // converte array di oggetti o array di array

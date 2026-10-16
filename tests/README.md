@@ -43,3 +43,13 @@ Il test del contesto di visualizzazione verifica che Archimede possa essere
 visualizzato senza chiavi di correzione, mantenendo rigorosa la validazione
 server. Questa protezione riguarda la configurazione del workbook: le risposte
 corrette già incluse nei risultati delle righe restano visibili come previsto.
+
+`csv-export.test.cjs` verifica la serializzazione condivisa `unparseCsv`, usata
+per gli export delle righe del foglio (anche selezionate o depermutate),
+dell'elenco dei fogli e della classifica. I valori testuali e le intestazioni
+che iniziano con `=`, `+`, `-`, `@`, tab o ritorni a capo ricevono un apostrofo
+tramite `escapeFormulae`; il controllo copre anche formule su più righe.
+I test rileggono il CSV con Papa Parse per verificare separatori, virgolette,
+Unicode, celle vuote e numeri. L'apostrofo aggiunto ai testi sospetti è parte
+del CSV e può essere visibile quando il file viene letto da altri programmi.
+Non viene eseguito un collaudo automatico in Excel o LibreOffice.

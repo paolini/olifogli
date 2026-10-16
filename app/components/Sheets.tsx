@@ -17,7 +17,7 @@ import MDEditor from '@uiw/react-md-editor';
 import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
-import Papa from 'papaparse';
+import { unparseCsv } from '../lib/csv'
 import SheetFormNew from './SheetFormNew';
 
 const DELETE_WORKBOOK = gql`
@@ -167,7 +167,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
             'stato': sheet.locked ? 'finalizzato' : sheet.closed ? 'chiuso' : 'aperto'
         }));
 
-        const csv = Papa.unparse(data);
+        const csv = unparseCsv(data);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);

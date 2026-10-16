@@ -11,7 +11,7 @@ import { schemas } from '../lib/schema'
 import SheetsFilter, { filterSheets } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
-import Papa from 'papaparse'
+import { unparseCsv } from '../lib/csv'
 import SheetsSortIcon from './SheetsSortIcon'
 import Button from './Button'
 import { score_to_color_style } from '../lib/schema/fields'
@@ -116,7 +116,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
                     'Anno': entry.classYear,
                     'Sezione': entry.classSection
                 }));
-                const csv = Papa.unparse(csvData);
+                const csv = unparseCsv(csvData);
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
