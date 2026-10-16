@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serialize } from "cookie";
-import {myAbsoluteUrl} from "../util";
+import {safeRedirectUrl} from "../util";
 
 export async function GET(req: NextRequest) {
     // clear the auth_token cookie
@@ -11,8 +11,7 @@ export async function GET(req: NextRequest) {
         path: "/",
     })
     const nextParam = req.nextUrl.searchParams.get("next");
-    const redirectTo = nextParam?.startsWith('/') ? nextParam : "/";
-    const redirectUrl = myAbsoluteUrl(req, redirectTo);
+    const redirectUrl = safeRedirectUrl(req, nextParam);
     const response = NextResponse.redirect(redirectUrl);
     response.headers.set("Set-Cookie", cookie);
     return response;

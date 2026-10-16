@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 import {getDb} from "@/app/lib/mongodb"
 import {User} from "@/app/lib/models";
-import {myAbsoluteUrl} from "../util";
+import {safeRedirectUrl} from "../util";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -33,9 +33,8 @@ export async function GET(req: NextRequest) {
   });
 
   const nextParam = url.searchParams.get("next");
-  const redirectTo = nextParam?.startsWith('/') ? nextParam : "/";
 
-  const redirectUrl = myAbsoluteUrl(req, redirectTo);
+  const redirectUrl = safeRedirectUrl(req, nextParam);
   const response = NextResponse.redirect(redirectUrl);
   response.headers.set("Set-Cookie", cookie); // Imposta il cookie nella risposta
 
