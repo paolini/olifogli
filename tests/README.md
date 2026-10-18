@@ -11,6 +11,12 @@ TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
 fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
 
+`workbook-navigation.test.cjs` monta il componente Workbook e la gestione reale
+dei filtri URL in jsdom. Verifica selezione della linguetta, ripristino dopo reload,
+conservazione della linguetta cambiando filtri e ordinamento, e aggiornamento
+della pagina quando cambiano i parametri URL. Il montaggio dei filtri non deve
+riscrivere l'URL né cancellare il parametro della linguetta.
+
 `participant-distribution.test.cjs` verifica i conteggi per anno di corso,
 inclusi dati mancanti e non validi, indipendentemente dalla data di nascita.
 Controlla che le statistiche per età restino invariate, che i report rispettino

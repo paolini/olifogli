@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 import { ObjectId } from 'bson'
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import Error from '@/app/components/Error'
@@ -54,8 +54,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
         return validTabs.includes(tab as TabType)
     }
     
-    const initialTab: TabType = isTabType(tabParam) ? tabParam : 'fogli'
-    const [activeTab, setActiveTabState] = useState<TabType>(initialTab)
+    const activeTab: TabType = isTabType(tabParam) ? tabParam : 'fogli'
 
     const workbook = data?.workbook
     const profile: User|undefined = data?.me || undefined
@@ -76,7 +75,6 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
     
     // Funzione per cambiare tab e aggiornare l'URL
     function setActiveTab(newTab: TabType) {
-        setActiveTabState(newTab)
         const params = new URLSearchParams(Array.from(searchParams.entries()))
         if (newTab === 'fogli') {
             params.delete('tab')

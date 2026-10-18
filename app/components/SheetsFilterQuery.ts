@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import type { SetStateAction } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 export function useSheetsFilterWithQuerystring(defaults: { schema?: string } = {}) {
@@ -6,68 +6,60 @@ export function useSheetsFilterWithQuerystring(defaults: { schema?: string } = {
     const pathname = usePathname();
     const router = useRouter();
 
-    // Stato filtri generali
-    const [schemaFilter, setSchemaFilter] = useState('');
-    const [distrettoFilter, setDistrettoFilter] = useState('');
-    const [statoFilter, setStatoFilter] = useState('');
-    // Stato filtro per colonne dinamiche
-    const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-    // Stato ordinamento colonne
-    const [sort, setSort] = useState<{ field: string, direction: number } | null>(null);
+    type Sort = { field: string, direction: number } | null;
+    type ColumnFilters = Record<string, string>;
+    // Read directly from the URL; mounting a tab must never rewrite its URL.
+    const schemaFilter = searchParams.get('schemaFilter') || '';
+    const distrettoFilter = searchParams.get('distrettoFilter') || '';
+    const statoFilter = searchParams.get('statoFilter') || '';
+    const sortField = searchParams.get('sortField');
+    const sort: Sort = sortField ? { field: sortField, direction: Number(searchParams.get('sortDirection') || 1) } : null;
+    const columnFilters: ColumnFilters = Object.fromEntries(Array.from(searchParams.entries())
+        .filter(([key]) => key.startsWith('columnFilter_'))
+        .map(([key, value]) => [key.slice('columnFilter_'.length), value]));
 
-    // Lettura querystring all'avvio
-    useEffect(() => {
-        const sortField = searchParams.get('sortField');
-        const sortDirection = searchParams.get('sortDirection');
-        if (sortField) {
-            setSort({ field: sortField, direction: sortDirection ? Number(sortDirection) : 1 });
-        }
-        const schemaFilterParam = searchParams.get('schemaFilter');
-        if (schemaFilterParam !== null) setSchemaFilter(schemaFilterParam);
-        const distrettoFilterParam = searchParams.get('distrettoFilter');
-        if (distrettoFilterParam !== null) setDistrettoFilter(distrettoFilterParam);
-        const statoFilterParam = searchParams.get('statoFilter');
-        if (statoFilterParam !== null) setStatoFilter(statoFilterParam);
-        const colFilters: Record<string, string> = {};
-        for (const k of Array.from(searchParams.keys())) {
-            if (k.startsWith('columnFilter_')) {
-                const col = k.replace('columnFilter_', '');
-                colFilters[col] = searchParams.get(k) || '';
-            }
-        }
-        setColumnFilters(colFilters);
-    }, [searchParams]);
-
-    // Aggiorna querystring quando cambia uno degli stati
-    useEffect(() => {
+    function updateQuery(change: (params: URLSearchParams) => void) {
         const params = new URLSearchParams(searchParams.toString());
-        if (sort?.field) params.set('sortField', sort.field); else params.delete('sortField');
-        if (sort?.direction !== undefined && sort?.field) params.set('sortDirection', String(sort.direction)); else params.delete('sortDirection');
-        if (schemaFilter) params.set('schemaFilter', schemaFilter); else params.delete('schemaFilter');
-        if (distrettoFilter) params.set('distrettoFilter', distrettoFilter); else params.delete('distrettoFilter');
-        if (statoFilter) params.set('statoFilter', statoFilter); else params.delete('statoFilter');
-        Object.keys(columnFilters).forEach(key => {
-            if (columnFilters[key]) params.set(`columnFilter_${key}`, columnFilters[key]);
-            else params.delete(`columnFilter_${key}`);
+        change(params);
+        if (params.toString() === searchParams.toString()) return;
+        router.replace(`${pathname}${params.size ? '?' + params.toString() : ''}`, { scroll: false });
+    }
+
+    function setFilter(key: string, current: string, next: SetStateAction<string>) {
+        const value = typeof next === 'function' ? next(current) : next;
+        updateQuery(params => { if (value) params.set(key, value); else params.delete(key); });
+    }
+
+    function setColumnFilters(next: SetStateAction<ColumnFilters>) {
+        const values = typeof next === 'function' ? next(columnFilters) : next;
+        updateQuery(params => {
+            for (const key of Array.from(params.keys())) if (key.startsWith('columnFilter_')) params.delete(key);
+            for (const [key, value] of Object.entries(values)) if (value) params.set(`columnFilter_${key}`, value);
         });
-        Array.from(params.keys()).forEach(k => {
-            if (k.startsWith('columnFilter_') && !Object.keys(columnFilters).includes(k.replace('columnFilter_', ''))) {
-                params.delete(k);
+    }
+
+    function setSort(next: SetStateAction<Sort>) {
+        const value = typeof next === 'function' ? next(sort) : next;
+        updateQuery(params => {
+            if (value?.field) {
+                params.set('sortField', value.field);
+                params.set('sortDirection', String(value.direction));
+            } else {
+                params.delete('sortField');
+                params.delete('sortDirection');
             }
         });
-        const newUrl = pathname + '?' + params.toString();
-        router.replace(newUrl);
-    }, [sort, columnFilters, schemaFilter, distrettoFilter, statoFilter]);
+    }
 
     // Oggetto compatibile con SheetsFilter
     const filterState = {
         schema: defaults.schema || '',
         schemaFilter,
-        setSchemaFilter,
+        setSchemaFilter: (next: SetStateAction<string>) => setFilter('schemaFilter', schemaFilter, next),
         distrettoFilter,
-        setDistrettoFilter,
+        setDistrettoFilter: (next: SetStateAction<string>) => setFilter('distrettoFilter', distrettoFilter, next),
         statoFilter,
-        setStatoFilter
+        setStatoFilter: (next: SetStateAction<string>) => setFilter('statoFilter', statoFilter, next),
     };
 
     return { filterState, columnFilters, setColumnFilters, sort, setSort };
