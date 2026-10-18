@@ -126,7 +126,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date()) // ultima sincronizzazione con il server
     const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
-    const cellEditor = useCellEditor(commitCell)
+    const cellEditor = useCellEditor(commitCell, validateCell)
 
     const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
     const moveCursorRef = useRef(moveCursorMutation)
@@ -181,7 +181,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     useEffect(() => {
         // avvia un timer per il salvataggio automatico della riga in modifica
         const intervalId = setInterval(() => {
-            saveLineIfNeeded(cellEditor.commit({ preserveDraft: true }) ?? focusLine)
+            const result = cellEditor.commit({ preserveDraft: true })
+            if (result.ok) saveLineIfNeeded(result.value ?? focusLine)
         }, 5000)
         return () => clearInterval(intervalId);
     }, [focusLine,lastAlive]);
@@ -421,7 +422,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             startEditing(focusLine, focusField, key)
         } else if (key === 'Escape' && editing) {
             e.preventDefault()
-            saveLineIfNeeded(cellEditor.commit())
+            const result = cellEditor.commit()
+            if (result.ok) saveLineIfNeeded(result.value)
         } else if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(key) && focusLine) {
             e.preventDefault()
             const distance = key.startsWith('Page') ? (e.shiftKey ? 1000 : 10) : 1
@@ -438,7 +440,9 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     // All exits go through this transition. Row saving consumes the committed
     // snapshot, so it never depends on a later blur or a pending React render.
     function goTo(line: Line | undefined, fieldName: string, keepEditing = false) {
-        const committed = cellEditor.commit() ?? focusLine
+        const result = cellEditor.commit()
+        if (!result.ok) return
+        const committed = result.value ?? focusLine
         if (committed && committed.key !== line?.key) saveLineIfNeeded(committed)
         setTableState(prev => stateMoveFocusTo(prev, line, fieldName))
         const field = columns.find(column => column.name === fieldName)
@@ -465,7 +469,9 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
 
     function addNewRow() {
         const editing = cellEditor.editor.mode === 'editing'
-        const committed = cellEditor.commit() ?? focusLine
+        const result = cellEditor.commit()
+        if (!result.ok) return
+        const committed = result.value ?? focusLine
         saveLineIfNeeded(committed)
         const line = newLine()
         for (const field of columns) {
@@ -505,8 +511,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         if (index < 0) return false
         const next = Math.max(0, Math.min(fields.length - 1, index + distance))
         if (next === index) {
-            cellEditor.commit({ keepEditing: true })
-            return false
+            const result = cellEditor.commit({ keepEditing: true })
+            return !result.ok
         }
         goTo(focusLine, fields[next].name, keepEditing)
         return true
@@ -515,6 +521,13 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     function stateMoveFocusTo(prev: TableState, line: Line | undefined, fieldName: string): TableState {
         if (prev.focusLineKey === (line?.key ?? '') && prev.focusFieldName === fieldName) return prev
         return { ...prev, focusLineKey: line?.key ?? '', focusFieldName: fieldName }
+    }
+
+    function validateCell(lineKey: string, field: Field, value: string): string {
+        const line = tableState.lines.find(line => line.key === lineKey)
+        const data = { ...line?.row?.data, ...line?.data, [field.name]: value }
+        const context = schema.displayValidationContext(sheet.workbook.commonData ?? {})
+        return field.editingError(value, { absent: context.absent(data), context })
     }
 
     function commitCell(lineKey: string, field: Field, value: string): Line | undefined {

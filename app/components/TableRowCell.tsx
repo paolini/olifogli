@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react"
+import { useId, useLayoutEffect, useRef } from "react"
 import type { CellEditorState } from "./useCellEditor"
 import { Field } from "../lib/schema/fields"
 import { Line, RowField } from "./Table";
@@ -79,15 +79,20 @@ export default function TableCellInput({editor, onChange, onBlur}: {
     onBlur: () => void,
 }) {
     const inputRef = useRef<HTMLInputElement>(null)
+    const errorId = useId()
     const selection = editor.selection
     useLayoutEffect(() => {
         const input = inputRef.current
-        if (!input || selection === null) return
+        if (!input || (selection === null && !editor.focusRequest)) return
         input.focus()
         if (selection === 'all') input.select()
-        else input.setSelectionRange(selection.start, selection.end)
-    }, [selection])
+        else if (selection) input.setSelectionRange(selection.start, selection.end)
+    }, [selection, editor.focusRequest])
 
-    return <input className="table-row" ref={inputRef} value={editor.value}
-        onChange={event => onChange(event.currentTarget.value)} onBlur={onBlur} />
+    return <>
+        <input className="table-row" ref={inputRef} value={editor.value}
+            aria-invalid={!!editor.error} aria-describedby={editor.error ? errorId : undefined}
+            onChange={event => onChange(event.currentTarget.value)} onBlur={onBlur} />
+        {editor.error && <span id={errorId} role="alert" className="block text-sm text-red-700">{editor.error}</span>}
+    </>
 }

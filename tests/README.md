@@ -22,8 +22,10 @@ gli intervalli di autosalvataggio sono eseguiti esplicitamente, senza attese rea
 Sono simulati rete, toolbar e intestazione. Gli avanzamenti e il posizionamento
 del cursore nell'editor non richiedono timer.
 I test fissano il comportamento corrente, compreso Esc che salva ed esce.
-Le correzioni ancora da fare delle issue #23 e #31 sono indicate come TODO,
-senza imporre i comportamenti difettosi alla futura ristrutturazione.
+La #31 è coperta da casi di date impossibili, parziali o fuori intervallo,
+anni bisestili e limiti di età riferiti all'anno della gara. I test verificano
+messaggio accessibile, blocco di navigazione/clic/blur/autosalvataggio e ripresa
+dopo la correzione o lo svuotamento. La correzione della #23 resta un TODO.
 Il test IME verifica che i keydown durante la composizione non attivino la
 navigazione. Non è un collaudo in un browser reale: la composizione completa,
 il layout e le azioni native di digitazione richiedono verifiche separate.

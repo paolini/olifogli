@@ -32,6 +32,9 @@ type DisplayValue = {
 }
 
 export class Field {
+    // Editing may allow incomplete rows; subclasses opt into cell-level checks.
+    editingError(value: string, context: RowValidationContext): string { return '' }
+
     // Undefined lets the text input handle the key natively.
     editKey(key: string, value: string, start: number, end: number): EditingKeyResult | undefined {
         return undefined
@@ -392,6 +395,24 @@ export class NumericField extends Field {
 }
 
 export class DateField extends Field {
+    editingError(value: string, context: RowValidationContext): string {
+        if (value.trim().replaceAll('/', '') === '') return ''
+        if (!/^[\d\s/.-]+$/.test(value)) return 'Inserire una data valida nel formato gg/mm/aaaa'
+        const cleaned = this.clean(value)
+        const error = this.checkValid(cleaned, context)
+        if (!cleaned || error) return error || 'Inserire una data valida nel formato gg/mm/aaaa'
+        if (!this.anomalous(cleaned, context)) return ''
+        const year = context.context.contest_year
+        const first = year - this.expectedMaxAge
+        const last = year - this.expectedMinAge
+        if (Number.isFinite(first) && Number.isFinite(last)) {
+            return `Inserire una data compresa tra 01/01/${first} e 31/12/${last}`
+        }
+        return Number.isFinite(first)
+            ? `Inserire una data dal 01/01/${first}`
+            : `Inserire una data entro il 31/12/${last}`
+    }
+
     editKey(key: string, value: string, start: number, end: number): EditingKeyResult | undefined {
         if (key === ' ' || key === '.') key = '/'
         if (!/^[0-9/]$/.test(key)) return
@@ -408,8 +429,8 @@ export class DateField extends Field {
         super(name, options)
         this.css_class += ` field-Date`
         this.type = 'date'
-        this.expectedMinAge = options.expectedMinAge || Number.NEGATIVE_INFINITY
-        this.expectedMaxAge = options.expectedMaxAge || Number.POSITIVE_INFINITY
+        this.expectedMinAge = options.expectedMinAge ?? Number.NEGATIVE_INFINITY
+        this.expectedMaxAge = options.expectedMaxAge ?? Number.POSITIVE_INFINITY
     }
 
     // normalizza la data in formato gg/mm/aaaa

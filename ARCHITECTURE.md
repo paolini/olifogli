@@ -337,12 +337,18 @@ interne restano affidati all'input nativo; date e risposte implementano le propr
 conversioni. `Table` esegue gli spostamenti e `TableCellInput` applica focus e
 selezione con un layout effect, senza timer per l'editing.
 
-La conferma della bozza passa da `useCellEditor.commit`, che normalizza il
-valore prima di aggiornare la riga. Cambi di cella, Invio, Esc e perdita del focus
-usano questo percorso. L'autosalvataggio conferma una copia normalizzata senza
+La conferma della bozza passa da `useCellEditor.commit`, che verifica
+`Field.editingError` e normalizza il valore prima di aggiornare la riga.
+Una conferma rifiutata mantiene la bozza e restituisce un esito esplicito che
+blocca il cambio di cella o il salvataggio. `DateField` controlla calendario e
+limiti di età rispetto all'anno della gara; il valore vuoto è consentito durante
+la compilazione, anche se la validazione della riga richiede poi una data.
+L'errore è mostrato accanto all'input con `aria-invalid` e un messaggio accessibile.
+Cambi di cella, Invio, Esc e perdita del focus usano questo percorso.
+L'autosalvataggio conferma una copia normalizzata senza
 alterare testo e cursore della bozza attiva. Le risposte del server eliminano
 solo le modifiche effettivamente salvate, conservando quelle successive.
-Esc mantiene il comportamento esistente: conferma, salva e torna in navigazione.
+Esc conferma, salva e torna in navigazione quando il valore è accettato.
 
 ### Import e Export
 - **CsvImport**: Import batch da file CSV

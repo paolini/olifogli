@@ -11,7 +11,8 @@ const compiled = new Map();
 
 // Mount the real table/cells. Only network hooks and unrelated toolbar/header UI
 // are replaced; React state, effects, DOM focus and event bubbling are real.
-async function mountTable(t, { edit = true, standardAnswers = false, synced = false, adminEditMode = false, deferPatches = false } = {}) {
+async function mountTable(t, { edit = true, standardAnswers = false, synced = false, adminEditMode = false, deferPatches = false,
+  dateOptions = { expectedMinAge: 10, expectedMaxAge: 16 } } = {}) {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://table.invalid' });
   const saved = new Map();
   for (const [key, value] of Object.entries({
@@ -96,7 +97,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   }
   const { Field, DateField, ChoiceAnswerField } = load('app/lib/schema/fields.ts');
   schema = {
-    fields: [new Field('name'), new Field('surname'), new DateField('birthDate', {}),
+    fields: [new Field('name'), new Field('surname'), new DateField('birthDate', dateOptions),
       new ChoiceAnswerField('r01', {}), new Field('hidden', { hidden: true }),
       new Field('score', { editable: false }), new ChoiceAnswerField('r02', {})],
     displayValidationContext: () => context,
@@ -141,7 +142,9 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   }
   async function resolvePatch() { await act(async () => pendingPatches.shift()()); }
   async function autosave() { await act(async () => { for (const run of [...intervals.values()]) run(); }); }
-  return { cell, click, key, change, flushTimers, resolvePatch, autosave, patches, created,
+  async function blur() { await act(async () => dom.window.document.activeElement.blur()); }
+  return { cell, click, key, change, flushTimers, resolvePatch, autosave, blur, patches, created,
+    error: () => container.querySelector('[role="alert"]')?.textContent ?? '',
     newRow: () => click(container.querySelector('tbody button')),
     active: () => dom.window.document.activeElement,
     input: () => container.querySelector('td.focus input'),

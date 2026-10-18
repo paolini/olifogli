@@ -377,4 +377,107 @@ test('a newly created row can be edited and saved again using its original UI ke
 
 // Pending product fixes are not treated as behavior the refactor must preserve.
 test.todo('invalid answer keys preserve the previous value (#23)');
-test.todo('invalid or out-of-range dates block leaving the editor (#31)');
+
+for (const key of ['Tab', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowLeft', 'ArrowRight']) {
+  test(`invalid dates block ${key} navigation and saving`, async t => {
+    const f = await mountTable(t);
+    const row = key === 'ArrowUp' || key === 'PageUp' ? 1 : 0;
+    await f.click(f.cell('birthDate', row));
+    await f.key('F2');
+    await f.change('31/02/2012');
+    const input = f.input();
+    input.setSelectionRange(key === 'ArrowLeft' ? 0 : input.value.length, key === 'ArrowLeft' ? 0 : input.value.length);
+    await f.key(key);
+    assertElement(f.active(), input);
+    assertElement(f.focusCell(), f.cell('birthDate', row));
+    assert.equal(f.input().value, '31/02/2012');
+    assert.equal(f.input().getAttribute('aria-invalid'), 'true');
+    assert.notEqual(f.error(), '');
+    assert.equal(f.patches.length, 0);
+    assert.equal(f.created.length, 0);
+  });
+}
+
+test('an invalid date blocks cell clicks, a new row, blur and autosave', async t => {
+  const f = await mountTable(t);
+  await f.click(f.cell('birthDate'));
+  await f.key('F2');
+  await f.change('not a date');
+  for (const leave of [() => f.click(f.cell('name', 1)), () => f.newRow(), () => f.blur(), () => f.autosave()]) {
+    await leave();
+    assertElement(f.active(), f.input());
+    assertElement(f.focusCell(), f.cell('birthDate'));
+    assert.notEqual(f.error(), '');
+    assert.equal(f.patches.length, 0);
+    assert.equal(f.created.length, 0);
+  }
+  await f.change('29/02/2012');
+  assert.equal(f.error(), '');
+  await f.key('Enter');
+  assert.equal(f.patches[0].data.birthDate, '29/02/2012');
+  assertElement(f.focusCell(), f.cell('birthDate', 1));
+});
+
+test('age range errors describe the configured bounds and block autosave', async t => {
+  const f = await mountTable(t);
+  await f.click(f.cell('birthDate'));
+  await f.key('F2');
+  for (const value of ['31/12/2009', '01/01/2017']) {
+    await f.change(value);
+    await f.autosave();
+    assert.match(f.error(), /01\/01\/2010.*31\/12\/2016/);
+    assert.equal(f.patches.length, 0);
+    await f.key('Tab');
+    assertElement(f.focusCell(), f.cell('birthDate'));
+  }
+});
+
+for (const value of ['01/01/2010', '31/12/2016', '2012-02-29', '1.2.12', '', '/', '//', '   ']) {
+  test(`valid or empty dates allow leaving: ${JSON.stringify(value)}`, async t => {
+    const f = await mountTable(t);
+    await f.click(f.cell('birthDate'));
+    await f.key('F2');
+    await f.change(value);
+    await f.key('Enter');
+    assert.equal(f.error(), '');
+    assertElement(f.focusCell(), f.cell('birthDate', 1));
+    assert.equal(f.patches.length, 1);
+    if (!value.trim() || value.replaceAll('/', '') === '') assert.equal(f.patches[0].data.birthDate, '');
+  });
+}
+
+test('invalid calendar dates, partial dates and unsupported text remain editable', async t => {
+  const f = await mountTable(t);
+  await f.click(f.cell('birthDate'));
+  await f.key('F2');
+  for (const value of ['29/02/2011', '31/04/2012', '00/01/2012', '01/13/2012', '12/', '1x2x12']) {
+    await f.change(value);
+    await f.key('Tab');
+    assert.equal(f.input().value, value);
+    assert.notEqual(f.error(), '');
+    assert.equal(f.patches.length, 0);
+  }
+});
+
+test('a configured zero age is a real limit rather than an unbounded range', async t => {
+  const f = await mountTable(t, { dateOptions: { expectedMinAge: 0, expectedMaxAge: 0 } });
+  await f.click(f.cell('birthDate'));
+  await f.key('F2');
+  await f.change('01/01/2025');
+  await f.key('Tab');
+  assert.match(f.error(), /01\/01\/2026.*31\/12\/2026/);
+  await f.change('01/01/2026');
+  await f.key('Tab');
+  assert.equal(f.error(), '');
+  assertElement(f.focusCell(), f.cell('r01'));
+});
+
+test('date fields without age limits accept any valid calendar year', async t => {
+  const f = await mountTable(t, { dateOptions: {} });
+  await f.click(f.cell('birthDate'));
+  await f.key('F2');
+  await f.change('01/01/1900');
+  await f.key('Enter');
+  assert.equal(f.error(), '');
+  assert.equal(f.patches[0].data.birthDate, '01/01/1900');
+});
