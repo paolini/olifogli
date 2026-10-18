@@ -1,5 +1,8 @@
-'use client' // Error boundaries must be Client Components
- 
+'use client'
+
+import { logDiagnostic } from './lib/logging'
+// Error boundaries must be Client Components
+
 import { useEffect } from 'react'
 import Button from './components/Button'
 import { signOut } from 'next-auth/react'
@@ -12,9 +15,9 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error(error)
+    logDiagnostic('app/error.operation_failed', error)
   }, [error])
- 
+
   return (
     <div>
       <div className="p-4">

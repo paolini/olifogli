@@ -1,5 +1,6 @@
 "use client"
 
+import { logDiagnostic } from '../lib/logging'
 import { Row, Sheet, useAddRowMutation, useDeleteRowMutation, usePatchRowMutation } from '@/app/graphql/generated'
 import { tableOrdina } from '@/app/components/Ordering'
 import { schemas } from '../lib/schema'
@@ -143,7 +144,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current)
         moveCursorTimerRef.current = setTimeout(() => {
             moveCursorRef.current({ variables: { sheetId: sheet._id, lineKey: tableState.focusLineKey || null, fieldName: tableState.focusFieldName || null, tabId } })
-                .catch((err: unknown) => console.error('[moveCursor] error:', err))
+                .catch((err: unknown) => logDiagnostic('app/components/Table.movecursor_error', err))
             moveCursorTimerRef.current = null
         }, 300)
         return () => { if (moveCursorTimerRef.current) clearTimeout(moveCursorTimerRef.current) }
@@ -178,7 +179,6 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         }, 5000)
         return () => clearInterval(intervalId);
     }, [focusLine,lastAlive]);
-
 
     if (!schema) {
         return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
@@ -223,7 +223,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             </table>
         </div>
     </div>
-    
+
     function effectFunction() {
       // shortcut: se non ci sono modifiche da fare, non fare niente!
       setTableState(prevTableState => {
@@ -314,7 +314,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         const selectedLineKeys: Set<string> = deletedLineKeys.size === 0
           ? prevTableState.selectedLineKeys // non modificare lo stato se non serve (SHORTCUT!)
           : prevTableState.selectedLineKeys.difference(deletedLineKeys)
-        
+
         const inputFocus = !!(prevTableState.inputFocus && focusLineKey && focusFieldName)
 
         return {
@@ -661,7 +661,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     function addNewRow() {
         const showHiddenColumns = checkboxesState.showHiddenColumns
         saveLineIfNeeded(focusLine)
-        
+
         setTableState(prev => {
             // aggiungi una nuova riga
             const line = newLine()
@@ -701,7 +701,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
                     focusFieldName: '',
                 }))
             }
-            
+
             return
         }
         setTableState(prev => {
@@ -815,7 +815,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             // console.log(`moveFocusToSetter: no change in focusLineKey`)
             return prev // SHORTCUT!
         }
-        
+
         // nuovi valori:
         const lines: Line[] = prev.lines
         const focusFieldName = fieldName
@@ -909,7 +909,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     async function saveRow(row: Row, data: Data) {
         // console.log(`saving row ${row._id} with data`, data)
         const key = row._id.toString()
-        
+
         function updateLineState(update: Partial<Line>) {
             setTableState(prev => {
                 // console.log(`updateLineState called in saveRow`)

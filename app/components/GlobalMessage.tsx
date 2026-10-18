@@ -1,4 +1,5 @@
 "use client"
+import { logDiagnostic } from '../lib/logging'
 import { useState } from 'react'
 import { gql, useQuery, useMutation } from '@apollo/client'
 import ReactMarkdown from 'react-markdown'
@@ -43,27 +44,27 @@ export default function GlobalMessage({name, title, description, collapsed, clas
     const { data, loading, error } = useQuery(GET_SETTING, {
         variables: { key }
     })
-    
+
     const [updateSetting, { loading: updating, error: updateError }] = useMutation(UPDATE_SETTING, {
         refetchQueries: ['GetSetting']
     })
-    
+
     if (loading) return null
     if (error) return <Error error={error} />
-    
+
     const setting = data?.getSetting
     const message = setting?.value || ''
-    
+
     const startEdit = () => {
         setEditValue(message)
         setEditing(true)
     }
-    
+
     const cancelEdit = () => {
         setEditing(false)
         setEditValue('')
     }
-    
+
     const saveEdit = async () => {
         try {
             await updateSetting({
@@ -74,15 +75,15 @@ export default function GlobalMessage({name, title, description, collapsed, clas
             })
             setEditing(false)
         } catch (err) {
-            console.error('Error updating setting:', err)
+            logDiagnostic('app/components/GlobalMessage.error_updating_setting', err)
         }
     }
-    
+
     if (!message && !profile?.isAdmin) {
         // Nessun messaggio e l'utente non è admin: non mostrare niente
         return null
     }
-    
+
     return (
         <div className={`mx-4 my-4 max-w-4xl message ${className}`}>
             {editing ? (

@@ -121,7 +121,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const hasMore = filteredSheets.length > displayLimit;
 
     const columnsSet = new Set<string>()
-    
+
     // Colonne presenti nei dati filtrati
     filteredSheets.forEach(sheet => {
         if (!sheet.commonData) return
@@ -343,13 +343,12 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
 
     async function validateSelectedSheets() {
       if (!confirm(`Sei sicuro di voler validare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
-      console.log('validateSelectedSheets: validating', selectedIds.length, 'sheets')
+
       for (const id of selectedIds) {
-        console.log('validateSelectedSheets: validating sheet', id)
         const result = await validateRows({ variables: { sheetId: new ObjectId(id) } })
-        console.log('validateSelectedSheets: result for sheet', id, ':', result)
+
       }
-      console.log('validateSelectedSheets: refetching data')
+
       refetch()
     }
 
@@ -484,12 +483,12 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         const ko = arr.length - totalSuccess
 
         const errorMessages = arr.filter(r => !r.success).map(r => r.error).filter(Boolean)
-        
+
         let msg = `Esito Olimanager: ${ok} creati/abbinati`
         if (skipped > 0) msg += `, ${skipped} saltati`
         if (converted > 0) msg += `, ${converted} convertiti`
         msg += `, ${ko} errori`
-        
+
         if (errorMessages.length > 0) {
             msg += '\n\nErrori:\n' + errorMessages.join('\n')
         }

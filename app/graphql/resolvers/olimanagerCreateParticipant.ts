@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { schemas } from "@/app/lib/schema";
 import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
@@ -15,9 +16,6 @@ export default async function olimanagerCreateParticipant(
   { rowIds, sheetIds, username, password }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[]; username?: string; password: string },
   context: Context
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]> {
-  console.log('=== olimanagerCreateParticipant START ===')
-  console.log('Input params:', { rowIds: rowIds?.length, sheetIds: sheetIds?.length, username, passwordProvided: !!password })
-
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
   const user = await get_authenticated_user(context)
   // console.log('Authenticated user:', user?.email, 'isAdmin:', user?.isAdmin)
@@ -29,12 +27,10 @@ export default async function olimanagerCreateParticipant(
   // console.log('Initial rowIds from params:', rowIds?.length || 0)
 
   if (sheetIds && sheetIds.length > 0) {
-    console.log('Processing sheetIds:', sheetIds.length)
     const rows = await getRowsCollection()
     for (const sheetId of sheetIds) {
-      console.log('Fetching rows for sheetId:', sheetId)
       const totalRows = await rows.countDocuments({ sheetId })
-      console.log('Total rows in sheet:', totalRows)
+
       // const allSheetRows = await rows.find({ sheetId }).limit(3).toArray()
       // console.log('Sample rows:', allSheetRows.map(r => ({ _id: r._id, error: r.error, data: r.data })))
       const sheetRows = await rows.find({ 
@@ -44,13 +40,12 @@ export default async function olimanagerCreateParticipant(
           { error: "" }
         ]
       }).toArray()
-      console.log('Found', sheetRows.length, 'valid rows for sheetId:', sheetId)
+
       sheetRows.forEach(row => allRowIds.add(row._id))
     }
   }
 
   const finalRowIds = Array.from(allRowIds)
-  console.log('Total final rowIds to process:', finalRowIds.length)
 
   // 3) Preparo collezioni e client Olimanager una sola volta
   const rows = await getRowsCollection()
@@ -59,17 +54,14 @@ export default async function olimanagerCreateParticipant(
   // console.log('Collections initialized')
 
   const api = new OlimanagerApi(username || user.email, password)
-  console.log('OlimanagerApi created with username:', username || user.email)
+
   await api.login()
-  console.log('Olimanager login successful')
 
   const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[] = []
-  console.log('Starting processing', finalRowIds.length, 'rows')
 
   for (let i = 0; i < finalRowIds.length; i++) {
     const rowId = finalRowIds[i];
-    console.log(`--- Processing row ${i + 1}/${finalRowIds.length}: ${rowId} ---`)
-    
+
     try {
       const row = await rows.findOne({ _id: rowId })
       // console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
@@ -89,10 +81,10 @@ export default async function olimanagerCreateParticipant(
       const result = await processRow(api, rows, row, sheet, workbook, schema);
       results.push(result);
     } catch (e) {
-      console.log(`  EXCEPTION:`, e)
-      console.log(e)
+      logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.exception', e)
+
       const errorMessage = String((e as Error)?.message || e)
-      console.log('Updating row with exception error:', errorMessage)
+
       await rows.updateOne(
         { _id: rowId },
         {
@@ -101,18 +93,11 @@ export default async function olimanagerCreateParticipant(
           },
         }
       )
-      console.log('Row updated with exception')
+
       results.push({success: false, error: errorMessage})
     }
   }  
-  console.log('=== olimanagerCreateParticipant END ===')
-  console.log('Results summary:', { 
-    total: results.length, 
-    success: results.filter(r => r.success).length, 
-    failures: results.filter(r => !r.success).length,
-    skipped: results.filter(r => r.skipped).length,
-    converted: results.filter(r => r.converted).length
-  })
+
   return results
 }
 
@@ -128,8 +113,6 @@ async function processRow(
 
       const variant = row.data['variant'];
       if (variant === '0' || variant === '000') {
-        console.log(`Row ${rowId} skipped because variant is '${variant}' (ABSENT)`);
-        
         // Se c'era un errore precedente su questa riga relativo a olimanager, lo puliamo
         if (row.olimanager?.error) {
            await rows.updateOne(
@@ -142,15 +125,11 @@ async function processRow(
 
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
 
-      console.log(`syncDataWithOlimanager result: ${JSON.stringify(result)}`)
-
       if (result.skipped) {
           return { success: true, participantId: result.participantId, skipped: true };
       }
 
       if (result.success) {
-        console.log(`Updating row with participantId: ${result.participantId}, contestId: ${result.contestId}`);
-        
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const $set: any = {
               'olimanager.participantId': result.participantId,
@@ -166,10 +145,10 @@ async function processRow(
           { _id: rowId },
           { $set }
         )
-        console.log('Row updated successfully')
+
         return { success: true, participantId: result.participantId, converted: result.converted }
       } else {
-        console.log('Updating row with error:', result.error)
+        logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.updating_row_with_error', undefined)
         await rows.updateOne(
           { _id: rowId },
           {
@@ -179,7 +158,7 @@ async function processRow(
             },
           }
         )
-        console.log('Row updated with error')
+
         return { success: false, error: result.error }
       }
 }
@@ -202,7 +181,6 @@ async function syncDataWithOlimanager(
       const context = schema.validationContext(sheet.commonData, workbook.commonData)
       const contestId = context.contest_id;
       const schoolExternalId = context.school_external_id(row.data)
-      console.log('Extracted contestId:', contestId, 'schoolExternalId:', schoolExternalId)
 
       const name = row.data.name
       const surname = row.data.surname
@@ -221,28 +199,22 @@ async function syncDataWithOlimanager(
         // bisognerebbe controllare che il participantId non 
         // sia stato cancellato su olimanager
         //
-        console.log(`  SKIPPING: la riga ha già un participantId (${row_participant_id}) per questo contestId (${row_contest_id})`)
+
         return {success: true, participantId: `${row_participant_id}`, skipped: true}
       }
 
       if (!isNaN(row_participant_id) && !isNaN(row_contest_id) && row_contest_id !== contestId) {
-        console.log(`  NOTE: la riga ha un participantId (${row_participant_id}) per un contestId diverso (${row_contest_id} vs ${contestId})`)
-        console.log(`    Devo ottenere il competitor_id e il participant_id corretti per il contestId ${contestId}`)
-
         try {
           const competitor = await getCompetitorFromParticipant(api, row_participant_id);
           if (!competitor) {
-            console.warn(`    WARNING: Competitor not found for participantId ${row_participant_id}`);
+            logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.warning_competitor_not_found_for_participantid', undefined, 'warn');
           } else {
-             console.log(`    Found competitor: ${competitor.id} (${competitor.name})`);
              const venue = await getVenueForContest(api, contestId, sheet.name);
              if (!venue) {
-               console.warn(`    WARNING: No venue found for contest ${contestId} with name matching "${sheet.name}"`);
+               logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.warning_no_venue_found_for_contest', undefined, 'warn');
              } else {
-               console.log(`    Found venue: ${venue.id} (${venue.name})`);
                const newParticipantId = await manualCreateParticipantHelper(api, competitor.id, venue.id);
                if (newParticipantId) {
-                 console.log(`    SUCCESS: New participant created manually: ${newParticipantId}`);
                  return {
                     success: true, 
                     participantId: String(newParticipantId), 
@@ -251,21 +223,19 @@ async function syncDataWithOlimanager(
                     rawResult: { method: 'manualCreateParticipant', competitorId: competitor.id, venueId: venue.id, newParticipantId },
                  };
                } else {
-                 console.warn(`    WARNING: Failed to create participant manually.`);
+                 logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.warning_failed_to_create_participant_manually', undefined, 'warn');
                }
              }
           }
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
-            console.error(`    ERROR doing manual migration:`, msg);
+            logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.error_doing_manual_migration', undefined);
             const errorMsg = `Manual migration failed: ${msg}`;
             return { success: false, error: errorMsg };
         }
       }
       // console.log('Participant data:', { name, surname, classYearStr, classYear, section, birthDate: row.data.birthDate, birthDateConverted: birthDate })
 
-      console.log(`Creazione/abbinamento partecipante per riga ${row._id} (${surname} ${name})`)
-      console.log(`  schoolExternalId: ${schoolExternalId}, contestId: ${contestId}, classYear: ${classYear}, section: ${section}, birthDate: ${birthDate}`)
       const result = await matchOrCreateParticipant(api, contestId, {
         schoolExternalId,
         name,
@@ -274,16 +244,13 @@ async function syncDataWithOlimanager(
         section,
         birthDate,
       })
-      console.log('matchOrCreateParticipant result:', result)
 
       if (result?.success) {
-        console.log(`  SUCCESS: participantId: ${result.participant.id}, competitorCreated: ${result.competitorCreated}, participantCreated: ${result.participantCreated}`)
-        console.log(JSON.stringify(result))
         const participantId = result?.participant?.id ? String(result.participant.id) : undefined
         return { success: true, participantId, rawResult: result, contestId: String(contestId) }
       } else {
-        console.log(`  FAILURE:`, result?.error || result?.messages || 'unknown')
-        console.log(JSON.stringify(result))
+        logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.failure', undefined)
+
         const errorMsg = typeof result?.error === 'string' ? result?.error : JSON.stringify(result?.error || result?.messages || 'unknown error')
         return { success: false, error: errorMsg, rawResult: result }
       }
@@ -359,8 +326,6 @@ interface ParticipantData {
 }
 
 async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, participantData: ParticipantData) {
-  console.log('--- matchOrCreateParticipant START ---')
-  console.log('contestId:', contestId, 'participantData:', participantData)
   try {
     const variables: {
       contestId: number;
@@ -387,7 +352,7 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
     // console.log('GraphQL response:', response)
 
     if (response.errors) {
-      console.log('GraphQL errors found:', response.errors)
+      logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.graphql_errors_found', undefined)
       return { success: false, error: response.errors, input: participantData };
     }
 
@@ -396,10 +361,8 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
     // console.log('Result typename:', typename)
 
     if (typename === 'OperationInfo') {
-      console.log('OperationInfo messages:', result.messages)
       return { success: false, messages: result.messages, input: participantData };
     } else if (typename === 'ParticipantMatchSuccess') {
-      console.log('ParticipantMatchSuccess:', { participantId: result.participant.id, competitorCreated: result.competitorCreated, participantCreated: result.participantCreated })
       return {
         success: true,
         participant: result.participant,
@@ -410,10 +373,9 @@ async function matchOrCreateParticipant(api: OlimanagerApi, contestId: number, p
       };
     }
 
-    console.log('Unknown typename:', typename)
     return { success: false, error: `Unknown typename: ${typename}` , input: participantData };
   } catch (e) {
-    console.log('Exception in matchOrCreateParticipant:', e)
+    logDiagnostic('app/graphql/resolvers/olimanagerCreateParticipant.exception_in_matchorcreateparticipant', e)
     return { success: false, error: String((e as Error)?.message || e), input: participantData };
   }
 }

@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { getRowsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { get_authenticated_user } from './utils'
@@ -62,17 +63,17 @@ export default async function cryptSheets(_: unknown, { sheetIds, password }: { 
                                 await rows_collection.updateOne({ _id: row._id }, { $set: setObj })
                             }
                         } catch (e: unknown) {
-                            console.error('cryptSheets: failed to encrypt row', { sheetId: id, rowId: row._id?.toString?.(), error: (e as Error)?.message })
+                            logDiagnostic('app/graphql/resolvers/cryptSheets.cryptsheets_failed_to_encrypt_row', e)
                             continue
                         }
                     }
                 } catch (e) {
-                    console.error('cryptSheets: failed for sheet', { sheetId: id, error: (e as Error)?.message })
+                    logDiagnostic('app/graphql/resolvers/cryptSheets.cryptsheets_failed_for_sheet', e)
                     return
                 }
             }))
         } catch (e) {
-            console.error('cryptSheets background job failed:', e)
+            logDiagnostic('app/graphql/resolvers/cryptSheets.cryptsheets_background_job_failed', e)
         }
     })()
 

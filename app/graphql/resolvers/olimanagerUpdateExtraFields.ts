@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { schemas } from "@/app/lib/schema";
 import { Context } from "../types";
 import { check_admin, get_authenticated_user } from "./utils";
@@ -12,9 +13,6 @@ export default async function olimanagerUploadExtraFields(
   { rowIds, sheetIds, username, password }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[]; username?: string; password: string },
   context: Context
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean}[]> {
-  console.log('=== olimanagerUploadExtraFields START ===')
-  console.log('Input params:', { rowIds: rowIds?.length, sheetIds: sheetIds?.length, username, passwordProvided: !!password })
-
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
   const user = await get_authenticated_user(context)
   // console.log('Authenticated user:', user?.email, 'isAdmin:', user?.isAdmin)
@@ -26,12 +24,10 @@ export default async function olimanagerUploadExtraFields(
   // console.log('Initial rowIds from params:', rowIds?.length || 0)
 
   if (sheetIds && sheetIds.length > 0) {
-    console.log('Processing sheetIds:', sheetIds.length)
     const rows = await getRowsCollection()
     for (const sheetId of sheetIds) {
-      console.log('Fetching rows for sheetId:', sheetId)
       const totalRows = await rows.countDocuments({ sheetId })
-      console.log('Total rows in sheet:', totalRows)
+
       // const allSheetRows = await rows.find({ sheetId }).limit(3).toArray()
       // console.log('Sample rows:', allSheetRows.map(r => ({ _id: r._id, error: r.error, data: r.data })))
       const sheetRows = await rows.find({ 
@@ -41,13 +37,12 @@ export default async function olimanagerUploadExtraFields(
           { error: "" }
         ]
       }).toArray()
-      console.log('Found', sheetRows.length, 'valid rows for sheetId:', sheetId)
+
       sheetRows.forEach(row => allRowIds.add(row._id))
     }
   }
 
   const finalRowIds = Array.from(allRowIds)
-  console.log('Total final rowIds to process:', finalRowIds.length)
 
   // 3) Preparo collezioni e client Olimanager una sola volta
   const rows = await getRowsCollection()
@@ -56,17 +51,14 @@ export default async function olimanagerUploadExtraFields(
   // console.log('Collections initialized')
 
   const api = new OlimanagerApi(username || user.email, password)
-  console.log('OlimanagerApi created with username:', username || user.email)
+
   await api.login()
-  console.log('Olimanager login successful')
 
   const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean}[] = []
-  console.log('Starting processing', finalRowIds.length, 'rows')
 
   for (let i = 0; i < finalRowIds.length; i++) {
     const rowId = finalRowIds[i];
-    console.log(`--- Processing row ${i + 1}/${finalRowIds.length}: ${rowId} ---`)
-    
+
     try {
       const row = await rows.findOne({ _id: rowId })
       // console.log('Row data:', row ? { _id: row._id, data: row.data } : 'NOT FOUND')
@@ -86,10 +78,10 @@ export default async function olimanagerUploadExtraFields(
       const result = await processRow(api, rows, row, sheet, workbook, schema);
       results.push(result);
     } catch (e) {
-      console.log(`  EXCEPTION:`, e)
-      console.log(e)
+      logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.exception', e)
+
       const errorMessage = String((e as Error)?.message || e)
-      console.log('Updating row with exception error:', errorMessage)
+
       await rows.updateOne(
         { _id: rowId },
         {
@@ -98,17 +90,11 @@ export default async function olimanagerUploadExtraFields(
           },
         }
       )
-      console.log('Row updated with exception')
+
       results.push({success: false, error: errorMessage})
     }
   }  
-  console.log('=== olimanagerUploadExtraFields END ===')
-  console.log('Results summary:', { 
-    total: results.length, 
-    success: results.filter(r => r.success).length, 
-    failures: results.filter(r => !r.success).length,
-    skipped: results.filter(r => r.skipped).length,
-  })
+
   return results
 }
 
@@ -123,7 +109,6 @@ async function processRow(
       const shirt_size = row.data["shirt_size"]
 
       if (!shirt_size) {
-        console.log(`no shirt_size provided, skipping...`)
         return {
           success: true,
           skipped: true,
@@ -131,8 +116,6 @@ async function processRow(
       }
 
       const result = await syncDataWithOlimanager(api, row, sheet, workbook, schema);
-
-      console.log(`syncDataWithOlimanager result: ${JSON.stringify(result)}`)
 
       return {
           success: result.success,
@@ -160,14 +143,11 @@ async function syncDataWithOlimanager(
       const taglia_field_id = workbook.commonData["olimanager_taglia_field_id"]
       const contest_id = workbook.commonData["olimanager_contest_id"]
       if (!taglia_field_id) {
-        console.log(`     SKIPPING: olimanager_taglia_field_id non specificato nel workbook`)
         return {success: false, skipped: true, error: `"taglia_field_id" non specificato nel workbook`}
       }
       if (!contest_id) {
-        console.log(`     SKIPPING: olimanager_contest_id non specificato nel workbook`)
         return {success: false, skipped: true, error: `"olimanager_contest_id" non specificato nel workbook`}
       }
-      console.log('Extracted taglia_field_id:', taglia_field_id, 'Extracted contest_id:', contest_id)
 
       const shirt_size = row.data["shirt_size"]
       const row_participant_id = parseInt(row.olimanager?.participantId || '', 10)
@@ -176,41 +156,31 @@ async function syncDataWithOlimanager(
       const name = row.data.name
 
       if (isNaN(row_participant_id)) {
-        console.log(`    SKIPPING: participant_id non presente nella row ${row._id} (${surname}) sheet_id: ${sheet._id}`)
         return {success: true, skipped: true}
       }
       if (row_contest_id && String(row_contest_id) !== String(contest_id)) {
-        console.log(`    SKIPPING: contest_id della row (${row_contest_id}) diverso da quello del workbook (${contest_id}) per riga ${row._id} (${surname})`)
         return {success: true, skipped: true}
       }
 
-      console.log(`aggiornamento extra fields partecipante per riga ${row._id} (${surname} ${name})`)
-      console.log(`  contestId: ${contest_id}, shirt_size: ${shirt_size}`)
-
-
       const result = await getParticipantExtraField(api, row_participant_id, taglia_field_id)
-      console.log('getParticipantExtraField result:', result)
 
       if (result?.success) {
-        console.log(`  got value: participantId: ${result.participant_id} value: ${result.value}`)
         if (result.value && result.value !== '') {
-          console.log(`  SKIPPING update because value already exists for participant ${result.participant_id}`)
           return { success: true, participantId: String(result.participant_id), skipped: true }
         }
 
         const result2 = await setParticipantExtraField(api, row_participant_id, taglia_field_id, shirt_size)
-        console.log('setParticipantExtraField result:', result2)
-        
+
         if (!result2.success) {
-          console.log(`  FAILURE setting extra field:`, result2.error)
+          logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.failure_setting_extra_field', undefined)
           return { success: false, error: result2.error, participantId: String(result.participant_id) }
         }
-        
+
         const participantId = result?.participant_id ? String(result.participant_id) : undefined
         return { success: true, participantId, rawResult: result, contestId: String(contest_id) }
       } else {
-        console.log(`  FAILURE:`, result?.error || 'unknown')
-        console.log(JSON.stringify(result))
+        logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.failure', undefined)
+
         const errorMsg = typeof result?.error === 'string' ? result?.error : JSON.stringify(result?.error || 'unknown error')
         return { success: false, error: errorMsg, rawResult: result }
       }
@@ -244,16 +214,16 @@ async function getParticipantExtraField(api: OlimanagerApi, participant_id: numb
     const variables = {
       participant_id,
     }
-    
+
     const response = await api.query(query_extra_field, variables)
 
     if (response.errors) {
-      console.log('GraphQL errors found:', response.errors)
+      logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.graphql_errors_found', undefined)
       return { success: false, error: response.errors };
     }
 
     const edges = response?.data?.participants?.participants?.edges
-    
+
     if (edges.length === 0) {
       return { success: false, error: `no participant found with participant_id: ${participant_id}`}
     }
@@ -279,7 +249,7 @@ async function getParticipantExtraField(api: OlimanagerApi, participant_id: numb
       value,
     }
   } catch (e) {
-    console.log('Exception in GetParticipantExtraField:', e)
+    logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.exception_in_getparticipantextrafield', e)
     return { success: false, error: String((e as Error)?.message || e) };
   }
 }
@@ -322,7 +292,6 @@ const mutation_set_participant_extra_field = `mutation UpdateExtraFieldEntry($pa
   }
 }`
 
-
 async function setParticipantExtraField(api: OlimanagerApi, participant_id: number, extra_field_id: string, value: string) {
   try {
     const variables = {
@@ -330,12 +299,11 @@ async function setParticipantExtraField(api: OlimanagerApi, participant_id: numb
       extraFieldId: Number(extra_field_id),
       value,
     }
-    
+
     const response = await api.query(mutation_set_participant_extra_field, variables)
-    console.log('GraphQL response for setParticipantExtraField:', JSON.stringify(response), 'with variables:', JSON.stringify(variables))
 
     if (response.errors) {
-      console.log('GraphQL errors found:', response.errors)
+      logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.graphql_errors_found', undefined)
       return { success: false, error: response.errors };
     }
 
@@ -346,7 +314,6 @@ async function setParticipantExtraField(api: OlimanagerApi, participant_id: numb
     }
 
     if (result.messages) {
-      console.log('OperationInfo messages:', result.messages)
       return { success: false, messages: result.messages }
     }
 
@@ -361,7 +328,7 @@ async function setParticipantExtraField(api: OlimanagerApi, participant_id: numb
 
     return { success: false, error: `Unknown payload shape from updateExtraFieldEntry: ${JSON.stringify(result)}` }
   } catch (e) {
-    console.log('Exception in setParticipantExtraField:', e)
+    logDiagnostic('app/graphql/resolvers/olimanagerUpdateExtraFields.exception_in_setparticipantextrafield', e)
     return { success: false, error: String((e as Error)?.message || e) };
   }
 }

@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../lib/logging'
 import { ObjectId } from 'bson'
 import { useCallback, useEffect, useState } from 'react'
 import { useGetSheetsQuery, useGetRowsQuery, Row, Sheet, useAddSheetsMutation, useUpdateSheetsMutation, Permission } from '../graphql/generated'
@@ -39,15 +40,13 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
 
     const jobs = useCallback(async () => {
         if (!rows || !sheets) throw "error"
-        console.log('=== INIZIO PROCESSING JOBS ===')
-        console.log(`Sheets totali: ${sheets.length}`)
-        console.log(`Rows totali: ${rows.length}`)
+
         const jobs: Record<string,Job> = {}
 
         function addJob(job: Job) {
             const id = job.name + '-' + job.schema
             const existing = jobs[id]
-            
+
             if (!existing) {
                 // Nuovo job: viene creato
                 jobs[id] = {
@@ -101,7 +100,6 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
             }
         }
 
-        console.log('--- Processing sheets esistenti ---')
         for (const sheet of sheets) {
             if (mode === 'archimede' && (sheet.schema ==='archimede_biennio' || sheet.schema === 'archimede_triennio')) {
                 addJob({
@@ -124,7 +122,6 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
             }
         }
 
-        console.log('--- Processing rows ---')
         if (mode === 'archimede') {
             for (const row of rows || []) {
                 const codice_meccanografico = row.data?.Codice_meccanografico || ''
@@ -166,7 +163,6 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                     permissions.push({ email: email, role: i===0 ? 'admin' : 'editor' })
                 })
                 if (!distretti.has(nomeDistretto)) {
-                    console.log(`Aggiungo distretto ${nomeDistretto} con referenti: ${permissions.map(p => p.email).join(', ')}`)
                     distretti.set(nomeDistretto, { name: nomeDistretto, permissions, rowId: row._id })
                 }
             }
@@ -193,7 +189,6 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                     role: 'admin',
                 }]
                 if (!distretti.has(nomeDistretto)) {
-                    console.log(`Aggiungo distretto ${nomeDistretto} [${codiceDistretto}] con referenti: ${permissions.map(p => p.email).join(', ')}`)
                     distretti.set(nomeDistretto, { name: nomeDistretto, codice: codiceDistretto, permissions, rowId: row._id })
                 }
             }
@@ -220,7 +215,7 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
             <option value="archimede" onClick={() => setMode("archimede")}>Fogli Scuole Archimede (biennio e triennio)</option>
             <option value="gara_prime" onClick={() => setMode("gara_prime")}>Fogli Distretti Gara Prime</option>
             <option value="ammissione_senior" onClick={() => setMode("ammissione_senior")}>Fogli Ammissione Senior</option>
-            
+
         </select>
         <br />
         <Button onClick={() => done()}>Annulla creazione fogli</Button>
@@ -237,7 +232,6 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
             <Process jobsCallback={jobs} workbookId={workbookId} done={done}/>
         }
     </div>
-
 }
 
 export const ADD_SHEETS = gql`
@@ -262,10 +256,10 @@ function Process({jobsCallback, workbookId, done}: {
     const [jobs, setJobs] = useState<null|Record<string,Job>>(null)
     const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set())
     const [filterUnchanged, setFilterUnchanged] = useState(false)
-    
+
     const loading = loadingCreate || loadingUpdate
     const error = errorCreate || errorUpdate
-    
+
     useEffect(() => {
         jobsCallback().then(jobs => {
             setJobs(jobs)
@@ -353,7 +347,7 @@ function Process({jobsCallback, workbookId, done}: {
 
     async function go() {
         const jobsList = Object.values(jobs || {}).filter(job => job.selected)
-        
+
         // Separa i job da creare da quelli da aggiornare
         const sheetsToCreate = jobsList
             .filter(job => job.action === 'crea')
@@ -367,7 +361,7 @@ function Process({jobsCallback, workbookId, done}: {
                 })),
                 commonData: job.commonData,
             }))
-        
+
         const sheetsToUpdate = jobsList
             .filter(job => job.action === 'aggiorna' && job.sheet?._id)
             .map(update_info_from_job)
@@ -376,10 +370,6 @@ function Process({jobsCallback, workbookId, done}: {
             .filter(job => job.action === 'rimuovi' && job.sheet?._id)
             .map(job => job.sheet!._id!)
 
-        console.log('Sheets to create:', sheetsToCreate)
-        console.log('Sheets to update:', sheetsToUpdate)
-        console.log('Sheets to delete:', sheetsToDelete)
-        
         if (sheetsToDelete.length > 0) {
             alert('La funzionalità di rimozione dei fogli non è ancora implementata. Non faccio niente.')
             return
@@ -393,7 +383,7 @@ function Process({jobsCallback, workbookId, done}: {
                     refetchQueries: ['GetSheets'],
                 })
             }
-            
+
             // Aggiorna fogli esistenti
             if (sheetsToUpdate.length > 0) {
                 await updateSheetsMutation({
@@ -401,10 +391,10 @@ function Process({jobsCallback, workbookId, done}: {
                     refetchQueries: ['GetSheets'],
                 })
             }
-            
+
             done()
         } catch (err) {
-            console.error('Error in go():', err)
+            logDiagnostic('app/components/SheetsCreation.error_in_go', err)
         }
     }
 }

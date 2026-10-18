@@ -14,7 +14,7 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   const sheet = await sheets.findOne({ _id: new ObjectId(args.sheetId) })
 
   if (!sheet) throw new Error(`Foglio non trovato: ${args.sheetId}`)
-  
+
   check_user_is_sheet_admin(user, sheet)
 
   const schema = schemas[sheet.schema]
@@ -27,9 +27,9 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   // se mi viene dato un elenco di row._id lo uso per filtrare
   // altrimenti prendo tutte le righe del foglio
   if (rowIds) $match['_id'] = { $in: rowIds }
-  
+
   const rows = await rowsCollection.find($match).toArray()
-  
+
   // riordina le righe nell'ordine specificato in selectedRowIds
   const rowMap = new Map(rows.map(r => [r._id.toString(), r]))
   const orderedRows = rowIds 
@@ -40,14 +40,14 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
     sheet_name: sheet.name,
     ...row.data
   })).join('\n')
-  
+
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 
   // create directory if not exists
   if (!fs.existsSync(SPOOL_DIR)) {
     fs.mkdirSync(SPOOL_DIR, { recursive: true });
   }
-  
+
   const now = new Date();
 
   const scanSheetJobsCollection = await getScanSheetJobsCollection()
@@ -76,7 +76,6 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   const filename = `${schema.name}-${job_id.toString()}.jsonl`
   const filePath = path.join(SPOOL_DIR, filename)
 
-  console.log(`Writing scan sheet generation job to spool: ${filePath}`)
   fs.writeFileSync(filePath, payload);
 
   return true

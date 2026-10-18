@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { Context } from '../types'
 import { getRowsCollection } from '@/app/lib/mongodb'
 import { QueryWorkbookExerciseReportArgs, ExerciseReport, ExerciseDistributionItem } from '../generated'
@@ -93,7 +94,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
             if (counts.correct_answer === '') {
                 counts.correct_answer = correct
             } else if (counts.correct_answer !== correct) {
-                console.warn(`    Warning: different correct answers found for field ${field.name}: "${counts.correct_answer}" vs "${correct}"`)
+                logDiagnostic('app/graphql/resolvers/workbookExerciseReport.warning_different_correct_answers_found_for_field', undefined, 'warn')
             }
 
             if (given === '-') {

@@ -305,9 +305,8 @@ export default function CsvImport({schemaName, sheetId, done}:{
 
     try {
         const res = await addRows({variables});
-        
+
         if (!res.data) {
-            console.log(`res.data`, res.errors);
             if (res.errors) setError(res.errors?.map(e => `${e}`).join(', '))
             else setError(`Qualcosa è andato storto`)
             return false;
@@ -319,7 +318,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
         setError(`${error}`)
         return false;
     }    
-    
+
   }
 
   async function handlePasteCsv() {

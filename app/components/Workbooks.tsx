@@ -1,5 +1,6 @@
 "use client"
 
+import { logDiagnostic } from '../lib/logging'
 import Link from 'next/link'
 import Error from './Error'
 import Loading from './Loading'
@@ -48,12 +49,12 @@ export default function Workbooks() {
 
   const handleDeleteWorkbook = async (workbookId: string | null | undefined, workbookName: string | null | undefined) => {
     if (!workbookId || !workbookName) return
-    
+
     if (confirm(`Sei sicuro di voler cancellare la raccolta "${workbookName}"?`)) {
       try {
         await deleteWorkbook({ variables: { _id: workbookId } })
       } catch (error) {
-        console.error('Errore durante la cancellazione:', error)
+        logDiagnostic('app/components/Workbooks.errore_durante_la_cancellazione', error)
       }
     }
   }

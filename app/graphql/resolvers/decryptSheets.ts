@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { get_authenticated_user } from './utils'
@@ -51,13 +52,13 @@ export default async function decryptSheets(_: unknown, { sheetIds, password }: 
                         }
                         await rows_collection.updateOne({ _id: row._id }, { $set: setObj, $unset: { encrypted_data: '' } })
                     } catch (e: unknown) {
-                        console.error('decryptSheets: failed to restore row', { sheetId: id, rowId: row._id?.toString?.(), error: (e as Error)?.message })
+                        logDiagnostic('app/graphql/resolvers/decryptSheets.decryptsheets_failed_to_restore_row', e)
                         continue
                     }
                 }
             }))
         } catch (e) {
-            console.error('decryptSheets background job failed:', e)
+            logDiagnostic('app/graphql/resolvers/decryptSheets.decryptsheets_background_job_failed', e)
         }
     })()
 

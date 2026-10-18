@@ -17,21 +17,17 @@ if (!uri) throw new Error("Please add your MongoDB URI to .env.local")
 
 if (process.env.NODE_ENV === 'development') {
     if (!global._mongoClientPromise) {
-        console.log("connecting to MongoDB... (development)")
         const client = new MongoClient(uri, options)
         global._mongoClientPromise = client.connect()
         global._mongoClientPromise.then((client) => {
-            console.log("MongoDB connected successfully")
             main(client)
         })
     }
     clientPromise = global._mongoClientPromise
 } else {
-    console.log("connecting to MongoDB... (production)")
     const client = new MongoClient(uri, options)
     clientPromise = client.connect()
     clientPromise.then((client) => {
-        console.log("MongoDB connected successfully")
         main(client)
     })
 }
@@ -51,15 +47,6 @@ async function main(client: MongoClient) {
         { email: { $in: admin_emails } },
         { $set: { isAdmin: true } }
       );    
-    const admins = await users.find({ isAdmin: true }).toArray()
-    if (admins.length > 0) {
-        console.log("Admin users found in the database:")
-        admins.forEach(u => console.log("* " + u.email))
-    } else {
-        const userExists = await users.findOne()
-        if (!userExists) console.log("No users found in the database. Login to create one.")
-        else console.log("No admin users found in the database. Set ADMIN_EMAILS in environment variables to create one.")
-    }
 }
 
 export async function getAccountsCollection() {
@@ -126,7 +113,7 @@ export async function withTransaction<T>(
 ): Promise<T> {
     const client = await getClient()
     const session = client.startSession()
-    
+
     try {
         let result: T
         await session.withTransaction(async () => {

@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { queryOlimanager, OlimanagerGraphQLError } from "@/app/lib/olimanager"
 
 export async function GET() {
@@ -21,7 +22,7 @@ export async function GET() {
                 { status: 403 }
             )
         }
-        console.error(err)
+        logDiagnostic('app/api/test/route.operation_failed', err)
         return Response.json({ error: "Errore interno" }, { status: 500 })
     }
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { logDiagnostic } from '../lib/logging'
 import { useState, useEffect, useMemo } from 'react'
 import { gql, useMutation, ApolloError } from '@apollo/client'
 import { ObjectId } from 'bson'
@@ -213,7 +214,7 @@ export default function WorkbookSelection({ workbookId, profile }: { workbookId:
                 }
             });
         } catch (err) {
-            console.error('Error toggling selection:', err);
+            logDiagnostic('app/components/WorkbookSelection.error_toggling_selection', err);
             // In caso di errore, il refetch dovrebbe ripristinare lo stato corretto
             refetch();
         }

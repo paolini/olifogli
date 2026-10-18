@@ -37,7 +37,6 @@ export default function ScansImport({sheet, data_rows}:{
     </>
 
     async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-        console.log('handleFileChange', event.target.files)
         if (!event.target.files) return
         const file = event.target.files[0]
         setBusy(true)
@@ -51,7 +50,7 @@ export default function ScansImport({sheet, data_rows}:{
         const formData = new FormData();
         formData.append('file', file);
         formData.append('sheetId', sheet._id.toString());
-        
+
         const response = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
@@ -202,7 +201,7 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     const scans_to_data_dict = schema.scans_to_data_dict(rows, data_rows)
 
     if (rows.length === 0) return <p>Nessun dato acquisito</p>
-    
+
     return <>
         <span><b>{pluralize(rows.length, 'riga', 'righe')}</b> </span>
             <Button disabled={showRaw || selected.length === 0 || addLoading || patchLoading} onClick={importSelected}>
@@ -311,7 +310,6 @@ function RawResultsTable({job, rows}: {
         </tbody>
     </table>
 }
-
 
 function ScanRow({job, row, selected, setSelected, data, schema} : {
     job: ScanJob,

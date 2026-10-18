@@ -5,6 +5,7 @@
 */
 import 'dotenv/config';
 import http from 'http';
+import { logDiagnostic, logWebSocketEvent } from './app/lib/logging';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/use/ws'; // <-- Cambiato da 'graphql-ws' a 'graphql-ws/use/ws'
 import { ApolloServer } from '@apollo/server';
@@ -106,10 +107,13 @@ async function start() {
       return get_context({ user_id, email, pubsub, isAdmin: conn?.isAdmin, isSupervisor: conn?.isSupervisor });
     },
     onConnect: async (ctx) => {
-      if (!await authenticate(ctx.extra.request.headers.cookie)) return false;
+      if (!await authenticate(ctx.extra.request.headers.cookie)) {
+        logWebSocketEvent('rejected');
+        return false;
+      }
       const tabId = ctx.connectionParams?.tabId as string | undefined
       connectionData.set(ctx, { tabId, email: undefined, sheetIds: new Set() })
-      console.log('[ws] client connected tabId=%s', tabId ?? '(none)');
+      logWebSocketEvent('connected');
     },
     onDisconnect: async (ctx) => {
       const conn = connectionData.get(ctx)
@@ -122,7 +126,7 @@ async function start() {
         }
       }
       connectionData.delete(ctx)
-      console.log('[ws] client disconnected tabId=%s', conn?.tabId ?? '(unknown)');
+      logWebSocketEvent('disconnected');
     },
     onSubscribe: async (ctx, id, payload) => {
       if (!await authenticate(ctx.extra.request.headers.cookie)) {
@@ -141,16 +145,16 @@ async function start() {
         const sheetId = payload.variables?.sheetId
         if (sheetId) conn.sheetIds.add(sheetId.toString())
       }
-      console.log('[ws] subscribe id=%s', id);
+      logWebSocketEvent('subscribed');
     },
     onNext: (ctx, id, _payload, _args, result) => {
-      console.log('[ws] → id=%s payload=%s', id, JSON.stringify(result.data));
+      logWebSocketEvent('next', result.errors);
     },
-    onError: (ctx, id, errors) => {
-      console.error('[ws] error id=%s', id, errors);
+    onError: (ctx, id, payload, errors) => {
+      logWebSocketEvent('error', errors);
     },
     onComplete: (ctx, id) => {
-      console.log('[ws] complete id=%s', id);
+      logWebSocketEvent('complete');
     },
   }, wsServer);
 
@@ -195,6 +199,6 @@ async function start() {
 }
 
 start().catch(err => {
-  console.error('ws-server error', err);
+  logDiagnostic('ws.start_failed', err);
   process.exit(1);
 });

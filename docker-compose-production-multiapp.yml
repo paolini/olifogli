@@ -36,10 +36,16 @@ x-common-env: &common-env
     OLI_GRAPHQL_ENDPOINT: "https://olimpiadi-scientifiche.it/graphql/"
     ADMIN_EMAILS: "emanuele.paolini@unipi.it"
     LOG_DIR: "/app/logs"
+    LOG_RETENTION_DAYS: "30"
 
 x-app-common: &app-common
   image: paolini/olifogli:latest
   restart: unless-stopped
+  logging:
+    driver: local
+    options:
+      max-size: "10m"
+      max-file: "3"
   volumes:
     - ./logs:/app/logs
     - ./spool:/app/spool

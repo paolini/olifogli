@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile } from 'fs/promises'
 import path from 'path'
@@ -29,10 +30,10 @@ async function getSCANS_SPOOL_DIR() {
 export async function POST(req: NextRequest) {
     const SCANS_SPOOL_DIR = await getSCANS_SPOOL_DIR()
     if (!SCANS_SPOOL_DIR) return NextResponse.json({ error: 'upload disabled' }, { status: 503 });
-    
+
     const context = await get_context({ req })
     const user = await get_authenticated_user(context)
-  
+
     try {
         const formData = await req.formData()
         const file = formData.get('file') as File | null
@@ -47,9 +48,9 @@ export async function POST(req: NextRequest) {
 
         const sheetsCollection = await getSheetsCollection()
         const sheet = await sheetsCollection.findOne({_id: sheetId})
-    
+
         if (!sheet) return NextResponse.json({ error: 'Missing sheet' }, { status: 400 });
-    
+
         const schema = schemas[sheet.schema]
 
         try {
@@ -104,16 +105,15 @@ export async function POST(req: NextRequest) {
             // Save file to disk
             await writeFile(filePath, buffer);
         } catch (error) {
-            console.error('Error writing file:', error);
+            logDiagnostic('app/api/upload/route.error_writing_file', error);
             return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
         }
 
         return NextResponse.json({ 
             jobId: job_id
         });
-
     } catch (error) {
-        console.error(error);
+        logDiagnostic('app/api/upload/route.operation_failed', error);
         return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 }

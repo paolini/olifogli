@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../lib/logging'
 /**
  * Client API per comunicare con il server GraphQL di Olimanager.
  * 
@@ -26,8 +27,6 @@ export class OlimanagerApi {
 
     this.cookies = {}; // cookieName -> value
     this.headers = { 'Content-Type': 'application/json' };
-
-    process.stderr.write(`Using endpoint: ${this.endpoint}\n`);
   }
 
   // Estrae i cookie da un array di header Set-Cookie
@@ -55,7 +54,6 @@ export class OlimanagerApi {
   async rawRequest(body: unknown) {
     // Se non abbiamo ancora un csrftoken, effettuiamo una primissima chiamata per riceverlo
     if (!this.cookies.csrftoken) {
-      process.stderr.write('Creating session\n');
       const r0 = await fetch(this.endpoint, { method: 'POST' });
       const setCookies = typeof r0.headers.getSetCookie === 'function'
         ? r0.headers.getSetCookie()
@@ -95,7 +93,7 @@ export class OlimanagerApi {
     }
 
     if (resp.status !== 200) {
-      process.stderr.write(JSON.stringify(json, null, 2) + '\n');
+      logDiagnostic('olimanager.http_request_failed');
       throw new Error(`Query failed to run with a ${resp.status}.`);
     }
     return json;
@@ -107,7 +105,6 @@ export class OlimanagerApi {
   }
 
   async login() {
-    process.stderr.write('Logging in\n');
     if (!this.EMAIL) {
       throw new Error('Email non specificata!');
     }

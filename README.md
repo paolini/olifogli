@@ -122,3 +122,75 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ## Deployment
 
 Tested deployment with docker-compose-production.yml for a template configuration file.
+
+
+## Log applicativi e conservazione
+
+I log GraphQL registrano soltanto timestamp UTC, identificativo casuale della
+richiesta, tipo di operazione, nomi dei campi radice definiti nello schema,
+durata, esito e codici di errore ammessi. Non registrano nomi di operazione o
+alias scelti dal client, variabili, identità, payload, messaggi di errore liberi
+o stack trace. I log WebSocket contengono il tipo di evento e i codici di errore,
+senza payload, tabId o identificativi delle operazioni forniti dal client.
+La diagnostica applicativa usa identificatori statici degli eventi e categorie
+di errore: i dettagli dei dati restano disponibili nell'interfaccia autorizzata,
+non nei log. Non usare `console.log` su richieste, risposte, configurazioni o
+errori grezzi; per gli errori usare `logDiagnostic` con un evento statico.
+
+Se `LOG_DIR` è configurata, i log GraphQL vengono anche scritti nei file
+`graphql-YYYY-MM-DD.log` e `graphql-errors-YYYY-MM-DD.log`. La rotazione è
+giornaliera, secondo UTC. I nuovi file vengono creati con permessi `0600`.
+
+La pulizia è un comando esplicito, senza timer nell'applicazione:
+
+```bash
+# Anteprima: nessuna cancellazione
+npm run logs:cleanup -- --dry-run
+
+# Cancella i file scaduti
+npm run logs:cleanup
+```
+
+Configurare `LOG_DIR` e, facoltativamente, `LOG_RETENTION_DAYS` in ambiente o
+`.env`. Il valore predefinito è **30**: si conservano il giorno UTC corrente e
+i 29 precedenti. La data nel nome determina la scadenza, anche per i log del
+vecchio formato; la data di copia/modifica del file non prolunga la conservazione.
+Il comando esamina solo i file regolari con i due nomi previsti direttamente
+in `LOG_DIR`; ignora link simbolici, sottodirectory, backup e nomi non validi.
+Una directory mancante, una configurazione non valida o errori di cancellazione
+producono un codice di uscita non zero. La directory deve essere accessibile e
+scrivibile dall'utente del container.
+
+Con l'immagine aggiornata e il Compose di produzione del repository:
+
+```bash
+# Container già avviato
+docker compose -f docker-compose-production.yml exec -T app1 npm run logs:cleanup -- --dry-run
+
+# Funziona anche fuori stagione, con i servizi spenti: usa lo stesso volume logs
+docker compose -f docker-compose-production.yml run --rm --no-deps -T app1 npm run logs:cleanup
+```
+
+Il sistema ospitante deve pianificare il comando, ad esempio una volta al giorno.
+Esempio di crontab da adattare al percorso del deployment e del comando Docker:
+
+```cron
+0 3 * * * cd /srv/olifogli && /usr/bin/docker compose -f docker-compose-production.yml run --rm --no-deps -T app1 npm run logs:cleanup
+```
+
+Basta un servizio applicativo per pulire il volume condiviso. La conservazione
+è applicata soltanto quando il comando viene eseguito: monitorarne gli errori e
+lasciare il cron attivo anche nei periodi di chiusura dell'applicazione. Alla
+prima esecuzione verranno eliminati anche i vecchi file giornalieri scaduti; i
+file più recenti del vecchio formato possono ancora contenere dati personali.
+
+I Compose di produzione limitano i log console dei container applicativi e,
+dove presente, WebSocket a tre file da 10 MB tramite il driver Docker `local`.
+Questo è un limite di dimensione, **non** una scadenza di 30 giorni. Si applica ai
+container ricreati con la nuova configurazione. I log di vecchi container,
+reverse proxy, servizi esterni e backup richiedono una politica separata sul
+sistema ospitante: questo comando non li elimina. Gli access log Nginx degli
+esempi contengono solo tempo, stato, durata e dimensione della risposta; gli
+error log del proxy possono ancora includere dettagli della richiesta e vanno
+gestiti separatamente. Il logging delle URL delle richieste in sviluppo Next.js
+è disabilitato per non registrare parametri OAuth.

@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../logging'
 import { ReportEntry } from '@/app/graphql/generated'
 import { Data, Row, ScanResults, Sheet } from '../models'
 import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, NumericField, DateField, VariantField, ScoreField, OptionsField, AbsentField, AnswerField } from './fields'
@@ -60,7 +61,7 @@ export default class Distrettuale extends Competition {
         return Object.fromEntries(scan.map(scan => {
             // estraggo i dati dalla scansione
             const raw = scan.rawData || {}
-            
+
             let {
                 StudentCode,
                 TestCode,
@@ -95,7 +96,7 @@ export default class Distrettuale extends Competition {
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
                 })
-            
+
             // Gestione NumericAnswerField e ScoreAnswerField (se presenti nella scansione come AnswerN)
             // Assumiamo che la scansione popoli Answer13, Answer14 etc.
             // Bisogna vedere come sono mappati nell'oggetto raw.
@@ -105,7 +106,7 @@ export default class Distrettuale extends Competition {
             // Le domande numeriche (13,14) potrebbero arrivare nella scansione.
             // Le domande score (15,16,17) arrivano dalla scansione o inserimento manuale dopo?
             // Se arrivano dalla scansione, aggiungiamo il mapping.
-            
+
             const otherFields = this.fields.filter(field => field instanceof NumericAnswerField || field instanceof ScoreAnswerField);
             otherFields.forEach((field) => {
                 // Estraiamo il numero dalla parte "rXX" del nome
@@ -215,7 +216,7 @@ export default class Distrettuale extends Competition {
             let score = 0;
             let extendedAnswer = answer;
             const correctAnswer = context.answers_object.correct[field.name];
-                        
+
             if (field instanceof ChoiceAnswerField) {
                 // Valutazione
                 if (answer === 'X') {
@@ -249,21 +250,16 @@ export default class Distrettuale extends Competition {
             } else {
                 throw new Error(`Tipo di campo non supportato in calculateRowData: ${field.constructor.name}`);
             }
-            
+
             problemScores.push(score);
-            console.log(`Campo ${field.name}: risposta="${answer}", corretta="${correctAnswer}", score=${score}`);
+
             totalScore += score;
-            console.log(`Total score parziale: ${totalScore}`);
+
             processedAnswers[field.name] = extendedAnswer;
         }
 
         if (problemScores.length !== Object.keys(context.answers_object.correct).length) {
-            console.log("Mismatch tra numero di risposte corrette e numero di campi di risposta:", {
-                problemScoresLength: problemScores.length,
-                correctAnswersLength: Object.keys(context.answers_object.correct).length,
-                problemScores,
-                correctAnswers: context.answers_object.correct,
-            });
+            logDiagnostic('app/lib/schema/Distrettuale.mismatch_tra_numero_di_risposte_corrette_e_numero_di_campi_di_risposta', undefined);
             return error(`il numero di risposte corrette configurate (${Object.keys(context.answers_object.correct).length}) non corrisponde al numero di risposte presenti nello schema (${problemScores.length})`);
         }
 
@@ -273,16 +269,15 @@ export default class Distrettuale extends Competition {
             processedAnswers,
             error: ''
         }
-        console.log("calculateRowData:", ret)
+
         return ret
     }
-
 
     customized_common_data(data: Data) {
         const tabular: [string,string][] = []
         const cards: [string,string][] = []
         const fields = new Set(Object.keys(data))
-        
+
         if (fields.has('info')) {
             cards.push(['informazioni', data['info']])
             fields.delete('info')
@@ -368,7 +363,7 @@ export class ImportazionePartecipantiDistrettuale extends Schema {
         if (!isNaN(classYear) && (classYear >= 9)) {
             data['classYear'] = `${classYear-8}`
         }
-        console.log("ImportazionePartecipantiDistrettuale.row_to_sheet:", {sheet_name, data})
+
         return {
             sheet:  {
                 schema: TargetSchema.name,

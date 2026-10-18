@@ -125,7 +125,7 @@ function ExerciseDistributionChart({ distribution, totalStudents }: { distributi
 
     // Prepare data for Chart.js
     const labels = distribution.map(item => item.exercise.toString())
-    
+
     const answers = Array.from(new Set(distribution.flatMap(item => item.answers.map(a => a.answer)))).sort()
 
     // console.log(`Unique answers across distribution:`, answers.sort())
@@ -206,8 +206,6 @@ function ExerciseDistributionChart({ distribution, totalStudents }: { distributi
             }
         }
     }
-
-    console.log(`Chart data:`, chartData)
 
     return (
         <div className="space-y-4">

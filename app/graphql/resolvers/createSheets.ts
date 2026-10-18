@@ -52,8 +52,6 @@ export default async function createSheets(
         query._id = { $in: rowIds };
     }
 
-    console.log(`Starting to process rows for sheet ${sheetId}... query: `, query);
-
     const sheets: Record<string, {
         _id: ObjectId,
         original: Sheet
@@ -61,9 +59,7 @@ export default async function createSheets(
     }> = {};
 
     for await (const row of rowsCollection.find(query)) {
-        console.log(`Processing row ${row._id}`, row.data);
         const data = schema.row_to_sheet(row);
-        console.log(`  data:`, data);
 
         if (typeof data === 'string') {
             return `Error processing row ${row._id}: ${data}\n`;
@@ -82,10 +78,8 @@ export default async function createSheets(
             await create_or_update_row(data);
         }
     }
-    
-    await persist_sheets();
 
-    console.log(`Finished processing rows for sheet ${sheetId}.`, ret);
+    await persist_sheets();
 
     return JSON.stringify(ret);
 
@@ -124,10 +118,8 @@ export default async function createSheets(
                 }
                 let _id: ObjectId;
                 if (dry) {
-                    console.log("Dry run: would create sheet with payload:", payload);
                     _id = new ObjectId();
                 } else {
-                    console.log("Creating sheet with payload:", payload);
                     const res = await sheetsCollection.insertOne(payload);
                     _id = res.insertedId;
                 }
@@ -178,10 +170,7 @@ export default async function createSheets(
             }
             if (changed) {
                 $set.updatedAt = now;
-                if (dry) {
-                    console.log(`Dry run. Would update sheet ${original._id} with`, $set);
-                } else {
-                    console.log(`Updating sheet "${sheetName}" (${original._id})`, $set);
+                if (!dry) {
                     await sheetsCollection.updateOne(
                         { _id: original._id },
                         { $set }
@@ -189,7 +178,6 @@ export default async function createSheets(
                 }
                 ret.sheets_updated++;
             } else {
-                console.log(`No changes for sheet "${sheetName}" (${original._id})`);
                 ret.sheets_unchanged++;
             }
        }
@@ -197,7 +185,6 @@ export default async function createSheets(
 
     async function create_or_update_row(data: RowToSheetsResult) {
         if (!data.row) {
-            console.log("No row data to create/update");
             return;
         }
 
@@ -209,13 +196,12 @@ export default async function createSheets(
                     acc[`data.${key}`] = data.row!.data[key];
                     return acc;
                 }, {} as Record<string, string>);
-            console.log(`Checking for existing row with query:`, { sheetId: sheet._id, ...query });
+
             const row = await rowsCollection.findOne({
                 sheetId: sheet._id,
                 ...query
             });
             if (row) {
-                console.log(`Row already exists with id ${row._id}, skipping creation.`);
                 ret.rows_skipped++;
                 return;
             } 
@@ -251,9 +237,7 @@ export default async function createSheets(
             }
         }
 
-        if (dry) {
-            console.log("Dry run: would create row with data:", row);
-        } else {
+        if (!dry) {
             const res = await rowsCollection.insertOne(row);
             if (!res) throw new Error('Failed to insert row');
         }

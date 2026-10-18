@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../../../lib/logging'
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
@@ -29,14 +30,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     const sheet = await sheets.findOne({ _id: job.sheetId })
 
     if (!sheet) {
-        console.log(`[PDF] Sheet not found: ${job.sheetId}`)
         return NextResponse.json({ error: 'Sheet not found' }, { status: 404 })
     }
 
     try {
         check_user_can_view_sheet(user, sheet)
     } catch (error) {
-        console.log(`[PDF] Permission denied for user ${user?.email}`)
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -55,16 +54,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
 
     for (const statusDir of ['completed', 'processing', 'aborted']) {
         const filePath = join(SCANS_SPOOL_DIR, statusDir, fileName)
-        
+
         if (!existsSync(filePath)) {
-            console.log(`[PDF] File not found in ${statusDir} directory: ${filePath}`)
             continue
         }
 
         try {
-            console.log(`[PDF] Reading file: ${filePath}`)
             const file = await readFile(filePath);
-            console.log(`[PDF] File read successfully, size: ${file.length} bytes`)
 
             return new NextResponse(new Uint8Array(file), {
                 status: 200,
@@ -74,11 +70,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
                 },
             });
         } catch (error) {
-            console.error(`[PDF] Error reading file ${filePath}:`, error);
+            logDiagnostic('app/scan/[jobId]/pdf/route.pdf_error_reading_file', error);
             continue
         }
     }
-    
-    console.error(`[PDF] PDF file not found for job ${jobId} in any status directory`);
+
+    logDiagnostic('app/scan/[jobId]/pdf/route.pdf_pdf_file_not_found_for_job', undefined);
     return new NextResponse('Not Found', { status: 404 });
 }

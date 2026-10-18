@@ -1,3 +1,4 @@
+import { logDiagnostic } from './logging'
 import type { AuthOptions, NextAuthOptions } from "next-auth"
 
 import { getUsersCollection, getAccountsCollection } from "@/app/lib/mongodb"
@@ -101,6 +102,11 @@ function providers() {
 export const authOptions: AuthOptions = {
   secret: NEXTAUTH_SECRET, // FONDAMENTALE per produzione per firmare i JWT di sessione!
   debug: false,
+  logger: {
+    error(code) { logDiagnostic('auth.provider_error', { code }) },
+    warn(code) { logDiagnostic('auth.provider_warning', { code }, 'warn') },
+    debug() {},
+  },
   // Configure one or more authentication providers
   providers: providers(),
   callbacks: {
@@ -120,7 +126,7 @@ export const authOptions: AuthOptions = {
       // ad ogni richiesta
       // Memorizza l'access token, se disponibile
       if (account?.access_token) token.accessToken = account.access_token
-    
+
       return token
     },
 
@@ -139,17 +145,17 @@ export const authOptions: AuthOptions = {
       account?: ACCOUNT | null
     }) => {
       if (!user.email) {
-        console.error("SignIn callback: user.email is required but not provided.")
+        logDiagnostic('app/lib/auth.signin_callback_user_email_is_required_but_not_provided', undefined)
         return false // blocca il login se l'email non è presente
       }
 
       // console.log("SignIn callback:", JSON.stringify({ user, account }, null, 2))
       const users = await getUsersCollection()
       const accounts = await getAccountsCollection()
-    
+
       // Trova o crea l'utente
       let existingUser = await users.findOne({ email: user.email })
-    
+
       if (!existingUser) {
         const newUser = {
           email: user.email,
@@ -160,13 +166,12 @@ export const authOptions: AuthOptions = {
         }
         const result = await users.insertOne(newUser)
         existingUser = { _id: result.insertedId, ...newUser }
-        console.log("nuovo utente creato:", existingUser)
       }
 
       // aggiorna l'user, verrà passato alla callback jwt per l'inserimento nel token
       user._id = existingUser._id.toString()
       // user.isAdmin = existingUser.isAdmin || false
-    
+
       // Trova o aggiorna l'account
       if (account) {
         await accounts.updateOne(
@@ -188,11 +193,7 @@ export const authOptions: AuthOptions = {
           },
           { upsert: true }
         )
-      } else {
-        console.log("Nessun account associato all'utente, non verrà creato o aggiornato un account.")
       }
-    
-      console.log(`Utente ${existingUser.email} (${existingUser._id}) ha effettuato il login`)
 
       // console.log("Sessione creata:", JSON.stringify({ user, account }, null, 2))
 

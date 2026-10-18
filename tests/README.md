@@ -53,3 +53,11 @@ I test rileggono il CSV con Papa Parse per verificare separatori, virgolette,
 Unicode, celle vuote e numeri. L'apostrofo aggiunto ai testi sospetti è parte
 del CSV e può essere visibile quando il file viene letto da altri programmi.
 Non viene eseguito un collaudo automatico in Excel o LibreOffice.
+
+
+`logging.test.cjs` verifica il plugin GraphQL, i log WebSocket e la diagnostica
+con valori personali/segreti sintetici, nomi di operazione e alias ostili,
+errori e codici non riconosciuti. Controlla anche i file giornalieri prodotti.
+La pulizia viene provata esclusivamente in directory temporanee: limite dei
+30 giorni UTC, vecchi formati, dry-run, esecuzioni ripetute, configurazioni
+invalide, date non valide, file estranei, directory e link simbolici.

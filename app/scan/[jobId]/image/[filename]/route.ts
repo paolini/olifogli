@@ -15,10 +15,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     const user = await get_authenticated_user(context)
 
     if (!SCANS_DATA_DIR) {
-        console.log(`environment variable SCANS_DATA_DIR not set`);
         return new NextResponse('Not Found', { status: 404 });
     }
-    
+
     const jobs = await getScanJobsCollection()
     const job = await jobs.findOne({ _id: new ObjectId(jobId) })
 
@@ -27,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     } catch (error) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
-    
+
     const filePath = join(SCANS_DATA_DIR, jobId, filename);
 
     try {

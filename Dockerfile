@@ -57,6 +57,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/migrate-mongo-config.js ./migrate-mongo-config.js
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 # Copy full production node_modules (needed by ws-server; superset of standalone's slim node_modules)
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 # Copy ws-server bundle and the schema file it reads at runtime via readFileSync

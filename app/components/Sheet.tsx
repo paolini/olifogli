@@ -1,3 +1,4 @@
+import { logDiagnostic } from '../lib/logging'
 import { useState, useEffect } from 'react'
 import { gql, useQuery, useSubscription } from '@apollo/client'
 import { unparseCsv } from '../lib/csv'
@@ -60,7 +61,7 @@ export default function SheetElement({sheetId}: {
     const { data, error } = useGetSheetQuery({ variables: { sheetId } })
     const profile = useProfile()
     const { setBreadcrumbs } = useBreadcrumbs()
-    
+
     // Imposta i breadcrumbs
     useEffect(() => {
         if (data?.sheet) {
@@ -73,7 +74,7 @@ export default function SheetElement({sheetId}: {
         }
         return () => setBreadcrumbs([])
     }, [data?.sheet, setBreadcrumbs])
-    
+
     if (error) return <Error error={error} />;
     if (!data || profile===undefined) return <Loading />;
 
@@ -211,7 +212,7 @@ function SheetBody({sheet,profile}: {
             })
         },
         onError: (err) => {
-            console.error('[cursorChanged] subscription error:', err)
+            logDiagnostic('app/components/Sheet.cursorchanged_subscription_error', err)
         },
     })
 
@@ -224,7 +225,7 @@ function SheetBody({sheet,profile}: {
                 if (!subscriptionData.data) return prev;
                 const newRow = (subscriptionData.data as unknown as { rowChanged: Row }).rowChanged;
                 if (newRow.sourceTabId === tabId) return prev;
-                
+
                 const exists = prev.rows.find(r => r._id.toString() === newRow._id.toString());
                 if (exists) {
                     return {
@@ -260,7 +261,7 @@ function SheetBody({sheet,profile}: {
 
     if (error) return <Error error={error}/>
     if (loading || !data) return <Loading />
-    
+
     const schema = schemas[sheet.schema]
     const selectionWorkbookId = (schema instanceof GaraPrime) && sheet.workbook.commonData["selection_workbook_id"] || ''
 
@@ -372,7 +373,7 @@ function SheetBody({sheet,profile}: {
         }
         </div>
     </div>
-    
+
     // Aggiorna la query string quando cambia il tab
     function setTab(newTab: typeof validTabs[number]) {
         setTabState(newTab);

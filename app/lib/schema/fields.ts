@@ -133,7 +133,7 @@ export class Field {
             const n1 = parseFloat(value1) || 0
             const n2 = parseFloat(value2) || 0
             const r = ((n1 > n2) ? 1 : (n1 < n2) ? -1 : 0)
-            console.log(`Comparing numeric values: ${value1} vs ${value2} => ${r}`)
+
             return r
         } else {
             const v1 = value1.toLowerCase()
@@ -157,7 +157,7 @@ export class VariantField extends Field {
         if (showStandardAnswers) {
             let standard_code = ''
             // mostra il codice della variante standard
-            
+
             // attenzione che il codice '0' o '000' indica studente 
             // assente e non va modificato
 
@@ -224,7 +224,6 @@ export class AnswerField extends Field {
         return super.checkValid(value, context)
     }
 }
-
 
 export class ChoiceAnswerField extends AnswerField {
     constructor(name: string, options: FieldOptions) {
@@ -296,7 +295,7 @@ export class NumericAnswerField extends AnswerField {
 
     display(value: string, old_value: string, showStandardAnswers: boolean): DisplayValue {
         // Formato atteso: "VALORE [CORRETTO]" es: "10 [10]" oppure "5 [10]"
-        
+
         // Helper to extract parts
         const parse = (v: string) => {
             const m = v?.match(/^(.*)\s\[(.*)\]$/);
@@ -308,10 +307,10 @@ export class NumericAnswerField extends AnswerField {
         // Se non troviamo il valore corretto nel valore corrente, proviamo a recuperarlo dal vecchio valore
         // Questo serve per mantenere la colorazione durante l'editing
         const original = parse(old_value);
-        
+
         const displayValue = current.val;
         const correctValue = current.corr !== undefined ? current.corr : original.corr;
-        
+
         let extra_css = '';
         let title = displayValue;
 
@@ -319,7 +318,7 @@ export class NumericAnswerField extends AnswerField {
              // Abbiamo un riferimento per la correzione
              const numVal = parseFloat(displayValue);
              const numCorr = parseFloat(correctValue);
-             
+
              if (!isNaN(numVal) && !isNaN(numCorr)) {
                 // Confronto numerico con tolleranza
                 if (Math.abs(numVal - numCorr) < 0.000001) { 
@@ -340,7 +339,7 @@ export class NumericAnswerField extends AnswerField {
                 }
              }
         }
-        
+
         const changed = (value !== old_value);
 
         return {
@@ -432,7 +431,7 @@ export class DateField extends Field {
     checkValid(value: string, context: RowValidationContext): string {
         // se non è richiesto e il valore è vuoto, è valido
         if (!this.required && value === '') return ''
-        
+
         // deve essere della forma gg/mm/yyyy ed estrae i valori
         const match = value.match(/^([0-9]{2})\/([0-9]{2})\/([0-9]{4})$/)
         if (!match) return 'valore non valido, deve essere della forma gg/mm/yyyy'
@@ -440,10 +439,10 @@ export class DateField extends Field {
         const day = parseInt(match[1], 10)
         const month = parseInt(match[2], 10)
         const year = parseInt(match[3], 10)
-        
+
         // Verifica che il giorno sia valido per il mese/anno
         const date = new Date(year, month - 1, day)
-        
+
         // Verifica che la data creata corrisponda ai valori inseriti
         // (questo gestisce automaticamente anni bisestili e giorni per mese)
         if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
@@ -491,7 +490,7 @@ export class DateField extends Field {
 
 export class ScoreField extends Field {
     max_score: number
-    
+
     constructor(name: string, max_score: number, options: FieldOptions = {}) {
         super(name, {header: 'Punti', type: 'number', editable: false, required: false, css_style: (scoreStr: string) => score_to_color_style(scoreStr, max_score), ...options})
         this.max_score = max_score

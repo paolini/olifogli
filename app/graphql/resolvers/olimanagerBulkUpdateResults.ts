@@ -58,24 +58,20 @@ export default async function olimanagerBulkUpdateResults(
     const remainingRowIds = rowIds ? [...rowIds] : [];
     const remainingSheetIds = sheetIds ? [...sheetIds] : [];
 
-    console.log(`Inizio operazione di bulk update results. Righe iniziali: ${remainingRowIds.length}, Fogli iniziali: ${remainingSheetIds.length}`);
-
     while (remainingRowIds.length>0 || remainingSheetIds.length>0) {
       if (remainingRowIds.length > 0) {
         const batchRowIds = remainingRowIds.splice(0, 50);
-        console.log(`Processing batch of ${batchRowIds.length} rows, remaining rows: ${remainingRowIds.length}`);
+
         await transferJob(batchRowIds);
       } else if (remainingSheetIds.length > 0) {
         const sheetId = remainingSheetIds.shift();
-        console.log(`Processing sheet ${sheetId}, remaining sheets: ${remainingSheetIds.length}`);
+
         const ids = (await rows.find({ sheetId }).project({ _id: 1 }).toArray()).map(r => r._id) as ObjectId[];
         remainingRowIds.push(...ids);
       } else {
         throw new Error("Nessuna riga o foglio da processare.");
       }
     }
-
-    console.log("Tutte le operazioni completate.");
 
     return true;
 
@@ -87,7 +83,7 @@ export default async function olimanagerBulkUpdateResults(
       const allRowIds: ObjectId[] = [];
       const allSheetsSyncIncrement: Record<string, number> = {};
       let contestId: number | null = null;
-      
+
       let cache: {
         sheet: Sheet;
         schema: Schema;
@@ -193,7 +189,6 @@ export default async function olimanagerBulkUpdateResults(
       const typename = data?.__typename;
 
       if (typename === "BulkUpdateResultsSuccess") {
-          console.log(`✅ Operazione completata con successo. Righe aggiornate: ${allRowIds.length}`);
           rows.updateMany(
               { _id: { $in: allRowIds } },
               { $set: { 'olimanager.resultsUpdatedOn': new Date() } })
@@ -207,13 +202,8 @@ export default async function olimanagerBulkUpdateResults(
           return true;
       } else if (typename === "OperationInfo") {
           const messages = data?.messages || [];
-          console.log("❌ Operazione fallita:");
-          messages.forEach((msg: Message) => {
-              console.log(`  [${msg.kind}] ${msg.message}`);
-          });
-          throw new Error(`Operazione fallita con ${messages.length} messaggi di errore (vedi log di sistema).`);
+          throw new Error(`Operazione fallita con ${messages.length} messaggi di errore.`);
       } else {
-          console.log(`⚠️  Risposta inattesa: ${typename}`);
           throw new Error(`Operazione fallita: risposta inattesa (${typename})`);
       }
   }
@@ -265,5 +255,4 @@ async function bulkUpdateResults(
     throw new Error(`Errore durante bulkUpdateResults: ${(e as Error)?.message || e}`);
   }
 }
-
 
