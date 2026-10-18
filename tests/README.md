@@ -67,3 +67,14 @@ con collezioni simulate: anonimi e utenti senza privilegi amministrativi globali
 vengono bloccati prima di accedere ai dati di importazione, anche se il contesto
 dichiara `isAdmin`. Verifica importazioni amministrative su fogli nuovi ed
 esistenti, righe, permessi, dry-run e rifiuto dei permessi importati non validi.
+
+`sheet-subscriptions.test.cjs` verifica i resolver delle sei subscription dei
+fogli con i controlli di autorizzazione reali e MongoDB/Redis simulati. Copre
+utenti anonimi e senza accesso, tutti i ruoli di lettura, isolamento tra fogli,
+revoca dei permessi e dei ruoli globali, cancellazione di utenti e fogli,
+errori del database e chiusura dell'iteratore Redis.
+
+Le subscription verificano utente e permessi del foglio all'iscrizione e prima
+di consegnare ogni evento. Se l'accesso viene revocato, l'evento successivo non
+viene consegnato e la subscription termina. I ruoli memorizzati nel contesto
+WebSocket non sostituiscono il controllo aggiornato nel database.

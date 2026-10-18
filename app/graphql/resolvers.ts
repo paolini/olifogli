@@ -9,6 +9,7 @@ import { pubsub, TOPICS } from '../lib/pubsub'
 import { redis, CURSOR_KEY } from '../lib/redis'
 import { get_authenticated_user } from './resolvers/utils'
 import { withFilter } from 'graphql-subscriptions'
+import sheetSubscription from './resolvers/sheetSubscription'
 
 import users from './resolvers/users'
 import workbooks from './resolvers/workbooks'
@@ -161,22 +162,17 @@ export const resolvers: Resolvers = {
 
   Subscription: {
     sheetUpdated: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SHEET_UPDATED(sheetId.toString())),
+      subscribe: sheetSubscription(TOPICS.SHEET_UPDATED),
     },
     rowChanged: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROW_CHANGED(sheetId.toString())),
+      subscribe: sheetSubscription(TOPICS.ROW_CHANGED),
     },
     rowsDeleted: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.ROWS_DELETED(sheetId.toString())),
+      subscribe: sheetSubscription(TOPICS.ROWS_DELETED),
     },
     cursorChanged: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.CURSOR_CHANGED(sheetId.toString())),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+      subscribe: sheetSubscription(TOPICS.CURSOR_CHANGED),
+    },
     workbookUpdated: {
       subscribe: withFilter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -195,12 +191,10 @@ export const resolvers: Resolvers = {
       ) as any,
     },
     scanJobUpdated: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SCAN_JOB_UPDATED(sheetId.toString())),
+      subscribe: sheetSubscription(TOPICS.SCAN_JOB_UPDATED),
     },
     scanSheetJobUpdated: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subscribe: (_: any, { sheetId }: { sheetId: ObjectId }) => pubsub.asyncIterator(TOPICS.SCAN_SHEET_JOB_UPDATED(sheetId.toString())),
+      subscribe: sheetSubscription(TOPICS.SCAN_SHEET_JOB_UPDATED),
     },
   },
 
