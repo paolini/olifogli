@@ -1,6 +1,6 @@
 import { Data, Row } from "../models";
 import { ValidationContext } from "./Context";
-import { AbsentField, ChoiceAnswerField, Field, VariantField } from "./fields";
+import { AbsentField, AnswerField, ChoiceAnswerField, Field, VariantField } from "./fields";
 import { decodePermutations, computeScoresWithVariants } from "./PERMUTATIONS";
 import Schema, { DerivedData, OlimanagerProblemResult, RowCalculationResult } from "./Schema";
 
@@ -80,11 +80,15 @@ export default class Competition extends Schema {
         }
     }
 
+    affectsScore(fieldName: string): boolean {
+        return this.fields.some(field => field.name === fieldName &&
+            (field instanceof AnswerField || field instanceof VariantField || field instanceof AbsentField))
+    }
+
     computeDerivedData(data: Data, context: ValidationContext): DerivedData {
         const validated = super.computeDerivedData(data, context)
         data = validated.data
         data = {...data, score:''}
-        if (validated.error) return validated
         
         const anomalies = validated.anomalies
         const absent = context.absent(data)
@@ -92,12 +96,21 @@ export default class Competition extends Schema {
         // Gestione assenze/varianti speciali (non chiamano calculateRowData)
         if (absent) {
             return {
-                error: '',
+                error: validated.error,
                 data,
                 anomalies,
             }
         }
 
+        // Score validity depends on answers and variant, independently of identity fields.
+        const rowContext = { absent, context }
+        for (const field of this.fields.filter(field => this.affectsScore(field.name))) {
+            if (field instanceof ChoiceAnswerField && !/^[ABCDEX-]$/.test(field.display(data[field.name] || '', '', false).value)) {
+                return { ...validated, data, error: validated.error || `risposta non valida: ${field.header}` }
+            }
+            const error = field.checkValid(data[field.name] || '', rowContext)
+            if (error) return { ...validated, data, error: validated.error || error }
+        }
         const result = this.calculateRowData(data, context);
         
         if (result.error) {

@@ -187,6 +187,17 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         return () => clearInterval(intervalId);
     }, [focusLine,lastAlive]);
 
+    useEffect(() => {
+        if (!edit || !schema) return
+        // The server owns correction keys. Save answer edits promptly and drain
+        // edits made during an in-flight request after its acknowledgement.
+        for (const line of tableState.lines) {
+            if (!line.error && !line.saving && Object.keys(line.data).some(name => schema.affectsScore(name))) {
+                saveLineIfNeeded(line)
+            }
+        }
+    }, [tableState.lines, edit, schema])
+
     if (!schema) {
         return <ErrorElement error={`Schema <${sheet.schema}> non trovato`}></ErrorElement>
     }
@@ -396,6 +407,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
                 e.preventDefault()
                 e.stopPropagation()
                 if (!('rejected' in result) && result.advance) moveRightOrLeft(result.advance, true)
+                else if (!('rejected' in result) && focusField?.type === 'choice-answer') cellEditor.commit({ keepEditing: true })
                 return
             }
             if (focusField?.type !== 'choice-answer' && (

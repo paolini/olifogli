@@ -2,6 +2,66 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { mountTable } = require('./helpers/table-fixture.cjs');
 
+test('answer edits recalculate the score on the server without waiting for autosave', async t => {
+  const f = await mountTable(t, { competition: true });
+  assert.equal(f.cell('score').textContent, '80');
+  await f.click(f.cell('r01'));
+  await f.key('b');
+  assert.equal(f.patches.length, 1);
+  assert.equal(f.cell('score').textContent, '75');
+  await f.key('Delete');
+  assert.equal(f.patches.length, 2);
+  assert.equal(f.cell('score').textContent, '');
+  await f.key('b');
+  assert.equal(f.cell('score').textContent, '75');
+});
+
+test('pending answer edits hide stale scores and are saved after an in-flight response', async t => {
+  const f = await mountTable(t, { competition: true, deferPatches: true });
+  await f.click(f.cell('r01'));
+  await f.key('b');
+  assert.equal(f.patches.length, 1);
+  assert.equal(f.cell('score').textContent, '');
+  await f.key('a');
+  assert.equal(f.patches.length, 1);
+  await f.resolvePatch();
+  assert.equal(f.patches.length, 2);
+  assert.equal(f.cell('score').textContent, '');
+  await f.resolvePatch();
+  assert.equal(f.cell('score').textContent, '70');
+});
+
+test('score calculation ignores missing identity fields and clears stale scores for invalid answers', async t => {
+  const f = await mountTable(t, { competition: true });
+  const answers = Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`r${String(i + 1).padStart(2, '0')}`, i === 1 ? 'B' : 'A']));
+  const data = { ...answers, variante: '211', score: '999', name: '', surname: '', birthDate: '' };
+  const valid = f.schema.computeDerivedData(data, f.context);
+  assert.equal(valid.data.score, '80');
+  assert.ok(valid.error); // A score does not imply that the whole row is valid.
+  for (const patch of [{ r01: '' }, { r01: '?' }, { variante: '' }, { variante: '999' }]) {
+    const result = f.schema.computeDerivedData({ ...data, ...patch }, f.context);
+    assert.equal(result.data.score, '');
+    assert.ok(result.error);
+  }
+  const zero = f.schema.computeDerivedData({ ...data, ...Object.fromEntries(Object.keys(answers).map(key => [key, 'X'])) }, f.context);
+  assert.equal(zero.data.score, '0');
+  const absent = f.schema.computeDerivedData(data, { ...f.context, absent: () => true });
+  assert.equal(absent.data.score, '');
+});
+
+test('changing the variant hides the score and recalculates after confirmation', async t => {
+  const f = await mountTable(t, { competition: true, deferPatches: true });
+  await f.click(f.cell('variante'));
+  await f.key('F2');
+  await f.change('999');
+  assert.equal(f.cell('score').textContent, '');
+  assert.equal(f.patches.length, 0);
+  await f.key('Escape');
+  assert.equal(f.patches.length, 1);
+  await f.resolvePatch();
+  assert.equal(f.cell('score').textContent, '');
+});
+
 // DOM nodes carry large cyclic React/jsdom graphs. Compare identity without
 // asking assert to format those graphs when a focus regression is detected.
 function assertElement(actual, expected) {

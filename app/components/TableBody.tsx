@@ -31,6 +31,10 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
 
     return <tbody>
         {tableState.lines.map(line => {
+            const draft = editor.mode === 'editing' && editor.lineKey === line.key ? editor : undefined
+            const scorePending = Object.keys(line.data).some(name => schema.affectsScore(name)) ||
+                (draft && schema.affectsScore(draft.field.name) &&
+                    draft.field.clean(draft.value) !== draft.field.display(line.data[draft.field.name] ?? line.row?.data[draft.field.name] ?? '', '', false).value)
             const rowValidationContext = {
                 absent: validationContext.absent(line.data),
                 context: validationContext,
@@ -41,7 +45,7 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
             }
             return <TableRow
                   key={line.key}
-                  line={line}
+                  line={scorePending ? { ...line, data: { ...line.data, score: '' } } : line}
                   columns={columns}
                   focusColumnName={focusColumnName}
                   editor={editor}

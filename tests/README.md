@@ -28,6 +28,12 @@ messaggio accessibile, blocco di navigazione/clic/blur/autosalvataggio e ripresa
 dopo la correzione o lo svuotamento. Per la #23 verifica che i caratteri non validi
 nelle risposte, incluso `9`, conservino valore, selezione e focus sia in navigazione
 sia in editing; `X` si inserisce solo con `X` o `x`.
+
+Per la #30 monta anche uno schema di gara reale con 16 risposte e correzioni
+sintetiche: verifica il ricalcolo al salvataggio senza attendere il timer,
+la rimozione dei punteggi obsoleti, le modifiche durante richieste in corso,
+il cambio di codice compito e il calcolo senza dati anagrafici. Risposte
+incomplete o non valide e assenza svuotano il punteggio; lo zero rimane visibile.
 Il test IME verifica che i keydown durante la composizione non attivino la
 navigazione. Non è un collaudo in un browser reale: la composizione completa,
 il layout e le azioni native di digitazione richiedono verifiche separate.

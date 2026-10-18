@@ -12,7 +12,7 @@ const compiled = new Map();
 // Mount the real table/cells. Only network hooks and unrelated toolbar/header UI
 // are replaced; React state, effects, DOM focus and event bubbling are real.
 async function mountTable(t, { edit = true, standardAnswers = false, synced = false, adminEditMode = false, deferPatches = false,
-  dateOptions = { expectedMinAge: 10, expectedMaxAge: 16 } } = {}) {
+  dateOptions = { expectedMinAge: 10, expectedMaxAge: 16 }, competition = false } = {}) {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://table.invalid' });
   const saved = new Map();
   for (const [key, value] of Object.entries({
@@ -32,10 +32,12 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   const patches = [];
   const created = [];
   const pendingPatches = [];
-  const context = { contest_year: 2026, absent: () => false };
+  const context = { contest_year: 2026, absent: () => false,
+    permutation_object: { correct: { '2': 'AB' + 'A'.repeat(14) }, questions: { '1': Array.from({ length: 16 }, (_, i) => i + 1) }, answers: { '1': 'ABCDE' },
+      points: { correct: 5, wrong: 0, empty: 1, invalid: 0 } } };
   let schema;
   const rows = [0, 1].map(index => ({
-    _id: new ObjectId(), data: { name: `Name${index}`, surname: `Surname${index}`, birthDate: '12/05/2012', r01: 'A', r02: 'B', score: '10' },
+    _id: new ObjectId(), data: { name: `Name${index}`, surname: `Surname${index}`, birthDate: '12/05/2012', variante: '211', r01: 'A', r02: 'B', score: '10' },
     updatedOn: new Date('2026-01-01'), createdOn: new Date('2026-01-01'), error: '', anomalies: 0,
     ...(synced ? { olimanager: { participantId: 'synthetic-participant' } } : {}),
   }));
@@ -45,7 +47,9 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     usePatchRowMutation: () => [async ({ variables }) => {
       patches.push(variables);
       const row = serverRows.get(variables._id.toString());
-      const result = { data: { patchRow: { ...row, data: { ...row.data, ...variables.data } } } };
+      const merged = { ...row.data, ...variables.data };
+      const result = { data: { patchRow: { ...row, ...(competition
+        ? schema.computeDerivedData(schema.clean(merged), context) : { data: merged }) } } };
       serverRows.set(variables._id.toString(), result.data.patchRow);
       if (deferPatches) return new Promise(resolve => pendingPatches.push(() => resolve(result)));
       return result;
@@ -95,13 +99,21 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     }, { filename: relative });
     return exports;
   }
-  const { Field, DateField, ChoiceAnswerField } = load('app/lib/schema/fields.ts');
+  const { Field, DateField, ChoiceAnswerField, VariantField } = load('app/lib/schema/fields.ts');
   schema = {
     fields: [new Field('name'), new Field('surname'), new DateField('birthDate', dateOptions),
       new ChoiceAnswerField('r01', {}), new Field('hidden', { hidden: true }),
       new Field('score', { editable: false }), new ChoiceAnswerField('r02', {})],
     displayValidationContext: () => context,
+    affectsScore: () => false,
   };
+  if (competition) {
+    const Competition = load('app/lib/schema/Competition.ts').default;
+    const extra = Array.from({ length: 14 }, (_, i) => `r${String(i + 3).padStart(2, '0')}`);
+    for (const row of rows) Object.assign(row.data, Object.fromEntries(extra.map(name => [name, 'A'])), { score: '80' });
+    schema = new Competition('test', 'Test', [...schema.fields, ...extra.map(name => new ChoiceAnswerField(name, {})), new VariantField('variante', {})]);
+    schema.displayValidationContext = () => context;
+  }
   const Table = load('app/components/Table.tsx').default;
   const container = dom.window.document.getElementById('root');
   const root = createRoot(container);
@@ -143,7 +155,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   async function resolvePatch() { await act(async () => pendingPatches.shift()()); }
   async function autosave() { await act(async () => { for (const run of [...intervals.values()]) run(); }); }
   async function blur() { await act(async () => dom.window.document.activeElement.blur()); }
-  return { cell, click, key, change, flushTimers, resolvePatch, autosave, blur, patches, created,
+  return { cell, click, key, change, flushTimers, resolvePatch, autosave, blur, patches, created, schema, context,
     error: () => container.querySelector('[role="alert"]')?.textContent ?? '',
     newRow: () => click(container.querySelector('tbody button')),
     active: () => dom.window.document.activeElement,

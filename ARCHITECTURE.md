@@ -346,6 +346,15 @@ Una conferma rifiutata mantiene la bozza e restituisce un esito esplicito che
 blocca il cambio di cella o il salvataggio. `DateField` controlla calendario e
 limiti di età rispetto all'anno della gara; il valore vuoto è consentito durante
 la compilazione, anche se la validazione della riga richiede poi una data.
+
+Negli schemi di gara, `affectsScore` identifica risposte, codice compito e assenza.
+Una modifica confermata a questi campi avvia subito il salvataggio; le modifiche
+arrivate durante una richiesta vengono inviate dopo la sua conferma. Il vecchio
+punteggio viene nascosto durante la modifica e in attesa del risultato aggiornato.
+Il calcolo resta sul server, dove sono disponibili le chiavi di correzione:
+`Competition.computeDerivedData` calcola il punteggio indipendentemente dai dati
+anagrafici, conservando gli errori di validazione della riga. Risposte incomplete
+o non valide, codice compito non valido e assenza producono un punteggio vuoto.
 L'errore è mostrato accanto all'input con `aria-invalid` e un messaggio accessibile.
 Cambi di cella, Invio, Esc e perdita del focus usano questo percorso.
 L'autosalvataggio conferma una copia normalizzata senza

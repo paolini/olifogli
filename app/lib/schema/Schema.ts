@@ -108,6 +108,8 @@ export default class Schema {
         return context
     }
 
+    affectsScore(fieldName: string): boolean { return false }
+
     computeDerivedData(data: Data, context: ValidationContext): DerivedData {
         const row_context = {
             absent: context.absent(data),
