@@ -6,9 +6,23 @@ Eseguire dalla radice del repository, con le dipendenze di sviluppo installate:
 npm test
 ```
 
-Si usa il test runner integrato in Node.js (Node 20 o successivo), senza nuove
-dipendenze. TypeScript, già presente nel progetto, traspila il server per il test.
+Si usa il test runner integrato in Node.js (Node 20 o successivo).
+TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
+fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
+
+`table-editing.test.cjs` monta i componenti reali `Table`, `TableBody`, `TableRow`
+e `TableRowCell` con React DOM e jsdom. Verifica primo carattere e posizione del
+cursore, apertura con F2/Invio/clic, cancellazione, navigazione, salvataggio al
+cambio riga e con Esc, risposte a carattere singolo con avanzamento automatico,
+scorciatoie, separatori delle date e svuotamento. Il DOM gestisce focus ed eventi;
+i timer dell'editor sono eseguiti esplicitamente, senza attese reali.
+Sono simulati rete, toolbar e intestazione; l'autosalvataggio periodico è escluso.
+I test fissano il comportamento corrente, compreso Esc che salva ed esce.
+Le correzioni ancora da fare delle issue #23 e #31 sono indicate come TODO,
+senza imporre i comportamenti difettosi alla futura ristrutturazione.
+Non è un collaudo in un browser reale: composizione IME, layout e azioni native
+di digitazione richiedono verifiche separate.
 
 La suite verifica i callback reali del server WebSocket usando cookie cifrati
 generati da NextAuth: sessioni valide (anche HTTPS e cookie suddivisi in chunk),
