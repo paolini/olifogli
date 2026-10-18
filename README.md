@@ -82,6 +82,16 @@ inviato dal browser (anche nella variante HTTPS `__Secure-` e suddiviso in chunk
 I token nei parametri di connessione non vengono usati per autenticare l'utente.
 Il trasporto WebSocket accetta solo subscription; query e mutation passano via
 HTTP. La sessione viene verificata alla connessione e a ogni nuova operazione.
+
+Le subscription dei fogli verificano l'utente e i permessi di lettura in MongoDB
+all'iscrizione. I singoli eventi non rileggono i permessi: le subscription già
+aperte conservano l'accesso fino alla disconnessione. Questa scelta presuppone
+che durante il normale utilizzo non siano necessarie revoche immediate.
+Per rendere effettiva una revoca di accesso o di un ruolo globale anche sulle
+subscription esistenti, aggiorna prima i permessi e poi riavvia **tutte le istanze
+del server WebSocket**. Le connessioni vengono chiuse e le nuove iscrizioni
+verificano i permessi aggiornati; riavviare soltanto Next.js non basta.
+
 Eseguire `npm test` per i [test di regressione](tests/README.md).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.

@@ -102,7 +102,7 @@ for (const name of Object.keys(topics)) {
     assert.equal(f.state.sources.length, 0);
   });
 
-  test(`${name}: delivers only events for the authorized sheet and stops after revocation`, async () => {
+  test(`${name}: delivers only events for the authorized sheet without per-event database reads`, async () => {
     const f = fixture();
     const iterator = await f.subscribe(name);
     const secret = { [name]: 'other sheet private data' };
@@ -110,12 +110,12 @@ for (const name of Object.keys(topics)) {
     f.publish(name, f.otherId, secret);
     f.publish(name, f.sheetId, allowed);
     assert.equal((await iterator.next()).value, allowed);
-    // Even an event already queued must not pass after access is removed.
-    f.publish(name, f.sheetId, { [name]: 'revoked private data' });
-    f.state.sheet.permissions = [];
-    await assert.rejects(iterator.next(), e => e.extensions.code === 'FORBIDDEN');
+    f.publish(name, f.sheetId, allowed);
+    assert.equal((await iterator.next()).value, allowed);
+    assert.equal(f.state.userReads, 1);
+    assert.equal(f.state.sheetReads, 1);
+    await iterator.return();
     assert.equal(f.state.sources[0].closed, true);
-    assert.equal((await iterator.next()).done, true);
   });
 }
 
@@ -146,8 +146,8 @@ test('nonexistent sheets and deleted users cannot subscribe', async () => {
   assert.equal(f.state.sources.length, 0);
 });
 
-for (const change of ['remove-user', 'remove-sheet', 'revoke-admin', 'revoke-supervisor', 'database-error']) {
-  test(`active subscriptions fail closed on ${change}`, async () => {
+for (const change of ['revoke-permission', 'remove-user', 'remove-sheet', 'revoke-admin', 'revoke-supervisor', 'database-error']) {
+  test(`existing access remains until disconnect; new subscriptions check ${change}`, async () => {
     const f = fixture();
     if (change === 'revoke-admin' || change === 'revoke-supervisor') {
       f.state.sheet.permissions = [];
@@ -155,14 +155,19 @@ for (const change of ['remove-user', 'remove-sheet', 'revoke-admin', 'revoke-sup
       f.state.user.isSupervisor = change === 'revoke-supervisor';
     }
     const iterator = await f.subscribe('rowChanged');
+    if (change === 'revoke-permission') f.state.sheet.permissions = [];
     if (change === 'remove-user') f.state.user = null;
     if (change === 'remove-sheet') f.state.sheet = null;
     if (change === 'revoke-admin') f.state.user.isAdmin = false;
     if (change === 'revoke-supervisor') f.state.user.isSupervisor = false;
     if (change === 'database-error') f.state.failRead = true;
-    f.publish('rowChanged', f.sheetId, { rowChanged: 'must not be delivered' });
-    await assert.rejects(iterator.next());
+    f.publish('rowChanged', f.sheetId, { rowChanged: 'existing subscription' });
+    assert.equal((await iterator.next()).value.rowChanged, 'existing subscription');
+    assert.equal(f.state.userReads, 1);
+    assert.equal(f.state.sheetReads, 1);
+    await iterator.return();
     assert.equal(f.state.sources[0].closed, true);
+    await assert.rejects(f.subscribe('rowChanged'));
   });
 }
 

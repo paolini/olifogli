@@ -71,10 +71,11 @@ esistenti, righe, permessi, dry-run e rifiuto dei permessi importati non validi.
 `sheet-subscriptions.test.cjs` verifica i resolver delle sei subscription dei
 fogli con i controlli di autorizzazione reali e MongoDB/Redis simulati. Copre
 utenti anonimi e senza accesso, tutti i ruoli di lettura, isolamento tra fogli,
-revoca dei permessi e dei ruoli globali, cancellazione di utenti e fogli,
-errori del database e chiusura dell'iteratore Redis.
+assenza di letture MongoDB per evento e chiusura dell'iteratore Redis.
 
-Le subscription verificano utente e permessi del foglio all'iscrizione e prima
-di consegnare ogni evento. Se l'accesso viene revocato, l'evento successivo non
-viene consegnato e la subscription termina. I ruoli memorizzati nel contesto
-WebSocket non sostituiscono il controllo aggiornato nel database.
+Le subscription verificano utente e permessi del foglio solo all'iscrizione.
+I test verificano che le subscription esistenti continuino a ricevere eventi
+dopo una revoca, mentre le nuove iscrizioni siano respinte. Per applicare una
+revoca alle subscription esistenti occorre riavviare tutte le istanze WebSocket,
+come descritto nel README. I ruoli memorizzati nel contesto WebSocket non
+sostituiscono il controllo nel database all'iscrizione.
