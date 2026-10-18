@@ -61,3 +61,9 @@ errori e codici non riconosciuti. Controlla anche i file giornalieri prodotti.
 La pulizia viene provata esclusivamente in directory temporanee: limite dei
 30 giorni UTC, vecchi formati, dry-run, esecuzioni ripetute, configurazioni
 invalide, date non valide, file estranei, directory e link simbolici.
+
+`create-sheets.test.cjs` esegue il resolver e i controlli di autorizzazione reali
+con collezioni simulate: anonimi e utenti senza privilegi amministrativi globali
+vengono bloccati prima di accedere ai dati di importazione, anche se il contesto
+dichiara `isAdmin`. Verifica importazioni amministrative su fogli nuovi ed
+esistenti, righe, permessi, dry-run e rifiuto dei permessi importati non validi.

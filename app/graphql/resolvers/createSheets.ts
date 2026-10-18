@@ -5,12 +5,17 @@ import { schemas } from "@/app/lib/schema";
 import { ObjectId, WithoutId } from "mongodb";
 import { Sheet, Row } from "@/app/lib/models";
 import { RowToSheetsResult } from "@/app/lib/schema/Schema";
+import { check_admin, get_authenticated_user } from "./utils";
+import { UserInputError } from "apollo-server-errors";
 
 export default async function createSheets(
   _: unknown,
   args: MutationCreateSheetsArgs,
   context: Context
 ): Promise<string> {
+    const user = await get_authenticated_user(context);
+    check_admin(user);
+
     const { sheetId, rowIds, dry } = args;
 
     const ret = {
@@ -68,6 +73,16 @@ export default async function createSheets(
             return `No sheet data returned for row ${row._id}\n`;
         }
 
+        // Imported values must describe sheet permissions, never global roles.
+        const permissions = data.sheet.permissions;
+        if (permissions !== undefined && (!Array.isArray(permissions) || permissions.some(permission =>
+            !permission || typeof permission.email !== 'string' ||
+            !/^[^\s@]+@[^\s@]+$/.test(permission.email) ||
+            !['owner', 'admin', 'editor', 'view'].includes(permission.role)
+        ))) {
+            throw new UserInputError('permessi importati non validi');
+        }
+
         try {
             await create_or_update_sheet(data)
         } catch (e) {
@@ -103,7 +118,7 @@ export default async function createSheets(
                 const payload: WithoutId<Sheet> = {
                     workbookId: importSheet!.workbookId,
                     name: name,
-                    ownerId: context.user_id!,
+                    ownerId: user._id,
                     schema: data.sheet.schema,
                     permissions: data.sheet.permissions || [],
                     commonData: data.sheet.data || {},
