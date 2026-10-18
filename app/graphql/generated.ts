@@ -33,11 +33,20 @@ export type AgeDistributionItem = {
 
 export type AgeDistributionReport = {
   __typename?: 'AgeDistributionReport';
+  classYearItems: Array<ClassYearDistributionItem>;
   items: Array<AgeDistributionItem>;
   mean?: Maybe<Scalars['Float']['output']>;
   schema: Scalars['String']['output'];
   totalRows: Scalars['Int']['output'];
+  unknownAgeRows: Scalars['Int']['output'];
+  unknownClassYearRows: Scalars['Int']['output'];
   variance?: Maybe<Scalars['Float']['output']>;
+};
+
+export type ClassYearDistributionItem = {
+  __typename?: 'ClassYearDistributionItem';
+  classYear: Scalars['Int']['output'];
+  rows: Scalars['Int']['output'];
 };
 
 export type Config = {
@@ -992,7 +1001,7 @@ export type GetWorkbookAgeDistributionReportQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookAgeDistributionReportQuery = { __typename?: 'Query', workbookAgeDistributionReport: Array<{ __typename?: 'AgeDistributionReport', schema: string, totalRows: number, mean?: number | null, variance?: number | null, items: Array<{ __typename?: 'AgeDistributionItem', age: number, rows: number }> }> };
+export type GetWorkbookAgeDistributionReportQuery = { __typename?: 'Query', workbookAgeDistributionReport: Array<{ __typename?: 'AgeDistributionReport', schema: string, totalRows: number, mean?: number | null, variance?: number | null, unknownClassYearRows: number, unknownAgeRows: number, items: Array<{ __typename?: 'AgeDistributionItem', age: number, rows: number }>, classYearItems: Array<{ __typename?: 'ClassYearDistributionItem', classYear: number, rows: number }> }> };
 
 export type UpdateWorkbookMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -2606,6 +2615,12 @@ export const GetWorkbookAgeDistributionReportDocument = gql`
     totalRows
     mean
     variance
+    classYearItems {
+      classYear
+      rows
+    }
+    unknownClassYearRows
+    unknownAgeRows
   }
 }
     `;
@@ -3459,6 +3474,7 @@ export type ResolversTypes = {
   AgeDistributionItem: ResolverTypeWrapper<AgeDistributionItem>;
   AgeDistributionReport: ResolverTypeWrapper<AgeDistributionReport>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  ClassYearDistributionItem: ResolverTypeWrapper<ClassYearDistributionItem>;
   Config: ResolverTypeWrapper<Config>;
   Data: ResolverTypeWrapper<Scalars['Data']['output']>;
   DistributionReport: ResolverTypeWrapper<DistributionReport>;
@@ -3506,6 +3522,7 @@ export type ResolversParentTypes = {
   AgeDistributionItem: AgeDistributionItem;
   AgeDistributionReport: AgeDistributionReport;
   Boolean: Scalars['Boolean']['output'];
+  ClassYearDistributionItem: ClassYearDistributionItem;
   Config: Config;
   Data: Scalars['Data']['output'];
   DistributionReport: DistributionReport;
@@ -3554,11 +3571,20 @@ export type AgeDistributionItemResolvers<ContextType = any, ParentType extends R
 };
 
 export type AgeDistributionReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['AgeDistributionReport'] = ResolversParentTypes['AgeDistributionReport']> = {
+  classYearItems?: Resolver<Array<ResolversTypes['ClassYearDistributionItem']>, ParentType, ContextType>;
   items?: Resolver<Array<ResolversTypes['AgeDistributionItem']>, ParentType, ContextType>;
   mean?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   totalRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  unknownAgeRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  unknownClassYearRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   variance?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ClassYearDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['ClassYearDistributionItem'] = ResolversParentTypes['ClassYearDistributionItem']> = {
+  classYear?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3882,6 +3908,7 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
 export type Resolvers<ContextType = any> = {
   AgeDistributionItem?: AgeDistributionItemResolvers<ContextType>;
   AgeDistributionReport?: AgeDistributionReportResolvers<ContextType>;
+  ClassYearDistributionItem?: ClassYearDistributionItemResolvers<ContextType>;
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
   DistributionReport?: DistributionReportResolvers<ContextType>;

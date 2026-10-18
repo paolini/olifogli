@@ -222,12 +222,20 @@ type AgeDistributionItem {
   rows: Int!
 }
 
+type ClassYearDistributionItem {
+  classYear: Int!
+  rows: Int!
+}
+
 type AgeDistributionReport {
   schema: String!
   items: [AgeDistributionItem!]!
   totalRows: Int!
   mean: Float
   variance: Float
+  classYearItems: [ClassYearDistributionItem!]!
+  unknownClassYearRows: Int!
+  unknownAgeRows: Int!
 }
 
 type Query {

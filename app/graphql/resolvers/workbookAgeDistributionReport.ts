@@ -48,7 +48,15 @@ async function generateAgeDistributionReport(sheets: WithId<Sheet>[]) {
     }
 
     const ageMap = new Map<number, number>()
+    const classYearMap = new Map([1, 2, 3, 4, 5].map(year => [year, 0]))
+    let unknownClassYearRows = 0
     for (const row of rows) {
+        // Independent of birth date: missing dates must not exclude class years.
+        const classYearValue = row.data?.classYear?.trim() ?? ''
+        if (/^[1-5]$/.test(classYearValue)) {
+            const classYear = Number(classYearValue)
+            classYearMap.set(classYear, classYearMap.get(classYear)! + 1)
+        } else unknownClassYearRows++
         const birthDateValue = row.data?.birthDate
         const birthDate = new Date(birthDateValue)
         if (isNaN(birthDate.getTime())) continue // Salta date non valide
@@ -64,15 +72,18 @@ async function generateAgeDistributionReport(sheets: WithId<Sheet>[]) {
 
     // Calcola media e varianza
     const ages = Array.from(items)
-    const totalRows = ages.reduce((sum, item) => sum + item.rows, 0)
-    const mean = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.age * item.rows), 0) / totalRows : null
-    const variance = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.rows * Math.pow(item.age - (mean as number), 2)), 0) / totalRows : null
+    const knownAgeRows = ages.reduce((sum, item) => sum + item.rows, 0)
+    const mean = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.age * item.rows), 0) / knownAgeRows : null
+    const variance = ages.length > 0 ? ages.reduce((sum, item) => sum + (item.rows * Math.pow(item.age - (mean as number), 2)), 0) / knownAgeRows : null
     
 
     return {
         items,
-        totalRows,
+        totalRows: rows.length,
+        unknownAgeRows: rows.length - knownAgeRows,
         mean,
         variance,
+        classYearItems: Array.from(classYearMap, ([classYear, rows]) => ({ classYear, rows })),
+        unknownClassYearRows,
     }
 }

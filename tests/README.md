@@ -11,6 +11,14 @@ TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
 fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
 
+`participant-distribution.test.cjs` verifica i conteggi per anno di corso,
+inclusi dati mancanti e non validi, indipendentemente dalla data di nascita.
+Controlla che le statistiche per età restino invariate, che i report rispettino
+i fogli selezionati e restino separati per schema, e che la pagina presenti
+entrambi i grafici con etichette e conteggi distinti.
+Il totale studenti è comune ai due grafici; le età mancanti sono conteggiate
+separatamente e non entrano nel calcolo di media e varianza.
+
 `table-editing.test.cjs` monta i componenti reali `Table`, `TableBody`, `TableRow`
 e `TableRowCell` con React DOM e jsdom. Verifica primo carattere e posizione del
 cursore, apertura con F2/Invio/clic, cancellazione, navigazione, salvataggio al
