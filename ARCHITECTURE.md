@@ -230,7 +230,9 @@ Questo design è necessario perché Next.js in produzione può girare su più is
 - Carica lo stesso `schema.gql` e `resolvers.ts` del Next.js app
 - Espone anche un endpoint HTTP GraphQL su `/graphql` (stesso path)
 - Autenticazione opzionale via JWT in `connectionParams.sessionToken`
-- Avvio: `npm run ws-server` (script: `fuser -k 4001/tcp; tsx watch ws-server.ts`)
+- Avvio senza riavvio automatico: `npm run ws-server` (esegue `tsx ws-server.ts`)
+- Sviluppo con riavvio automatico al cambio dei file: `npm run ws-server:watch` (esegue `tsx watch ws-server.ts`)
+- Entrambi gli script eseguono prima `fuser -k 4001/tcp 2>/dev/null` per terminare l'eventuale processo sulla porta 4001.
 - **Contesto per subscriber**: alla prima subscription di ogni connessione, il ws-server recupera da MongoDB `isAdmin` e `isSupervisor` dell'utente e li caches in memoria per la durata della connessione
 
 ### Redis PubSub (`app/lib/pubsub.ts`)

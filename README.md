@@ -60,8 +60,12 @@ Next.js (porta 3000) e il server WebSocket (porta 4001).
    Olifogli, e lascia entrambi i terminali aperti:
 
    ```bash
-   npm run ws-server
+   npm run ws-server:watch
    ```
+
+   `ws-server:watch` riavvia automaticamente il server quando cambiano i file.
+   Per avviarlo senza riavvio automatico, usa `npm run ws-server`.
+   Entrambi i comandi terminano prima l'eventuale processo sulla porta 4001.
 
 5. Apri [http://localhost:3000](http://localhost:3000) ed effettua il login.
    Usa `localhost` anche nell'URL del browser: il client locale si collega a
@@ -74,7 +78,8 @@ segnalare errori successivi di MongoDB o Redis. Verifica inoltre che il login
 sia valido e che i due server ricevano la stessa configurazione NextAuth.
 
 Il server WebSocket deve ricevere gli stessi `NEXTAUTH_SECRET` e `NEXTAUTH_URL`
-dell'app Next.js. Avviarlo dalla radice del progetto con `npm run ws-server` in
+dell'app Next.js. Avviarlo dalla radice del progetto con `npm run ws-server`
+(oppure `npm run ws-server:watch` durante lo sviluppo) in
 un terminale separato: carica `.env` senza sovrascrivere le variabili già presenti
 nell'ambiente e si arresta con un errore esplicito se manca `NEXTAUTH_SECRET`.
 Autentica le connessioni tramite il cookie di sessione NextAuth
