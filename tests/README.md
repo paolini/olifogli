@@ -79,3 +79,11 @@ dopo una revoca, mentre le nuove iscrizioni siano respinte. Per applicare una
 revoca alle subscription esistenti occorre riavviare tutte le istanze WebSocket,
 come descritto nel README. I ruoli memorizzati nel contesto WebSocket non
 sostituiscono il controllo nel database all'iscrizione.
+
+`scan-image.test.cjs` esegue la route reale delle immagini con autorizzazione
+reale, database simulato e file sintetici in directory temporanee. Verifica
+immagini PNG/JPEG/WebP/GIF autorizzate, ID e nomi non validi, traversal anche
+codificato, file mancanti, directory e link simbolici verso altri job o file
+esterni. Controlla inoltre la sostituzione del file con un link prima
+dell'apertura e la chiusura dei descrittori. Non richiede scansioni reali né
+esegue un test del routing HTTP attraverso un server Next.js avviato.
