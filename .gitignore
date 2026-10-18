@@ -42,3 +42,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local data exports, captured logs and encrypted credentials
+/scuole_iscritte_2025.csv
+/scuole_iscritte_2025_no_header.csv
+/app/graphql/log.txt
+/client-secret.gpg
+/sheetgenworker/error.jsonl
+/sheetgenworker/example.jsonl
