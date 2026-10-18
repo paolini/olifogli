@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const ts = require('typescript');
-const { graphql, GraphQLScalarType } = require('graphql');
+const { graphql, GraphQLScalarType, parse, validate } = require('graphql');
 const { makeExecutableSchema } = require('@graphql-tools/schema');
 const { ObjectId } = require('mongodb');
 const root = path.resolve(__dirname, '..');
@@ -12,7 +12,7 @@ const workbookId = new ObjectId('000000000000000000000001');
 const commonData = Object.freeze({ contest_year: '2026', selection_workbook_id: 'source', correct_answers: '["A"]', permutations_correct_2: 'ABCD', future_secret: 'private' });
 const workbook = { _id: workbookId, name: 'Test', commonData };
 const sheet = { _id: workbookId, workbookId, workbook, commonData: { Distretto: 'Test' } };
-const publicData = { contest_year: '2026', selection_workbook_id: 'source' };
+const publicData = { contest_year: '2026' };
 const utils = {
   async get_authenticated_user(ctx) {
     if (!ctx.user) throw new Error('Not authenticated');
@@ -86,6 +86,16 @@ test('field requires authentication even when a parent is already available', as
 });
 test('missing workbook configuration returns an empty object', async () => {
   assert.equal(JSON.stringify(await registry.Workbook.commonData({}, {}, { user: {} })), '{}');
+});
+test('retired admission selection API is unavailable', () => {
+  assert.equal(schema.getMutationType().getFields().toggleSelection, undefined);
+  assert.equal(schema.getType('RowSelection'), undefined);
+  assert.equal(schema.getType('Row').getFields().selections, undefined);
+  assert.equal(schema.getType('ReportEntry').getFields().selections, undefined);
+  for (const source of [
+    'mutation { toggleSelection(rowId: "000000000000000000000001", label: "gara_prime") { _id } }',
+    'query { workbookRankingReport(workbookId: "000000000000000000000001", selectionLabel: "gara_prime", onlySelected: true) { totalStudents } }',
+  ]) assert.ok(validate(schema, parse(source)).length > 0);
 });
 test('Archimede browser validation needs no correction keys; server validation remains strict', () => {
   const Archimede = load('app/lib/schema/ArchimedeBiennio.ts').default;

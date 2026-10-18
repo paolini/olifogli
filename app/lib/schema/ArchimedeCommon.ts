@@ -150,7 +150,6 @@ export default class ArchimedeCommon extends Competition {
             classSection: row.data?.classSection || '',
             score,
             rowId: row._id,
-            selections: row.selections || [],
             participantId: row.olimanager?.participantId,
             rank: 0, // Verrà calcolato dopo
             sheet: sheet,

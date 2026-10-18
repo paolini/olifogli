@@ -8,8 +8,8 @@ import { getAllSheets } from './sheetsReportHelper'
 import { schemas } from '@/app/lib/schema'
 
 export default async function workbookRankingReport(
-    _: unknown, 
-    { workbookId, schema, commonData, state, limit, selectionLabel, onlySelected, orderBy, orderDirection }: QueryWorkbookRankingReportArgs & { selectionLabel?: string | null, onlySelected?: boolean | null, orderBy?: string | null, orderDirection?: number | null }, 
+    _: unknown,
+    { workbookId, schema, commonData, state, limit, orderBy, orderDirection }: QueryWorkbookRankingReportArgs,
     context: Context
 ): Promise<RankingReport[]> {
     const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || null, context)
@@ -19,7 +19,7 @@ export default async function workbookRankingReport(
     for (const schema of allSchemas) {
         if (schemas[schema].extract_ranking) {
             const sheets = allSheets.filter(s => s.schema === schema)
-            const report = await generateRankingReport(sheets, limit ?? undefined, selectionLabel, onlySelected, orderBy, orderDirection)
+            const report = await generateRankingReport(sheets, limit ?? undefined, orderBy, orderDirection)
             reports.push({
                 schema,
                 ...report
@@ -33,8 +33,6 @@ export default async function workbookRankingReport(
 async function generateRankingReport(
     sheets: WithId<Sheet>[],
     limit?: number,
-    selectionLabel?: string | null,
-    onlySelected?: boolean | null,
     orderBy?: string | null,
     orderDirection?: number | null
 ) {
@@ -42,36 +40,11 @@ async function generateRankingReport(
     const sheetIds = sheets.map(s => s._id)
 
     // Costruisci il filtro per le righe (usa dot-notation per campi dentro data.*)
-    const filter: Filter<Row> = { 
-        sheetId: { $in: sheetIds }, 
+    const filter: Filter<Row> = {
+        sheetId: { $in: sheetIds },
         error: "",
     }
 
-    if (selectionLabel) {
-        if (sheets.length === 0) throw new Error("Nessun foglio disponibile per applicare il filtro di selezione")
-        const schemaStrings = new Set(sheets.map(s => s.schema))
-        if (schemaStrings.size > 1) throw new Error("Il filtro di selezione può essere applicato solo quando tutti i fogli hanno lo stesso schema")
-        const schema = schemaStrings.values().next().value;
-        if (!schema) throw new Error("Impossibile determinare lo schema dei fogli per applicare il filtro di selezione")
-        const schemaObj = schemas[schema];
-        const selection = schemaObj?.selections.find(s => s.label === selectionLabel);
-        if (!selection) throw new Error(`Selezione "${selectionLabel}" non valida per lo schema "${schema}"`)
-
-        if (onlySelected) {
-            (filter as Record<string, unknown>)["selections.label"] = selectionLabel
-        } else {
-            const selection = schemaObj?.selections.find(s => s.label === selectionLabel);
-            if (selection?.row_filter) {
-                // Aggiungi i criteri di filtro basati su row_filter
-                // row_filter è un oggetto con chiave-valore
-                for (const [key, value] of Object.entries(selection.row_filter)) {
-                    // Usa dot-notation: data.classYear, data.classSection, ecc.
-                    (filter as Record<string, unknown>)[`data.${key}`] = value
-                }
-            }
-        }
-    }
-    
     // Recupera tutte le righe dai fogli
     // console.log("Filtro per ranking report:", filter)
     const rows = await rowsCollection.find(filter).toArray()

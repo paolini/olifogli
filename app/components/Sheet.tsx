@@ -18,9 +18,7 @@ import { useBreadcrumbs } from './BreadcrumbsProvider'
 import SheetInfo from './SheetInfo'
 import ScansSheetExport from './ScansSheetExport'
 import GlobalMessage from './GlobalMessage'
-import GaraPrime from '../lib/schema/GaraPrime'
 import { getTabId } from '../lib/tabId'
-import SheetSelectionImport from './SheetSelectionImport'
 
 const _ = gql`
     query getSheet($sheetId: ObjectId!) {
@@ -164,7 +162,7 @@ function SheetBody({sheet,profile}: {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabParam = searchParams.get('tab');
-    const validTabs = ['info','table', 'standardAnswers', 'scans', 'edit', 'selection'] as const;
+    const validTabs = ['info','table', 'standardAnswers', 'scans', 'edit'] as const;
     type TabType = typeof validTabs[number];
     function isTabType(tab: string | null): tab is TabType {
         return validTabs.includes(tab as TabType);
@@ -263,7 +261,6 @@ function SheetBody({sheet,profile}: {
     if (loading || !data) return <Loading />
 
     const schema = schemas[sheet.schema]
-    const selectionWorkbookId = (schema instanceof GaraPrime) && sheet.workbook.commonData["selection_workbook_id"] || ''
 
     return <div className="sheet-body-wrapper">
         <div className="tab-container hide-print">
@@ -293,13 +290,6 @@ function SheetBody({sheet,profile}: {
             >
                 ⚙ MODIFICA DATI
             </button> }
-            { selectionWorkbookId && 
-                <button 
-                    className={`tab-button ${tab === 'selection' ? 'tab-button-active' : 'tab-button-inactive'}`}
-                    onClick={() => setTab('selection')}>
-                    SELEZIONA SEGNALATI
-                </button>
-            }
             { schema.has_scan_functionality() &&
                 <button 
                     className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
@@ -364,11 +354,6 @@ function SheetBody({sheet,profile}: {
             <ScansSheetExport sheet={sheet} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
-          </div>
-        }
-        { tab === 'selection' && selectionWorkbookId && <div className="mx-2">
-            <GlobalMessage name={`import_selection_info_${sheet.schema}`} title="istruzioni" collapsed={true} />
-            <SheetSelectionImport sheet={sheet} data_rows={data.rows} selectionWorkbookId={selectionWorkbookId}/>
           </div>
         }
         </div>

@@ -129,7 +129,6 @@ olifogli/
 - `patchRow(_id, data)`: Modifica riga
 - `deleteRow(_id)`: Cancella riga (pubblica `rowsDeleted` e `workbookUpdated`)
 - `deleteRows(ids)`: Cancella righe bulk (pubblica `rowsDeleted` per sheet e `workbookUpdated` per workbook)
-- `toggleSelection(_id)`: Seleziona/deseleziona riga
 - `closeSheet(_id)`: Chiude un foglio (solo admin del foglio)
 - `openSheet(_id)`: Riapre un foglio (solo admin del foglio)
 - `lockSheet(_id)`: Blocca un foglio (solo admin di sistema)
@@ -281,10 +280,10 @@ Quando una riga viene cancellata (`deleteRow` / `deleteRows`), il foglio si aggi
   - se > 20 ID: esegue `refetch()` per efficienza
 
 ### Workbook Real-time (`workbookUpdated`)
-Le pagine workbook (distribuzione, classifica, selezione, ecc.) si aggiornano in tempo reale senza polling.
+Le pagine workbook (distribuzione, classifica, ecc.) si aggiornano in tempo reale senza polling.
 
 **Flusso:**
-1. Una mutation che modifica dati del workbook (`addRow`, `patchRow`, `toggleSelection`, `deleteRow`, `deleteRows`, `updateSheet`) pubblica `WORKBOOK_UPDATED.<workbookId>` su Redis, con `_allowedEmails: sheet.permissions[].email` nel payload
+1. Una mutation che modifica dati del workbook (`addRow`, `patchRow`, `deleteRow`, `deleteRows`, `updateSheet`) pubblica `WORKBOOK_UPDATED.<workbookId>` su Redis, con `_allowedEmails: sheet.permissions[].email` nel payload
 2. Il ws-server riceve l'evento e applica `withFilter` prima di inviarlo al subscriber:
    - utenti `isAdmin` o `isSupervisor` ricevono sempre l'evento
    - altri utenti ricevono l'evento solo se la propria email è in `_allowedEmails`

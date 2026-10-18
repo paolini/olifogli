@@ -17,8 +17,8 @@ import Button from './Button'
 import { score_to_color_style } from '../lib/schema/fields'
 
 const _ = gql`
-    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
-        workbookRankingReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, limit: $limit, selectionLabel: $selectionLabel, onlySelected: $onlySelected, orderBy: $orderBy, orderDirection: $orderDirection) {
+    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $orderBy: String, $orderDirection: Int) {
+        workbookRankingReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, limit: $limit, orderBy: $orderBy, orderDirection: $orderDirection) {
             schema
             totalStudents
             ranking {
@@ -54,7 +54,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     const filteredSheets = filterSheets(filterState, sheets);
 
     const { loading, error, data, refetch: refetchRanking } = useGetWorkbookRankingReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null, limit, selectionLabel: null, onlySelected: false, orderBy: sortRanking?.field, orderDirection: sortRanking?.direction },
+        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null, limit, orderBy: sortRanking?.field, orderDirection: sortRanking?.direction },
         skip: !filterState?.schemaFilter,
     });
     
@@ -99,7 +99,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
 
     function downloadCSV() {
         getFullRanking({
-            variables: { workbookId, schema: filterState?.schemaFilter, commonData: {}, limit: undefined, selectionLabel: null, onlySelected: false, orderBy: null, orderDirection: null }
+            variables: { workbookId, schema: filterState?.schemaFilter, commonData: {}, limit: undefined, orderBy: null, orderDirection: null }
         }).then((result) => {
             const data = result.data;
             if (data?.workbookRankingReport && data.workbookRankingReport.length > 0) {

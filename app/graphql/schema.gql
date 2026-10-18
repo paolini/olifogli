@@ -83,12 +83,6 @@ type OlimanagerRowData {
   result: JSON
 }
 
-type RowSelection {
-  label: String!
-  selected_by: String!
-  timestamp: Timestamp!
-}
-
 type Row {
   _id: ObjectId!
   error: String
@@ -99,7 +93,6 @@ type Row {
   updatedBy: String!
   data: Data!
   olimanager: OlimanagerRowData
-  selections: [RowSelection]
   sourceTabId: String
 }
 
@@ -166,7 +159,6 @@ type ReportEntry {
   score: Float!
   rank: Int!
   rowId: ObjectId!
-  selections: [RowSelection]
   participantId: String
 }
 
@@ -251,7 +243,7 @@ type Query {
   olimanager: String # testing
   workbookDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [DistributionReport!]!
   workbookExerciseReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [ExerciseReport!]!
-  workbookRankingReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState, limit: Int, selectionLabel: String, onlySelected: Boolean, orderBy: String, orderDirection: Int): [RankingReport!]!
+  workbookRankingReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState, limit: Int, orderBy: String, orderDirection: Int): [RankingReport!]!
   workbookAgeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [AgeDistributionReport!]!
   workbookTimeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [TimeDistributionReport!]!
   cursors(sheetId: ObjectId!): [UserCursor!]!
@@ -286,7 +278,6 @@ type Mutation {
 
   addRow(sheetId: ObjectId!, data: Data!, tabId: String): Row
   patchRow(_id: ObjectId!, updatedOn: Timestamp!, data: Data!, tabId: String): Row
-  toggleSelection(rowId: ObjectId!, label: String!): Row
   deleteRow(_id: ObjectId!): ObjectId
   deleteRows(ids: [ObjectId!]!): Int
   deleteAllRows(sheetId: ObjectId!): Int

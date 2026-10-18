@@ -5,7 +5,6 @@ import { get_authenticated_user } from './utils'
 // Workbook configuration stays private unless a field is explicitly listed here.
 export const TEACHER_READABLE_WORKBOOK_FIELDS = [
     'contest_year',
-    'selection_workbook_id',
 ] as const
 
 export default async function workbookCommonData(

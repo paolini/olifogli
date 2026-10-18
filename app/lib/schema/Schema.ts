@@ -10,13 +10,6 @@ export type DerivedData = {
     anomalies: number,
 }
 
-export type Selection = {
-    label: string,
-    name: string,
-    color: string,
-    row_filter?: Record<string, unknown>,
-}
-
 export type RowCalculationResult = {
     totalScore: number|undefined;
     problemScores: number[]; 
@@ -63,7 +56,6 @@ export default class Schema {
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
     fields_sensitive_names: string[] = [] // nomi dei campi contenenti dati sensibili da crittografare
     fields_sensitive_dates: string[] = [] // nomi dei campi contenenti date sensibili da crittografare
-    selections: Selection[] = [] // selezioni possibili per questo schema
     row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
     extract_olimanager_results: undefined | ((row: RowModel, context: ValidationContext) => OlimanagerProblemResult[]) = undefined
     extract_ranking: undefined | ((row: RowModel, sheet: Sheet) => ReportEntry | undefined) = undefined

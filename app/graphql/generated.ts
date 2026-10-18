@@ -104,7 +104,6 @@ export type Mutation = {
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
-  toggleSelection?: Maybe<Row>;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSetting: Setting;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
@@ -259,12 +258,6 @@ export type MutationPatchRowArgs = {
 export type MutationRequestScanSheetGenerationArgs = {
   selectedRowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetId: Scalars['ObjectId']['input'];
-};
-
-
-export type MutationToggleSelectionArgs = {
-  label: Scalars['String']['input'];
-  rowId: Scalars['ObjectId']['input'];
 };
 
 
@@ -451,11 +444,9 @@ export type QueryWorkbookExerciseReportArgs = {
 export type QueryWorkbookRankingReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
   orderBy?: InputMaybe<Scalars['String']['input']>;
   orderDirection?: InputMaybe<Scalars['Int']['input']>;
   schema?: InputMaybe<Scalars['String']['input']>;
-  selectionLabel?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<SheetState>;
   workbookId: Scalars['ObjectId']['input'];
 };
@@ -486,7 +477,6 @@ export type ReportEntry = {
   rowId: Scalars['ObjectId']['output'];
   school?: Maybe<Scalars['String']['output']>;
   score: Scalars['Float']['output'];
-  selections?: Maybe<Array<Maybe<RowSelection>>>;
   sheet: ReportEntrySheet;
   sheetId: Scalars['ObjectId']['output'];
   sheetName: Scalars['String']['output'];
@@ -509,17 +499,9 @@ export type Row = {
   data: Scalars['Data']['output'];
   error?: Maybe<Scalars['String']['output']>;
   olimanager?: Maybe<OlimanagerRowData>;
-  selections?: Maybe<Array<Maybe<RowSelection>>>;
   sourceTabId?: Maybe<Scalars['String']['output']>;
   updatedBy: Scalars['String']['output'];
   updatedOn: Scalars['Timestamp']['output'];
-};
-
-export type RowSelection = {
-  __typename?: 'RowSelection';
-  label: Scalars['String']['output'];
-  selected_by: Scalars['String']['output'];
-  timestamp: Scalars['Timestamp']['output'];
 };
 
 export type ScanJob = {
@@ -1046,37 +1028,12 @@ export type GetWorkbookRankingReportQueryVariables = Exact<{
   commonData?: InputMaybe<Scalars['Data']['input']>;
   state?: InputMaybe<SheetState>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  selectionLabel?: InputMaybe<Scalars['String']['input']>;
-  onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
   orderBy?: InputMaybe<Scalars['String']['input']>;
   orderDirection?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
 export type GetWorkbookRankingReportQuery = { __typename?: 'Query', workbookRankingReport: Array<{ __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, school?: string | null, city?: string | null, district?: string | null, classYear?: string | null, classSection?: string | null, score: number, rank: number, rowId: ObjectId, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> }> };
-
-export type GetWorkbookRankingReportWithSelectionsQueryVariables = Exact<{
-  workbookId: Scalars['ObjectId']['input'];
-  schema?: InputMaybe<Scalars['String']['input']>;
-  state?: InputMaybe<SheetState>;
-  commonData?: InputMaybe<Scalars['Data']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  selectionLabel?: InputMaybe<Scalars['String']['input']>;
-  onlySelected?: InputMaybe<Scalars['Boolean']['input']>;
-  orderBy?: InputMaybe<Scalars['String']['input']>;
-  orderDirection?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type GetWorkbookRankingReportWithSelectionsQuery = { __typename?: 'Query', workbookRankingReport: Array<{ __typename?: 'RankingReport', schema: string, totalStudents: number, ranking: Array<{ __typename?: 'ReportEntry', rowId: ObjectId, sheetId: ObjectId, sheetName: string, studentName: string, studentSurname: string, studentBirthDate?: string | null, school?: string | null, city?: string | null, district?: string | null, classYear?: string | null, classSection?: string | null, score: number, rank: number, participantId?: string | null, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null, sheet: { __typename?: 'ReportEntrySheet', commonData: any } }> }> };
-
-export type ToggleSelectionMutationVariables = Exact<{
-  rowId: Scalars['ObjectId']['input'];
-  label: Scalars['String']['input'];
-}>;
-
-
-export type ToggleSelectionMutation = { __typename?: 'Mutation', toggleSelection?: { __typename?: 'Row', _id: ObjectId, selections?: Array<{ __typename?: 'RowSelection', label: string, selected_by: string, timestamp: Date } | null> | null } | null };
 
 export type GetSheetsQueryVariables = Exact<{
   workbookId?: InputMaybe<Scalars['ObjectId']['input']>;
@@ -2837,15 +2794,13 @@ export type GetWorkbookExerciseReportLazyQueryHookResult = ReturnType<typeof use
 export type GetWorkbookExerciseReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookExerciseReportSuspenseQuery>;
 export type GetWorkbookExerciseReportQueryResult = Apollo.QueryResult<GetWorkbookExerciseReportQuery, GetWorkbookExerciseReportQueryVariables>;
 export const GetWorkbookRankingReportDocument = gql`
-    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
+    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $orderBy: String, $orderDirection: Int) {
   workbookRankingReport(
     workbookId: $workbookId
     schema: $schema
     commonData: $commonData
     state: $state
     limit: $limit
-    selectionLabel: $selectionLabel
-    onlySelected: $onlySelected
     orderBy: $orderBy
     orderDirection: $orderDirection
   ) {
@@ -2889,8 +2844,6 @@ export const GetWorkbookRankingReportDocument = gql`
  *      commonData: // value for 'commonData'
  *      state: // value for 'state'
  *      limit: // value for 'limit'
- *      selectionLabel: // value for 'selectionLabel'
- *      onlySelected: // value for 'onlySelected'
  *      orderBy: // value for 'orderBy'
  *      orderDirection: // value for 'orderDirection'
  *   },
@@ -2912,128 +2865,6 @@ export type GetWorkbookRankingReportQueryHookResult = ReturnType<typeof useGetWo
 export type GetWorkbookRankingReportLazyQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportLazyQuery>;
 export type GetWorkbookRankingReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportSuspenseQuery>;
 export type GetWorkbookRankingReportQueryResult = Apollo.QueryResult<GetWorkbookRankingReportQuery, GetWorkbookRankingReportQueryVariables>;
-export const GetWorkbookRankingReportWithSelectionsDocument = gql`
-    query GetWorkbookRankingReportWithSelections($workbookId: ObjectId!, $schema: String, $state: SheetState, $commonData: Data, $limit: Int, $selectionLabel: String, $onlySelected: Boolean, $orderBy: String, $orderDirection: Int) {
-  workbookRankingReport(
-    workbookId: $workbookId
-    schema: $schema
-    state: $state
-    commonData: $commonData
-    limit: $limit
-    selectionLabel: $selectionLabel
-    onlySelected: $onlySelected
-    orderBy: $orderBy
-    orderDirection: $orderDirection
-  ) {
-    schema
-    totalStudents
-    ranking {
-      rowId
-      sheetId
-      sheetName
-      studentName
-      studentSurname
-      studentBirthDate
-      school
-      city
-      district
-      classYear
-      classSection
-      score
-      rank
-      participantId
-      selections {
-        label
-        selected_by
-        timestamp
-      }
-      sheet {
-        commonData
-      }
-    }
-  }
-}
-    `;
-
-/**
- * __useGetWorkbookRankingReportWithSelectionsQuery__
- *
- * To run a query within a React component, call `useGetWorkbookRankingReportWithSelectionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetWorkbookRankingReportWithSelectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetWorkbookRankingReportWithSelectionsQuery({
- *   variables: {
- *      workbookId: // value for 'workbookId'
- *      schema: // value for 'schema'
- *      state: // value for 'state'
- *      commonData: // value for 'commonData'
- *      limit: // value for 'limit'
- *      selectionLabel: // value for 'selectionLabel'
- *      onlySelected: // value for 'onlySelected'
- *      orderBy: // value for 'orderBy'
- *      orderDirection: // value for 'orderDirection'
- *   },
- * });
- */
-export function useGetWorkbookRankingReportWithSelectionsQuery(baseOptions: Apollo.QueryHookOptions<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables> & ({ variables: GetWorkbookRankingReportWithSelectionsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables>(GetWorkbookRankingReportWithSelectionsDocument, options);
-      }
-export function useGetWorkbookRankingReportWithSelectionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables>(GetWorkbookRankingReportWithSelectionsDocument, options);
-        }
-export function useGetWorkbookRankingReportWithSelectionsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables>(GetWorkbookRankingReportWithSelectionsDocument, options);
-        }
-export type GetWorkbookRankingReportWithSelectionsQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportWithSelectionsQuery>;
-export type GetWorkbookRankingReportWithSelectionsLazyQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportWithSelectionsLazyQuery>;
-export type GetWorkbookRankingReportWithSelectionsSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookRankingReportWithSelectionsSuspenseQuery>;
-export type GetWorkbookRankingReportWithSelectionsQueryResult = Apollo.QueryResult<GetWorkbookRankingReportWithSelectionsQuery, GetWorkbookRankingReportWithSelectionsQueryVariables>;
-export const ToggleSelectionDocument = gql`
-    mutation ToggleSelection($rowId: ObjectId!, $label: String!) {
-  toggleSelection(rowId: $rowId, label: $label) {
-    _id
-    selections {
-      label
-      selected_by
-      timestamp
-    }
-  }
-}
-    `;
-export type ToggleSelectionMutationFn = Apollo.MutationFunction<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
-
-/**
- * __useToggleSelectionMutation__
- *
- * To run a mutation, you first call `useToggleSelectionMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useToggleSelectionMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [toggleSelectionMutation, { data, loading, error }] = useToggleSelectionMutation({
- *   variables: {
- *      rowId: // value for 'rowId'
- *      label: // value for 'label'
- *   },
- * });
- */
-export function useToggleSelectionMutation(baseOptions?: Apollo.MutationHookOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<ToggleSelectionMutation, ToggleSelectionMutationVariables>(ToggleSelectionDocument, options);
-      }
-export type ToggleSelectionMutationHookResult = ReturnType<typeof useToggleSelectionMutation>;
-export type ToggleSelectionMutationResult = Apollo.MutationResult<ToggleSelectionMutation>;
-export type ToggleSelectionMutationOptions = Apollo.BaseMutationOptions<ToggleSelectionMutation, ToggleSelectionMutationVariables>;
 export const GetSheetsDocument = gql`
     query GetSheets($workbookId: ObjectId) {
   sheets(workbookId: $workbookId) {
@@ -3650,7 +3481,6 @@ export type ResolversTypes = {
   ReportEntry: ResolverTypeWrapper<Omit<ReportEntry, 'rowId' | 'sheetId'> & { rowId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ReportEntrySheet: ResolverTypeWrapper<ReportEntrySheet>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
-  RowSelection: ResolverTypeWrapper<RowSelection>;
   ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
@@ -3698,7 +3528,6 @@ export type ResolversParentTypes = {
   ReportEntry: Omit<ReportEntry, 'rowId' | 'sheetId'> & { rowId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ReportEntrySheet: ReportEntrySheet;
   Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
-  RowSelection: RowSelection;
   ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
@@ -3804,7 +3633,6 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
-  toggleSelection?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationToggleSelectionArgs, 'label' | 'rowId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSetting?: Resolver<ResolversTypes['Setting'], ParentType, ContextType, RequireFields<MutationUpdateSettingArgs, 'key' | 'value'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
@@ -3891,7 +3719,6 @@ export type ReportEntryResolvers<ContextType = any, ParentType extends Resolvers
   rowId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   school?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
   sheet?: Resolver<ResolversTypes['ReportEntrySheet'], ParentType, ContextType>;
   sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   sheetName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -3914,17 +3741,9 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
   data?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['OlimanagerRowData']>, ParentType, ContextType>;
-  selections?: Resolver<Maybe<Array<Maybe<ResolversTypes['RowSelection']>>>, ParentType, ContextType>;
   sourceTabId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedOn?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type RowSelectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['RowSelection'] = ResolversParentTypes['RowSelection']> = {
-  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  selected_by?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4081,7 +3900,6 @@ export type Resolvers<ContextType = any> = {
   ReportEntry?: ReportEntryResolvers<ContextType>;
   ReportEntrySheet?: ReportEntrySheetResolvers<ContextType>;
   Row?: RowResolvers<ContextType>;
-  RowSelection?: RowSelectionResolvers<ContextType>;
   ScanJob?: ScanJobResolvers<ContextType>;
   ScanMessage?: ScanMessageResolvers<ContextType>;
   ScanResults?: ScanResultsResolvers<ContextType>;
