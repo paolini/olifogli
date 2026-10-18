@@ -65,6 +65,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     const filteredSheets = filterSheets(filterState, sheets) as typeof sheets
 
     const [useBinning, setUseBinning] = useState(false)
+    const [showPercentiles, setShowPercentiles] = useState(false)
 
     const { loading, error, data, refetch: refetchReport } = useGetWorkbookDistributionReportQuery({
         variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
@@ -90,15 +91,23 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
                     />
                     <span>Raggruppa punteggi</span>
                 </label>
+                <label className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        checked={showPercentiles}
+                        onChange={e => setShowPercentiles(e.target.checked)}
+                    />
+                    <span>Mostra percentili</span>
+                </label>
             </div>
             {reports?.map((report: DistributionReport) =>
-                <DistributionSection key={report.schema} report={report} useBinning={useBinning} />
+                <DistributionSection key={report.schema} report={report} useBinning={useBinning} showPercentiles={showPercentiles} />
             )}
         </div>
     )
 }
 
-function DistributionSection({ report, useBinning }: { report: DistributionReport, useBinning: boolean }) {
+function DistributionSection({ report, useBinning, showPercentiles }: { report: DistributionReport, useBinning: boolean, showPercentiles: boolean }) {
     const schemaName = schemas[report.schema].header
 
     let processedDistribution = report.scoreDistribution
@@ -126,12 +135,12 @@ function DistributionSection({ report, useBinning }: { report: DistributionRepor
                 </div>
             </div>
 
-            <ScoreDistributionChart distribution={processedDistribution} />
+            <ScoreDistributionChart distribution={processedDistribution} showPercentiles={showPercentiles} />
         </div>
     )
 }
 
-function ScoreDistributionChart({ distribution }: { distribution: DistributionReport['scoreDistribution'] }) {
+function ScoreDistributionChart({ distribution, showPercentiles }: { distribution: DistributionReport['scoreDistribution'], showPercentiles: boolean }) {
     if (distribution.length === 0) {
         return <p className="text-gray-600">Nessun dato disponibile</p>
     }
@@ -150,7 +159,7 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
     })
 
     const datasets = [
-        {
+        ...(showPercentiles ? [{
             type: 'line' as const,
             label: 'Percentile',
             data: percentileData,
@@ -161,7 +170,7 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
             pointHoverRadius: 6,
             yAxisID: 'y2',
             tension: 0.1,
-        },        
+        }] : []),
         {
             type: 'bar' as const,
             label: 'Studenti',
@@ -228,13 +237,14 @@ function ScoreDistributionChart({ distribution }: { distribution: DistributionRe
             },
             y2:{
                 type: 'linear' as const,
-                display: true,
+                display: showPercentiles,
                 position: 'right' as const,
                 title: {
                     display: true,
                     text: 'Percentile (%)',
                 },
                 beginAtZero: true,
+                max: 100,
                 grid: {
                     drawOnChartArea: false,
                 },

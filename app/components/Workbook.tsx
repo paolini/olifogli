@@ -110,7 +110,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
                 onClick={() => setActiveTab('esercizi')}
                 className={`tab-button ${activeTab === 'esercizi' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
-                Distribuzione Esercizi
+                Distribuzione Quesiti
             </button>
             <button
                 onClick={() => setActiveTab('età')}

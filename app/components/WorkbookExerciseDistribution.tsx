@@ -95,14 +95,14 @@ function ExerciseDistributionSection({ report }: { report: ExerciseReport }) {
     return (
         <div className="border rounded-lg p-4 space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold">{schemaName} - Distribuzione per Esercizio</h3>
+                <h3 className="text-xl font-semibold">{schemaName} - Distribuzione per Quesito</h3>
                 <span className="text-gray-600">Totale studenti: {report.totalStudents}</span>
             </div>
             <ExerciseDistributionChart distribution={report.exerciseDistribution} totalStudents={report.totalStudents} />
             {
                 report.exerciseDistribution.map(item => (
                     <div key={item.exercise} className="text-sm">
-                        <strong>Esercizio {item.exercise}: </strong> 
+                        <strong>Quesito {item.exercise}: </strong>
                             {item.correct} giuste, {}
                             {item.wrong} sbagliate, {}
                             {item.empty} vuote, {}
@@ -184,7 +184,7 @@ function ExerciseDistributionChart({ distribution, totalStudents }: { distributi
                     },
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     title: function(context: any) {
-                        return `Esercizio ${context[0].label}`
+                        return `Quesito ${context[0].label}`
                     }
                 }
             }
@@ -193,7 +193,7 @@ function ExerciseDistributionChart({ distribution, totalStudents }: { distributi
             x: {
                 title: {
                     display: true,
-                    text: 'Esercizio'
+                    text: 'Quesito'
                 },
                 stacked: true
             },
