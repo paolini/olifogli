@@ -4,6 +4,8 @@ import { RowValidationContext } from "./Context"
 
 type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
 
+export type EditingKeyResult = { value: string, cursor: number, advance: -1 | 0 | 1 }
+
 type FieldOptions = {
     header?: string
     alternativeNames?: string[]
@@ -30,6 +32,10 @@ type DisplayValue = {
 }
 
 export class Field {
+    // Undefined lets the text input handle the key natively.
+    editKey(key: string, value: string, start: number, end: number): EditingKeyResult | undefined {
+        return undefined
+    }
     name: string // used as key in data structures
     header: string // used as human-readable header in UI
     css_class: string // used in CSS
@@ -226,6 +232,16 @@ export class AnswerField extends Field {
 }
 
 export class ChoiceAnswerField extends AnswerField {
+    editKey(key: string): EditingKeyResult | undefined {
+        if (key === 'Delete' || key === 'Backspace') {
+            return { value: '', cursor: 0, advance: key === 'Backspace' ? -1 : 0 }
+        }
+        if (key.length !== 1) return
+        const shortcuts: Record<string, string> = { '0': '-', ' ': '-', '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '9': 'X' }
+        const value = shortcuts[key] ?? key.toUpperCase()
+        const accepted = 'ABCDEX-'.includes(value)
+        return { value: accepted ? value : ' ', cursor: 1, advance: accepted ? 1 : 0 }
+    }
     constructor(name: string, options: FieldOptions) {
         super(name, options)
         this.css_class += ` field-ChoiceAnswer`
@@ -376,6 +392,15 @@ export class NumericField extends Field {
 }
 
 export class DateField extends Field {
+    editKey(key: string, value: string, start: number, end: number): EditingKeyResult | undefined {
+        if (key === ' ' || key === '.') key = '/'
+        if (!/^[0-9/]$/.test(key)) return
+        let text = value.replace(/\|/g, '/')
+        text = (text.slice(0, start) + key + '|' + text.slice(end))
+            .replace(/\/+/g, '/').replace(/\/\|\//g, '/|')
+        if (/^\d{2}\|$/.test(text) || /^\d{2}\/\d{2}\|$/.test(text)) text = text.replace('|', '/|')
+        return { value: text.replace('|', ''), cursor: text.indexOf('|'), advance: 0 }
+    }
     expectedMinAge: number = NaN
     expectedMaxAge: number = NaN
 

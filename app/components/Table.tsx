@@ -11,6 +11,7 @@ import TableActions from './TableActions'
 import { useCheckboxesState } from './TableCheckboxes'
 import TableBody from './TableBody'
 import TableHeader from './TableHeader'
+import useCellEditor, { canEditCell } from './useCellEditor'
 import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
@@ -80,7 +81,6 @@ export type TableState = {
   selectedLineKeys: Set<string>, // righe selezionate
   lastClickedLineKey: string, // ultima riga cliccata (per selezione con shift) potrebbe non esistere più...
   lastCsvDownload?: Date, // istante dell'ultimo download CSV
-  inputFocus: boolean, // siamo in modalità inserimento (vs navigazione)
 }
 
 export const EMPTY_TABLE_STATE: TableState = {
@@ -90,7 +90,6 @@ export const EMPTY_TABLE_STATE: TableState = {
     selectedLineKeys: new Set<string>(),
     lastClickedLineKey: '',
     lastCsvDownload: undefined,
-    inputFocus: false,
 }
 
 const MOVE_CURSOR_MUTATION = gql`
@@ -127,7 +126,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date()) // ultima sincronizzazione con il server
     const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
-    const [directInput, setDirectInput] = useState<boolean>(false);
+    const cellEditor = useCellEditor(commitCell)
 
     const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
     const moveCursorRef = useRef(moveCursorMutation)
@@ -173,9 +172,16 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     const focusField = focusColumn instanceof Field ? focusColumn : undefined
 
     useEffect(() => {
+        const editor = cellEditor.editor
+        if (editor.mode !== 'editing') return
+        const line = tableState.lines.find(line => line.key === editor.lineKey)
+        if (!edit || !line || !columns.includes(editor.field) || !canEditCell(editor.field, line.row, adminEditMode, standardAnswers)) cellEditor.reset()
+    }, [edit, tableState.lines, columns, cellEditor.editor, adminEditMode, standardAnswers])
+
+    useEffect(() => {
         // avvia un timer per il salvataggio automatico della riga in modifica
         const intervalId = setInterval(() => {
-            saveLineIfNeeded(focusLine)
+            saveLineIfNeeded(cellEditor.commit({ preserveDraft: true }) ?? focusLine)
         }, 5000)
         return () => clearInterval(intervalId);
     }, [focusLine,lastAlive]);
@@ -208,16 +214,15 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
                     schema={schema}
                     tableState={tableState}
                     setTableState={setTableState}
-                    directInput={directInput} setDirectInput={setDirectInput}
+                    editor={cellEditor.editor}
+                    onEditorChange={cellEditor.change}
+                    onEditorBlur={(lineKey, fieldName) => cellEditor.commit({ keepEditing: true, expected: { lineKey, fieldName } })}
                     showStandardAnswers={standardAnswers}
                     error={error}
                     dismissErrors={dismissErrors}
                     onCellClick={(column: Column, line: Line) => moveFocusTo(column, line)}
                     addNewRow={addNewRow}
                     loading={loading}
-                    setLineData={setLineData}
-                    cellKeyDownHandler={cellKeyDownHandler}
-                    adminEditMode={adminEditMode}
                     otherCursors={otherCursors ?? {}}
                 />
             </table>
@@ -315,7 +320,6 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
           ? prevTableState.selectedLineKeys // non modificare lo stato se non serve (SHORTCUT!)
           : prevTableState.selectedLineKeys.difference(deletedLineKeys)
 
-        const inputFocus = !!(prevTableState.inputFocus && focusLineKey && focusFieldName)
 
         return {
           lines,
@@ -323,7 +327,6 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
           focusFieldName,
           selectedLineKeys,
           lastClickedLineKey,
-          inputFocus,
         }
       })
     }
@@ -366,280 +369,91 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         }
     }
 
-    function onKeyDown(e: KeyboardEvent<HTMLTableSectionElement>) {
-        // console.log(`Table onKeyDown for key: ${e.key}`);
-        const focusLineKey = tableState.focusLineKey
-        const inputFocus = tableState.inputFocus
-        setLastAlive(new Date())
-        if (!edit) return
-        // salva cella in modifica
-        if (e.key === "Enter" && focusField && inputFocus) {
-            e.preventDefault()
-            e.stopPropagation()
-            saveLineAndProceedToNext()
-        } else if ((e.key === "Enter" || e.key === "F2") && !inputFocus && focusField) {
-            setTableState(prev => ({...prev, inputFocus: true}))
-        } else if ((e.key === "Delete" || e.key === "Backspace") && !inputFocus && focusLine) {
-            setValueInFocusCell('')
-            // setTableState(prev => ({...prev, inputFocus: true}))
-        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !inputFocus && focusLine && focusField) {
-            // alert(`Inizio modifica della cella. Premi ESC per annullare.`)
-            setTableState(prev => ({...prev, inputFocus: true}))
-            let char = e.key
-            if (focusField.type === 'choice-answer') {
-                char = choiceAnswerCharacterTransform(char)
-            }
-            setValueInFocusCell(char)
-            setDirectInput(true);
-            // cellKeyDownHandler(e);
-            e.preventDefault();
-            e.stopPropagation();
-        } else if (e.key === "Escape" && focusField && inputFocus) {
-            e.preventDefault();
-            e.stopPropagation();
-            // esco dalla modalità modifica
-            const focusLine = tableState.lines.find(l => l.key === focusLineKey)
-            // salvo contenuto della riga
-            saveLineIfNeeded(focusLine);
-            // esco dalla modalità modifica
-            setTableState(prev => ({...prev, inputFocus: false}))
-            /*
-            if (focusLine && Object.keys(focusLine.data).length > 0) {
-                if (!confirm("Ci sono modifiche non salvate su questa riga. Vuoi scartarle?")) {
-                    return
-                }
-            } 
-            cancelUnsavedModification(inputFocus);
-            */
-        } else if (e.key === "ArrowDown" && focusLine) {
-            e.preventDefault();
-            e.stopPropagation();
-            moveDownOrUp(1);
-        } else if (e.key === "ArrowUp" && focusLine) {
-            e.preventDefault();
-            e.stopPropagation();
-            moveDownOrUp(-1);
-        } else if (e.key === "PageDown" && focusLine) {
-            e.preventDefault();
-            e.stopPropagation();
-            moveDownOrUp(e.shiftKey ? 1000 : 10);
-        } else if (e.key === "PageUp" && focusLine) {
-            e.preventDefault();
-            e.stopPropagation();
-            moveDownOrUp(e.shiftKey ? -1000 : -10);
-        } else if (e.key === 'ArrowLeft') {
-            if (moveRightOrLeft(e.shiftKey ? -5 : -1)) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
-        } else if (e.key === 'ArrowRight') {
-            if (moveRightOrLeft(e.shiftKey ? 5 : 1)) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
-        } else if (e.key === 'Tab') {
-          if (e.shiftKey) {
-            if (moveRightOrLeft(-1)) {
-              e.preventDefault();
-              e.stopPropagation();
-              return;
-            }
-          } else {
-            if (moveRightOrLeft(1)) {
-              e.preventDefault();
-              e.stopPropagation();
-              return;
-            }
-          }
-        } else if (e.key === "Home") {
-            e.preventDefault();
-            e.stopPropagation();
-            moveRightOrLeft(-1000);
-        } else if (e.key === "End") {
-            e.preventDefault();
-            e.stopPropagation();
-            moveRightOrLeft(1000);
-        }
-
-        function setValueInFocusCell(s: string) {
-            if (focusLine && focusField) {
-                setLineData(focusLine, focusField.name, s)
-            }
-        }
-    }
-
-    function cellKeyDownHandler(e: KeyboardEvent<HTMLInputElement>|KeyboardEvent<HTMLTableSectionElement>) {
-        // console.log("cellKeyDownHandler called");
-        const key = e.key;
-        const input = e.currentTarget
-
-        if (!edit) return;
-
-        // input può essere undefined perché al primo 
-        // carattere digitato non c'è ancora l'input nella cella
-        // è però garantito che il primo carattere non è speciale
-
-        // non c'è una riga con il focus
-        if (!focusLine) return
-
-        // la colonna con il focus non è un campo modificabile
-        if (!(focusField instanceof Field)) return
-
-        const field: Field = focusField;
-        const oldValue = focusLine.row ? (focusLine.row.data[field.name] || '') : ''
-
-        function setValue(value: string|undefined) {
-            setTableState(prev => {
-                return {
-                    ...prev,
-                    // only change lines:
-                    lines: prev.lines.map(l => l===focusLine 
-                        ? {
-                        ...l,
-                        data: dataSetter(l.data, field.name, value)
-                        } 
-                        : l)
-                }
-            })
-        }
-
-        // console.log(`cellKeyDown with key: ${key}`);
-        if (key === "Enter" || key === "Escape" 
-            || key === "Tab" || key === "ArrowUp" 
-            || key === "ArrowDown") {
-            e.preventDefault()
-            // viene gestito dall'handler superiore in Table
-            return
-        }
-        let isAtStart = true
-        let isAtEnd = true
-        if (input instanceof HTMLInputElement) {
-            const cursorPos = input.selectionStart || 0
-            const cursorEnd = input.selectionEnd || 0
-            isAtStart = cursorPos === 0 && cursorEnd === 0
-            isAtEnd = cursorPos === input?.value.length && cursorEnd === input.value.length
-        }
-
-        if (field.type === 'choice-answer') {
-            const newValue = choiceAnswerKeyDownHandler(e);
-            if (newValue !== undefined) {
-                e.preventDefault()
-                setValue(newValue === oldValue ? undefined : newValue)
-                return
-            }
-        } else if (key === "Backspace" && isAtStart) {
-            moveRightOrLeft(-1)
-            e.stopPropagation()
-            return
-        } else if ((key === "ArrowLeft" && isAtStart)
-            || (key === "ArrowRight" && isAtEnd)) {
-            // fai gestire il movimento di focus alla tabella
-            e.preventDefault()
-            return
-        } else if (key === "ArrowLeft" || key === "ArrowRight") {
-            // evita che le componenti superiori intercettino l'evento
-            e.stopPropagation()
-        } else if (field.type === 'date') {
-            const newValue = dateKeyDownHandler(e)
-            if (newValue !== undefined) {
-                e.preventDefault()
-                setValue(newValue === oldValue ? undefined : newValue)
-                return
-            }
-        }
-    }
-
-    // handler specifico per i campi di tipo 'date'
-    function dateKeyDownHandler(e: KeyboardEvent<HTMLInputElement>|KeyboardEvent<HTMLTableSectionElement>) {
-        let key = e.key
-        const input = e.currentTarget
-        if (key === ' ' || key==='.') key = '/'
-
-        if (key >= '0' && key <= '9' || key === '/') { 
-        let cursorPos = 0
-        let cursorEnd = 0
-        if (input instanceof HTMLInputElement) {
-            cursorPos = input?.selectionStart || 0    
-            cursorEnd = input?.selectionEnd || 0
-            let value = input?.value || ''
-                // rimpiazza eventuali '|' con '/'
-                value = value.replace(/\|/g, '/')
-
-                // inserisci carattere e '|' come cursore
-                value = value.slice(0, cursorPos) + key + '|' + value.slice(cursorEnd)
-
-                // sostituisci eventuali doppie barre con una sola barra
-                value = value.replace(/\/+/g, '/')
-                value = value.replace(/\/\|\//g, '/|')
-
-                // Aggiungi una barra se value = "gg|" o "gg/mm|"
-                if (value.match(/^\d{2}\|$/) || value.match(/^\d{2}\/\d{2}\|$/) ) {
-                    value = value.replace('|', '/|')
-                }
-
-                cursorPos = value.indexOf('|')
-                value = value.replace('|', '')
-
-            // Imposta la posizione del cursore
-            setTimeout(() => {
-                const input = document.activeElement as HTMLInputElement
-                if (input) {
-                    input.setSelectionRange(cursorPos, cursorPos)
-                }
-            }, 0)
-                return value
-            }
-        }
-        return undefined
-    }
-
-    // handler specifico per i campi di tipo 'choice-answer' (singolo carattere)
-    function choiceAnswerKeyDownHandler(e: KeyboardEvent<HTMLInputElement>|KeyboardEvent<HTMLTableSectionElement>) {
-        const key = e.key
-        if (key === "ArrowLeft" || key === "ArrowRight") {
-            // lascia che il movimento venga gestito da TableRow
-            e.preventDefault()
-            return
-        } else if (key === "Delete") {
-            return ''
-        } else if (key === "Backspace") {
-            setTimeout(() => moveRightOrLeft(-1),0)
-            return ''
-        } else if (key.length === 1) {
-            // Se è un singolo carattere (non un tasto speciale come Shift, Ctrl, etc.)
-            const char = choiceAnswerCharacterTransform(key)
-            return char // Sostituisci il valore
+    function startEditing(line: Line, field: Field, firstCharacter?: string) {
+        if (!canEditCell(field, line.row, adminEditMode, standardAnswers)) return
+        const value = field.display(line.data[field.name] ?? line.row?.data[field.name] ?? '', '', false).value
+        if (firstCharacter === undefined) {
+            cellEditor.begin(line.key, field, value)
         } else {
-            return undefined;
+            const result = field.editKey(firstCharacter, '', 0, 0)
+            cellEditor.begin(line.key, field, result?.value ?? firstCharacter, false)
+            if (result?.advance) moveRightOrLeft(result.advance, true)
         }
     }
 
-    function choiceAnswerCharacterTransform(char:string) {
-        char = char.toUpperCase()
-        if (char === '0' || char === ' ') char = '-'
-        else if (char === '1') char = 'A'
-        else if (char === '2') char = 'B'
-        else if (char === '3') char = 'C'
-        else if (char === '4') char = 'D'
-        else if (char === '5') char = 'E'
-        else if (char === '9') char = 'X'
-        if (! "ABCDEX-".includes(char)) char = ' '
-        else setTimeout(() => moveRightOrLeft(1), 0);      
-        return char // Sostituisci il valore
+    function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+        if (!edit || e.nativeEvent.isComposing || e.key === 'Process' || e.key === 'Dead') return
+        setLastAlive(new Date())
+        const editing = cellEditor.editor.mode === 'editing'
+        const input = e.target instanceof HTMLInputElement ? e.target : undefined
+        const key = e.key
+        if (editing && input) {
+            if (e.ctrlKey || e.metaKey || e.altKey) return
+            const result = cellEditor.key(key, input.selectionStart ?? 0, input.selectionEnd ?? 0)
+            if (result) {
+                e.preventDefault()
+                e.stopPropagation()
+                if (result.advance) moveRightOrLeft(result.advance, true)
+                return
+            }
+            if (focusField?.type !== 'choice-answer' && (
+                (key === 'ArrowLeft' && (input.selectionStart !== 0 || input.selectionEnd !== 0)) ||
+                (key === 'ArrowRight' && (input.selectionStart !== input.value.length || input.selectionEnd !== input.value.length)))) return
+            if (key === 'Backspace') {
+                if (input.selectionStart !== 0 || input.selectionEnd !== 0) return
+                e.preventDefault()
+                moveRightOrLeft(-1)
+                return
+            }
+        }
+        if (key === 'Enter' && editing) {
+            e.preventDefault()
+            saveLineAndProceedToNext()
+        } else if ((key === 'Enter' || key === 'F2') && !editing && focusLine && focusField) {
+            e.preventDefault()
+            startEditing(focusLine, focusField)
+        } else if ((key === 'Delete' || key === 'Backspace') && !editing && focusLine && focusField) {
+            e.preventDefault()
+            commitCell(focusLine.key, focusField, '')
+        } else if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !editing && focusLine && focusField) {
+            e.preventDefault()
+            e.stopPropagation()
+            startEditing(focusLine, focusField, key)
+        } else if (key === 'Escape' && editing) {
+            e.preventDefault()
+            saveLineIfNeeded(cellEditor.commit())
+        } else if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(key) && focusLine) {
+            e.preventDefault()
+            const distance = key.startsWith('Page') ? (e.shiftKey ? 1000 : 10) : 1
+            moveDownOrUp((key.endsWith('Down') ? 1 : -1) * distance)
+        } else if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Tab') {
+            const distance = key === 'Tab' ? (e.shiftKey ? -1 : 1) : (key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 5 : 1)
+            if (moveRightOrLeft(distance)) e.preventDefault()
+        } else if (key === 'Home' || key === 'End') {
+            e.preventDefault()
+            moveRightOrLeft(key === 'Home' ? -1000 : 1000)
+        }
+    }
+
+    // All exits go through this transition. Row saving consumes the committed
+    // snapshot, so it never depends on a later blur or a pending React render.
+    function goTo(line: Line | undefined, fieldName: string, keepEditing = false) {
+        const committed = cellEditor.commit() ?? focusLine
+        if (committed && committed.key !== line?.key) saveLineIfNeeded(committed)
+        setTableState(prev => stateMoveFocusTo(prev, line, fieldName))
+        const field = columns.find(column => column.name === fieldName)
+        if (keepEditing && line && field instanceof Field) {
+            startEditing(committed?.key === line.key ? committed : line, field)
+        }
     }
 
     function moveFocusTo(column: Column, line: Line) {
-        if (!edit) return;
-        if (line.key !== tableState.focusLineKey) saveLineIfNeeded(focusLine);
+        if (!edit) return
+        const editing = cellEditor.editor.mode === 'editing'
         const sameCell = line.key === tableState.focusLineKey && column.name === tableState.focusFieldName
-        if (sameCell && !tableState.inputFocus) {
-            // entriamo in modalità input
-            setTableState(prev => ({...prev, inputFocus: true}))
-            return
-        }
-        setTableState(prev => stateMoveFocusTo(prev, line, column.name))
+        if (sameCell) {
+            if (!editing && column instanceof Field) startEditing(line, column)
+        } else goTo(line, column.name, editing)
     }
 
     function columnCanReceiveFocus(column: Column): boolean {
@@ -649,219 +463,71 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         } else return false
     }
 
-    function columnIsEditable(column: Column): boolean {
-        const showHiddenColumns = checkboxesState.showHiddenColumns
-        if (column instanceof Field) {
-            return column.editable && (showHiddenColumns || !column.hidden)
-        } else return false
-    }
-
-    // aggiunge una nuova riga vuota in fondo alla tabella
-    // e ci mette il focus
     function addNewRow() {
-        const showHiddenColumns = checkboxesState.showHiddenColumns
-        saveLineIfNeeded(focusLine)
-
-        setTableState(prev => {
-            // aggiungi una nuova riga
-            const line = newLine()
-            const firstEditableColumn = columns.find(columnIsEditable) as Field | undefined
-            const focusFieldName = firstEditableColumn?.name || ''
-            if (focusLine) {
-                // inserisci campi precompilati
-                for (const col of columns) {
-                    if (col instanceof Field && col?.precompileValue) {
-                        const value = focusLine?.data[col.name] || focusLine?.row?.data[col.name] || ''
-                        if (value) {
-                            line.data[col.name] = value
-                        }
-                    }
-                }
+        const editing = cellEditor.editor.mode === 'editing'
+        const committed = cellEditor.commit() ?? focusLine
+        saveLineIfNeeded(committed)
+        const line = newLine()
+        for (const field of columns) {
+            if (field instanceof Field && field.precompileValue) {
+                const value = committed?.data[field.name] ?? committed?.row?.data[field.name]
+                if (value) line.data[field.name] = value
             }
-            const state = {
-                ...prev,
-                lines: [...prev.lines, line]
-            }
-            return stateMoveFocusTo(state, line, focusFieldName)
-        })
-    }
-
-    function cancelUnsavedModification(inputFocus: boolean) {
-        if (!focusLine) return
-        if (Object.keys(focusLine.data).length === 0 && !focusLine.error) {
-            if (inputFocus) {
-                setTableState(prev => ({
-                    ...prev,
-                    inputFocus: false,
-                }))
-            } else {
-                setTableState(prev => ({
-                    ...prev,
-                    focusLineKey: '',
-                    focusFieldName: '',
-                }))
-            }
-
-            return
         }
-        setTableState(prev => {
-            const newLine = {
-                ...focusLine,
-                data: {},
-                error: ''
-            }
-            return {
-                ...prev,
-                focusLineKey: '',
-                focusFieldName: '',
-                lines: prev.lines.map(l => l === focusLine ? newLine : l)
-            }
-        })
+        const first = columns.find(columnCanReceiveFocus)
+        setTableState(prev => stateMoveFocusTo({ ...prev, lines: [...prev.lines, line] }, line, first?.name ?? ''))
+        if (editing && first instanceof Field) startEditing(line, first)
     }
 
     function saveLineAndProceedToNext() {
         if (!focusLine) return
-        const lines = tableState.lines
-        const row_index = lines.indexOf(focusLine)
-        if (row_index < 0) return // non dovrebbe succedere!
-        const visible_columns = columns.filter(columnCanReceiveFocus)
-        if (row_index + 1 === lines.length) {
-            // era l'ultima riga della tabella
-            if (visible_columns.length >0) {
-                // console.log(`move focus to new row`)
-                addNewRow()
-            } else {
-                // non ci sono colonne da modificare
-                // togli il focus
-                // console.log(`no editable columns, removing focus`)
-                saveLineIfNeeded(focusLine)
-                setTableState(prev => stateMoveFocusTo(prev, undefined, ''))
-            }
-        } else {
-            // trovo la riga successiva
-            const newFocusLine = lines[row_index + 1]
-
-            // indietreggio sulle colonne se sono vuote
-            // mi sposto a sinistra finché ci sono celle vuote
-            const keys = visible_columns.map(col => col.name)
-            const values = keys.map(key => newFocusLine.data[key] || newFocusLine.row?.data[key] || '')
-            let i = keys.indexOf(tableState.focusFieldName)
-            if (i>=0) {
-                while(i>0 && (values[i] || '') === '' && (values[i-1] || '') === '') i--; // mi sposto a sinistra finché ci sono campi vuoti
-                if (keys[i]) {
-                    // muovo il focus
-                    // console.log(`move focus to line ${newFocusLine.key} field ${keys[i]}`)
-                    saveLineIfNeeded(focusLine) // CORRETTO!
-                    setTableState(prev => stateMoveFocusTo(prev, newFocusLine, keys[i]))
-                } else {
-                    // tolgo il focus perché non ci sono colonne modificabili
-                    // console.log(`no editable columns in next row, removing focus`)
-                    saveLineIfNeeded(focusLine) // CORRETTO!
-                    setTableState(prev => stateMoveFocusTo(prev, undefined, ''))
-                }
-            }
-        }
+        const index = tableState.lines.indexOf(focusLine)
+        const next = tableState.lines[index + 1]
+        if (!next) return addNewRow()
+        const fields = columns.filter(columnCanReceiveFocus)
+        let column = fields.findIndex(field => field.name === tableState.focusFieldName)
+        const value = (i: number) => next.data[fields[i].name] ?? next.row?.data[fields[i].name] ?? ''
+        while (column > 0 && !value(column) && !value(column - 1)) column--
+        goTo(next, fields[column]?.name ?? '', true)
     }
 
-    function moveDownOrUp(down: number) {
+    function moveDownOrUp(distance: number) {
         if (!focusLine) return
-        const lines = tableState.lines
-        const row_index = lines.indexOf(focusLine)
-        if (row_index < 0) return // non dovrebbe succedere!
-
-        let next_index = row_index + down
-        if (next_index < 0) next_index = 0
-        if (next_index >= lines.length) next_index = lines.length -1
-        if (row_index === next_index) return
-
-        // trovo la riga successiva
-        const newFocusLine = lines[next_index]
-
-        // muovo il focus
-        // console.log(`move focus to line ${newFocusLine.key}`)
-        saveLineIfNeeded(focusLine)
-        setTableState(prev => stateMoveFocusTo(prev, newFocusLine, prev.focusFieldName))
-        setTableState(prev => ({...prev, inputFocus: false}))
+        const index = tableState.lines.indexOf(focusLine)
+        const next = tableState.lines[Math.max(0, Math.min(tableState.lines.length - 1, index + distance))]
+        if (next !== focusLine) goTo(next, tableState.focusFieldName)
     }
 
-    function moveRightOrLeft(n: number) {
+    function moveRightOrLeft(distance: number, keepEditing = cellEditor.editor.mode === 'editing') {
         if (!focusLine) return false
-        const focusColumnName = tableState.focusFieldName
-        if (tableState.inputFocus) clean(focusLine, focusColumnName);
-        const permittedColumns = columns.filter(columnCanReceiveFocus)
-        const currentIndex = permittedColumns.findIndex(col => col.name === focusColumnName);
-        if (currentIndex < 0) return false;
-        let nextIndex = currentIndex + n;
-        if (nextIndex < 0) nextIndex = 0;
-        if (nextIndex >= permittedColumns.length) nextIndex = permittedColumns.length - 1;
-        if (nextIndex === currentIndex) {
-            // non mi sono mosso
-            return false;
+        const fields = columns.filter(columnCanReceiveFocus)
+        const index = fields.findIndex(field => field.name === tableState.focusFieldName)
+        if (index < 0) return false
+        const next = Math.max(0, Math.min(fields.length - 1, index + distance))
+        if (next === index) {
+            cellEditor.commit({ keepEditing: true })
+            return false
         }
-        const nextCol = permittedColumns[nextIndex];
-        moveFocusTo(nextCol, focusLine);
+        goTo(focusLine, fields[next].name, keepEditing)
         return true
     }
 
-    // sposta il focus nella tabella.
-    // avvia il salvataggio della riga che perde il focus, se serve.
-    // questa funzione va usata tramite setTableState
-    function stateMoveFocusTo(prev: TableState, line: Line|undefined, fieldName: string): TableState {
-        // console.log(`moveFocusToSetter: from lineKey=${prev.focusLineKey} to lineKey=${line?.key} field=${fieldName}`)
-        // metti il focus sulla nuova riga
-        const focusLineKey = line?.key || ''
-
-        if (focusLineKey === prev.focusLineKey && fieldName === prev.focusFieldName) {
-            // console.log(`moveFocusToSetter: no change in focusLineKey`)
-            return prev // SHORTCUT!
-        }
-
-        // nuovi valori:
-        const lines: Line[] = prev.lines
-        const focusFieldName = fieldName
-
-        return {
-            ...prev,
-            lines,
-            focusLineKey,
-            focusFieldName,
-        }
+    function stateMoveFocusTo(prev: TableState, line: Line | undefined, fieldName: string): TableState {
+        if (prev.focusLineKey === (line?.key ?? '') && prev.focusFieldName === fieldName) return prev
+        return { ...prev, focusLineKey: line?.key ?? '', focusFieldName: fieldName }
     }
 
-    function setLineData(line: Line, field: string, value: string|undefined) {
-        setTableState(prev => ({
-        ...prev,
-        // only change lines:
-        lines: prev.lines.map(l => l===line 
-            ? {
-            ...l,
-            data: dataSetter(l.data, field, value)
-            } 
-            : l)
-        }))
-    }
-
-    // setta o rimuove un campo da un oggetto Data
-    // (se value è undefined, rimuove il campo)
-    // restituisce un nuovo oggetto Data in uscita
-    function dataSetter(prev: Data, field: string, value:string|undefined) {
-        if (value === undefined) {
-            // remove field
-            const {[field]:_, ...rest} = prev;
-            return rest;
-        } else {
-            return {...prev, [field]: value}
-        }
-    }
-
-    function clean(line: Line, fieldName: string) {
-        const field = columns.find(c => c.name === fieldName)
-        if (field instanceof Field) {
-            let value = line.data[field.name]
-            if (value === undefined) value = line.row?.data[field.name] || ''
-            value = field.clean(value || '')
-            setLineData(line, field.name, value)
-        }
+    function commitCell(lineKey: string, field: Field, value: string): Line | undefined {
+        const line = tableState.lines.find(line => line.key === lineKey)
+        if (!line || !canEditCell(field, line.row, adminEditMode, standardAnswers)) return
+        const original = line.row?.data[field.name] ?? ''
+        const { [field.name]: removed, ...data } = line.data
+        if (line.saving || field.display(value, original, false).changed) data[field.name] = value
+        if (Object.keys(data).length === Object.keys(line.data).length &&
+            Object.keys(data).every(key => data[key] === line.data[key])) return line
+        const updated = { ...line, data }
+        setTableState(prev => ({ ...prev, lines: prev.lines.map(current => current.key === lineKey ? updated : current) }))
+        return updated
     }
 
     // avvia il salvataggio asincrono della linea
@@ -877,7 +543,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             const row = line.row
             const key = line.key  
             if (row) {
-                saveRow(row, data) // async progress
+                saveRow(row, data, key) // async progress
             } else {
                 createRow(key, data) // async progress
             }
@@ -906,9 +572,19 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         }
     }
 
-    async function saveRow(row: Row, data: Data) {
+    function acknowledgeSave(key: string, row: Row, submitted: Data) {
+        setTableState(prev => ({ ...prev, lines: prev.lines.map(line => {
+            if (line.key !== key) return line
+            const remaining = { ...line.data }
+            for (const [field, value] of Object.entries(submitted)) {
+                if (remaining[field] === value) delete remaining[field]
+            }
+            return { ...line, row, data: remaining, saving: false, error: '' }
+        }) }))
+    }
+
+    async function saveRow(row: Row, data: Data, key: string) {
         // console.log(`saving row ${row._id} with data`, data)
-        const key = row._id.toString()
 
         function updateLineState(update: Partial<Line>) {
             setTableState(prev => {
@@ -938,13 +614,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             updateLineState({saving: false, error: 'connection error'})
             return
         }
-        // ha salvato!
-        updateLineState({
-            row: r,
-            data: {},
-            saving: false,
-            error: ''
-        })
+        // A response acknowledges only the submitted values, never later edits.
+        acknowledgeSave(key, r, data)
     }
 
     async function createRow(lineKey: string, data: Data) {
@@ -973,12 +644,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             updateLineState({saving: false, error: 'connection error'})
             return
         }
-        updateLineState({
-            row,
-            data: {},
-            saving: false,
-            error: ''
-        })
+        acknowledgeSave(lineKey, row, data)
     }
 } // fine Table component
 

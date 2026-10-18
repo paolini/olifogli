@@ -1,4 +1,5 @@
-import { Dispatch, KeyboardEvent, SetStateAction } from "react"
+import { Dispatch, SetStateAction } from "react"
+import type { CellEditorState } from './useCellEditor'
 import TableRow, { RowSelectionState } from "./TableRow"
 import { Column, Line, OtherCursors, TableState } from "./Table"
 import { ApolloError } from "@apollo/client"
@@ -7,7 +8,7 @@ import { pluralize } from "../lib/util"
 import { Sheet } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 
-export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, loading, error, dismissErrors, onCellClick, addNewRow, setLineData, directInput, setDirectInput, cellKeyDownHandler, adminEditMode, otherCursors} : {
+export default function TableBody({sheet, schema, edit, columns, tableState, setTableState, showStandardAnswers, loading, error, dismissErrors, onCellClick, addNewRow, editor, onEditorChange, onEditorBlur, otherCursors} : {
     sheet: Sheet,
     schema: Schema,
     edit: boolean,
@@ -20,11 +21,9 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
     dismissErrors: () => void,
     onCellClick: (column: Column, line: Line) => void,
     addNewRow: () => void,
-    setLineData: (line: Line, field: string, value: string | undefined) => void,
-    directInput: boolean,
-    setDirectInput: Dispatch<SetStateAction<boolean>>,
-    cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-    adminEditMode: boolean,
+    editor: CellEditorState,
+    onEditorChange: (value: string) => void,
+    onEditorBlur: (lineKey: string, fieldName: string) => void,
     otherCursors: OtherCursors,
 }) {
     const focusLine = tableState.lines.find(l => l.key === tableState.focusLineKey)
@@ -43,17 +42,14 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
             return <TableRow
                   key={line.key}
                   line={line}
-                  setLineData={(field:string, value:string | undefined) => setLineData(line,field,value)}
                   columns={columns}
                   focusColumnName={focusColumnName}
-                  inputFocus={!!(focusColumnName && tableState.inputFocus)}
-                  directInput={directInput}
-                  setDirectInput={setDirectInput}
+                  editor={editor}
+                  onEditorChange={onEditorChange}
+                  onEditorBlur={onEditorBlur}
                   selectionState={compute_selection_state_for_row(line.key)}
                   showStandardAnswers={showStandardAnswers}
                   onCellClick={(column: Column) => onCellClick(column,line)}
-                  cellKeyDownHandler={cellKeyDownHandler}
-                  adminEditMode={adminEditMode}
                   validationContext={rowValidationContext}
                   cursorUsers={Object.entries(otherCursors)
                     .filter(([, c]) => c.lineKey === line.key)

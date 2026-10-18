@@ -1,5 +1,6 @@
-import { Dispatch, KeyboardEvent, SetStateAction, useMemo } from "react"
-import { ChoiceAnswerField, Field } from "../lib/schema/fields"
+import type { CellEditorState } from './useCellEditor'
+import { useMemo } from "react"
+import { Field } from "../lib/schema/fields"
 import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
 import { Line } from "./Table"
@@ -19,47 +20,19 @@ function emailToColor(email: string): string {
     return `hsl(${hash % 360}, 70%, 45%)`
 }
 
-export default function TableRow({line, setLineData, columns, selectionState, focusColumnName, inputFocus, directInput, setDirectInput, showStandardAnswers, onCellClick, cellKeyDownHandler, adminEditMode, validationContext, cursorUsers}:{
+export default function TableRow({line, columns, selectionState, focusColumnName, editor, onEditorChange, onEditorBlur, showStandardAnswers, onCellClick, validationContext, cursorUsers}:{
     line: Line,
-    setLineData: (field_name: string, value: string | undefined) => void,
     columns: Column[],
     selectionState: RowSelectionState,
     focusColumnName: string,
-    inputFocus: boolean,
-    directInput: boolean,
-    setDirectInput: Dispatch<SetStateAction<boolean>>,
+    editor: CellEditorState,
+    onEditorChange: (value: string) => void,
+    onEditorBlur: (lineKey: string, fieldName: string) => void,
     showStandardAnswers: boolean,
     onCellClick: (column: Column) => void,
-    cellKeyDownHandler: (e: KeyboardEvent<HTMLInputElement>) => void,
-    adminEditMode: boolean,
     validationContext: RowValidationContext,
     cursorUsers?: Array<{ email: string, fieldName: string | null }>,
 }) {
-    // memoized setters per ogni campo
-    // evita che il setter venga ricreato ad ogni render
-    // e rende stabile il riferimento della colonna
-    const setters = useMemo(() => {
-      const map: Record<string, null | ((v: string | undefined) => void)> = {};
-      for (const field of columns.filter(col => col instanceof Field)) {
-        if (line?.row?.olimanager?.participantId 
-                && ["name","surname","birthDate","classYear","classSection","gender"].includes(field.name)
-                && !adminEditMode
-            ) {
-            // campo non modificabile perché già sincronizzato da Olimanager
-            map[field.name] = null
-        } else if (showStandardAnswers && field instanceof ChoiceAnswerField) {
-            // campo non modificabile in modalità showStandardAnswers
-            map[field.name] = null
-        } else {
-            map[field.name] = (newValue) => {
-            // console.log(`setter for field ${field.name} called with value ${newValue}`);
-            return setLineData(field.name, newValue) 
-            }
-        }
-      }
-      return map;
-    }, [setLineData, columns]);
-
     const {className, style } = computeRecentFadeStyling();
 
     const hasFocus = focusColumnName != ''
@@ -72,7 +45,7 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
         }
     }
     const anyCursorColor = cursorUsers && cursorUsers.length > 0 ? emailToColor(cursorUsers[0].email) : undefined
-    const EMPTY_DATA = useMemo(() => columns.filter(c => c instanceof Field).map(c => [c.name,'']), [columns])
+    const EMPTY_DATA = useMemo(() => Object.fromEntries(columns.filter(c => c instanceof Field).map(c => [c.name,''])), [columns])
     const oldData = useMemo(() => line.row ? line.row.data : EMPTY_DATA, [line.row, EMPTY_DATA])
     const newData = {...oldData, ...line.data}
     
@@ -86,14 +59,12 @@ export default function TableRow({line, setLineData, columns, selectionState, fo
         ? <DataCell 
             key={column.name} field={column} 
             hasFocus={focusColumnName === column.name} 
-            inputFocus={inputFocus}
+            editor={editor.mode === 'editing' && editor.lineKey === line.key && editor.field.name === column.name ? editor : undefined}
+            onEditorChange={onEditorChange}
+            onEditorBlur={() => onEditorBlur(line.key, column.name)}
             newValue={newData[column.name] || ''} oldValue={oldData[column.name] || ''}
-            setNewValue={setters[column.name]}
-            directInput={directInput}
-            setDirectInput={setDirectInput}
             showStandardAnswers={showStandardAnswers} 
             onClick={() => onCellClick(column)}
-            cellKeyDownHandler={cellKeyDownHandler}
             validationContext={validationContext}
             cursorColor={cursorColorByField[column.name]}
             />

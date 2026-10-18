@@ -322,7 +322,27 @@ E aggiungere `REDIS_URL: redis://redis:6379` alle app instances.
 ### Data Management
 - **ApolloProviderClient**: GraphQL client setup
 - **Loading/Error**: Stati di caricamento uniformi
-- **Table/TableInner**: Componenti per visualizzazione dati
+- **Table/TableBody/TableRow**: Visualizzazione e navigazione dei dati
+
+### Editing delle celle
+
+`Table` mantiene la cella attiva e le modifiche delle righe da salvare.
+`useCellEditor` distingue navigazione e modifica: la bozza contiene cella,
+campo, testo e selezione del cursore. Il primo carattere viene fornito come
+valore iniziale, senza reinviare l'evento dopo il montaggio dell'input.
+
+`Field.editKey` interpreta le regole specifiche del campo e restituisce valore,
+posizione del cursore ed eventuale avanzamento. Testo normale e cancellazioni
+interne restano affidati all'input nativo; date e risposte implementano le proprie
+conversioni. `Table` esegue gli spostamenti e `TableCellInput` applica focus e
+selezione con un layout effect, senza timer per l'editing.
+
+La conferma della bozza passa da `useCellEditor.commit`, che normalizza il
+valore prima di aggiornare la riga. Cambi di cella, Invio, Esc e perdita del focus
+usano questo percorso. L'autosalvataggio conferma una copia normalizzata senza
+alterare testo e cursore della bozza attiva. Le risposte del server eliminano
+solo le modifiche effettivamente salvate, conservando quelle successive.
+Esc mantiene il comportamento esistente: conferma, salva e torna in navigazione.
 
 ### Import e Export
 - **CsvImport**: Import batch da file CSV

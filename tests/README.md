@@ -15,14 +15,18 @@ Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
 e `TableRowCell` con React DOM e jsdom. Verifica primo carattere e posizione del
 cursore, apertura con F2/Invio/clic, cancellazione, navigazione, salvataggio al
 cambio riga e con Esc, risposte a carattere singolo con avanzamento automatico,
-scorciatoie, separatori delle date e svuotamento. Il DOM gestisce focus ed eventi;
-i timer dell'editor sono eseguiti esplicitamente, senza attese reali.
-Sono simulati rete, toolbar e intestazione; l'autosalvataggio periodico è escluso.
+scorciatoie, separatori delle date e svuotamento. Copre inoltre campi sincronizzati
+e non modificabili, salvataggi asincroni, nuove righe e autosalvataggio senza
+perdita della bozza o della posizione del cursore. Il DOM gestisce focus ed eventi;
+gli intervalli di autosalvataggio sono eseguiti esplicitamente, senza attese reali.
+Sono simulati rete, toolbar e intestazione. Gli avanzamenti e il posizionamento
+del cursore nell'editor non richiedono timer.
 I test fissano il comportamento corrente, compreso Esc che salva ed esce.
 Le correzioni ancora da fare delle issue #23 e #31 sono indicate come TODO,
 senza imporre i comportamenti difettosi alla futura ristrutturazione.
-Non è un collaudo in un browser reale: composizione IME, layout e azioni native
-di digitazione richiedono verifiche separate.
+Il test IME verifica che i keydown durante la composizione non attivino la
+navigazione. Non è un collaudo in un browser reale: la composizione completa,
+il layout e le azioni native di digitazione richiedono verifiche separate.
 
 La suite verifica i callback reali del server WebSocket usando cookie cifrati
 generati da NextAuth: sessioni valide (anche HTTPS e cookie suddivisi in chunk),
