@@ -77,6 +77,15 @@ In caso di `Socket closed`, controlla il terminale WebSocket: deve mostrare
 segnalare errori successivi di MongoDB o Redis. Verifica inoltre che il login
 sia valido e che i due server ricevano la stessa configurazione NextAuth.
 
+Dopo il login il client apre la stessa connessione WebSocket usata dalle
+subscription e ne controlla la disponibilità, anche prima di aprire un foglio.
+Se il servizio non risponde compare un avviso sugli aggiornamenti in tempo reale;
+su `localhost` indica anche il comando di avvio. Il client ritenta la connessione
+e nasconde l'avviso quando il server conferma la connessione. Un ping ogni 15
+secondi verifica che il servizio resti raggiungibile: senza pong entro 5 secondi
+la connessione viene terminata e ritentata. Un errore di autenticazione può
+richiedere un nuovo accesso o il ricaricamento della pagina.
+
 Il server WebSocket deve ricevere gli stessi `NEXTAUTH_SECRET` e `NEXTAUTH_URL`
 dell'app Next.js. Avviarlo dalla radice del progetto con `npm run ws-server`
 (oppure `npm run ws-server:watch` durante lo sviluppo) in

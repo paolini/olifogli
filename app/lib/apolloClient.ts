@@ -1,8 +1,7 @@
-import { ApolloClient, InMemoryCache, HttpLink, split } from '@apollo/client';
+import { ApolloClient, ApolloLink, InMemoryCache, HttpLink, split } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
-import { createClient } from 'graphql-ws';
 import { getMainDefinition } from '@apollo/client/utilities';
-import { getTabId } from './tabId';
+import { getWebSocketClient } from './webSocketConnection';
 
 const createApolloClient = () => {
   const httpLink = new HttpLink({
@@ -11,16 +10,7 @@ const createApolloClient = () => {
   });
 
   const wsLink = typeof window !== 'undefined'
-    ? new GraphQLWsLink(createClient({
-        // In development connect directly to ws-server port 4001;
-        // in production route through nginx at /ws/ (same origin, SSL handled by reverse proxy)
-        url: window.location.hostname === 'localhost'
-          ? `ws://localhost:4001/graphql`
-          : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/graphql`,
-        connectionParams: () => ({
-          tabId: getTabId(),
-        }),
-      }))
+    ? new ApolloLink(operation => new GraphQLWsLink(getWebSocketClient()).request(operation))
     : null;
 
   // Split link: usa WebSocket per le subscription, HTTP per il resto
