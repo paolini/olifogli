@@ -332,7 +332,10 @@ campo, testo e selezione del cursore. Il primo carattere viene fornito come
 valore iniziale, senza reinviare l'evento dopo il montaggio dell'input.
 
 `Field.editKey` interpreta le regole specifiche del campo e restituisce valore,
-posizione del cursore ed eventuale avanzamento. Testo normale e cancellazioni
+posizione del cursore ed eventuale avanzamento, oppure un rifiuto esplicito
+che conserva valore, selezione e modalità corrente. Nelle risposte i caratteri
+non validi vengono rifiutati e `X` si inserisce solo con `X` o `x`.
+Testo normale e cancellazioni
 interne restano affidati all'input nativo; date e risposte implementano le proprie
 conversioni. `Table` esegue gli spostamenti e `TableCellInput` applica focus e
 selezione con un layout effect, senza timer per l'editing.

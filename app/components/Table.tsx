@@ -377,6 +377,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             cellEditor.begin(line.key, field, value)
         } else {
             const result = field.editKey(firstCharacter, '', 0, 0)
+            if (result && 'rejected' in result) return
             cellEditor.begin(line.key, field, result?.value ?? firstCharacter, false)
             if (result?.advance) moveRightOrLeft(result.advance, true)
         }
@@ -394,7 +395,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             if (result) {
                 e.preventDefault()
                 e.stopPropagation()
-                if (result.advance) moveRightOrLeft(result.advance, true)
+                if (!('rejected' in result) && result.advance) moveRightOrLeft(result.advance, true)
                 return
             }
             if (focusField?.type !== 'choice-answer' && (

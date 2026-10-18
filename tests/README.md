@@ -25,7 +25,9 @@ I test fissano il comportamento corrente, compreso Esc che salva ed esce.
 La #31 è coperta da casi di date impossibili, parziali o fuori intervallo,
 anni bisestili e limiti di età riferiti all'anno della gara. I test verificano
 messaggio accessibile, blocco di navigazione/clic/blur/autosalvataggio e ripresa
-dopo la correzione o lo svuotamento. La correzione della #23 resta un TODO.
+dopo la correzione o lo svuotamento. Per la #23 verifica che i caratteri non validi
+nelle risposte, incluso `9`, conservino valore, selezione e focus sia in navigazione
+sia in editing; `X` si inserisce solo con `X` o `x`.
 Il test IME verifica che i keydown durante la composizione non attivino la
 navigazione. Non è un collaudo in un browser reale: la composizione completa,
 il layout e le azioni native di digitazione richiedono verifiche separate.

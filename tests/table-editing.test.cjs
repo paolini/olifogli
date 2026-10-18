@@ -156,9 +156,9 @@ for (const editing of [false, true]) {
   });
 }
 
-test('answer shortcuts convert digits, absence and invalid answers consistently', async t => {
+test('answer shortcuts convert digits and absence consistently', async t => {
   const f = await mountTable(t);
-  for (const [key, expected] of [['1', 'A'], ['2', 'B'], ['3', 'C'], ['4', 'D'], ['5', 'E'], ['9', 'X'], ['0', '-'], [' ', '-'], ['x', 'X'], ['-', '-']]) {
+  for (const [key, expected] of [['1', 'A'], ['2', 'B'], ['3', 'C'], ['4', 'D'], ['5', 'E'], ['0', '-'], [' ', '-'], ['x', 'X'], ['X', 'X'], ['-', '-']]) {
     await f.click(f.cell('r01'));
     if (!f.input()) await f.key('F2');
     await f.key(key);
@@ -375,8 +375,40 @@ test('a newly created row can be edited and saved again using its original UI ke
   assert.equal(f.patches.length, count);
 });
 
-// Pending product fixes are not treated as behavior the refactor must preserve.
-test.todo('invalid answer keys preserve the previous value (#23)');
+for (const editing of [false, true]) {
+  for (const previous of ['A', 'X', '-', '']) {
+    test(`invalid answer keys preserve ${JSON.stringify(previous)} from ${editing ? 'editing' : 'navigation'} (#23)`, async t => {
+      const f = await mountTable(t);
+      await f.click(f.cell('r01'));
+      if (previous === '') await f.key('Delete');
+      else await f.key(previous);
+      await f.key('Escape');
+      await f.click(f.cell('r01'));
+      // Finish setup in navigation, regardless of whether the cell was already focused.
+      if (f.input()) await f.key('Escape');
+      if (editing) await f.key('F2');
+      const input = f.input();
+      const selection = input && [input.selectionStart, input.selectionEnd];
+      const saved = f.patches.length;
+      for (const key of ['?', '6', '7', '8', '9', 'z', '/', 'é', 'ß']) {
+        const event = await f.key(key);
+        assert.equal(event.defaultPrevented, true, key);
+        assertElement(f.focusCell(), f.cell('r01'));
+        assertElement(f.input(), input);
+        assertElement(f.active(), input ?? f.cell('r01'));
+        if (input) {
+          assert.equal(input.value, previous, key);
+          assert.deepEqual([input.selectionStart, input.selectionEnd], selection);
+        } else assert.equal(f.cell('r01').textContent, previous, key);
+      }
+      await f.autosave();
+      assert.equal(f.patches.length, saved);
+      await f.key('b');
+      assert.equal(f.cell('r01').textContent, 'B');
+      assertElement(f.focusCell(), f.cell('r02'));
+    });
+  }
+}
 
 for (const key of ['Tab', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowLeft', 'ArrowRight']) {
   test(`invalid dates block ${key} navigation and saving`, async t => {

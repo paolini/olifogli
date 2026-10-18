@@ -4,7 +4,7 @@ import { RowValidationContext } from "./Context"
 
 type FieldType = 'text' | 'number' | 'date' | 'choice-answer'
 
-export type EditingKeyResult = { value: string, cursor: number, advance: -1 | 0 | 1 }
+export type EditingKeyResult = { value: string, cursor: number, advance: -1 | 0 | 1 } | { rejected: true }
 
 type FieldOptions = {
     header?: string
@@ -240,10 +240,10 @@ export class ChoiceAnswerField extends AnswerField {
             return { value: '', cursor: 0, advance: key === 'Backspace' ? -1 : 0 }
         }
         if (key.length !== 1) return
-        const shortcuts: Record<string, string> = { '0': '-', ' ': '-', '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '9': 'X' }
+        const shortcuts: Record<string, string> = { '0': '-', ' ': '-', '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E' }
         const value = shortcuts[key] ?? key.toUpperCase()
         const accepted = 'ABCDEX-'.includes(value)
-        return { value: accepted ? value : ' ', cursor: 1, advance: accepted ? 1 : 0 }
+        return accepted ? { value, cursor: 1, advance: 1 } : { rejected: true }
     }
     constructor(name: string, options: FieldOptions) {
         super(name, options)

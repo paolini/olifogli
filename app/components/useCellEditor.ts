@@ -51,6 +51,7 @@ export default function useCellEditor<T>(
         const draft = current.current
         if (draft.mode !== 'editing') return
         const result = draft.field.editKey(key, draft.value, start, end)
+        if (result && 'rejected' in result) return result
         if (result) update({ ...draft, value: result.value, error: '',
             selection: { start: result.cursor, end: result.cursor } })
         return result
