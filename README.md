@@ -183,8 +183,12 @@ lo script non crea file delle credenziali e non modifica `.env`.
 Confronta client ID, secret, URL di Olimanager, `OLIMANAGER_GRAPHQL_ENDPOINT` e `NEXTAUTH_URL`
 con `.env` e l'ambiente; stampa solo le assegnazioni da correggere.
 Il secret locale viene verificato contro l'hash PBKDF2 conservato da Django.
-`OLIMANAGER_GRAPHQL_ENDPOINT` è condivisa dal collegamento OAuth e dal vecchio
-collegamento con username e password. Sostituisce il precedente nome `OLI_GRAPHQL_ENDPOINT`.
+`OLIMANAGER_GRAPHQL_ENDPOINT` è usata da tutte le richieste a Olimanager.
+Sostituisce il precedente nome `OLI_GRAPHQL_ENDPOINT`.
+Abbinamenti, risultati ed extra fields usano il token OAuth della sessione
+dell’amministratore, letto solo sul server: il browser non richiede né invia
+username o password. Restano necessari i privilegi amministrativi locali e
+i permessi richiesti da Olimanager per ciascuna operazione.
 Dopo aver copiato le righe occorre riavviare Olifogli. Il manifest JSON resta privo di secret.
 
 Se il secret è perso o non valido, si può sostituirlo mantenendo lo stesso client ID:

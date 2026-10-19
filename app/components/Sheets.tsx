@@ -79,8 +79,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [displayLimit, setDisplayLimit] = useState(20)
     const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring();
-    const [olimanagerEmail, setOlimanagerEmail] = useState(profile?.email || '')
-    const [olimanagerPassword, setOlimanagerPassword] = useState('')
 
     type Sheet = GetSheetsQuery['sheets'][number]
 
@@ -460,20 +458,11 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
-    function askOlimanagerCredentials(): {username: string, password: string} {
-        const username = prompt('Username olimanager (email)', olimanagerEmail) ?? ''
-        const password = prompt('Password', olimanagerPassword) ?? ''
-        setOlimanagerEmail(username)
-        setOlimanagerPassword(password)
-        return {username, password}
-    }
-
     async function handleOlimanagerCreateParticipantsForSheets() {
         if (!confirm(`Inviare tutti i partecipanti ${pluralize(selectedIds.length, 'del foglio selezionato', 'dei % fogli selezionati')} a Olimanager per creazione/abbinamento?`)) {
             return
         }
-        const {username, password} = askOlimanagerCredentials()
-        const res = await olimanagerCreateParticipant({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), username, password } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]}}
+        const res = await olimanagerCreateParticipant({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]}}
         const arr = res.data?.olimanagerCreateParticipant || []
 
         const totalSuccess = arr.filter(r => r.success).length
@@ -501,8 +490,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         if (!confirm(`Inviare i risultati di tutti i partecipanti ${pluralize(selectedIds.length, 'del foglio selezionato', 'dei % fogli selezionati')} a Olimanager?`)) {
             return
         }
-        const {username, password} = askOlimanagerCredentials()
-        const res = await olimanagerBulkUpdateResults({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean, error?: string}[]}}
+        const res = await olimanagerBulkUpdateResults({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean, error?: string}[]}}
         const success = res.data?.olimanagerBulkUpdateResults
         if (success) alert("Risultati inviati con successo a Olimanager")
         else alert("Errore durante l'invio dei risultati a Olimanager")

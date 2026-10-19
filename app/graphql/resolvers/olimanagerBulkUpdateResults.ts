@@ -19,8 +19,6 @@ import { ValidationContext } from "@/app/lib/schema/Context";
  * mutation {
  *   olimanagerBulkUpdateResults(
  *     rowIds: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
- *     username: "admin@example.com"
- *     password: "password"
  *   )
  * }
  * ```
@@ -35,14 +33,10 @@ export default async function olimanagerBulkUpdateResults(
   _: unknown,
   { 
     rowIds, 
-    sheetIds,
-    username, 
-    password 
+    sheetIds
   }: { 
     rowIds?: ObjectId[]; 
     sheetIds?: ObjectId[];
-    username?: string; 
-    password: string 
   },
   context: Context
 ): Promise<boolean> {
@@ -177,8 +171,7 @@ export default async function olimanagerBulkUpdateResults(
       }
 
       // 4) Preparo il client Olimanager
-      const api = new OlimanagerApi(username || user.email, password);
-      await api.login();
+      const api = new OlimanagerApi(context.req);
 
       // 5) Eseguo la mutation su Olimanager
       const result = await bulkUpdateResults(api, contestId, allProblemResults);

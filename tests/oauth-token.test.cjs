@@ -168,3 +168,35 @@ test('OAuth login records granted api scope and expiry only in the private JWT',
   assert.equal(Object.hasOwn(session, 'accessTokenHasApiScope'), false);
   assert.equal(Object.hasOwn(session, 'accessTokenExpiresAt'), false);
 });
+
+test('transfer adapter uses each encrypted OAuth session without password login or cookie forwarding', async () => {
+  const calls = [];
+  const { queryOlimanager } = load('app/lib/olimanager.ts', {
+    'next-auth/jwt': {
+      getToken: (params) => require('next-auth/jwt').getToken({ ...params, secureCookie: false }),
+    },
+  }, { fetch: async (url, options) => {
+    calls.push({ url, options });
+    return new Response(JSON.stringify({ data: { participants: { ok: true } } }));
+  } });
+  const { OlimanagerApi } = load('app/graphql/resolvers/olimanagerApi.ts', {
+    '@/app/lib/olimanager': { queryOlimanager },
+  });
+  for (const accessToken of [ACCESS_TOKEN, 'synthetic-other-administrator-token']) {
+    const cookie = await encode({ secret: SECRET, token: { accessToken } });
+    const req = new NextRequest('http://app.example.invalid/api/graphql', {
+      headers: { cookie: `next-auth.session-token=${cookie}` },
+    });
+    const result = await new OlimanagerApi(req).query('mutation Transfer { participants { ok } }', { contestId: 10 });
+    assert.equal(result.data.participants.ok, true);
+    const { url, options } = calls.at(-1);
+    assert.equal(url, env.OLIMANAGER_GRAPHQL_ENDPOINT);
+    assert.equal(options.headers.Authorization, `Bearer ${accessToken}`);
+    assert.equal(Object.hasOwn(options.headers, 'Cookie'), false);
+    assert.equal(Object.hasOwn(options.headers, 'X-CsrfToken'), false);
+    assert.deepEqual(JSON.parse(options.body).variables, { contestId: 10 });
+  }
+  assert.equal(calls.length, 2);
+  await assert.rejects(new OlimanagerApi(new NextRequest('http://app.example.invalid/api/graphql')).query('mutation { transfer }'), /Non autenticato/);
+  assert.equal(calls.length, 2);
+});

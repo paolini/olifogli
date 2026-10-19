@@ -3,7 +3,7 @@ import { CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScan
 import Schema from "../lib/schema/Schema"
 import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
 import { TableState } from "./Table"
-import { Dispatch, SetStateAction, useState } from "react"
+import { Dispatch, SetStateAction } from "react"
 import { ApolloError, FetchResult } from "@apollo/client"
 import ErrorElement from "./Error"
 import { pluralize } from "../lib/util"
@@ -85,10 +85,6 @@ type TableActionContext = TableActionInput & {
     loading: boolean,
     errors: ApolloError[],
   }
-  olimanagerEmail: string,
-  setOlimanagerEmail: Dispatch<SetStateAction<string>>,
-  olimanagerPassword: string,
-  setOlimanagerPassword: Dispatch<SetStateAction<string>>,
 }
 
 export function useTableActionsContext({profile, sheet, schema, checkboxesState, setCheckboxesState, userHasSheetAdminPrivileges, tableState, setTableState, csvDownload, setCsvImport, edit, standardAnswers}: TableActionInput): TableActionContext {
@@ -102,8 +98,6 @@ export function useTableActionsContext({profile, sheet, schema, checkboxesState,
   const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
   const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
   const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError }] = useOlimanagerUpdateExtraFieldsMutation()
-  const [olimanagerEmail, setOlimanagerEmail] = useState<string>(profile?.email || '')
-  const [olimanagerPassword, setOlimanagerPassword] = useState<string>('')
 
   return {
       profile, sheet, schema, 
@@ -121,8 +115,6 @@ export function useTableActionsContext({profile, sheet, schema, checkboxesState,
             errors: [olimanagerCreateParticipantError,olimanagerBulkUpdateError,olimanagerUpdateExtraFieldsError,scanSheetError,createSheetsError].filter(e => e !== undefined),
         },
 
-        olimanagerEmail, setOlimanagerEmail,
-        olimanagerPassword, setOlimanagerPassword,
         csvDownload,
         setCsvImport,
         edit,
@@ -351,22 +343,13 @@ async function handleCreateSheets(ctx: TableActionContext) {
   }
 }
 
-function askOlimanagerCredentials(ctx: TableActionContext): {username: string, password: string} {
-  const username = prompt('Username olimanager (email)', ctx.olimanagerEmail) ?? ''
-  const password = prompt('Password', ctx.olimanagerPassword) ?? ''
-  ctx.setOlimanagerEmail(username)
-  ctx.setOlimanagerPassword(password)
-  return {username, password}
-}
-
 async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
   const valid_rows = filterValidRowsAndConfirm(ctx)
   if (!valid_rows || !confirm(`Inviare ${valid_rows.length} righe a Olimanager per creazione/abbinamento partecipanti?`)) {
     return
   }
 
-  const {username, password} = askOlimanagerCredentials(ctx)
-  const res = await ctx.mutations.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)), username, password } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]}}
+  const res = await ctx.mutations.olimanagerCreateParticipant({ variables: { rowIds: valid_rows.map(row => new ObjectId(row._id)) } }) as {data?: {olimanagerCreateParticipant?: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]}}
   
   const arr = res.data?.olimanagerCreateParticipant || []
   
@@ -396,9 +379,8 @@ async function handleOlimanagerUpdateScores(ctx: TableActionContext) {
     return
   }
   const ids = valid_rows.map(row => new ObjectId(row._id))
-  const {username, password} = askOlimanagerCredentials(ctx)
 
-  const res = await ctx.mutations.olimanagerBulkUpdateResults({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
+  const res = await ctx.mutations.olimanagerBulkUpdateResults({ variables: { rowIds: ids } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
   alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
 }
 
@@ -408,9 +390,8 @@ async function handleOlimanagerUpdateExtraFields(ctx: TableActionContext) {
     return
   }
   const ids = valid_rows.map(row => new ObjectId(row._id))
-  const {username, password} = askOlimanagerCredentials(ctx)
 
-  const res = await ctx.mutations.olimanagerUpdateExtraFields({ variables: { rowIds: ids, username, password } }) as {data?: {olimanagerUpdateExtraFields?: {success: boolean, skipped: boolean, error: string}[]}}
+  const res = await ctx.mutations.olimanagerUpdateExtraFields({ variables: { rowIds: ids } }) as {data?: {olimanagerUpdateExtraFields?: {success: boolean, skipped: boolean, error: string}[]}}
   const arr = res.data?.olimanagerUpdateExtraFields || []
   
   const totalSuccess = arr.filter(r => r.success).length

@@ -329,22 +329,16 @@ type Mutation {
   olimanagerCreateParticipant(
     rowIds: [ObjectId!]
     sheetIds: [ObjectId!]
-    username: String
-    password: String!
   ): [OlimanagerCreateResult!]!
 
   olimanagerBulkUpdateResults(
     rowIds: [ObjectId!]
     sheetIds: [ObjectId!]
-    username: String
-    password: String!
   ): Boolean!
 
   olimanagerUpdateExtraFields(
     rowIds: [ObjectId!]
     sheetIds: [ObjectId!]
-    username: String
-    password: String!
   ): [OlimanagerUpdateExtraFieldsResult!]!
 
   cryptSheets(sheetIds: [ObjectId!]!, password: String!): Boolean

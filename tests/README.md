@@ -148,3 +148,9 @@ codificato, file mancanti, directory e link simbolici verso altri job o file
 esterni. Controlla inoltre la sostituzione del file con un link prima
 dell'apertura e la chiusura dei descrittori. Non richiede scansioni reali né
 esegue un test del routing HTTP attraverso un server Next.js avviato.
+
+`olimanager-transfers.test.cjs` esegue i tre resolver di trasferimento con dati
+simulati e verifica l’uso della richiesta OAuth dell’amministratore, i controlli
+di accesso locali e il rifiuto dei vecchi argomenti username/password. I test OAuth
+verificano anche che sessioni diverse usino token distinti e che cookie e password
+non vengano inoltrati a Olimanager. Non vengono eseguite scritture remote.

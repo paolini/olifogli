@@ -10,7 +10,7 @@ import Schema from "@/app/lib/schema/Schema";
 
 export default async function olimanagerUploadExtraFields(
   _: unknown,
-  { rowIds, sheetIds, username, password }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[]; username?: string; password: string },
+  { rowIds, sheetIds }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[] },
   context: Context
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean}[]> {
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
@@ -50,9 +50,8 @@ export default async function olimanagerUploadExtraFields(
   const workbooks = await getWorkbooksCollection()
   // console.log('Collections initialized')
 
-  const api = new OlimanagerApi(username || user.email, password)
+  const api = new OlimanagerApi(context.req)
 
-  await api.login()
 
   const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean}[] = []
 

@@ -1,14 +1,14 @@
 import { gql } from '@apollo/client';
 
 export const OLIMANAGER_BULK_UPDATE_RESULTS_MUTATION = gql`
-  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
-    olimanagerBulkUpdateResults(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password)
+  mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+    olimanagerBulkUpdateResults(rowIds: $rowIds, sheetIds: $sheetIds)
   }
 `;
 
 export const OLIMANAGER_CREATE_PARTICIPANT_MUTATION = gql`
-  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
-    olimanagerCreateParticipant(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password) {
+  mutation OlimanagerCreateParticipant($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+    olimanagerCreateParticipant(rowIds: $rowIds, sheetIds: $sheetIds) {
       success
       error
       participantId
@@ -17,8 +17,8 @@ export const OLIMANAGER_CREATE_PARTICIPANT_MUTATION = gql`
 `;
 
 export const OLIMANAGER_UPDATE_EXTRA_FIELDS_MUTATION = gql`
-  mutation OlimanagerUpdateExtraFields($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
-    olimanagerUpdateExtraFields(rowIds: $rowIds, sheetIds: $sheetIds, username: $username, password: $password) {
+  mutation OlimanagerUpdateExtraFields($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+    olimanagerUpdateExtraFields(rowIds: $rowIds, sheetIds: $sheetIds) {
       success
       skipped
       participantId

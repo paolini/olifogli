@@ -13,7 +13,7 @@ import Schema from "@/app/lib/schema/Schema";
 
 export default async function olimanagerCreateParticipant(
   _: unknown,
-  { rowIds, sheetIds, username, password }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[]; username?: string; password: string },
+  { rowIds, sheetIds }: { rowIds?: ObjectId[]; sheetIds?: ObjectId[] },
   context: Context
 ): Promise<{success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[]> {
   // 1) Autenticazione e autorizzazione (solo admin di sistema)
@@ -53,9 +53,8 @@ export default async function olimanagerCreateParticipant(
   const workbooks = await getWorkbooksCollection()
   // console.log('Collections initialized')
 
-  const api = new OlimanagerApi(username || user.email, password)
+  const api = new OlimanagerApi(context.req)
 
-  await api.login()
 
   const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[] = []
 
@@ -256,22 +255,7 @@ async function syncDataWithOlimanager(
       }
 }
 
-/**
- * Script per leggere i dati dei partecipanti da un file JSONL e creare/abbinare i partecipanti (versione Node.js).
- * 
- * Uso:
- *   cat participants.jsonl | node create_participants.js CONTEST_ID > results.jsonl
- * 
- * Esempio:
- *   echo '{"schoolExternalId": "AORA025009", "name": "Mario", "surname": "Rossi", "classYear": 13, "section": "A", "birthDate": "2007-05-15"}' | node create_participants.js 1
- * 
- * Variabili d'ambiente richieste per l'autenticazione:
- *   - OLI_EMAIL
- *   - OLI_PASSWORD
- *   - OLIMANAGER_GRAPHQL_ENDPOINT (opzionale, default: https://olimpiadi-scientifiche.it/graphql/)
- *   - OLI_CONTEST_ID (alternativa all'argomento da riga di comando)
- */
-
+// Provider mutation executed with the administrator’s server-side OAuth session.
 const mutation_match_or_create = `
 mutation MatchOrCreateParticipant(
   $contestId: Int!

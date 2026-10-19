@@ -228,26 +228,20 @@ export type MutationMoveCursorArgs = {
 
 
 export type MutationOlimanagerBulkUpdateResultsArgs = {
-  password: Scalars['String']['input'];
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type MutationOlimanagerCreateParticipantArgs = {
-  password: Scalars['String']['input'];
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type MutationOlimanagerUpdateExtraFieldsArgs = {
-  password: Scalars['String']['input'];
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1083,8 +1077,6 @@ export type WorkbookUpdatedSubscription = { __typename?: 'Subscription', workboo
 export type OlimanagerBulkUpdateResultsMutationVariables = Exact<{
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
-  username?: InputMaybe<Scalars['String']['input']>;
-  password: Scalars['String']['input'];
 }>;
 
 
@@ -1093,8 +1085,6 @@ export type OlimanagerBulkUpdateResultsMutation = { __typename?: 'Mutation', oli
 export type OlimanagerCreateParticipantMutationVariables = Exact<{
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
-  username?: InputMaybe<Scalars['String']['input']>;
-  password: Scalars['String']['input'];
 }>;
 
 
@@ -1103,8 +1093,6 @@ export type OlimanagerCreateParticipantMutation = { __typename?: 'Mutation', oli
 export type OlimanagerUpdateExtraFieldsMutationVariables = Exact<{
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
-  username?: InputMaybe<Scalars['String']['input']>;
-  password: Scalars['String']['input'];
 }>;
 
 
@@ -3098,13 +3086,8 @@ export function useWorkbookUpdatedSubscription(baseOptions: Apollo.SubscriptionH
 export type WorkbookUpdatedSubscriptionHookResult = ReturnType<typeof useWorkbookUpdatedSubscription>;
 export type WorkbookUpdatedSubscriptionResult = Apollo.SubscriptionResult<WorkbookUpdatedSubscription>;
 export const OlimanagerBulkUpdateResultsDocument = gql`
-    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
-  olimanagerBulkUpdateResults(
-    rowIds: $rowIds
-    sheetIds: $sheetIds
-    username: $username
-    password: $password
-  )
+    mutation OlimanagerBulkUpdateResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+  olimanagerBulkUpdateResults(rowIds: $rowIds, sheetIds: $sheetIds)
 }
     `;
 export type OlimanagerBulkUpdateResultsMutationFn = Apollo.MutationFunction<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
@@ -3124,8 +3107,6 @@ export type OlimanagerBulkUpdateResultsMutationFn = Apollo.MutationFunction<Olim
  *   variables: {
  *      rowIds: // value for 'rowIds'
  *      sheetIds: // value for 'sheetIds'
- *      username: // value for 'username'
- *      password: // value for 'password'
  *   },
  * });
  */
@@ -3137,13 +3118,8 @@ export type OlimanagerBulkUpdateResultsMutationHookResult = ReturnType<typeof us
 export type OlimanagerBulkUpdateResultsMutationResult = Apollo.MutationResult<OlimanagerBulkUpdateResultsMutation>;
 export type OlimanagerBulkUpdateResultsMutationOptions = Apollo.BaseMutationOptions<OlimanagerBulkUpdateResultsMutation, OlimanagerBulkUpdateResultsMutationVariables>;
 export const OlimanagerCreateParticipantDocument = gql`
-    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
-  olimanagerCreateParticipant(
-    rowIds: $rowIds
-    sheetIds: $sheetIds
-    username: $username
-    password: $password
-  ) {
+    mutation OlimanagerCreateParticipant($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+  olimanagerCreateParticipant(rowIds: $rowIds, sheetIds: $sheetIds) {
     success
     error
     participantId
@@ -3167,8 +3143,6 @@ export type OlimanagerCreateParticipantMutationFn = Apollo.MutationFunction<Olim
  *   variables: {
  *      rowIds: // value for 'rowIds'
  *      sheetIds: // value for 'sheetIds'
- *      username: // value for 'username'
- *      password: // value for 'password'
  *   },
  * });
  */
@@ -3180,13 +3154,8 @@ export type OlimanagerCreateParticipantMutationHookResult = ReturnType<typeof us
 export type OlimanagerCreateParticipantMutationResult = Apollo.MutationResult<OlimanagerCreateParticipantMutation>;
 export type OlimanagerCreateParticipantMutationOptions = Apollo.BaseMutationOptions<OlimanagerCreateParticipantMutation, OlimanagerCreateParticipantMutationVariables>;
 export const OlimanagerUpdateExtraFieldsDocument = gql`
-    mutation OlimanagerUpdateExtraFields($rowIds: [ObjectId!], $sheetIds: [ObjectId!], $username: String, $password: String!) {
-  olimanagerUpdateExtraFields(
-    rowIds: $rowIds
-    sheetIds: $sheetIds
-    username: $username
-    password: $password
-  ) {
+    mutation OlimanagerUpdateExtraFields($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+  olimanagerUpdateExtraFields(rowIds: $rowIds, sheetIds: $sheetIds) {
     success
     skipped
     participantId
@@ -3211,8 +3180,6 @@ export type OlimanagerUpdateExtraFieldsMutationFn = Apollo.MutationFunction<Olim
  *   variables: {
  *      rowIds: // value for 'rowIds'
  *      sheetIds: // value for 'sheetIds'
- *      username: // value for 'username'
- *      password: // value for 'password'
  *   },
  * });
  */
@@ -3653,9 +3620,9 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   moveCursor?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationMoveCursorArgs, 'sheetId' | 'tabId'>>;
-  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationOlimanagerBulkUpdateResultsArgs, 'password'>>;
-  olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['OlimanagerCreateResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerCreateParticipantArgs, 'password'>>;
-  olimanagerUpdateExtraFields?: Resolver<Array<ResolversTypes['OlimanagerUpdateExtraFieldsResult']>, ParentType, ContextType, RequireFields<MutationOlimanagerUpdateExtraFieldsArgs, 'password'>>;
+  olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, Partial<MutationOlimanagerBulkUpdateResultsArgs>>;
+  olimanagerCreateParticipant?: Resolver<Array<ResolversTypes['OlimanagerCreateResult']>, ParentType, ContextType, Partial<MutationOlimanagerCreateParticipantArgs>>;
+  olimanagerUpdateExtraFields?: Resolver<Array<ResolversTypes['OlimanagerUpdateExtraFieldsResult']>, ParentType, ContextType, Partial<MutationOlimanagerUpdateExtraFieldsArgs>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
