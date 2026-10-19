@@ -32,3 +32,51 @@ export function logWebSocketEvent(
     if (errors.length) console.error(line)
     else console.log(line)
 }
+
+// OAuth diagnostics accept only operational metadata, never tokens or response bodies.
+type OlimanagerMetadata = {
+    hasSession?: boolean
+    hasAccessToken?: boolean
+    hasApiScope?: boolean | null
+    expiresInSeconds?: number | null
+    accessTokenExpired?: boolean | null
+    graphqlOrigin?: string | null
+    providerOrigin?: string | null
+    sameOrigin?: boolean | null
+    status?: number
+    redirected?: boolean
+}
+
+export function logOlimanagerEvent(
+    event: 'oauth_login' | 'graphql_auth' | 'graphql_response',
+    metadata: OlimanagerMetadata,
+): void {
+    const boolean = (value: unknown) => typeof value === 'boolean' ? value : null
+    const number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null
+    const origin = (value: unknown) => {
+        if (typeof value !== 'string') return null
+        try {
+            const url = new URL(value)
+            return ['http:', 'https:'].includes(url.protocol) ? url.origin : null
+        } catch { return null }
+    }
+    let fields: Record<string, unknown>
+    switch (event) {
+        case 'oauth_login':
+            fields = { hasApiScope: boolean(metadata.hasApiScope), expiresInSeconds: number(metadata.expiresInSeconds) }
+            break
+        case 'graphql_auth':
+            fields = {
+                hasSession: boolean(metadata.hasSession), hasAccessToken: boolean(metadata.hasAccessToken),
+                hasApiScope: boolean(metadata.hasApiScope), expiresInSeconds: number(metadata.expiresInSeconds),
+                accessTokenExpired: boolean(metadata.accessTokenExpired), graphqlOrigin: origin(metadata.graphqlOrigin),
+                providerOrigin: origin(metadata.providerOrigin), sameOrigin: boolean(metadata.sameOrigin),
+            }
+            break
+        case 'graphql_response':
+            fields = { status: number(metadata.status), redirected: boolean(metadata.redirected) }
+            break
+        default: return
+    }
+    console.log(JSON.stringify({ timestamp: new Date().toISOString(), event: `olimanager.${event}`, ...fields }))
+}

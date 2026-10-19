@@ -1,4 +1,4 @@
-import { logDiagnostic } from './logging'
+import { logDiagnostic, logOlimanagerEvent } from './logging'
 import type { AuthOptions, NextAuthOptions } from "next-auth"
 
 import { getUsersCollection, getAccountsCollection } from "@/app/lib/mongodb"
@@ -132,12 +132,11 @@ export const authOptions: AuthOptions = {
         token.accessTokenExpiresAt = account.expires_at ?? null
         token.accessTokenHasApiScope = typeof account.scope === 'string'
           ? account.scope.split(/\s+/).includes('api') : null
-        console.log(JSON.stringify({
-          event: 'olimanager.oauth_login',
+        logOlimanagerEvent('oauth_login', {
           hasApiScope: token.accessTokenHasApiScope,
           expiresInSeconds: token.accessTokenExpiresAt === null
             ? null : Math.floor(token.accessTokenExpiresAt - Date.now() / 1000),
-        }))
+        })
       }
 
       return token

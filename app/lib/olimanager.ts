@@ -1,3 +1,4 @@
+import { logOlimanagerEvent } from './logging'
 import { getToken } from "next-auth/jwt"
 import type { NextRequest } from "next/server"
 const OLIMANAGER_GRAPHQL_URL = `${process.env.OLIMANAGER_GRAPHQL_ENDPOINT}`
@@ -35,8 +36,7 @@ export async function queryOlimanager<T = unknown>(
   const graphqlOrigin = endpointOrigin(process.env.OLIMANAGER_GRAPHQL_ENDPOINT)
   const providerOrigin = endpointOrigin(process.env.OLIMANAGER_URL)
   // Allowlisted metadata only: never log tokens, cookies, queries or response bodies.
-  console.log(JSON.stringify({
-    event: 'olimanager.graphql_auth',
+  logOlimanagerEvent('graphql_auth', {
     hasSession: !!token,
     hasAccessToken: typeof accessToken === 'string' && !!accessToken,
     hasApiScope: typeof token?.accessTokenHasApiScope === 'boolean'
@@ -46,7 +46,7 @@ export async function queryOlimanager<T = unknown>(
     graphqlOrigin,
     providerOrigin,
     sameOrigin: graphqlOrigin && providerOrigin ? graphqlOrigin === providerOrigin : null,
-  }))
+  })
   if (typeof accessToken !== "string" || !accessToken) {
     throw new Error("Non autenticato: nessun accessToken disponibile")
   }
@@ -60,11 +60,10 @@ export async function queryOlimanager<T = unknown>(
     body: JSON.stringify({ query, variables }),
     cache: "no-store", // dati autenticati, evita cache di default di fetch in RSC
   })
-  console.log(JSON.stringify({
-    event: 'olimanager.graphql_response',
+  logOlimanagerEvent('graphql_response', {
     status: res.status,
     redirected: res.redirected,
-  }))
+  })
 
   const rawBody = await res.text()
   let parsedBody: GraphQLResponse<T> | null = null

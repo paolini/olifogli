@@ -19,7 +19,7 @@ function loadLogging(env = {}) {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
     }).outputText;
     vm.runInNewContext(source, {
-      exports, process: { env }, console: Object.fromEntries(['log', 'error', 'warn'].map(level => [level, line => lines.push(String(line))])),
+      exports, URL, process: { env }, console: Object.fromEntries(['log', 'error', 'warn'].map(level => [level, line => lines.push(String(line))])),
       require(id) {
         if (id === '../lib/logging') return load('app/lib/logging.ts');
         if (['node:fs', 'node:path', 'node:crypto'].includes(id)) return require(id);
@@ -114,6 +114,28 @@ test('cleanup fails closed for invalid settings', async () => {
     await fs.symlink(directory, path.join(directory,'link'));
     await assert.rejects(cleanupLogs({ directory: path.join(directory,'link') }), /real directory/);
   } finally { await fs.rm(directory, { recursive: true, force: true }); }
+});
+
+test('OAuth serializer allowlists metadata and strips secrets from origins and unexpected fields', () => {
+  const { helper, lines } = loadLogging();
+  helper.logOlimanagerEvent('graphql_auth', {
+    hasSession: true, hasAccessToken: true, hasApiScope: true, expiresInSeconds: 3600,
+    graphqlOrigin: 'https://user:PRIVATE@example.invalid/graphql/?token=PRIVATE',
+    providerOrigin: 'javascript:PRIVATE', sameOrigin: 'PRIVATE', accessTokenExpired: false,
+    accessToken: 'PRIVATE', password: 'PRIVATE',
+  });
+  helper.logOlimanagerEvent('graphql_response', { status: 401, redirected: false, responseBody: 'PRIVATE' });
+  helper.logOlimanagerEvent('oauth_login', { hasApiScope: 'PRIVATE', expiresInSeconds: Infinity, secret: 'PRIVATE' });
+  helper.logOlimanagerEvent('PRIVATE', { secret: 'PRIVATE' });
+  assert.equal(lines.length, 3);
+  assert.ok(!lines.join('\n').includes('PRIVATE'));
+  const auth = JSON.parse(lines[0]);
+  assert.equal(auth.graphqlOrigin, 'https://example.invalid');
+  assert.equal(auth.providerOrigin, null);
+  assert.equal(auth.sameOrigin, null);
+  assert.equal(auth.hasAccessToken, true);
+  assert.equal(JSON.parse(lines[1]).status, 401);
+  assert.equal(JSON.parse(lines[2]).expiresInSeconds, null);
 });
 
 test('application log calls cannot bypass the centralized serializers', () => {

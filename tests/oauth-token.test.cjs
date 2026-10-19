@@ -27,8 +27,9 @@ function load(relative, stubs = {}, globals = {}) {
   }).outputText;
   vm.runInNewContext(source, {
     exports, URL, process: { env },
-    console: { log: (line) => diagnostics.push(JSON.parse(line)) }, ...globals,
+    console: Object.fromEntries(['log', 'warn', 'error'].map(level => [level, line => diagnostics.push(JSON.parse(line))])), ...globals,
     require(id) {
+      if (id === './logging') return load('app/lib/logging.ts');
       if (Object.hasOwn(stubs, id)) return stubs[id];
       if (id === 'next-auth/jwt') return require(id);
       throw new Error(`Unexpected dependency: ${id}`);
