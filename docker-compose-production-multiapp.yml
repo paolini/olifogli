@@ -33,7 +33,7 @@ x-common-env: &common-env
     OLIMANAGER_URL: "https://olimpiadi-scientifiche.it"
     OLIMANAGER_OAUTH_CLIENT_ID: "..."
     OLIMANAGER_OAUTH_CLIENT_SECRET: "..."
-    OLI_GRAPHQL_ENDPOINT: "https://olimpiadi-scientifiche.it/graphql/"
+    OLIMANAGER_GRAPHQL_ENDPOINT: "https://olimpiadi-scientifiche.it/graphql/"
     ADMIN_EMAILS: "emanuele.paolini@unipi.it"
     LOG_DIR: "/app/logs"
     LOG_RETENTION_DAYS: "30"

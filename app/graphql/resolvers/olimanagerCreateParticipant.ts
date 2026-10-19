@@ -268,7 +268,7 @@ async function syncDataWithOlimanager(
  * Variabili d'ambiente richieste per l'autenticazione:
  *   - OLI_EMAIL
  *   - OLI_PASSWORD
- *   - OLI_GRAPHQL_ENDPOINT (opzionale, default: https://olimpiadi-scientifiche.it/graphql/)
+ *   - OLIMANAGER_GRAPHQL_ENDPOINT (opzionale, default: https://olimpiadi-scientifiche.it/graphql/)
  *   - OLI_CONTEST_ID (alternativa all'argomento da riga di comando)
  */
 

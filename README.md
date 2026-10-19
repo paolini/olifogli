@@ -132,14 +132,21 @@ Per creare gli oggetti mancanti e salvare gli ID e le anagrafiche di prova:
 npm run olimanager:setup -- --apply --output /tmp/olifogli-archimede.json
 ```
 
-Servono Python 3, curl e un account con accesso al pannello Django. Il comando usa
-lo staging e le sue credenziali pubbliche di test come impostazione predefinita.
+Lo script è JavaScript per Node.js e usa le dipendenze npm del progetto (`dotenv`
+per `.env`, `parse5` per i moduli Django). Servono inoltre curl e un account con
+accesso al pannello Django; non richiede Python o pip. Il comando usa lo staging
+e le sue credenziali pubbliche di test come impostazione predefinita.
 Sullo staging, username e password non impostati o vuoti usano l'account pubblico
 `admin@olimanager.it`, con password uguale all'email.
 Un'altra istanza si seleziona con `--url https://istanza.example` e
 `--username admin@example.it`, impostando `OLIMANAGER_SETUP_PASSWORD` nell'ambiente.
 L'URL deve essere quello di base, senza `/graphql`. Sono disponibili anche
-`OLIMANAGER_SETUP_URL` e `OLIMANAGER_SETUP_USERNAME`; lo script non legge `.env`.
+`OLIMANAGER_SETUP_URL` e `OLIMANAGER_SETUP_USERNAME`. Lo script legge `.env`
+senza modificarlo; le variabili già esportate nell'ambiente hanno precedenza.
+La lettura usa il package `dotenv` con `override: false`.
+La destinazione del setup resta lo staging salvo `--url` o
+`OLIMANAGER_SETUP_URL` espliciti: `OLIMANAGER_URL` viene usato per il confronto
+con la configurazione dell'app, non per scegliere il server da modificare.
 
 Si possono indicare `--year 2026`, `--student EMAIL` e `--teacher EMAIL`.
 Lo studente deve avere un profilo delle superiori (anni scolastici 9–13);
@@ -155,7 +162,45 @@ aggiornarli o cancellarli; la procedura può riprendere dopo un'interruzione.
 Lo studente con account viene iscritto alla gara appropriata. Per ciascuna gara
 viene creato anche un concorrente senza account; un'ulteriore anagrafica viene
 inclusa solo nel manifest, per provare successivamente la creazione da Olifogli.
-Non vengono inviati risultati né creati workbook o applicazioni OAuth.
+Non vengono inviati risultati né creati workbook.
+
+Il setup configura anche l'applicazione OAuth **Olifogli locale**, di tipo
+Confidential, flusso Authorization code, firma OIDC RS256, consenso esplicito
+e client secret salvato come hash su Olimanager. Il callback predefinito è
+`http://localhost:3000/api/auth/callback/olimanager` (compatibile con PKCE e state
+già utilizzati da Olifogli). Il server emette i token degli utenti al login;
+il setup crea soltanto l'applicazione.
+
+Per verificare o creare soltanto l'applicazione OAuth:
+
+```sh
+npm run olimanager:setup -- --oauth-only
+npm run olimanager:setup -- --oauth-only --apply
+```
+
+Le credenziali vengono stampate nell'output da copiare manualmente in `.env`:
+lo script non crea file delle credenziali e non modifica `.env`.
+Confronta client ID, secret, URL di Olimanager, `OLIMANAGER_GRAPHQL_ENDPOINT` e `NEXTAUTH_URL`
+con `.env` e l'ambiente; stampa solo le assegnazioni da correggere.
+Il secret locale viene verificato contro l'hash PBKDF2 conservato da Django.
+`OLIMANAGER_GRAPHQL_ENDPOINT` è condivisa dal collegamento OAuth e dal vecchio
+collegamento con username e password. Sostituisce il precedente nome `OLI_GRAPHQL_ENDPOINT`.
+Dopo aver copiato le righe occorre riavviare Olifogli. Il manifest JSON resta privo di secret.
+
+Se il secret è perso o non valido, si può sostituirlo mantenendo lo stesso client ID:
+
+```bash
+npm run olimanager:setup -- --oauth-only --oauth-regenerate-secret --apply
+```
+
+Il precedente secret viene invalidato; copiare il nuovo valore dall'output nel `.env`.
+Senza `--apply` viene mostrata solo l'anteprima. I rilanci normali non cambiano
+le credenziali esistenti. Dopo un reset del database, le credenziali del `.env`
+vengono riutilizzate se URL di Olimanager e `NEXTAUTH_URL` corrispondono.
+Se una richiesta fallisce dopo l'invio, lo script stampa le credenziali proposte:
+conservare l'output e verificarle con un rilancio normale dopo averle copiate in `.env`.
+
+Per altri client o istanze sono disponibili `--oauth-name` e `--oauth-redirect-uri`.
 
 Il manifest contiene `contests.biennio`, `contests.triennio`, `workbookCommonData`,
 `sheetCommonData` e le righe di prova, con `olifogliData` pronto per i campi delle
@@ -180,7 +225,7 @@ authorization_grant_type: Authorization code
 redirect_uris: the appropriate callback URL above
 algorithm: RSA with SHA-2 256 (RS256) — required whenever the openid scope is requested. If left unset, the token endpoint will fail with a 500 error (ImproperlyConfigured: This application does not support signed tokens) when trying to issue the id_token. This also requires OAUTH2_PROVIDER["OIDC_RSA_PRIVATE_KEY"] to be configured in Django settings for that environment.
 
-⚠️ Client secret: the plaintext client_secret is displayed only once, on the confirmation screen right after creating the Application — copy it immediately into the corresponding env variable (OLIMANAGER_OAUTH_CLIENT_SECRET). If lost, the only fix is deleting and recreating the Application.
+⚠️ Client secret: the plaintext client_secret is displayed only once, on the confirmation screen right after creating the Application — copy it immediately into the corresponding env variable (OLIMANAGER_OAUTH_CLIENT_SECRET). If lost, regenerate it with `npm run olimanager:setup -- --oauth-only --oauth-regenerate-secret --apply`.
 
 ## Learn More
 

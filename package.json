@@ -5,8 +5,8 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "logs:cleanup": "node scripts/cleanup-logs.cjs",
-    "olimanager:setup": "python3 -u scripts/setup-olimanager.py",
-    "test:olimanager": "python3 tests/olimanager_setup_test.py",
+    "olimanager:setup": "node scripts/setup-olimanager.cjs",
+    "test:olimanager": "node --test tests/olimanager-setup.test.cjs",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
@@ -76,6 +76,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.5",
     "jsdom": "^26.1.0",
+    "parse5": "^7.3.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.22.3",

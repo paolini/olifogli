@@ -21,7 +21,7 @@ export class OlimanagerApi {
   EDITION?: string;
 
   constructor(email: string, password: string) {
-    this.endpoint = process.env.OLI_GRAPHQL_ENDPOINT || ''; // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
+    this.endpoint = process.env.OLIMANAGER_GRAPHQL_ENDPOINT || ''; // example: 'https://staging.olimpiadi-scientifiche.it/graphql/';
     this.EMAIL = email;
     this.PASSWORD = password;
 
