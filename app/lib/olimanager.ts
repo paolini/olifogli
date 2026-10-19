@@ -27,6 +27,26 @@ export async function queryOlimanager<T = unknown>(
   // Read credentials on the server without exposing them in the public session.
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   const accessToken = token?.accessToken
+  const expiresInSeconds = typeof token?.accessTokenExpiresAt === 'number'
+    ? Math.floor(token.accessTokenExpiresAt - Date.now() / 1000) : null
+  const endpointOrigin = (value: string | undefined) => {
+    try { return new URL(value || '').origin } catch { return null }
+  }
+  const graphqlOrigin = endpointOrigin(process.env.OLIMANAGER_GRAPHQL_ENDPOINT)
+  const providerOrigin = endpointOrigin(process.env.OLIMANAGER_URL)
+  // Allowlisted metadata only: never log tokens, cookies, queries or response bodies.
+  console.log(JSON.stringify({
+    event: 'olimanager.graphql_auth',
+    hasSession: !!token,
+    hasAccessToken: typeof accessToken === 'string' && !!accessToken,
+    hasApiScope: typeof token?.accessTokenHasApiScope === 'boolean'
+      ? token.accessTokenHasApiScope : null,
+    expiresInSeconds,
+    accessTokenExpired: expiresInSeconds === null ? null : expiresInSeconds <= 0,
+    graphqlOrigin,
+    providerOrigin,
+    sameOrigin: graphqlOrigin && providerOrigin ? graphqlOrigin === providerOrigin : null,
+  }))
   if (typeof accessToken !== "string" || !accessToken) {
     throw new Error("Non autenticato: nessun accessToken disponibile")
   }
@@ -40,6 +60,11 @@ export async function queryOlimanager<T = unknown>(
     body: JSON.stringify({ query, variables }),
     cache: "no-store", // dati autenticati, evita cache di default di fetch in RSC
   })
+  console.log(JSON.stringify({
+    event: 'olimanager.graphql_response',
+    status: res.status,
+    redirected: res.redirected,
+  }))
 
   const rawBody = await res.text()
   let parsedBody: GraphQLResponse<T> | null = null

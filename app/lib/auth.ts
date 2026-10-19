@@ -15,6 +15,8 @@ export type OLIMANAGER_TOKEN = {
   name?: string | null
   email?: string | null
   accessToken?: string
+  accessTokenExpiresAt?: number | null
+  accessTokenHasApiScope?: boolean | null
   is_admin?: boolean
 }
 
@@ -48,6 +50,7 @@ type ACCOUNT = {
   access_token?: string
   refresh_token?: string
   expires_at?: number | null
+  scope?: string
   id_token?: string
   provider: string
   providerAccountId: string
@@ -124,7 +127,18 @@ export const authOptions: AuthOptions = {
 
       // ad ogni richiesta
       // Memorizza l'access token, se disponibile
-      if (account?.access_token) token.accessToken = account.access_token
+      if (account?.access_token) {
+        token.accessToken = account.access_token
+        token.accessTokenExpiresAt = account.expires_at ?? null
+        token.accessTokenHasApiScope = typeof account.scope === 'string'
+          ? account.scope.split(/\s+/).includes('api') : null
+        console.log(JSON.stringify({
+          event: 'olimanager.oauth_login',
+          hasApiScope: token.accessTokenHasApiScope,
+          expiresInSeconds: token.accessTokenExpiresAt === null
+            ? null : Math.floor(token.accessTokenExpiresAt - Date.now() / 1000),
+        }))
+      }
 
       return token
     },
