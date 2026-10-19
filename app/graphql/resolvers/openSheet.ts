@@ -19,8 +19,10 @@ export default async function openSheet(_: unknown, args: { _id: ObjectId }, con
       check_user_is_sheet_admin(user, sheet)
   }
 
+  if (sheet.olimanagerJobId) throw new Error("Un lavoro Olimanager è attivo su questo foglio: attendere il completamento prima di riaprirlo.")
+
   const res = await sheets.updateOne(
-    { _id: args._id }, 
+    { _id: args._id, olimanagerJobId: { $exists: false } },
     { 
       $unset: { 
         closed: "", 
@@ -30,6 +32,6 @@ export default async function openSheet(_: unknown, args: { _id: ObjectId }, con
     }
   )
   
-  if (!res.acknowledged) throw new Error('open failed')
+  if (!res.acknowledged || res.matchedCount === 0) throw new Error('Impossibile riaprire il foglio: un lavoro Olimanager potrebbe essere appena iniziato.')
   return true
 }

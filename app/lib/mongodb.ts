@@ -1,6 +1,6 @@
 import { MongoClient, WithoutId, ClientSession } from 'mongodb'
 
-import { Account, User, Sheet, Row, Workbook, ScanJob, ScanResults, ScanSheetJob, Setting } from './models'
+import { Account, User, Sheet, Row, Workbook, ScanJob, ScanResults, ScanSheetJob, Setting, OlimanagerJob, OlimanagerJobItem } from './models'
 
 const uri: string = process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli'
 const options: object = {};
@@ -92,6 +92,14 @@ export async function getScanSheetJobsCollection() {
 export async function getSettingsCollection() {
     const db = await getDb()
     return db.collection<WithoutId<Setting>>('settings')
+}
+
+export async function getOlimanagerJobsCollection() {
+    return (await getDb()).collection<OlimanagerJob>('olimanager_jobs')
+}
+
+export async function getOlimanagerJobItemsCollection() {
+    return (await getDb()).collection<OlimanagerJobItem>('olimanager_job_items')
 }
 
 /**

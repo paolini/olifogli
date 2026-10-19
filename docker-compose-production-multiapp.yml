@@ -58,6 +58,14 @@ x-app-common: &app-common
 #      - 8000:3000
 
 services:
+  olimanager-worker:
+    <<: *app-common
+    command: ["node", "olimanager-worker.js"]
+    environment:
+      <<: *common-env
+    depends_on:
+      - db
+
   app1:
     <<: *app-common
     environment:

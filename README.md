@@ -189,10 +189,18 @@ Abbinamenti, risultati ed extra fields usano il token OAuth della sessione
 dell’amministratore, letto solo sul server: il browser non richiede né invia
 username o password. Restano necessari i privilegi amministrativi locali e
 i permessi richiesti da Olimanager per ciascuna operazione.
+I fogli devono essere finalizzati (`locked`) dall'amministratore prima di
+abbinamenti, invio risultati o aggiornamento degli extra fields: la sola
+chiusura da parte dell'insegnante non basta.
 Il login richiede normalmente solo `openid email profile`. Per trasferire dati,
 selezionare «richiesta scope api» accanto a LOGIN:
 quel login richiederà anche lo scope `api`, senza assegnare ulteriori ruoli.
 Per cambiare la scelta di una sessione già aperta occorre uscire e rifare il login.
+La sessione pubblica espone solo `olimanagerApiScope` (true/false, oppure null
+per sessioni non verificabili), senza il token. I comandi di trasferimento restano
+disponibili: scope e scadenza vengono controllati sul server solo quando si tenta
+un trasferimento, prima di elaborare le righe o contattare Olimanager.
+Se il controllo fallisce, viene mostrato il messaggio con le istruzioni per rifare il login.
 Dopo aver copiato le righe occorre riavviare Olifogli. Il manifest JSON resta privo di secret.
 
 Se il secret è perso o non valido, si può sostituirlo mantenendo lo stesso client ID:
@@ -319,3 +327,54 @@ esempi contengono solo tempo, stato, durata e dimensione della risposta; gli
 error log del proxy possono ancora includere dettagli della richiesta e vanno
 gestiti separatamente. Il logging delle URL delle richieste in sviluppo Next.js
 è disabilitato per non registrare parametri OAuth.
+
+## Worker Olimanager: prima verifica asincrona
+
+Il primo passo del worker è una **verifica locale**: non crea partecipanti e non
+invia risultati, non usa token OAuth e non modifica le righe del foglio.
+I comandi di trasferimento già esistenti rimangono sincroni.
+
+Un amministratore può scegliere **«Verifica Olimanager in background»** sulle
+righe selezionate di un foglio o sui fogli selezionati della raccolta. Sono
+accettati solo fogli finalizzati (`locked`); la sola chiusura non basta. La pagina **Verifiche Olimanager** mostra gli ultimi
+20 lavori per quei fogli; **Aggiorna stato** ricarica i progressi e **Dettagli
+righe** mostra gli esiti, con paginazione. Non ci sono ancora notifiche WebSocket.
+
+Per una prova in sviluppo:
+
+1. Lasciare spento il worker e accodare una verifica: il lavoro resta in attesa.
+2. Avviare `npm run olimanager:worker -- --once`: elabora al massimo un job ed esce.
+3. Premere **Aggiorna stato** per vedere conteggi ed esiti delle singole righe.
+
+Per lasciarlo in attesa di nuovi lavori:
+
+```sh
+npm run olimanager:worker
+```
+
+Il worker carica la configurazione `.env*` come Next.js, rispettando le variabili
+esportate e `NODE_ENV`, e usa la stessa `MONGODB_URI` dell'applicazione. Servono
+transazioni MongoDB (replica set, già previsto dal Compose). Non richiede Redis.
+In produzione l'immagine include `olimanager-worker.js`; entrambi gli esempi
+Compose prevedono il servizio separato `olimanager-worker` con riavvio automatico.
+
+I job sono salvati in `olimanager_jobs`, con `rowIds` e `sheetIds` indipendenti:
+entrambi possono essere popolati; il lavoro riguarda la loro unione.
+La preparazione registra la selezione in `olimanager_job_items`, con un indice
+univoco `(jobId, rowId)`. Dopo la preparazione non viene più ricalcolata.
+I job attraversano `queued`, `preparing`, `running` e terminano in `completed`,
+`completed_with_errors` o `failed`. Ogni item conserva stato, tentativi ed errore.
+Gli errori di questa verifica restano negli item; non sovrascrivono
+`row.olimanager.error`, che riguarda i trasferimenti effettivi.
+
+I fogli vengono riservati al job nell'accodamento e non possono essere sbloccati o riaperti
+né inclusi in un altro job attivo fino alla conclusione. In questa prima versione
+si assume che gli amministratori non modifichino o cancellino i dati nel frattempo.
+La verifica controlla finalizzazione, schema, configurazione della gara e della scuola,
+righe criptate ed eventuali errori di validazione già presenti.
+
+Il worker acquisisce una lease di 60 secondi e salva i progressi in transazioni
+per blocchi di 200 righe. Dopo un arresto un altro worker può riprendere il job
+alla scadenza della lease; un arresto regolare la rende subito disponibile.
+Non vengono rieseguiti gli item già completati. Gli indici vengono creati
+idempotentemente all'accodamento e all'avvio del worker.

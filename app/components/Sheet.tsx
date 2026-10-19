@@ -1,3 +1,4 @@
+import OlimanagerJobStatus from './OlimanagerJobStatus'
 import { logDiagnostic } from '../lib/logging'
 import { useState, useEffect } from 'react'
 import { gql, useQuery, useSubscription } from '@apollo/client'
@@ -299,6 +300,7 @@ function SheetBody({sheet,profile}: {
             }
         </div>
         <div className="flex-1 flex flex-col min-h-0 overflow-auto">
+        {profile?.isAdmin && (tab === 'table' || tab === 'edit') && <OlimanagerJobStatus sheetIds={[sheet._id]} />}
         { tab === 'info' && 
         <div className="mx-2">
             <SheetInfo sheet={sheet} data={data} profile={profile} />

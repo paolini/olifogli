@@ -56,6 +56,7 @@ export type Sheet = {
     nScanJobs: number // Numero di ScanJobs associati a questo foglio (denormalizzato, gestito con transazioni)
     nScanSheetJobs: number // Numero di ScanSheetJobs associati a questo foglio (denormalizzato, gestito con transazioni)
 
+    olimanagerJobId?: ObjectId // prevents unlocking/reopening while a check is queued or running
     closed?: boolean
     closedBy?: string
     closedOn?: Date
@@ -138,4 +139,37 @@ export type Setting = {
     value: string
     updatedBy: string
     updatedOn: Date
+}
+
+// First worker operation is a local check; it never transfers data to Olimanager.
+export type OlimanagerJob = {
+    _id: ObjectId
+    operation: 'check_participants'
+    rowIds: ObjectId[]
+    sheetIds: ObjectId[]
+    affectedSheetIds: ObjectId[]
+    endpoint: string
+    createdBy: ObjectId
+    createdAt: Date
+    status: 'queued' | 'preparing' | 'running' | 'completed' | 'completed_with_errors' | 'failed'
+    totalRows: number
+    succeededRows: number
+    failedRows: number
+    preparedAt?: Date
+    startedAt?: Date
+    finishedAt?: Date
+    error?: string
+    leaseOwner?: string
+    leaseExpiresAt?: Date
+}
+
+export type OlimanagerJobItem = {
+    _id: ObjectId
+    jobId: ObjectId
+    rowId: ObjectId
+    sheetId?: ObjectId
+    status: 'pending' | 'succeeded' | 'failed'
+    attempts: number
+    error?: string
+    finishedAt?: Date
 }

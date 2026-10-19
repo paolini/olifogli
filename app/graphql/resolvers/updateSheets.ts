@@ -55,16 +55,19 @@ export default async function updateSheets (_: unknown, { sheets }: MutationUpda
         }
 
         if (sheetInput.locked !== undefined && sheetInput.locked !== null) {
+            if (!sheetInput.locked && existingSheet.olimanagerJobId) {
+                throw new Error('Un lavoro Olimanager è attivo su questo foglio: attendere il completamento prima di sbloccarlo.')
+            }
             update.locked = sheetInput.locked
         }
         
         // Esegui l'update
         const result = await collection.updateOne(
-            { _id: sheetId },
+            { _id: sheetId, ...(update.locked === false ? { olimanagerJobId: { $exists: false } } : {}) },
             { $set: update }
         )
         
-        if (!result.acknowledged) {
+        if (!result.acknowledged || result.matchedCount === 0) {
             throw new Error(`Failed to update sheet ${sheetInput._id}`)
         }
     }

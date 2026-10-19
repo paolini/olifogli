@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "logs:cleanup": "node scripts/cleanup-logs.cjs",
+    "olimanager:worker": "tsx olimanager-worker.ts",
     "olimanager:setup": "node scripts/setup-olimanager.cjs",
     "test:olimanager": "node --test tests/olimanager-setup.test.cjs",
     "dev": "next dev --turbopack",

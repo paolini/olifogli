@@ -10,6 +10,34 @@ enum SheetState {
   locked
 }
 
+type OlimanagerJob {
+  _id: ObjectId!
+  operation: String!
+  rowIds: [ObjectId!]!
+  sheetIds: [ObjectId!]!
+  endpoint: String!
+  createdBy: ObjectId!
+  createdAt: Timestamp!
+  status: String!
+  totalRows: Int!
+  succeededRows: Int!
+  failedRows: Int!
+  startedAt: Timestamp
+  finishedAt: Timestamp
+  error: String
+}
+
+type OlimanagerJobItem {
+  _id: ObjectId!
+  jobId: ObjectId!
+  rowId: ObjectId!
+  sheetId: ObjectId
+  status: String!
+  attempts: Int!
+  error: String
+  finishedAt: Timestamp
+}
+
 type Setting {
   _id: ObjectId!
   key: String!
@@ -239,6 +267,9 @@ type AgeDistributionReport {
 }
 
 type Query {
+  olimanagerJobs(sheetIds: [ObjectId!]): [OlimanagerJob!]!
+  olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
+
   hello: String
   me: User
   users: [User]
@@ -277,6 +308,8 @@ type OlimanagerUpdateExtraFieldsResult {
 }
 
 type Mutation {
+  requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
+
   updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId
   deleteSheet(_id: ObjectId!): Boolean

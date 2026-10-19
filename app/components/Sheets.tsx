@@ -1,3 +1,4 @@
+import OlimanagerJobStatus from './OlimanagerJobStatus'
 import React, { useState } from 'react';
 import { ObjectId } from 'bson';
 
@@ -7,7 +8,7 @@ import FilterIcon from './FilterIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { Sheet, useDeleteSheetsMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation, useOlimanagerUpdateExtraFieldsMutation } from '../graphql/generated';
+import { Sheet, useDeleteSheetsMutation, useRequestOlimanagerCheckMutation, useOlimanagerCreateParticipantMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation, useOlimanagerUpdateExtraFieldsMutation } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SheetsCreation';
@@ -69,6 +70,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [validateRows, { loading: validatingRows, error: validateRowsError }] = useMutation(VALIDATE_ROWS)
     const [updateSheets, { loading: updatingSheets, error: updateSheetsError }] = useMutation(UPDATE_SHEETS)
     const [updateSheetSingle, { error: updateSheetError }] = useMutation(UPDATE_SHEET_PERMISSIONS)
+    const [requestOlimanagerCheck, { loading: checkingOlimanager, error: checkOlimanagerError }] = useRequestOlimanagerCheckMutation({
+        refetchQueries: ['OlimanagerJobs'],
+    })
     const [olimanagerCreateParticipant, { loading: olimanagerCreateParticipantLoading, error: olimanagerCreateParticipantError }] = useOlimanagerCreateParticipantMutation()
     const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateResultsLoading, error: olimanagerBulkUpdateResultsError }] = useOlimanagerBulkUpdateResultsMutation()
     const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError}] = useOlimanagerUpdateExtraFieldsMutation()
@@ -238,7 +242,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={deleteSheetsError} />
         <Error error={validateRowsError} />
         <Error error={updateSheetError} />
+        <Error error={checkOlimanagerError} />
         <Error error={olimanagerCreateParticipantError} />
+        {profile?.isAdmin && <OlimanagerJobStatus sheetIds={sheets.map(sheet => sheet._id)} />}
+
         <Error error={olimanagerBulkUpdateResultsError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
@@ -253,6 +260,13 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => unlockSelectedSheets()}>
                     ⚙ Sblocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                </Button>
+                <Button disabled={selectedIds.length === 0 || checkingOlimanager} onClick={async () => {
+                    try {
+                        await requestOlimanagerCheck({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
+                    } catch { /* Apollo exposes the error above. */ }
+                }}>
+                    ⚙ Verifica Olimanager in background
                 </Button>
                 <Button disabled={selectedIds.length === 0 || olimanagerCreateParticipantLoading} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
                     ⚙ Crea/abbina partecipanti (Olimanager)

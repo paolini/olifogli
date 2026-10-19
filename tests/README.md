@@ -154,3 +154,16 @@ simulati e verifica l’uso della richiesta OAuth dell’amministratore, i contr
 di accesso locali e il rifiuto dei vecchi argomenti username/password. I test OAuth
 verificano anche che sessioni diverse usino token distinti e che cookie e password
 non vengano inoltrati a Olimanager. Non vengono eseguite scritture remote.
+
+`olimanager-jobs.test.cjs` verifica autorizzazione, validazione e protezione dalla
+riapertura. La suite opzionale con MongoDB reale prova unione dei target,
+deduplicazione, errori per riga, esclusione tra worker, ripresa della preparazione
+e dei blocchi, lease scadute e revoca dell'amministratore:
+
+```sh
+OLIMANAGER_WORKER_TEST_URI=mongodb://127.0.0.1:27017/ node --test tests/olimanager-jobs.test.cjs
+```
+
+Accetta solo un server locale. Crea database temporanei con nomi unici
+`olifogli_worker_test_*` e li elimina alla fine; non usa il database applicativo
+né contatta Olimanager. Il server deve supportare transazioni MongoDB.

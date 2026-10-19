@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { queryOlimanager } from '@/app/lib/olimanager'
+import { queryOlimanager, requireOlimanagerApiSession } from '@/app/lib/olimanager'
 
 /** Server-only adapter for the existing transfer resolvers, using the caller's OAuth session. */
 export class OlimanagerApi {
@@ -8,6 +8,12 @@ export class OlimanagerApi {
   constructor(req: NextRequest | undefined) {
     if (!req) throw new Error('Il trasferimento a Olimanager richiede una sessione OAuth HTTP.')
     this.req = req
+  }
+
+  static async create(req: NextRequest | undefined): Promise<OlimanagerApi> {
+    const api = new OlimanagerApi(req)
+    await requireOlimanagerApiSession(api.req)
+    return api
   }
 
   async query(query: string, variables: Record<string, unknown> = {}): Promise<{

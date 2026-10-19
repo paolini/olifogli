@@ -50,7 +50,7 @@ async function sessionCookie(extra = {}) {
   // Exercise the actual login JWT callback, including preservation on later requests.
   const token = await authOptions.callbacks.jwt({
     token: { user_id: 'synthetic-user', ...extra },
-    account: { access_token: ACCESS_TOKEN },
+    account: { access_token: ACCESS_TOKEN, scope: 'openid email profile api' },
   });
   return encode({ secret: SECRET, token: await authOptions.callbacks.jwt({ token }) });
 }
@@ -121,11 +121,11 @@ test('missing, tampered, expired or tokenless sessions cannot call Olimanager', 
     const req = new NextRequest('http://app.example.invalid/api/test', {
       headers: { cookie: `next-auth.session-token=${cookie}` },
     });
-    await assert.rejects(queryOlimanager(req, '{ users { me { id } } }'), /Non autenticato/);
+    await assert.rejects(queryOlimanager(req, '{ users { me { id } } }'), /Sessione OAuth/);
   }
 });
 
-test('OAuth diagnostics identify expired tokens and missing api scope without leaking secrets', async () => {
+test('OAuth diagnostics identify expired tokens before any remote request without leaking secrets', async () => {
   const token = await authOptions.callbacks.jwt({
     token: {},
     account: {
@@ -140,7 +140,7 @@ test('OAuth diagnostics identify expired tokens and missing api scope without le
     'next-auth/jwt': {
       getToken: (params) => require('next-auth/jwt').getToken({ ...params, secureCookie: false }),
     },
-  }, { fetch: async () => new Response('{}', { status: 401 }) });
+  }, { fetch: () => assert.fail('Expired token must not reach Olimanager') });
   await assert.rejects(queryOlimanager(new NextRequest('http://app.example.invalid/api/test', {
     headers: { cookie: `next-auth.session-token=${cookie}` },
   }), '{ users { me { id } } }'), (err) => err.status === 401);
@@ -150,14 +150,14 @@ test('OAuth diagnostics identify expired tokens and missing api scope without le
   assert.equal(auth.accessTokenExpired, true);
   assert.ok(auth.expiresInSeconds <= -120);
   assert.equal(auth.sameOrigin, true);
-  assert.equal(diagnostics.at(-1).status, 401);
+  assert.equal(diagnostics.at(-1).event, 'olimanager.graphql_auth');
   const output = JSON.stringify(diagnostics);
   for (const secret of [ACCESS_TOKEN, 'synthetic-refresh-secret', SECRET, cookie]) {
     assert.equal(output.includes(secret), false);
   }
 });
 
-test('OAuth login records granted api scope and expiry only in the private JWT', async () => {
+test('OAuth session exposes only the scope flag while credentials and expiry remain private', async () => {
   const token = await authOptions.callbacks.jwt({
     token: {},
     account: { access_token: ACCESS_TOKEN, scope: 'openid api email', expires_at: 2000000000 },
@@ -165,6 +165,7 @@ test('OAuth login records granted api scope and expiry only in the private JWT',
   assert.equal(token.accessTokenHasApiScope, true);
   assert.equal(token.accessTokenExpiresAt, 2000000000);
   const session = await authOptions.callbacks.session({ session: { user: {}, expires: 'synthetic-expiry' }, token });
+  assert.equal(session.olimanagerApiScope, true);
   assert.equal(Object.hasOwn(session, 'accessTokenHasApiScope'), false);
   assert.equal(Object.hasOwn(session, 'accessTokenExpiresAt'), false);
 });
@@ -183,7 +184,7 @@ test('transfer adapter uses each encrypted OAuth session without password login 
     '@/app/lib/olimanager': { queryOlimanager },
   });
   for (const accessToken of [ACCESS_TOKEN, 'synthetic-other-administrator-token']) {
-    const cookie = await encode({ secret: SECRET, token: { accessToken } });
+    const cookie = await encode({ secret: SECRET, token: { accessToken, accessTokenHasApiScope: true } });
     const req = new NextRequest('http://app.example.invalid/api/graphql', {
       headers: { cookie: `next-auth.session-token=${cookie}` },
     });
@@ -197,11 +198,37 @@ test('transfer adapter uses each encrypted OAuth session without password login 
     assert.deepEqual(JSON.parse(options.body).variables, { contestId: 10 });
   }
   assert.equal(calls.length, 2);
-  await assert.rejects(new OlimanagerApi(new NextRequest('http://app.example.invalid/api/graphql')).query('mutation { transfer }'), /Non autenticato/);
+  await assert.rejects(new OlimanagerApi(new NextRequest('http://app.example.invalid/api/graphql')).query('mutation { transfer }'), /Sessione OAuth/);
   assert.equal(calls.length, 2);
 });
 
 test('provider defaults do not request api scope when login has no explicit scope override', () => {
   const provider = authOptions.providers.find(provider => provider.id === 'olimanager');
   assert.equal(provider.authorization.params.scope, 'openid email profile');
+});
+
+for (const [scope, message] of [[false, 'non ha lo scope api'], [null, 'non è verificabile'], [undefined, 'non è verificabile']]) {
+  test(`scope=${scope} fails locally with re-login instructions before any GraphQL request`, async () => {
+    const token = { accessToken: ACCESS_TOKEN, accessTokenExpiresAt: Date.now() / 1000 + 3600,
+      ...(scope === undefined ? {} : { accessTokenHasApiScope: scope }) };
+    const cookie = await encode({ secret: SECRET, token });
+    const { queryOlimanager, requireOlimanagerApiSession } = load('app/lib/olimanager.ts', {
+      'next-auth/jwt': { getToken: params => require('next-auth/jwt').getToken({ ...params, secureCookie: false }) },
+    }, { fetch() { assert.fail('Scope failure must not send a remote request'); } });
+    const req = new NextRequest('http://app.example.invalid/api/graphql', {
+      headers: { cookie: `next-auth.session-token=${cookie}` },
+    });
+    for (const action of [() => queryOlimanager(req, 'mutation { transfer }'), () => requireOlimanagerApiSession(req)]) {
+      await assert.rejects(action(), error => error.status === 403 && error.message.includes(message) && error.message.includes('Esci e accedi'));
+    }
+  });
+}
+
+test('public session reports granted or unknown scope without trusting requested scope', async () => {
+  for (const scope of ['openid email profile', undefined]) {
+    const token = await authOptions.callbacks.jwt({ token: {}, account: { access_token: ACCESS_TOKEN, scope } });
+    const session = await authOptions.callbacks.session({ session: { user: {}, expires: 'synthetic' }, token });
+    assert.equal(session.olimanagerApiScope, scope === undefined ? null : false);
+    assert.ok(!JSON.stringify(session).includes(ACCESS_TOKEN));
+  }
 });

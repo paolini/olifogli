@@ -43,6 +43,7 @@ export default async function olimanagerBulkUpdateResults(
     // 1) Autenticazione e autorizzazione (solo admin di sistema)
     const user = await get_authenticated_user(context);
     check_admin(user);
+    const api = await OlimanagerApi.create(context.req);
 
     // 2) Preparo collezioni MongoDB
     const rows = await getRowsCollection();
@@ -59,6 +60,9 @@ export default async function olimanagerBulkUpdateResults(
         await transferJob(batchRowIds);
       } else if (remainingSheetIds.length > 0) {
         const sheetId = remainingSheetIds.shift();
+
+        const sheet = await sheets.findOne({ _id: sheetId });
+        if (!sheet?.locked) throw new Error('Finalizzare tutti i fogli selezionati prima del trasferimento a Olimanager.');
 
         const ids = (await rows.find({ sheetId }).project({ _id: 1 }).toArray()).map(r => r._id) as ObjectId[];
         remainingRowIds.push(...ids);
@@ -94,6 +98,8 @@ export default async function olimanagerBulkUpdateResults(
         if (!sheet) {
             throw new Error(`Foglio non trovato: ${sheetId}`);
         }
+
+        if (!sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del trasferimento a Olimanager.`);
 
         const schema = schemas[sheet.schema];
         if (!schema) {
@@ -169,9 +175,6 @@ export default async function olimanagerBulkUpdateResults(
       if (contestId === null) {
           throw new Error("Nessun contestId trovato nelle righe");
       }
-
-      // 4) Preparo il client Olimanager
-      const api = new OlimanagerApi(context.req);
 
       // 5) Eseguo la mutation su Olimanager
       const result = await bulkUpdateResults(api, contestId, allProblemResults);

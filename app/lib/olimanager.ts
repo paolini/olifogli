@@ -1,5 +1,5 @@
 import { logOlimanagerEvent } from './logging'
-import { getToken } from "next-auth/jwt"
+import { getToken, type JWT } from "next-auth/jwt"
 import type { NextRequest } from "next/server"
 const OLIMANAGER_GRAPHQL_URL = `${process.env.OLIMANAGER_GRAPHQL_ENDPOINT}`
 
@@ -18,6 +18,25 @@ export class OlimanagerGraphQLError extends Error {
     this.status = status
     this.isAuthError = status === 401 || status === 403
   }
+}
+
+function checkOlimanagerToken(token: JWT | null): void {
+  if (typeof token?.accessToken !== 'string' || !token.accessToken) {
+    throw new OlimanagerGraphQLError(401, 'Sessione OAuth Olimanager assente. Esci e accedi nuovamente.')
+  }
+  if (typeof token.accessTokenExpiresAt === 'number' && token.accessTokenExpiresAt <= Date.now() / 1000) {
+    throw new OlimanagerGraphQLError(401, 'Il token Olimanager è scaduto. Esci e accedi nuovamente con «Abilita trasferimenti a Olimanager (scope api)».')
+  }
+  if (token.accessTokenHasApiScope === false) {
+    throw new OlimanagerGraphQLError(403, 'Questa sessione non ha lo scope api. Esci e accedi nuovamente selezionando «Abilita trasferimenti a Olimanager (scope api)».')
+  }
+  if (token.accessTokenHasApiScope !== true) {
+    throw new OlimanagerGraphQLError(403, 'Lo scope api della sessione non è verificabile. Esci e accedi nuovamente selezionando «Abilita trasferimenti a Olimanager (scope api)».')
+  }
+}
+
+export async function requireOlimanagerApiSession(req: NextRequest): Promise<void> {
+  checkOlimanagerToken(await getToken({ req, secret: process.env.NEXTAUTH_SECRET }))
 }
 
 export async function queryOlimanager<T = unknown>(
@@ -47,9 +66,7 @@ export async function queryOlimanager<T = unknown>(
     providerOrigin,
     sameOrigin: graphqlOrigin && providerOrigin ? graphqlOrigin === providerOrigin : null,
   })
-  if (typeof accessToken !== "string" || !accessToken) {
-    throw new Error("Non autenticato: nessun accessToken disponibile")
-  }
+  checkOlimanagerToken(token)
 
   const res = await fetch(OLIMANAGER_GRAPHQL_URL, {
     method: "POST",

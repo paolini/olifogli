@@ -45,3 +45,16 @@ const DELETE_SHEETS = gql`
     }
 `
 
+
+export const REQUEST_OLIMANAGER_CHECK = gql`
+  mutation RequestOlimanagerCheck($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+    requestOlimanagerCheck(rowIds: $rowIds, sheetIds: $sheetIds) {
+      _id
+      operation
+      status
+      totalRows
+      succeededRows
+      failedRows
+    }
+  }
+`

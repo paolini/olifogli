@@ -1,3 +1,4 @@
+import { requestOlimanagerCheck, olimanagerJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
 import { Context } from './types'
 import { ObjectId } from 'bson'
 import { ObjectIdType, Timestamp, DataType } from './types'
@@ -62,6 +63,8 @@ import decryptSheets from './resolvers/decryptSheets'
 // Definizione dei resolver
 export const resolvers: Resolvers = {
   Query: {
+    olimanagerJobs,
+    olimanagerJobItems,
     hello: () => 'Hello, world!',
 
     config: async () => ({ OLIMANAGER_URL: process.env.OLIMANAGER_URL }),
@@ -119,6 +122,7 @@ export const resolvers: Resolvers = {
   },
 
   Mutation: {
+    requestOlimanagerCheck,
     addSheet,
     deleteSheet,
     deleteSheets,

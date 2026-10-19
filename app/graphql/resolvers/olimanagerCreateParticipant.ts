@@ -20,6 +20,7 @@ export default async function olimanagerCreateParticipant(
   const user = await get_authenticated_user(context)
   // console.log('Authenticated user:', user?.email, 'isAdmin:', user?.isAdmin)
   check_admin(user)
+  const api = await OlimanagerApi.create(context.req)
   // console.log('Admin check passed')
 
   // 2) Raccogli tutti i rowIds da rowIds diretti e/o da sheetIds
@@ -28,7 +29,10 @@ export default async function olimanagerCreateParticipant(
 
   if (sheetIds && sheetIds.length > 0) {
     const rows = await getRowsCollection()
+    const sheets = await getSheetsCollection()
     for (const sheetId of sheetIds) {
+      const targetSheet = await sheets.findOne({ _id: sheetId })
+      if (!targetSheet?.locked) throw new Error('Finalizzare tutti i fogli selezionati prima del trasferimento a Olimanager.')
       const totalRows = await rows.countDocuments({ sheetId })
 
       // const allSheetRows = await rows.find({ sheetId }).limit(3).toArray()
@@ -53,9 +57,6 @@ export default async function olimanagerCreateParticipant(
   const workbooks = await getWorkbooksCollection()
   // console.log('Collections initialized')
 
-  const api = new OlimanagerApi(context.req)
-
-
   const results: {success: boolean, error?: string, participantId?: string, skipped?: boolean, converted?: boolean}[] = []
 
   for (let i = 0; i < finalRowIds.length; i++) {
@@ -69,6 +70,7 @@ export default async function olimanagerCreateParticipant(
       const sheet = await sheets.findOne({ _id: row.sheetId })
       // console.log('Sheet data:', sheet ? { _id: sheet._id, name: sheet.name, schema: sheet.schema } : 'NOT FOUND')
       if (!sheet) throw new Error(`Foglio non trovato per la riga: ${row.sheetId}`)
+      if (!sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del trasferimento a Olimanager.`)
       const schema = schemas[sheet.schema]
       // console.log('Schema found:', !!schema, 'for schema key:', sheet.schema)
       if (!schema) throw new Error(`Schema non trovato per il foglio: ${sheet.schema}`)

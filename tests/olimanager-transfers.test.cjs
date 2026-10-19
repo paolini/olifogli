@@ -7,13 +7,13 @@ const ts = require('typescript');
 const { ObjectId } = require('mongodb');
 const { buildSchema, parse, validate } = require('graphql');
 
-function fixture({ admin = true, remoteFailure = false } = {}) {
+function fixture({ admin = true, remoteFailure = false, scopeDenied = false, finalized = true } = {}) {
   const rowId = new ObjectId(), sheetId = new ObjectId(), workbookId = new ObjectId();
   const req = { privateRequest: true };
   const calls = { remote: [], writes: [], domain: 0 };
   const row = { _id: rowId, sheetId, error: '', data: { name: 'Test', surname: 'Student', birthDate: '14/03/2011',
     classYear: '2', classSection: 'A', variant: '211', score: '5', shirt_size: 'M' } };
-  const sheet = { _id: sheetId, workbookId, schema: 'test', commonData: {} };
+  const sheet = { _id: sheetId, workbookId, schema: 'test', name: 'Test', locked: finalized, closed: true, commonData: {} };
   const rows = { async findOne() { return row; }, async updateOne(filter, update) { calls.writes.push(update); },
     async updateMany(filter, update) { calls.writes.push(update); } };
   const db = {
@@ -43,7 +43,10 @@ function fixture({ admin = true, remoteFailure = false } = {}) {
       if (id === 'apollo-server-errors') return require(id);
       if (id === './olimanagerApi') return load('app/graphql/resolvers/olimanagerApi.ts');
       if (id === '../../lib/logging') return { logDiagnostic() {} };
-      if (id === '@/app/lib/olimanager') return { async queryOlimanager(request, query, variables) {
+      if (id === '@/app/lib/olimanager') return { async requireOlimanagerApiSession(request) {
+        assert.equal(request, req);
+        if (scopeDenied) throw new Error('Questa sessione non ha lo scope api.');
+      }, async queryOlimanager(request, query, variables) {
         assert.equal(request, req);
         calls.remote.push({ query, variables });
         if (remoteFailure) throw new Error('OAuth access denied');
@@ -74,6 +77,25 @@ for (const resolver of resolvers) {
       assert.doesNotMatch(query, /login\s*\(/i);
       assert.ok(!Object.keys(variables).some(key => /password|username|token/i.test(key)));
     }
+  });
+  test(`${resolver} rejects missing api scope before reading or changing transfer data`, async () => {
+    const f = fixture({ scopeDenied: true });
+    await assert.rejects(f.load(`app/graphql/resolvers/${resolver}.ts`).default(null, { rowIds: [f.rowId] }, f.context), /scope api/);
+    assert.equal(f.calls.domain, 0);
+    assert.equal(f.calls.writes.length, 0);
+    assert.equal(f.calls.remote.length, 0);
+  });
+  test(`${resolver} does not send data for a closed but unfinalized sheet`, async () => {
+    const f = fixture({ finalized: false });
+    if (resolver.endsWith('ExtraFields')) f.row.olimanager = { participantId: '12', contestId: '10' };
+    const run = () => f.load(`app/graphql/resolvers/${resolver}.ts`).default(null, { rowIds: [f.rowId] }, f.context);
+    if (resolver === 'olimanagerBulkUpdateResults') await assert.rejects(run(), /Finalizzare/);
+    else {
+      const result = await run();
+      assert.equal(result[0].success, false);
+      assert.match(result[0].error, /Finalizzare/);
+    }
+    assert.equal(f.calls.remote.length, 0);
   });
   for (const anonymous of [false, true]) test(`${resolver} rejects ${anonymous ? 'anonymous' : 'non-admin'} callers before domain access`, async () => {
     const f = fixture({ admin: false });

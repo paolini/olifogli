@@ -16,8 +16,10 @@ export default async function unlockSheet(_: unknown, args: { _id: ObjectId }, c
     throw new Error('Only the sheet owner or system admins can unlock the sheet')
   }
 
+  if (sheet.olimanagerJobId) throw new Error('Un lavoro Olimanager è attivo su questo foglio: attendere il completamento prima di sbloccarlo.')
+
   const res = await sheets.updateOne(
-    { _id: args._id }, 
+    { _id: args._id, olimanagerJobId: { $exists: false } },
     { 
       $unset: { 
         locked: "", 
@@ -27,6 +29,6 @@ export default async function unlockSheet(_: unknown, args: { _id: ObjectId }, c
     }
   )
   
-  if (!res.acknowledged) throw new Error('unlock failed')
+  if (!res.acknowledged || res.matchedCount === 0) throw new Error('Impossibile sbloccare il foglio: un lavoro Olimanager potrebbe essere appena iniziato.')
   return true
 }
