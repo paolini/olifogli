@@ -5,6 +5,7 @@ interface Config {
   serverName: string;
   serverBackgroundColor?: string;
   appInstance?: string;
+  olimanagerUrl?: string;
 }
 
 const ConfigContext = createContext<Config>({
@@ -17,12 +18,13 @@ export const ConfigProvider = ({
   children, 
   serverName, 
   serverBackgroundColor, 
-  appInstance 
+  appInstance,
+  olimanagerUrl
 }: { 
   children: ReactNode 
 } & Config) => {
   return (
-    <ConfigContext.Provider value={{ serverName, serverBackgroundColor, appInstance }}>
+    <ConfigContext.Provider value={{ serverName, serverBackgroundColor, appInstance, olimanagerUrl }}>
       {children}
     </ConfigContext.Provider>
   );

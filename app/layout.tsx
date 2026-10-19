@@ -36,7 +36,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-          <ConfigProvider serverName={serverName} serverBackgroundColor={serverBackgroundColor} appInstance={appInstance}>
+          <ConfigProvider serverName={serverName} serverBackgroundColor={serverBackgroundColor} appInstance={appInstance} olimanagerUrl={process.env.OLIMANAGER_URL}>
             <SessionProviderWrapper>
               {children}
             </SessionProviderWrapper>

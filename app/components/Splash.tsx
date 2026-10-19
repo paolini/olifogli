@@ -4,14 +4,19 @@ import Workbooks from './Workbooks'
 import Button from './Button'
 import useProfile from "../lib/useProfile"
 import GlobalMessage from './GlobalMessage'
+import { useConfig } from './ConfigProvider'
 
 export default function Splash() {
   const { data: session } = useSession()
   const profile = useProfile()
+  const { olimanagerUrl } = useConfig()
 
   if (session === undefined) return null
 
   if (!session?.user) return <div>
+    <p className="mx-4 my-4">
+      Devi avere un account su <a className="underline" href={olimanagerUrl}>olimpiadi-scientifiche</a> per accedere.
+    </p>
     <GlobalMessage name="public_login_message" description="⚙ informazioni presentate prima del login"/>
     <Button className="px-10 py-5 m-5 rounded" onClick={() => signIn()}><b>LOGIN</b></Button>
   </div>
