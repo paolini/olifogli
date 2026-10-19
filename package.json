@@ -5,6 +5,8 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "logs:cleanup": "node scripts/cleanup-logs.cjs",
+    "olimanager:setup": "python3 -u scripts/setup-olimanager.py",
+    "test:olimanager": "python3 tests/olimanager_setup_test.py",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",

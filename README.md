@@ -118,6 +118,54 @@ See https://github.com/fph/archiomr/blob/main/worker.py
 
 set SCANS_SPOOL_DIR and SCANS_DATA_DIR to enable
 
+## Dati di prova Archimede su Olimanager
+
+Il comando seguente verifica la configurazione senza creare dati:
+
+```sh
+npm run olimanager:setup
+```
+
+Per creare gli oggetti mancanti e salvare gli ID e le anagrafiche di prova:
+
+```sh
+npm run olimanager:setup -- --apply --output /tmp/olifogli-archimede.json
+```
+
+Servono Python 3, curl e un account con accesso al pannello Django. Il comando usa
+lo staging e le sue credenziali pubbliche di test come impostazione predefinita.
+Sullo staging, username e password non impostati o vuoti usano l'account pubblico
+`admin@olimanager.it`, con password uguale all'email.
+Un'altra istanza si seleziona con `--url https://istanza.example` e
+`--username admin@example.it`, impostando `OLIMANAGER_SETUP_PASSWORD` nell'ambiente.
+L'URL deve essere quello di base, senza `/graphql`. Sono disponibili anche
+`OLIMANAGER_SETUP_URL` e `OLIMANAGER_SETUP_USERNAME`; lo script non legge `.env`.
+
+Si possono indicare `--year 2026`, `--student EMAIL` e `--teacher EMAIL`.
+Lo studente deve avere un profilo delle superiori (anni scolastici 9–13);
+la sua scuola e gli account vengono riutilizzati. Senza selezione esplicita,
+lo script cerca gli account disponibili nel database.
+
+La struttura creata comprende un'olimpiade di test, un'edizione, l'iscrizione
+della scuola e due gare scolastiche: **Archimede Biennio** e **Archimede Triennio**.
+Ogni gara ha una sede amministrata dal docente e 16 problemi, numerati da 1 a 16,
+con punteggi ammessi da 0 a 5. Gli oggetti esistenti sono riutilizzati senza
+aggiornarli o cancellarli; la procedura può riprendere dopo un'interruzione.
+
+Lo studente con account viene iscritto alla gara appropriata. Per ciascuna gara
+viene creato anche un concorrente senza account; un'ulteriore anagrafica viene
+inclusa solo nel manifest, per provare successivamente la creazione da Olifogli.
+Non vengono inviati risultati né creati workbook o applicazioni OAuth.
+
+Il manifest contiene `contests.biennio`, `contests.triennio`, `workbookCommonData`,
+`sheetCommonData` e le righe di prova, con `olifogliData` pronto per i campi delle
+righe di Olifogli. La configurazione usa le permutazioni Archimede 2025 fornite
+per i test, conservate in `scripts/fixtures/archimede.json`: codice iniziale `2`
+per il biennio, `3` per il triennio; corretta 5, vuota 1, errata o non valida 0.
+L'anno e gli ID vengono impostati durante il setup. `participantId` nel manifest
+identifica le partecipazioni già predisposte; non viene importato in Olifogli
+automaticamente.
+
 ## OAuth2 Setup (olimanager ↔ olifogli)
 
 olifogli authenticates against olimanager's OAuth2/OIDC provider via NextAuth, using the standard authorization code flow with PKCE. The relevant endpoints (authorize, token, userinfo, discovery) are exposed by olimanager's Django backend, not its Next.js frontend — the two are served on different origins.

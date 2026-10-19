@@ -11,6 +11,12 @@ TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
 fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
 
+Per lo script di setup Archimede eseguire anche `npm run test:olimanager`
+(richiede Python 3). I test usano un'istanza simulata in memoria: verificano le
+due gare, i 32 problemi con limiti 0–5, la ripetibilità, l'assegnazione degli
+studenti a biennio/triennio, le anagrafiche ancora da creare e il manifest con
+permutazioni e punteggi. Non contattano Olimanager.
+
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare
 le chiamate GraphQL dal server, anche con cookie HTTPS suddivisi in chunk, e

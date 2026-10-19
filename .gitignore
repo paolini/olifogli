@@ -48,5 +48,6 @@ next-env.d.ts
 /scuole_iscritte_2025_no_header.csv
 /app/graphql/log.txt
 /client-secret.gpg
+__pycache__/
 /sheetgenworker/error.jsonl
 /sheetgenworker/example.jsonl
