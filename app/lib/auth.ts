@@ -81,7 +81,7 @@ function providers() {
       clientSecret: OLIMANAGER_OAUTH_CLIENT_SECRET,
       authorization: {
         url: `${OLIMANAGER_URL}/o/authorize/`,
-        params: { scope: "openid email profile api" },
+        params: { scope: "openid email profile" },
       },
       token: `${OLIMANAGER_URL}/o/token/`,
       userinfo: `${OLIMANAGER_URL}/o/userinfo/`,

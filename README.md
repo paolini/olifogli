@@ -189,6 +189,10 @@ Abbinamenti, risultati ed extra fields usano il token OAuth della sessione
 dell’amministratore, letto solo sul server: il browser non richiede né invia
 username o password. Restano necessari i privilegi amministrativi locali e
 i permessi richiesti da Olimanager per ciascuna operazione.
+Il login richiede normalmente solo `openid email profile`. Per trasferire dati,
+selezionare «richiesta scope api» accanto a LOGIN:
+quel login richiederà anche lo scope `api`, senza assegnare ulteriori ruoli.
+Per cambiare la scelta di una sessione già aperta occorre uscire e rifare il login.
 Dopo aver copiato le righe occorre riavviare Olifogli. Il manifest JSON resta privo di secret.
 
 Se il secret è perso o non valido, si può sostituirlo mantenendo lo stesso client ID:

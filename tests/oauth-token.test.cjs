@@ -200,3 +200,8 @@ test('transfer adapter uses each encrypted OAuth session without password login 
   await assert.rejects(new OlimanagerApi(new NextRequest('http://app.example.invalid/api/graphql')).query('mutation { transfer }'), /Non autenticato/);
   assert.equal(calls.length, 2);
 });
+
+test('provider defaults do not request api scope when login has no explicit scope override', () => {
+  const provider = authOptions.providers.find(provider => provider.id === 'olimanager');
+  assert.equal(provider.authorization.params.scope, 'openid email profile');
+});
