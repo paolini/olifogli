@@ -55,7 +55,6 @@ type ACCOUNT = {
 
 type SESSION = {
   user?: SESSION_USER | undefined
-  accessToken?: string
   expires: string
 }
 
@@ -136,7 +135,8 @@ export const authOptions: AuthOptions = {
     }) {
       // console.log("Session callback:", JSON.stringify({ session, token }, null, 2))
       if (token.user_id && session.user) session.user._id = token.user_id
-      session.accessToken = token.accessToken // da non passare mai al client!
+      // This callback also supplies /api/auth/session to the browser.
+      // OAuth credentials must remain in the encrypted, HttpOnly JWT cookie.
       return session
     },
 

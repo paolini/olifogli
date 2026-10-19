@@ -11,6 +11,12 @@ TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
 fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
 
+`oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
+non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare
+le chiamate GraphQL dal server, anche con cookie HTTPS suddivisi in chunk, e
+il rifiuto di sessioni mancanti, alterate, scadute o prive di access token.
+Le richieste verso Olimanager sono simulate; non richiede credenziali reali.
+
 `workbook-navigation.test.cjs` monta il componente Workbook e la gestione reale
 dei filtri URL in jsdom. Verifica selezione della linguetta, ripristino dopo reload,
 conservazione della linguetta cambiando filtri e ordinamento, e aggiornamento

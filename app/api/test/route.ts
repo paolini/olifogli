@@ -1,9 +1,10 @@
 import { logDiagnostic } from '../../lib/logging'
 import { queryOlimanager, OlimanagerGraphQLError } from "@/app/lib/olimanager"
+import type { NextRequest } from "next/server"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const data = await queryOlimanager(`
+        const data = await queryOlimanager(req, `
             query MyQuery {
                 users {
                     me {

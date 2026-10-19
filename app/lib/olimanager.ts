@@ -1,13 +1,5 @@
-// app/lib/olimanager-graphql.ts
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/lib/auth"
-
-// Declare module augmentation for next-auth to add accessToken to Session
-declare module "next-auth" {
-  interface Session {
-    accessToken?: string;
-  }
-}
+import { getToken } from "next-auth/jwt"
+import type { NextRequest } from "next/server"
 const OLIMANAGER_GRAPHQL_URL = `${process.env.OLIMANAGER_GRAPHQL_ENDPOINT}`
 
 interface GraphQLResponse<T> {
@@ -28,14 +20,14 @@ export class OlimanagerGraphQLError extends Error {
 }
 
 export async function queryOlimanager<T = unknown>(
+  req: NextRequest,
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
-  const session = await getServerSession(authOptions)
-
-  //  console.log("***** accessToken ***" + session.accessToken)
-
-  if (!session?.accessToken) {
+  // Read credentials on the server without exposing them in the public session.
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const accessToken = token?.accessToken
+  if (typeof accessToken !== "string" || !accessToken) {
     throw new Error("Non autenticato: nessun accessToken disponibile")
   }
 
@@ -43,7 +35,7 @@ export async function queryOlimanager<T = unknown>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${session.accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ query, variables }),
     cache: "no-store", // dati autenticati, evita cache di default di fetch in RSC
