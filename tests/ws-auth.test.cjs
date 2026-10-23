@@ -48,7 +48,11 @@ async function loadWebSocketOptions(env = {}) {
     'body-parser': { json: () => () => {} },
     '@graphql-tools/schema': { makeExecutableSchema: () => ({}) },
     './app/lib/pubsub.js': { pubsub, TOPICS: {} },
+    './app/lib/olimanagerJobEvents.js': {
+      watchOlimanagerJobs: () => ({ async close() {} }),
+    },
     './app/lib/mongodb.js': {
+      getDb: async () => ({}),
       getUsersCollection: async () => users,
       getScanJobsCollection: async () => collection,
       getScanSheetJobsCollection: async () => collection,
