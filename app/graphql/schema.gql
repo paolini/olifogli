@@ -33,10 +33,15 @@ type OlimanagerJobItem {
   _id: ObjectId!
   jobId: ObjectId!
   rowId: ObjectId!
+  rowSurname: String
   sheetId: ObjectId
+  sheetName: String
   status: String!
   attempts: Int!
   checkResult: String
+  competitorCreated: Boolean
+  participantCreated: Boolean
+  multipleCompetitorsMatched: Boolean
   differences: [String!]
   participantId: String
   competitorId: String
@@ -315,6 +320,7 @@ type OlimanagerUpdateExtraFieldsResult {
 
 type Mutation {
   resumeOlimanagerCheck(jobId: ObjectId!): OlimanagerJob!
+  requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
 
   updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User

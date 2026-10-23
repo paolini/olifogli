@@ -55,7 +55,7 @@ test('active job prevents reopening a sheet', async () => {
   assert.equal(writes, 0);
 });
 
-for (const name of ['requestOlimanagerCheck', 'resumeOlimanagerCheck', 'olimanagerJobs', 'olimanagerJobItems']) test(`${name} requires administrator privileges before domain access`, async () => {
+for (const name of ['requestOlimanagerCheck', 'requestOlimanagerMatch', 'resumeOlimanagerCheck', 'olimanagerJobs', 'olimanagerJobItems']) test(`${name} requires administrator privileges before domain access`, async () => {
   const resolver = load('app/graphql/resolvers/olimanagerJobs.ts', {
     '@/app/lib/mongodb': {}, '@/app/lib/olimanagerJobs': {}, '@/app/lib/olimanager': {}, '@/app/lib/olimanagerJobCredentials': {},
     './utils': { async get_authenticated_user() { return { isAdmin: false }; },
@@ -225,6 +225,62 @@ test('MongoDB worker integration', { skip: !integrationUri }, async t => {
     assert.equal(await f.db.collection('olimanager_job_credentials').countDocuments(), 0);
     assert.equal((await f.db.collection('sheets').findOne()).olimanagerJobId, undefined);
     assert.equal(await f.db.collection('rows').countDocuments({ olimanager: { $exists: true } }), 0);
+  });
+
+  await t.test('participant creation persists links atomically, resumes after login and never repeats completed items', async t => {
+    const f = await fixture(t);
+    const endpoint = 'https://provider.invalid/graphql/';
+    const protect = job => ({ _id: job._id, ciphertext: 'test', iv: 'test', tag: 'test', expiresAt: new Date(Date.now() + 60000) });
+    const job = await core.queueOlimanagerJob(f.db, f.transaction, f.user, { sheetIds: [f.sheet._id] }, endpoint, protect, 'match_or_create_participants');
+    assert.equal(job.operation, 'match_or_create_participants');
+    const processed = [];
+    await f.run({ createInspector: async () => async row => {
+      processed.push(row._id.toString());
+      return processed.length === 1
+        ? { result: 'created', participantId: '325', competitorId: '88', contestId: '10', participantCreated: true, competitorCreated: true }
+        : { result: 'needs_login', error: 'Rifare il login' };
+    } });
+    const paused = await f.db.collection('olimanager_jobs').findOne();
+    assert.equal(paused.status, 'needs_login'); assert.equal(paused.succeededRows, 1);
+    const first = await f.db.collection('rows').findOne({ _id: new ObjectId(processed[0]) });
+    assert.equal(first.olimanager.participantId, '325'); assert.equal(first.olimanager.contestId, '10');
+    assert.equal(first.updatedBy, f.user.email); assert.ok(first.updatedOn instanceof Date);
+    await core.resumeOlimanagerCheck(f.db, f.transaction, f.user, job._id, protect, endpoint);
+    let calls = 0;
+    await f.run({ createInspector: async () => async row => {
+      assert.notEqual(row._id.toString(), processed[0]);
+      return ++calls === 1
+        ? { result: 'linked', participantId: '326', competitorId: '89', contestId: '10', multipleCompetitorsMatched: true }
+        : { result: 'absent' };
+    } });
+    const finished = await f.db.collection('olimanager_jobs').findOne();
+    assert.equal(finished.status, 'completed'); assert.equal(finished.succeededRows, 2); assert.equal(finished.skippedRows, 1);
+    assert.equal(await f.db.collection('rows').countDocuments({ 'olimanager.participantId': { $exists: true } }), 2);
+    const linked = await f.db.collection('olimanager_job_items').findOne({ checkResult: 'linked' });
+    assert.equal(linked.participantId, '326'); assert.equal(linked.multipleCompetitorsMatched, true);
+    assert.equal(await f.db.collection('olimanager_job_credentials').countDocuments(), 0);
+    assert.equal((await f.db.collection('sheets').findOne()).olimanagerJobId, undefined);
+    assert.equal(await f.run(), false);
+  });
+
+  await t.test('a lost lease cannot persist a remote creation or count it as completed', async t => {
+    const f = await fixture(t, 1);
+    const endpoint = 'https://provider.invalid/graphql/';
+    const protect = job => ({ _id: job._id, ciphertext: 'test', iv: 'test', tag: 'test', expiresAt: new Date(Date.now() + 60000) });
+    await core.queueOlimanagerJob(f.db, f.transaction, f.user, { sheetIds: [f.sheet._id] }, endpoint, protect, 'match_or_create_participants');
+    let time = Date.now();
+    await f.run({ now: () => new Date(time), createInspector: async () => async () => {
+      time += 61000;
+      return { result: 'created', participantId: '325', competitorId: '88', contestId: '10' };
+    } });
+    assert.equal(await f.db.collection('rows').countDocuments({ olimanager: { $exists: true } }), 0);
+    assert.equal(await f.db.collection('olimanager_job_items').countDocuments({ status: 'pending' }), 1);
+    // Replaying matchOrCreateParticipant may return the participant already created remotely.
+    await f.run({ now: () => new Date(time), createInspector: async () => async () => ({
+      result: 'linked', participantId: '325', competitorId: '88', contestId: '10',
+    }) });
+    assert.equal((await f.db.collection('rows').findOne()).olimanager.participantId, '325');
+    assert.equal((await f.db.collection('olimanager_jobs').findOne()).succeededRows, 1);
   });
 
 });

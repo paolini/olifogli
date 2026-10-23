@@ -25,11 +25,14 @@ export async function ensureJobIndexes(db: Db) {
     await credentials.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 }
 
-export async function queueOlimanagerCheck(db: Db, transaction: Transaction, user: User,
+export async function queueOlimanagerJob(db: Db, transaction: Transaction, user: User,
     targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, endpoint: string,
     protect?: (job: OlimanagerJob) => OlimanagerJobCredential,
+    operation: OlimanagerJob['operation'] = 'check_participants',
 ): Promise<OlimanagerJob> {
     if (!user.isAdmin) throw new Error('non autorizzato')
+    if (!['check_participants', 'match_or_create_participants'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
+    if (operation === 'match_or_create_participants' && !protect) throw new Error('La creazione richiede una delega OAuth.')
     const rowIds = unique(targets.rowIds || []), sheetIds = unique(targets.sheetIds || [])
     if (!rowIds.length && !sheetIds.length) throw new Error('Selezionare almeno una riga o un foglio.')
     const url = new URL(endpoint)
@@ -45,11 +48,11 @@ export async function queueOlimanagerCheck(db: Db, transaction: Transaction, use
         const selectedSheets = await sheets.find({ _id: { $in: affectedSheetIds } }, { session }).toArray()
         if (selectedSheets.length !== affectedSheetIds.length) throw new Error('Uno dei fogli selezionati non esiste più.')
         for (const sheet of selectedSheets) {
-            if (!sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima della verifica.`)
+            if (!sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del lavoro Olimanager.`)
             if (sheet.olimanagerJobId) throw new Error(`Il foglio «${sheet.name}» ha già un lavoro Olimanager attivo.`)
         }
         const job: OlimanagerJob = {
-            _id: new ObjectId(), operation: 'check_participants', checkMode: protect ? 'remote' : 'local', rowIds, sheetIds, affectedSheetIds,
+            _id: new ObjectId(), operation, checkMode: protect ? 'remote' : 'local', rowIds, sheetIds, affectedSheetIds,
             endpoint: url.href, createdBy: user._id, createdAt: new Date(), status: 'queued',
             totalRows: 0, succeededRows: 0, failedRows: 0, skippedRows: 0,
         }
@@ -62,6 +65,8 @@ export async function queueOlimanagerCheck(db: Db, transaction: Transaction, use
         return job
     })
 }
+
+export const queueOlimanagerCheck = queueOlimanagerJob
 
 export async function resumeOlimanagerCheck(db: Db, transaction: Transaction, user: User, jobId: ObjectId,
     protect: (job: OlimanagerJob) => OlimanagerJobCredential, endpoint: string,
@@ -92,12 +97,12 @@ type WorkerOptions = {
     shouldStop?: () => boolean
 }
 
-export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, options: WorkerOptions): Promise<boolean> {
+export async function runNextOlimanagerJob(db: Db, transaction: Transaction, options: WorkerOptions): Promise<boolean> {
     const { jobs, items, rows, sheets, workbooks, users, credentials } = jobCollections(db)
     const now = options.now || (() => new Date())
     // A unique lease per claim prevents an old incarnation of a worker from committing.
     const owner = `${options.workerId}:${new ObjectId()}`
-    const job = await jobs.findOneAndUpdate({ operation: 'check_participants', $or: [
+    const job = await jobs.findOneAndUpdate({ operation: { $in: ['check_participants', 'match_or_create_participants'] }, $or: [
         { status: 'queued' },
         { status: { $in: ['preparing', 'running'] }, leaseExpiresAt: { $lte: now() } },
     ] }, { $set: { status: 'preparing', leaseOwner: owner, leaseExpiresAt: new Date(now().getTime() + LEASE_MS) } },
@@ -194,7 +199,7 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
                             return true
                         }
                         outcomes.push({ item, sheetId: row.sheetId, check,
-                            ...(check.result !== 'matched' && check.result !== 'unmatched' ? { error: check.error || 'Verifica non riuscita.' } : {}),
+                            ...(!['matched', 'unmatched', 'created', 'linked', 'already_linked', 'absent'].includes(check.result) ? { error: check.error || 'Verifica non riuscita.' } : {}),
                         })
                     } else {
                         options.validate(row, sheet, workbook)
@@ -207,12 +212,31 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
             }
             await transaction(async session => {
                 await checkpoint(session)
+                if (job.operation === 'match_or_create_participants') {
+                    for (const { item, check, error } of outcomes) {
+                        if (!error && check && ['created', 'linked'].includes(check.result)) {
+                            if (!check.participantId || !check.contestId) throw new Error('Collegamento Olimanager incompleto.')
+                            const updated = await rows.updateOne({ _id: item.rowId }, { $set: {
+                                'olimanager.participantId': check.participantId,
+                                'olimanager.contestId': check.contestId,
+                                'olimanager.participantCreatedOn': now(),
+                                'olimanager.error': '',
+                                updatedOn: now(), updatedBy: user.email,
+                            } }, { session })
+                            if (!updated.matchedCount) throw new Error('La riga da collegare non esiste più.')
+                        }
+                    }
+                }
                 await items.bulkWrite(outcomes.map(({ item, sheetId, error, check }) => ({ updateOne: {
                     filter: { _id: item._id, jobId: job._id, status: 'pending' },
-                    update: { $set: { status: check?.result === 'unmatched' ? 'skipped' : error ? 'failed' : 'succeeded', finishedAt: now(),
+                    update: { $set: { status: check && ['unmatched', 'absent', 'already_linked'].includes(check.result) ? 'skipped' : error ? 'failed' : 'succeeded', finishedAt: now(),
                         ...(check ? { checkResult: check.result, differences: check.differences || [],
                             ...(check.participantId ? { participantId: check.participantId } : {}),
                             ...(check.competitorId ? { competitorId: check.competitorId } : {}),
+                            ...(job.operation === 'match_or_create_participants' ? {
+                                competitorCreated: !!check.competitorCreated, participantCreated: !!check.participantCreated,
+                                multipleCompetitorsMatched: !!check.multipleCompetitorsMatched,
+                            } : {}),
                         } : {}),
                         ...(sheetId ? { sheetId } : {}), ...(error ? { error } : {}) }, $inc: { attempts: 1 } },
                 } })), { session })
@@ -231,8 +255,12 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
             await jobs.updateOne({ _id: job._id, leaseOwner: owner }, { $set: { leaseExpiresAt: now() } })
             return true
         }
-        await finish('failed', 'Errore interno durante la verifica; il lavoro non ha trasferito dati a Olimanager.')
+        await finish('failed', job.operation === 'check_participants'
+            ? 'Errore interno durante la verifica; il lavoro non ha trasferito dati a Olimanager.'
+            : 'Lavoro interrotto: alcune operazioni potrebbero essere già state eseguite su Olimanager. Controllare gli esiti prima di riprovare.')
         throw error
     }
     return true
 }
+
+export const runNextOlimanagerCheck = runNextOlimanagerJob

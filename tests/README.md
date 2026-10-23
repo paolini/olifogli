@@ -179,3 +179,10 @@ rimozione delle credenziali alla conclusione.
 riservata agli amministratori, ricontrolli i permessi sugli eventi e invii
 soltanto un segnale di aggiornamento. Verifica il filtro dei Change Streams:
 stato e conteggi producono notifiche, i rinnovi della lease sono esclusi.
+
+`olimanager-participant-match.test.cjs` verifica il payload di
+`matchOrCreateParticipant`, OAuth, creazione e abbinamento, assenti, righe non
+valide, link esistenti, abbinamenti multipli ed errori senza esporre dati privati.
+L’integrazione opzionale in `olimanager-jobs.test.cjs` verifica anche la persistenza
+atomica del link e dell’esito, pausa/ripresa OAuth e perdita della lease dopo
+un’operazione remota. Usa solo database locali temporanei, senza chiamate a staging.

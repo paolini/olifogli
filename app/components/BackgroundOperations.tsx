@@ -24,7 +24,10 @@ export default function BackgroundOperations() {
       if (data.data?.olimanagerJobsUpdated && !dialog.current?.open) setUnread(true)
       if (refreshTimer.current === null) refreshTimer.current = setTimeout(() => {
         refreshTimer.current = null
-        void client.refetchQueries({ include: ['OlimanagerJobs', 'OlimanagerJobItems'] }).catch(() => {
+        const include = [...client.getObservableQueries('active').values()]
+          .filter(query => query.queryName && ['OlimanagerJobs', 'OlimanagerJobItems', 'GetRows'].includes(query.queryName))
+          .map(query => query.options.query)
+        void client.refetchQueries({ include }).catch(() => {
           // Query components display their own errors and offer manual refresh.
         })
       }, 500)
@@ -46,6 +49,12 @@ export default function BackgroundOperations() {
     </button>
     <dialog ref={dialog} aria-labelledby="background-operations-title"
       className="fixed left-auto right-4 top-16 m-0 max-h-[80vh] w-[48rem] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border bg-white p-4 text-gray-900 shadow-xl backdrop:bg-black/20"
+      onClick={event => {
+        if (event.target !== event.currentTarget) return
+        const bounds = event.currentTarget.getBoundingClientRect()
+        if (event.clientX < bounds.left || event.clientX > bounds.right ||
+            event.clientY < bounds.top || event.clientY > bounds.bottom) event.currentTarget.close()
+      }}
       onClose={() => setOpen(false)}>
       <div className="flex items-center justify-between gap-4">
         <h2 id="background-operations-title" className="text-lg font-semibold">Operazioni in background</h2>

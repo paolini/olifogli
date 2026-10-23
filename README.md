@@ -328,16 +328,28 @@ error log del proxy possono ancora includere dettagli della richiesta e vanno
 gestiti separatamente. Il logging delle URL delle richieste in sviluppo Next.js
 è disabilitato per non registrare parametri OAuth.
 
-## Worker Olimanager: verifica asincrona dei collegamenti
+## Worker Olimanager: verifica e creazione/abbinamento dei partecipanti
 
 Il worker verifica in sola lettura i collegamenti esistenti e confronta nome,
 cognome, data di nascita, anno di corso e sezione con Olimanager. Controlla anche
 gara e scuola. Le righe senza `participantId` vengono segnalate come non abbinate:
 non cerca nuovi abbinamenti, non crea partecipanti, non invia risultati e non
 modifica le righe del foglio.
-I comandi di trasferimento già esistenti rimangono sincroni.
+Il comando **«Crea/abbina partecipanti in background (Olimanager)»** usa invece
+`matchOrCreateParticipant` per le righe selezionate o per tutti i fogli selezionati.
+Può creare concorrenti e partecipanti su Olimanager. Il risultato viene salvato
+sulla riga locale insieme all’ID gara, nella stessa transazione dell’esito del job.
+Le righe assenti vengono saltate; quelle non valide o criptate producono un errore
+nel dettaglio del lavoro. I collegamenti già presenti vengono verificati in sola
+lettura: non vengono sostituiti né migrati verso un’altra gara. Il pannello distingue
+partecipanti creati, trovati e già collegati, e segnala gli abbinamenti multipli
+restituiti da Olimanager. Non vengono inviati risultati né extra fields.
 
-Un amministratore può scegliere **«Verifica Olimanager in background»** sulle
+Invio risultati e aggiornamento degli extra fields rimangono sincroni.
+Il precedente resolver sincrono di creazione rimane disponibile per compatibilità;
+i pulsanti dell’interfaccia ora accodano il lavoro.
+
+Un amministratore può scegliere **«Verifica Olimanager in background»** oppure la creazione/abbinamento sulle
 righe selezionate di un foglio o sui fogli selezionati della raccolta. Sono
 accettati solo fogli finalizzati (`locked`); la sola chiusura non basta. L’icona **Operazioni in background** nella barra superiore è disponibile agli
 amministratori su tutte le pagine e apre gli ultimi 20 lavori, per tutti i fogli.
@@ -378,7 +390,7 @@ univoco `(jobId, rowId)`. Dopo la preparazione non viene più ricalcolata.
 I job attraversano `queued`, `preparing`, `running` e terminano in `completed`,
 `completed_with_errors` o `failed`. Ogni item conserva stato, tentativi, esito,
 campi anagrafici diversi ed eventuale errore.
-Gli errori di questa verifica restano negli item; non sovrascrivono
+Gli errori dei lavori restano negli item; non sovrascrivono
 `row.olimanager.error`, che riguarda i trasferimenti effettivi.
 
 I fogli vengono riservati al job nell'accodamento e non possono essere sbloccati o riaperti
@@ -403,3 +415,19 @@ Dopo un arresto un altro worker può riprendere il job
 alla scadenza della lease; un arresto regolare la rende subito disponibile.
 Non vengono rieseguiti gli item già completati. Gli indici vengono creati
 idempotentemente all'accodamento e all'avvio del worker.
+
+Per provare la creazione su staging, accedere con scope `api`, finalizzare il foglio,
+selezionare una riga valida non collegata e usare **Crea/abbina partecipanti in
+background**. Riavviare il worker dopo l’aggiornamento del codice; riavviare anche
+il server WebSocket per caricare lo schema aggiornato. Il pannello globale mostra
+il nuovo `participantId`; le righe aperte si aggiornano insieme alle notifiche dei
+lavori. Si può poi lanciare una verifica sul collegamento appena creato.
+La scuola deve essere iscritta all’edizione e, per gare non scolastiche, deve
+esistere una sede compatibile su Olimanager.
+
+L’invocazione remota e la transazione locale non sono atomiche tra loro. Se il worker
+si interrompe dopo la risposta remota ma prima del salvataggio locale, una ripresa
+può richiamare `matchOrCreateParticipant`, che cerca il partecipante già creato.
+Gli item completati non vengono ripetuti; gli errori di rete o di risposta vengono
+segnalati senza retry automatico della riga. Verificare l’esito remoto prima di
+accodare nuovamente una riga fallita.

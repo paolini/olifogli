@@ -18,8 +18,8 @@ type Participant = { pk: number, officialVenue: { contest: { id: number } },
 type QueryData = { users?: { me?: { isStaff: boolean } },
     contests?: { contests: { id: number, edition: { olympiad: { admin: object | null } } }[] },
     participants?: { participants?: { edges: { node: Participant }[] } } }
-class LoginRequired extends Error {}
-class CheckFailed extends Error {}
+export class LoginRequired extends Error {}
+export class CheckFailed extends Error {}
 const text = (value: string | null | undefined) => (value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('it-IT')
 function date(value: string | undefined | null) {
     const match = (value || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
@@ -42,7 +42,7 @@ export function compareParticipant(row: Row, participant: Participant, contestId
         : { ...ids, result: 'matched', differences: [] }
 }
 
-export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlimanagerAccess | null, {
+export function createOlimanagerRequester(job: OlimanagerJob, access: DelegatedOlimanagerAccess | null, {
     endpoint = process.env.OLIMANAGER_GRAPHQL_ENDPOINT, request = fetch, now = () => Date.now(),
     wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)),
 } = {}) {
@@ -52,9 +52,8 @@ export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlima
     if (!['http:', 'https:'].includes(destination.protocol) || destination.username || destination.password || destination.search || destination.hash) {
         throw new Error('Endpoint Olimanager non valido.')
     }
-    const permissions = new Map<number, boolean>()
     let lastRequest: number | null = null
-    async function query(query: string, variables: Record<string, number>): Promise<QueryData> {
+    return async function query<T>(query: string, variables: Record<string, unknown>): Promise<T> {
         if (!access || access.expiresAt * 1000 <= now()) throw new LoginRequired()
         if (lastRequest !== null) await wait(Math.max(0, 250 - (now() - lastRequest)))
         if (access.expiresAt * 1000 <= now()) throw new LoginRequired()
@@ -73,6 +72,14 @@ export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlima
         if (body.errors?.length || !body.data) throw new CheckFailed('La query Olimanager non è riuscita: verificare permessi e compatibilità API.')
         return body.data
     }
+}
+
+export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlimanagerAccess | null,
+    options: Parameters<typeof createOlimanagerRequester>[2] = {},
+) {
+    const request = createOlimanagerRequester(job, access, options)
+    const query = (document: string, variables: Record<string, unknown>) => request<QueryData>(document, variables)
+    const permissions = new Map<number, boolean>()
     return async (row: Row, sheet: Sheet, workbook: Workbook): Promise<OlimanagerCheckResult> => {
         try {
             if (row.encrypted_data) throw new CheckFailed('La riga è criptata: anagrafica non verificabile.')

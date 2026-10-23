@@ -1,5 +1,5 @@
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
-import { requestOlimanagerCheck, resumeOlimanagerCheck, olimanagerJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
+import { requestOlimanagerCheck, requestOlimanagerMatch, resumeOlimanagerCheck, olimanagerJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
 import { Context } from './types'
 import { ObjectId } from 'bson'
 import { ObjectIdType, Timestamp, DataType } from './types'
@@ -124,6 +124,7 @@ export const resolvers: Resolvers = {
 
   Mutation: {
     requestOlimanagerCheck,
+    requestOlimanagerMatch,
     resumeOlimanagerCheck,
     addSheet,
     deleteSheet,
