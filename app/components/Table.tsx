@@ -127,6 +127,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date()) // ultima sincronizzazione con il server
     const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
     const cellEditor = useCellEditor(commitCell, validateCell)
+    const acknowledgedLineKeys = useRef(new Set<string>())
 
     const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
     const moveCursorRef = useRef(moveCursorMutation)
@@ -189,10 +190,12 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
 
     useEffect(() => {
         if (!edit || !schema) return
-        // The server owns correction keys. Save answer edits promptly and drain
-        // edits made during an in-flight request after its acknowledgement.
+        // Save answer edits promptly and drain every acknowledged row, including
+        // ordinary fields on rows that no longer have focus.
         for (const line of tableState.lines) {
-            if (!line.error && !line.saving && Object.keys(line.data).some(name => schema.affectsScore(name))) {
+            if (line.error || line.saving) continue
+            const acknowledged = acknowledgedLineKeys.current.delete(line.key)
+            if (Object.keys(line.data).length > 0 && (acknowledged || Object.keys(line.data).some(name => schema.affectsScore(name)))) {
                 saveLineIfNeeded(line)
             }
         }
@@ -605,6 +608,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     }
 
     function acknowledgeSave(key: string, row: Row, submitted: Data) {
+        acknowledgedLineKeys.current.add(key)
         setTableState(prev => ({ ...prev, lines: prev.lines.map(line => {
             if (line.key !== key) return line
             const remaining = { ...line.data }

@@ -11,7 +11,7 @@ const compiled = new Map();
 
 // Mount the real table/cells. Only network hooks and unrelated toolbar/header UI
 // are replaced; React state, effects, DOM focus and event bubbling are real.
-async function mountTable(t, { edit = true, standardAnswers = false, synced = false, adminEditMode = false, deferPatches = false,
+async function mountTable(t, { edit = true, standardAnswers = false, synced = false, adminEditMode = false, deferPatches = false, deferAdds = false,
   dateOptions = { expectedMinAge: 10, expectedMaxAge: 16 }, competition = false } = {}) {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://table.invalid' });
   const saved = new Map();
@@ -32,6 +32,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   const patches = [];
   const created = [];
   const pendingPatches = [];
+  const pendingAdds = [];
   const context = { contest_year: 2026, absent: () => false,
     permutation_object: { correct: { '2': 'AB' + 'A'.repeat(14) }, questions: { '1': Array.from({ length: 16 }, (_, i) => i + 1) }, answers: { '1': 'ABCDE' },
       points: { correct: 5, wrong: 0, empty: 1, invalid: 0 } } };
@@ -58,6 +59,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
       const row = { _id: new ObjectId(), data: variables.data, updatedOn: new Date(), error: '', anomalies: 0 };
       created.push(row);
       serverRows.set(row._id.toString(), row);
+      if (deferAdds) return new Promise(resolve => pendingAdds.push(() => resolve({ data: { addRow: row } })));
       return { data: { addRow: row } };
     }, response],
     useDeleteRowMutation: () => [async () => { throw new Error('Unexpected row deletion'); }, response],
@@ -154,13 +156,14 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     }
   }
   async function resolvePatch() { await act(async () => pendingPatches.shift()()); }
+  async function resolveAdd() { await act(async () => pendingAdds.shift()()); }
   async function receiveSavedRows() {
     // Apollo can publish a mutation's normalized rows before its promise settles.
     await act(async () => root.render(React.createElement(Table, { ...props, rows: [...serverRows.values()] })));
   }
   async function autosave() { await act(async () => { for (const run of [...intervals.values()]) run(); }); }
   async function blur() { await act(async () => dom.window.document.activeElement.blur()); }
-  return { cell, click, key, change, flushTimers, resolvePatch, receiveSavedRows, autosave, blur, patches, created, schema, context,
+  return { cell, click, key, change, flushTimers, resolvePatch, resolveAdd, receiveSavedRows, autosave, blur, patches, created, schema, context,
     error: () => container.querySelector('[role="alert"]')?.textContent ?? '',
     newRow: () => click(container.querySelector('tbody button')),
     active: () => dom.window.document.activeElement,

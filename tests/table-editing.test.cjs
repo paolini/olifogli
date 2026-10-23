@@ -363,6 +363,31 @@ test('autosave snapshots the cell without replacing its draft or moving the curs
   assertElement(f.active(), f.input());
 });
 
+for (const creating of [false, true]) {
+  test(`pending text edits are drained after ${creating ? 'creation' : 'autosave'} even after leaving the row`, async t => {
+    const f = await mountTable(t, { deferPatches: true, deferAdds: creating });
+    if (creating) await f.newRow();
+    else {
+      await f.click(f.cell('name'));
+      await f.key('F2');
+    }
+    if (creating) await f.key('F2');
+    await f.change('First');
+    await f.autosave();
+    await f.change('Second');
+    await f.key(creating ? 'ArrowUp' : 'ArrowDown');
+    if (creating) await f.resolveAdd();
+    else await f.resolvePatch();
+    assert.equal(f.patches.length, creating ? 1 : 2);
+    assert.equal(f.patches.at(-1).data.name, 'Second');
+    await f.resolvePatch();
+    assert.equal(f.cell('name', creating ? 2 : 0).textContent, 'Second');
+    const count = f.patches.length;
+    await f.autosave();
+    assert.equal(f.patches.length, count);
+  });
+}
+
 test('reverting a field during an in-flight save is retained and saved afterwards', async t => {
   const f = await mountTable(t, { deferPatches: true });
   await f.click(f.cell('name'));
