@@ -76,8 +76,8 @@ export function createOlimanagerRequester(job: OlimanagerJob, access: DelegatedO
 
 export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlimanagerAccess | null,
     options: Parameters<typeof createOlimanagerRequester>[2] = {},
+    request = createOlimanagerRequester(job, access, options),
 ) {
-    const request = createOlimanagerRequester(job, access, options)
     const query = (document: string, variables: Record<string, unknown>) => request<QueryData>(document, variables)
     const permissions = new Map<number, boolean>()
     return async (row: Row, sheet: Sheet, workbook: Workbook): Promise<OlimanagerCheckResult> => {

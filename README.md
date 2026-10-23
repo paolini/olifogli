@@ -328,7 +328,7 @@ error log del proxy possono ancora includere dettagli della richiesta e vanno
 gestiti separatamente. Il logging delle URL delle richieste in sviluppo Next.js
 è disabilitato per non registrare parametri OAuth.
 
-## Worker Olimanager: verifica e creazione/abbinamento dei partecipanti
+## Worker Olimanager: verifiche, partecipanti e risultati
 
 Il worker verifica in sola lettura i collegamenti esistenti e confronta nome,
 cognome, data di nascita, anno di corso e sezione con Olimanager. Controlla anche
@@ -345,9 +345,22 @@ lettura: non vengono sostituiti né migrati verso un’altra gara. Il pannello d
 partecipanti creati, trovati e già collegati, e segnala gli abbinamenti multipli
 restituiti da Olimanager. Non vengono inviati risultati né extra fields.
 
-Invio risultati e aggiornamento degli extra fields rimangono sincroni.
-Il precedente resolver sincrono di creazione rimane disponibile per compatibilità;
-i pulsanti dell’interfaccia ora accodano il lavoro.
+Il comando **«Invia risultati in background (Olimanager)»** accoda invece un lavoro
+`update_results`. Per ogni riga valida non assente controlla il collegamento remoto
+(gara, scuola e anagrafica), estrae i punteggi dei singoli esercizi con lo schema
+del foglio e verifica che la loro somma corrisponda al totale locale. Le righe non
+collegate producono un errore: occorre prima creare/abbinare il partecipante.
+La mutation `bulkUpdateResults` invia una riga alla volta, con punteggi assoluti:
+anche una ripetizione dopo un’interruzione sovrascrive gli stessi valori.
+Solo dopo `BulkUpdateResultsSuccess` il worker registra
+`row.olimanager.resultsUpdatedOn`, l’esito del job e l’eventuale incremento di
+`sheet.nSyncedRows` nella stessa transazione MongoDB. Righe già sincronizzate
+possono essere reinviate, senza incrementare nuovamente il contatore. Errori e
+righe assenti non vengono marcati come sincronizzati.
+
+L’aggiornamento degli extra fields rimane sincrono.
+I precedenti resolver sincroni di creazione e invio risultati rimangono disponibili
+per compatibilità; i pulsanti dell’interfaccia ora accodano i lavori.
 
 Un amministratore può scegliere **«Verifica Olimanager in background»** oppure la creazione/abbinamento sulle
 righe selezionate di un foglio o sui fogli selezionati della raccolta. Sono
@@ -431,3 +444,11 @@ può richiamare `matchOrCreateParticipant`, che cerca il partecipante già creat
 Gli item completati non vengono ripetuti; gli errori di rete o di risposta vengono
 segnalati senza retry automatico della riga. Verificare l’esito remoto prima di
 accodare nuovamente una riga fallita.
+
+Per provare l’invio risultati su staging, riavviare il worker dopo l’aggiornamento,
+accedere con scope `api` e scegliere una riga valida, finalizzata e già collegata.
+Usare **Invia risultati in background (Olimanager)** e controllare **Risultati inviati**
+nel pannello. Confrontare il totale del partecipante su staging e la data di
+sincronizzazione locale. I dettagli, le righe e i conteggi dei fogli aperti vengono
+ricaricati dalle notifiche dei lavori. Un token scaduto usa lo stesso percorso
+`needs_login` e **Riprendi con la sessione attuale** delle altre operazioni.

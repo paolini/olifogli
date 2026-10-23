@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { unprotectJobAccess } from './app/lib/olimanagerJobCredentials'
+import { createResultsSender } from './app/lib/olimanagerResultsTransfer'
 import { createParticipantMatcher } from './app/lib/olimanagerParticipantMatch'
 import { createRemoteInspector } from './app/lib/olimanagerRemoteCheck'
 import { loadEnvConfig } from '@next/env'
@@ -20,7 +21,7 @@ process.on('SIGTERM', () => { stopping = true })
 
 async function main() {
     if (values.help) {
-        console.log('Uso: npm run olimanager:worker -- [--once]\nVerifica collegamenti o crea/abbina partecipanti su Olimanager secondo il lavoro accodato. --once elabora al massimo un lavoro.')
+        console.log('Uso: npm run olimanager:worker -- [--once]\nVerifica collegamenti, crea/abbina partecipanti o invia risultati su Olimanager secondo il lavoro accodato. --once elabora al massimo un lavoro.')
         return
     }
     const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli')
@@ -34,13 +35,14 @@ async function main() {
             finally { await session.endSession() }
         }
         const workerId = `${hostname()}:${process.pid}:${randomUUID()}`
-        console.log('Worker Olimanager avviato: verifiche e creazione/abbinamento partecipanti.')
+        console.log('Worker Olimanager avviato: verifiche, creazione/abbinamento partecipanti e invio risultati.')
         do {
             const processed = await runNextOlimanagerJob(db, transaction, {
                 workerId, validate: validateOlimanagerJobRow, shouldStop: () => stopping,
                 createInspector: async job => {
                     const credential = await db.collection<import('./app/lib/models').OlimanagerJobCredential>('olimanager_job_credentials').findOne({ _id: job._id })
                     const access = credential ? unprotectJobAccess(job, credential) : null
+                    if (job.operation === 'update_results') return createResultsSender(job, access)
                     return job.operation === 'match_or_create_participants' ? createParticipantMatcher(job, access) : createRemoteInspector(job, access)
                 },
             })

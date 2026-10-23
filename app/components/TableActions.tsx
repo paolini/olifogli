@@ -1,5 +1,5 @@
 import { ObjectId } from "bson"
-import { CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useOlimanagerBulkUpdateResultsMutation, useRequestOlimanagerCheckMutation, useRequestOlimanagerMatchMutation, useCreateSheetsMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, useOlimanagerUpdateExtraFieldsMutation, MutationRequestOlimanagerCheckArgs, MutationRequestOlimanagerMatchArgs, MutationCreateSheetsArgs, MutationOlimanagerBulkUpdateResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs, MutationOlimanagerUpdateExtraFieldsArgs } from "../graphql/generated"
+import { CreateSheetsMutation, DeleteRowsMutation, PatchRowMutation, RequestScanSheetGenerationMutation, Row, Sheet, useDeleteRowsMutation, useRequestOlimanagerResultsMutation, useRequestOlimanagerCheckMutation, useRequestOlimanagerMatchMutation, useCreateSheetsMutation, usePatchRowMutation, useRequestScanSheetGenerationMutation, useOlimanagerUpdateExtraFieldsMutation, MutationRequestOlimanagerCheckArgs, MutationRequestOlimanagerMatchArgs, MutationCreateSheetsArgs, MutationRequestOlimanagerResultsArgs, MutationRequestScanSheetGenerationArgs, MutationPatchRowArgs, MutationDeleteRowsArgs, MutationOlimanagerUpdateExtraFieldsArgs } from "../graphql/generated"
 import Schema from "../lib/schema/Schema"
 import Checkboxes, { CheckboxesState } from "./TableCheckboxes"
 import { TableState } from "./Table"
@@ -81,7 +81,7 @@ type TableActionContext = TableActionInput & {
     requestOlimanagerMatch: (args: { variables: MutationRequestOlimanagerMatchArgs }) => Promise<unknown>,
     requestOlimanagerCheck: (args: { variables: MutationRequestOlimanagerCheckArgs }) => Promise<unknown>,
     createSheets: (args: { variables: MutationCreateSheetsArgs }) => Promise<FetchResult<CreateSheetsMutation>>,
-    olimanagerBulkUpdateResults: (args: { variables: MutationOlimanagerBulkUpdateResultsArgs }) => Promise<unknown>,
+    requestOlimanagerResults: (args: { variables: MutationRequestOlimanagerResultsArgs }) => Promise<unknown>,
     olimanagerUpdateExtraFields: (args: { variables: MutationOlimanagerUpdateExtraFieldsArgs }) => Promise<unknown>,
     loading: boolean,
     errors: ApolloError[],
@@ -98,7 +98,7 @@ export function useTableActionsContext({profile, sheet, schema, checkboxesState,
   const [requestOlimanagerMatch, { loading: matchLoading, error: matchError }] = useRequestOlimanagerMatchMutation({ refetchQueries: ['OlimanagerJobs'] })
   const [requestOlimanagerCheck, { loading: checkLoading, error: checkError }] = useRequestOlimanagerCheckMutation({ refetchQueries: ['OlimanagerJobs'] })
   const [createSheets, { loading: createSheetsLoading, error: createSheetsError }] = useCreateSheetsMutation()
-  const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateLoading, error: olimanagerBulkUpdateError }] = useOlimanagerBulkUpdateResultsMutation()
+  const [requestOlimanagerResults, { loading: resultsLoading, error: resultsError }] = useRequestOlimanagerResultsMutation({ refetchQueries: ['OlimanagerJobs'] })
   const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError }] = useOlimanagerUpdateExtraFieldsMutation()
 
   return {
@@ -112,10 +112,10 @@ export function useTableActionsContext({profile, sheet, schema, checkboxesState,
             createSheets,
             requestOlimanagerCheck,
             requestOlimanagerMatch,
-            olimanagerBulkUpdateResults,
+            requestOlimanagerResults,
             olimanagerUpdateExtraFields,
-            loading: matchLoading || checkLoading || scanSheetLoading || createSheetsLoading || olimanagerBulkUpdateLoading || olimanagerUpdateExtraFieldsLoading || patchLoading || deleteLoading,
-            errors: [matchError,checkError,olimanagerBulkUpdateError,olimanagerUpdateExtraFieldsError,scanSheetError,createSheetsError].filter(e => e !== undefined),
+            loading: matchLoading || checkLoading || scanSheetLoading || createSheetsLoading || resultsLoading || olimanagerUpdateExtraFieldsLoading || patchLoading || deleteLoading,
+            errors: [matchError,checkError,resultsError,olimanagerUpdateExtraFieldsError,scanSheetError,createSheetsError].filter(e => e !== undefined),
         },
 
         csvDownload,
@@ -181,8 +181,8 @@ const actions: Record<string, Action> = {
   },
   'update_scores': {
     hidden: ctx => !ctx.profile?.isAdmin,
-    label: '⚙ Aggiorna risultati (Olimanager)',
-    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
+    label: '⚙ Invia risultati in background (Olimanager)',
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || ctx.mutations.loading,
     handler: handleOlimanagerUpdateScores
   },
   'udpate_extra_fields': {
@@ -374,14 +374,15 @@ async function handleOlimanagerCreateParticipants(ctx: TableActionContext) {
 }
 
 async function handleOlimanagerUpdateScores(ctx: TableActionContext) {
-  const valid_rows = filterValidRowsAndConfirm(ctx)
-  if (!valid_rows || !confirm(`Aggiornare i risultati su Olimanager per ${valid_rows.length} righe selezionate?`)) {
+  const lines = ctx.tableState.lines.filter(line => ctx.tableState.selectedLineKeys.has(line.key))
+  if (lines.some(line => !line.row || line.saving || Object.keys(line.data).length > 0)) {
+    alert('Salva le righe selezionate prima di accodare l’invio dei risultati.')
     return
   }
-  const ids = valid_rows.map(row => new ObjectId(row._id))
-
-  const res = await ctx.mutations.olimanagerBulkUpdateResults({ variables: { rowIds: ids } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean}[]}}
-  alert(res.data?.olimanagerBulkUpdateResults ? 'Risultati aggiornati con successo' : 'Errore durante l\'aggiornamento dei risultati: '+JSON.stringify(res))
+  if (!lines.length || !confirm(`Inviare i risultati a Olimanager per ${lines.length} righe? Il lavoro proseguirà in background.`)) return
+  try {
+    await ctx.mutations.requestOlimanagerResults({ variables: { rowIds: lines.map(line => new ObjectId(line.row!._id)) } })
+  } catch { /* Apollo exposes the error in TableActionsErrors. */ }
 }
 
 async function handleOlimanagerUpdateExtraFields(ctx: TableActionContext) {
@@ -527,5 +528,11 @@ async function handleAnonymizeNames(ctx: TableActionContext) {
 const REQUEST_OLIMANAGER_MATCH = gql`
   mutation RequestOlimanagerMatch($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
     requestOlimanagerMatch(rowIds: $rowIds, sheetIds: $sheetIds) { _id operation status }
+  }
+`
+
+const REQUEST_OLIMANAGER_RESULTS = gql`
+  mutation RequestOlimanagerResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+    requestOlimanagerResults(rowIds: $rowIds, sheetIds: $sheetIds) { _id operation status }
   }
 `

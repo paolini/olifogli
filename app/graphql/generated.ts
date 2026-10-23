@@ -114,6 +114,7 @@ export type Mutation = {
   patchRow?: Maybe<Row>;
   requestOlimanagerCheck: OlimanagerJob;
   requestOlimanagerMatch: OlimanagerJob;
+  requestOlimanagerResults: OlimanagerJob;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
   resumeOlimanagerCheck: OlimanagerJob;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
@@ -268,6 +269,12 @@ export type MutationRequestOlimanagerCheckArgs = {
 
 
 export type MutationRequestOlimanagerMatchArgs = {
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
+};
+
+
+export type MutationRequestOlimanagerResultsArgs = {
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
 };
@@ -1073,6 +1080,14 @@ export type RequestOlimanagerMatchMutationVariables = Exact<{
 
 
 export type RequestOlimanagerMatchMutation = { __typename?: 'Mutation', requestOlimanagerMatch: { __typename?: 'OlimanagerJob', _id: ObjectId, operation: string, status: string } };
+
+export type RequestOlimanagerResultsMutationVariables = Exact<{
+  rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+  sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
+}>;
+
+
+export type RequestOlimanagerResultsMutation = { __typename?: 'Mutation', requestOlimanagerResults: { __typename?: 'OlimanagerJob', _id: ObjectId, operation: string, status: string } };
 
 export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2736,6 +2751,42 @@ export function useRequestOlimanagerMatchMutation(baseOptions?: Apollo.MutationH
 export type RequestOlimanagerMatchMutationHookResult = ReturnType<typeof useRequestOlimanagerMatchMutation>;
 export type RequestOlimanagerMatchMutationResult = Apollo.MutationResult<RequestOlimanagerMatchMutation>;
 export type RequestOlimanagerMatchMutationOptions = Apollo.BaseMutationOptions<RequestOlimanagerMatchMutation, RequestOlimanagerMatchMutationVariables>;
+export const RequestOlimanagerResultsDocument = gql`
+    mutation RequestOlimanagerResults($rowIds: [ObjectId!], $sheetIds: [ObjectId!]) {
+  requestOlimanagerResults(rowIds: $rowIds, sheetIds: $sheetIds) {
+    _id
+    operation
+    status
+  }
+}
+    `;
+export type RequestOlimanagerResultsMutationFn = Apollo.MutationFunction<RequestOlimanagerResultsMutation, RequestOlimanagerResultsMutationVariables>;
+
+/**
+ * __useRequestOlimanagerResultsMutation__
+ *
+ * To run a mutation, you first call `useRequestOlimanagerResultsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestOlimanagerResultsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestOlimanagerResultsMutation, { data, loading, error }] = useRequestOlimanagerResultsMutation({
+ *   variables: {
+ *      rowIds: // value for 'rowIds'
+ *      sheetIds: // value for 'sheetIds'
+ *   },
+ * });
+ */
+export function useRequestOlimanagerResultsMutation(baseOptions?: Apollo.MutationHookOptions<RequestOlimanagerResultsMutation, RequestOlimanagerResultsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RequestOlimanagerResultsMutation, RequestOlimanagerResultsMutationVariables>(RequestOlimanagerResultsDocument, options);
+      }
+export type RequestOlimanagerResultsMutationHookResult = ReturnType<typeof useRequestOlimanagerResultsMutation>;
+export type RequestOlimanagerResultsMutationResult = Apollo.MutationResult<RequestOlimanagerResultsMutation>;
+export type RequestOlimanagerResultsMutationOptions = Apollo.BaseMutationOptions<RequestOlimanagerResultsMutation, RequestOlimanagerResultsMutationVariables>;
 export const GetUsersDocument = gql`
     query GetUsers {
   users {
@@ -3993,6 +4044,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerCheckArgs>>;
   requestOlimanagerMatch?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerMatchArgs>>;
+  requestOlimanagerResults?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerResultsArgs>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
   resumeOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, RequireFields<MutationResumeOlimanagerCheckArgs, 'jobId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;

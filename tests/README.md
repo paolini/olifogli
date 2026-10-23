@@ -186,3 +186,9 @@ valide, link esistenti, abbinamenti multipli ed errori senza esporre dati privat
 L’integrazione opzionale in `olimanager-jobs.test.cjs` verifica anche la persistenza
 atomica del link e dell’esito, pausa/ripresa OAuth e perdita della lease dopo
 un’operazione remota. Usa solo database locali temporanei, senza chiamate a staging.
+
+`olimanager-results-transfer.test.cjs` verifica il payload dei punteggi assoluti,
+il controllo preventivo del collegamento e del totale, righe assenti/non valide,
+permessi, scadenza OAuth e rifiuti del provider. L’integrazione opzionale con
+MongoDB verifica data di sincronizzazione, conteggio esatto anche al reinvio,
+pausa/ripresa, perdita della lease e rollback di metadati/esiti/contatori.

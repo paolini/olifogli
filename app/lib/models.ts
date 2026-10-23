@@ -144,7 +144,7 @@ export type Setting = {
 // Legacy check jobs without checkMode keep their local-only behavior.
 export type OlimanagerJob = {
     _id: ObjectId
-    operation: 'check_participants' | 'match_or_create_participants'
+    operation: 'check_participants' | 'match_or_create_participants' | 'update_results'
     checkMode?: 'local' | 'remote'
     rowIds: ObjectId[]
     sheetIds: ObjectId[]
@@ -184,7 +184,7 @@ export type OlimanagerJobItem = {
 }
 
 export type OlimanagerCheckResult = {
-    result: 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login' | 'created' | 'linked' | 'already_linked' | 'absent'
+    result: 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login' | 'created' | 'linked' | 'already_linked' | 'absent' | 'results_updated'
     contestId?: string
     competitorCreated?: boolean
     participantCreated?: boolean

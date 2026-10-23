@@ -320,6 +320,7 @@ type OlimanagerUpdateExtraFieldsResult {
 
 type Mutation {
   resumeOlimanagerCheck(jobId: ObjectId!): OlimanagerJob!
+  requestOlimanagerResults(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
 

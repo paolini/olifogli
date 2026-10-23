@@ -4,14 +4,15 @@ import { ObjectId } from 'mongodb'
 import { getDb, withTransaction, getOlimanagerJobsCollection, getOlimanagerJobItemsCollection, getSheetsCollection, getRowsCollection } from '@/app/lib/mongodb'
 import { queueOlimanagerJob, resumeOlimanagerCheck as resumeJob } from '@/app/lib/olimanagerJobs'
 import { check_admin, get_authenticated_user } from './utils'
+import type { OlimanagerJob } from '@/app/lib/models'
 import type { Context } from '../types'
 
-async function requestJob(targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, context: Context, operation: 'check_participants' | 'match_or_create_participants') {
+async function requestJob(targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, context: Context, operation: OlimanagerJob['operation']) {
     const user = await get_authenticated_user(context)
     check_admin(user)
     const endpoint = process.env.OLIMANAGER_GRAPHQL_ENDPOINT
     if (!endpoint) throw new Error('Configurare OLIMANAGER_GRAPHQL_ENDPOINT prima di accodare il lavoro.')
-    if (!context.req) throw new Error('La verifica remota richiede una sessione OAuth HTTP.')
+    if (!context.req) throw new Error('Il lavoro Olimanager richiede una sessione OAuth HTTP.')
     const access = await getOlimanagerJobAccess(context.req)
     return queueOlimanagerJob(await getDb(), withTransaction, user, targets, endpoint, job => protectJobAccess(job, access), operation)
 }
@@ -22,6 +23,10 @@ export async function requestOlimanagerCheck(_: unknown, targets: { rowIds?: Obj
 
 export async function requestOlimanagerMatch(_: unknown, targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, context: Context) {
     return requestJob(targets, context, 'match_or_create_participants')
+}
+
+export async function requestOlimanagerResults(_: unknown, targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, context: Context) {
+    return requestJob(targets, context, 'update_results')
 }
 
 export async function olimanagerJobs(_: unknown, { sheetIds }: { sheetIds?: ObjectId[] | null }, context: Context) {

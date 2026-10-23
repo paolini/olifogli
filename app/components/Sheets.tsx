@@ -7,7 +7,7 @@ import FilterIcon from './FilterIcon'
 import Error from '@/app/components/Error'
 import { schemas } from '../lib/schema'
 import { gql } from '@apollo/client'
-import { Sheet, useDeleteSheetsMutation, useRequestOlimanagerCheckMutation, useRequestOlimanagerMatchMutation, GetSheetsQuery, useOlimanagerBulkUpdateResultsMutation, useOlimanagerUpdateExtraFieldsMutation } from '../graphql/generated';
+import { Sheet, useDeleteSheetsMutation, useRequestOlimanagerCheckMutation, useRequestOlimanagerMatchMutation, GetSheetsQuery, useRequestOlimanagerResultsMutation, useOlimanagerUpdateExtraFieldsMutation } from '../graphql/generated';
 import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SheetsCreation';
@@ -73,7 +73,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [requestOlimanagerCheck, { loading: checkingOlimanager, error: checkOlimanagerError }] = useRequestOlimanagerCheckMutation({
         refetchQueries: ['OlimanagerJobs'],
     })
-    const [olimanagerBulkUpdateResults, { loading: olimanagerBulkUpdateResultsLoading, error: olimanagerBulkUpdateResultsError }] = useOlimanagerBulkUpdateResultsMutation()
+    const [requestOlimanagerResults, { loading: resultsLoading, error: resultsError }] = useRequestOlimanagerResultsMutation({ refetchQueries: ['OlimanagerJobs'] })
     const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError}] = useOlimanagerUpdateExtraFieldsMutation()
     const [cryptSheetsMutation, { loading: cryptSheetsLoading, error: cryptSheetsError }] = useMutation(CRYPT_SHEETS)
     const [decryptSheetsMutation, { loading: decryptSheetsLoading, error: decryptSheetsError }] = useMutation(DECRYPT_SHEETS)
@@ -244,7 +244,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={checkOlimanagerError} />
         <Error error={matchOlimanagerError} />
 
-        <Error error={olimanagerBulkUpdateResultsError} />
+        <Error error={resultsError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
                 <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={() => deleteSelectedSheets()}>
@@ -269,8 +269,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 <Button disabled={selectedIds.length === 0 || matchingOlimanager} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
                     ⚙ Crea/abbina partecipanti in background (Olimanager)
                 </Button>
-                <Button disabled={selectedIds.length === 0 || olimanagerBulkUpdateResultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
-                    ⚙ Invia risultati (Olimanager)
+                <Button disabled={selectedIds.length === 0 || resultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
+                    ⚙ Invia risultati in background (Olimanager)
                 </Button>
                 <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => cryptSelectedSheets()}>
                     ⚙ Cripta
@@ -478,14 +478,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     }
 
     async function handleOlimanagerBulkUpdateResults() {
-        if (!confirm(`Inviare i risultati di tutti i partecipanti ${pluralize(selectedIds.length, 'del foglio selezionato', 'dei % fogli selezionati')} a Olimanager?`)) {
-            return
-        }
-        const res = await olimanagerBulkUpdateResults({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } }) as {data?: {olimanagerBulkUpdateResults?: {success: boolean, error?: string}[]}}
-        const success = res.data?.olimanagerBulkUpdateResults
-        if (success) alert("Risultati inviati con successo a Olimanager")
-        else alert("Errore durante l'invio dei risultati a Olimanager")
-        refetch()
+        if (!confirm(`Inviare i risultati a Olimanager per i ${selectedIds.length} fogli selezionati? Il lavoro proseguirà in background.`)) return
+        try {
+            await requestOlimanagerResults({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
+        } catch { /* Apollo exposes the error above. */ }
     }
 
     function handleCheckboxClick(id: ObjectId, e: React.ChangeEvent<HTMLInputElement>) {

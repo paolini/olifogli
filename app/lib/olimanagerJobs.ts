@@ -31,8 +31,8 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
     operation: OlimanagerJob['operation'] = 'check_participants',
 ): Promise<OlimanagerJob> {
     if (!user.isAdmin) throw new Error('non autorizzato')
-    if (!['check_participants', 'match_or_create_participants'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
-    if (operation === 'match_or_create_participants' && !protect) throw new Error('La creazione richiede una delega OAuth.')
+    if (!['check_participants', 'match_or_create_participants', 'update_results'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
+    if (operation !== 'check_participants' && !protect) throw new Error('Il trasferimento richiede una delega OAuth.')
     const rowIds = unique(targets.rowIds || []), sheetIds = unique(targets.sheetIds || [])
     if (!rowIds.length && !sheetIds.length) throw new Error('Selezionare almeno una riga o un foglio.')
     const url = new URL(endpoint)
@@ -102,7 +102,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
     const now = options.now || (() => new Date())
     // A unique lease per claim prevents an old incarnation of a worker from committing.
     const owner = `${options.workerId}:${new ObjectId()}`
-    const job = await jobs.findOneAndUpdate({ operation: { $in: ['check_participants', 'match_or_create_participants'] }, $or: [
+    const job = await jobs.findOneAndUpdate({ operation: { $in: ['check_participants', 'match_or_create_participants', 'update_results'] }, $or: [
         { status: 'queued' },
         { status: { $in: ['preparing', 'running'] }, leaseExpiresAt: { $lte: now() } },
     ] }, { $set: { status: 'preparing', leaseOwner: owner, leaseExpiresAt: new Date(now().getTime() + LEASE_MS) } },
@@ -199,7 +199,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                             return true
                         }
                         outcomes.push({ item, sheetId: row.sheetId, check,
-                            ...(!['matched', 'unmatched', 'created', 'linked', 'already_linked', 'absent'].includes(check.result) ? { error: check.error || 'Verifica non riuscita.' } : {}),
+                            ...(!['matched', 'unmatched', 'created', 'linked', 'already_linked', 'absent', 'results_updated'].includes(check.result) ? { error: check.error || 'Verifica non riuscita.' } : {}),
                         })
                     } else {
                         options.validate(row, sheet, workbook)
@@ -224,6 +224,26 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                                 updatedOn: now(), updatedBy: user.email,
                             } }, { session })
                             if (!updated.matchedCount) throw new Error('La riga da collegare non esiste più.')
+                        }
+                    }
+                }
+                if (job.operation === 'update_results') {
+                    for (const { item, check, error } of outcomes) {
+                        if (error || check?.result !== 'results_updated') continue
+                        const row = await rows.findOne({ _id: item.rowId }, { session })
+                        if (!row?.olimanager || !check.participantId || !check.contestId || row.olimanager.participantId !== check.participantId ||
+                            (row.olimanager.contestId && row.olimanager.contestId !== check.contestId)) {
+                            throw new Error('Il collegamento della riga è cambiato durante il trasferimento.')
+                        }
+                        const syncedOn = now()
+                        await rows.updateOne({ _id: item.rowId }, { $set: {
+                            'olimanager.resultsUpdatedOn': syncedOn, 'olimanager.error': '',
+                            updatedOn: syncedOn, updatedBy: user.email,
+                        } }, { session })
+                        if (!row.olimanager.resultsUpdatedOn) {
+                            const updated = await sheets.updateOne({ _id: row.sheetId, olimanagerJobId: job._id },
+                                { $inc: { nSyncedRows: 1 } }, { session })
+                            if (!updated.matchedCount) throw new Error('Il foglio non è più riservato al lavoro.')
                         }
                     }
                 }

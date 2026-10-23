@@ -55,7 +55,7 @@ test('active job prevents reopening a sheet', async () => {
   assert.equal(writes, 0);
 });
 
-for (const name of ['requestOlimanagerCheck', 'requestOlimanagerMatch', 'resumeOlimanagerCheck', 'olimanagerJobs', 'olimanagerJobItems']) test(`${name} requires administrator privileges before domain access`, async () => {
+for (const name of ['requestOlimanagerCheck', 'requestOlimanagerMatch', 'requestOlimanagerResults', 'resumeOlimanagerCheck', 'olimanagerJobs', 'olimanagerJobItems']) test(`${name} requires administrator privileges before domain access`, async () => {
   const resolver = load('app/graphql/resolvers/olimanagerJobs.ts', {
     '@/app/lib/mongodb': {}, '@/app/lib/olimanagerJobs': {}, '@/app/lib/olimanager': {}, '@/app/lib/olimanagerJobCredentials': {},
     './utils': { async get_authenticated_user() { return { isAdmin: false }; },
@@ -281,6 +281,79 @@ test('MongoDB worker integration', { skip: !integrationUri }, async t => {
     }) });
     assert.equal((await f.db.collection('rows').findOne()).olimanager.participantId, '325');
     assert.equal((await f.db.collection('olimanager_jobs').findOne()).succeededRows, 1);
+  });
+
+  async function resultsFixture(t, count = 3) {
+    const f = await fixture(t, count);
+    await f.db.collection('sheets').updateOne({}, { $set: { nSyncedRows: 0 } });
+    for (const [index, row] of f.rows.entries()) {
+      await f.db.collection('rows').updateOne({ _id: row._id }, { $set: { olimanager: { participantId: String(326 + index), contestId: '10', error: '' } } });
+    }
+    const endpoint = 'https://provider.invalid/graphql/';
+    const protect = job => ({ _id: job._id, ciphertext: 'test', iv: 'test', tag: 'test', expiresAt: new Date(Date.now() + 60000) });
+    const queueResults = targets => core.queueOlimanagerJob(f.db, f.transaction, f.user, targets, endpoint, protect, 'update_results');
+    return { ...f, endpoint, protect, queueResults };
+  }
+  const resultsSuccess = row => ({ result: 'results_updated', participantId: row.olimanager.participantId, contestId: '10' });
+
+  await t.test('results update persists synchronization once, pauses for login and resumes pending rows with per-row failures', async t => {
+    const f = await resultsFixture(t);
+    const job = await f.queueResults({ sheetIds: [f.sheet._id] });
+    let calls = 0, sentRowId;
+    await f.run({ createInspector: async () => async row => {
+      if (++calls === 1) { sentRowId = row._id; return resultsSuccess(row); }
+      return { result: 'needs_login', error: 'Rifare il login' };
+    } });
+    assert.equal((await f.db.collection('olimanager_jobs').findOne()).status, 'needs_login');
+    const first = await f.db.collection('rows').findOne({ _id: sentRowId });
+    assert.ok(first.olimanager.resultsUpdatedOn instanceof Date);
+    assert.equal(first.updatedBy, f.user.email);
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 1);
+    await core.resumeOlimanagerCheck(f.db, f.transaction, f.user, job._id, f.protect, f.endpoint);
+    let resumed = 0;
+    await f.run({ createInspector: async () => async row => {
+      assert.ok(!row._id.equals(sentRowId));
+      return ++resumed === 1 ? { result: 'unverifiable', error: 'Risultati rifiutati' } : { result: 'absent' };
+    } });
+    const finished = await f.db.collection('olimanager_jobs').findOne();
+    assert.equal(finished.status, 'completed_with_errors');
+    assert.equal(finished.succeededRows, 1); assert.equal(finished.failedRows, 1); assert.equal(finished.skippedRows, 1);
+    assert.equal(await f.db.collection('rows').countDocuments({ 'olimanager.resultsUpdatedOn': { $exists: true } }), 1);
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 1);
+    assert.equal((await f.db.collection('sheets').findOne()).olimanagerJobId, undefined);
+    assert.equal(await f.db.collection('olimanager_job_credentials').countDocuments(), 0);
+    await f.queueResults({ rowIds: [sentRowId] });
+    await f.run({ createInspector: async () => async row => resultsSuccess(row) });
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 1, 'resending a synchronized row must not increment the counter');
+    assert.equal(await f.run(), false);
+  });
+
+  await t.test('results replay after a lost lease cannot double-count synchronization', async t => {
+    const f = await resultsFixture(t, 1);
+    await f.queueResults({ sheetIds: [f.sheet._id] });
+    let time = Date.now(), sent = 0;
+    await f.run({ now: () => new Date(time), createInspector: async () => async row => {
+      sent++; time += 61000; return resultsSuccess(row);
+    } });
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 0);
+    assert.equal((await f.db.collection('rows').findOne()).olimanager.resultsUpdatedOn, undefined);
+    assert.equal(await f.db.collection('olimanager_job_items').countDocuments({ status: 'pending' }), 1);
+    await f.run({ now: () => new Date(time), createInspector: async () => async row => { sent++; return resultsSuccess(row); } });
+    assert.equal(sent, 2);
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 1);
+    assert.equal((await f.db.collection('olimanager_jobs').findOne()).succeededRows, 1);
+    assert.ok((await f.db.collection('rows').findOne()).olimanager.resultsUpdatedOn instanceof Date);
+  });
+
+  await t.test('results metadata and item outcomes roll back together when the synchronization counter cannot be updated', async t => {
+    const f = await resultsFixture(t, 1);
+    await f.queueResults({ sheetIds: [f.sheet._id] });
+    await f.db.collection('sheets').updateOne({}, { $set: { nSyncedRows: 'invalid' } });
+    await assert.rejects(f.run({ createInspector: async () => async row => resultsSuccess(row) }));
+    assert.equal((await f.db.collection('rows').findOne()).olimanager.resultsUpdatedOn, undefined);
+    assert.equal((await f.db.collection('olimanager_job_items').findOne()).status, 'pending');
+    assert.equal((await f.db.collection('olimanager_jobs').findOne()).succeededRows, 0);
+    assert.equal((await f.db.collection('olimanager_jobs').findOne()).status, 'failed');
   });
 
 });
