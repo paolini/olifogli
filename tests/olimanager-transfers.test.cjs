@@ -7,7 +7,7 @@ const ts = require('typescript');
 const { ObjectId } = require('mongodb');
 const { buildSchema, parse, validate } = require('graphql');
 
-function fixture({ admin = true, remoteFailure = false, scopeDenied = false, finalized = true } = {}) {
+function fixture({ admin = true, remoteFailure = false, scopeDenied = false, finalized = true, contestId = 10 } = {}) {
   const rowId = new ObjectId(), sheetId = new ObjectId(), workbookId = new ObjectId();
   const req = { privateRequest: true };
   const calls = { remote: [], writes: [], domain: 0 };
@@ -21,10 +21,10 @@ function fixture({ admin = true, remoteFailure = false, scopeDenied = false, fin
     async getRowsCollection() { calls.domain++; return rows; },
     async getSheetsCollection() { calls.domain++; return { async findOne() { return sheet; }, async updateOne() {} }; },
     async getWorkbooksCollection() { calls.domain++; return { async findOne() { return { _id: workbookId,
-      commonData: { olimanager_contest_id: '10', olimanager_taglia_field_id: '7' } }; } }; },
+      commonData: { olimanager_contest_id: String(contestId), olimanager_taglia_field_id: '7' } }; } }; },
   };
   const schemas = { test: {
-    validationContext() { return { contest_id: 10, school_external_id: () => 'TEST0001' }; },
+    validationContext() { return { contest_id: contestId, school_external_id: () => 'TEST0001' }; },
     extract_olimanager_results() { return [{ participantId: 12, problemIndex: 1, score: 5 }]; },
   } };
   const cache = new Map();
@@ -66,6 +66,22 @@ function fixture({ admin = true, remoteFailure = false, scopeDenied = false, fin
 }
 
 const resolvers = ['olimanagerCreateParticipant', 'olimanagerBulkUpdateResults', 'olimanagerUpdateExtraFields'];
+for (const contestId of [10, 42]) {
+  test(`extra-field lookup uses the workbook contest ${contestId}`, async () => {
+    const f = fixture({ contestId });
+    f.row.olimanager = { participantId: '12', contestId: String(contestId) };
+    const result = await f.load('app/graphql/resolvers/olimanagerUpdateExtraFields.ts').default(null, { rowIds: [f.rowId] }, f.context);
+    assert.equal(result[0].success, true);
+    const lookup = f.calls.remote.find(call => call.query.includes('ParticipantsExtraFields'));
+    assert.equal(lookup.variables.contestId, contestId);
+    assert.equal(lookup.variables.participant_id, 12);
+    assert.match(lookup.query, /contestId:\s*\$contestId/);
+    const write = f.calls.remote.find(call => call.query.includes('updateExtraFieldEntry'));
+    assert.equal(write.variables.participantId, 12);
+    assert.equal(write.variables.extraFieldId, 7);
+    assert.equal(write.variables.value, 'M');
+  });
+}
 for (const resolver of resolvers) {
   test(`${resolver} uses the calling administrator's OAuth request, without login credentials`, async () => {
     const f = fixture();

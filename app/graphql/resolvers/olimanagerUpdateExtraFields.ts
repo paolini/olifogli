@@ -163,7 +163,7 @@ async function syncDataWithOlimanager(
         return {success: true, skipped: true}
       }
 
-      const result = await getParticipantExtraField(api, row_participant_id, taglia_field_id)
+      const result = await getParticipantExtraField(api, Number(contest_id), row_participant_id, taglia_field_id)
 
       if (result?.success) {
         if (result.value && result.value !== '') {
@@ -187,9 +187,9 @@ async function syncDataWithOlimanager(
       }
 }
 
-const query_extra_field = `query ParticipantsExtraFields($participant_id: Int) {
+const query_extra_field = `query ParticipantsExtraFields($contestId: Int!, $participant_id: Int) {
   participants {
-    participants(contestId: 27, filters: {id: $participant_id}) {
+    participants(contestId: $contestId, filters: {id: $participant_id}) {
       edges {
         node {
           id
@@ -210,9 +210,10 @@ const query_extra_field = `query ParticipantsExtraFields($participant_id: Int) {
   }
 }`
 
-async function getParticipantExtraField(api: OlimanagerApi, participant_id: number, extra_field_id: string) {
+async function getParticipantExtraField(api: OlimanagerApi, contestId: number, participant_id: number, extra_field_id: string) {
   try {
     const variables = {
+      contestId,
       participant_id,
     }
 
