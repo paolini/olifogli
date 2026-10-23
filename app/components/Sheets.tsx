@@ -1,4 +1,3 @@
-import OlimanagerJobStatus from './OlimanagerJobStatus'
 import React, { useState } from 'react';
 import { ObjectId } from 'bson';
 
@@ -244,7 +243,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={updateSheetError} />
         <Error error={checkOlimanagerError} />
         <Error error={olimanagerCreateParticipantError} />
-        {profile?.isAdmin && <OlimanagerJobStatus sheetIds={sheets.map(sheet => sheet._id)} />}
 
         <Error error={olimanagerBulkUpdateResultsError} />
         { profile?.isAdmin && 

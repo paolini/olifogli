@@ -232,3 +232,25 @@ test('public session reports granted or unknown scope without trusting requested
     assert.ok(!JSON.stringify(session).includes(ACCESS_TOKEN));
   }
 });
+
+test('worker delegation requires a granted api scope and a finite future expiry', async () => {
+  const { getOlimanagerJobAccess } = load('app/lib/olimanager.ts', {
+    'next-auth/jwt': { getToken: params => require('next-auth/jwt').getToken({ ...params, secureCookie: false }) },
+  });
+  for (const extra of [
+    { accessTokenHasApiScope: true, accessTokenExpiresAt: 2000000000 },
+    { accessTokenHasApiScope: true },
+    { accessTokenHasApiScope: false, accessTokenExpiresAt: 2000000000 },
+    { accessTokenHasApiScope: true, accessTokenExpiresAt: 1 },
+  ]) {
+    const cookie = await encode({ secret: SECRET, token: { accessToken: ACCESS_TOKEN, ...extra } });
+    const req = new NextRequest('http://app.example.invalid/api/graphql', {
+      headers: { cookie: `next-auth.session-token=${cookie}` },
+    });
+    if (extra.accessTokenHasApiScope && extra.accessTokenExpiresAt === 2000000000) {
+      const delegated = await getOlimanagerJobAccess(req);
+      assert.equal(delegated.accessToken, ACCESS_TOKEN);
+      assert.equal(delegated.expiresAt, 2000000000);
+    } else await assert.rejects(getOlimanagerJobAccess(req), err => err.status === 401 || err.status === 403);
+  }
+});

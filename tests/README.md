@@ -167,3 +167,15 @@ OLIMANAGER_WORKER_TEST_URI=mongodb://127.0.0.1:27017/ node --test tests/olimanag
 Accetta solo un server locale. Crea database temporanei con nomi unici
 `olifogli_worker_test_*` e li elimina alla fine; non usa il database applicativo
 né contatta Olimanager. Il server deve supportare transazioni MongoDB.
+
+`olimanager-remote-check.test.cjs` verifica con risposte GraphQL simulate il
+confronto anagrafico, i permessi sulla gara, gli esiti non verificabili e la
+scadenza OAuth. Verifica inoltre cifratura e vincolo della delega a job, utente ed
+endpoint. Non contatta Olimanager. La suite MongoDB opzionale verifica anche
+pausa per nuovo login, rinnovo della delega, ripresa delle sole righe pendenti e
+rimozione delle credenziali alla conclusione.
+
+`olimanager-job-events.test.cjs` verifica che la subscription dei lavori sia
+riservata agli amministratori, ricontrolli i permessi sugli eventi e invii
+soltanto un segnale di aggiornamento. Verifica il filtro dei Change Streams:
+stato e conteggi producono notifiche, i rinnovi della lease sono esclusi.

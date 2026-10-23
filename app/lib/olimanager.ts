@@ -39,6 +39,15 @@ export async function requireOlimanagerApiSession(req: NextRequest): Promise<voi
   checkOlimanagerToken(await getToken({ req, secret: process.env.NEXTAUTH_SECRET }))
 }
 
+export async function getOlimanagerJobAccess(req: NextRequest): Promise<{ accessToken: string, expiresAt: number }> {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  checkOlimanagerToken(token)
+  if (typeof token!.accessTokenExpiresAt !== 'number' || !Number.isFinite(token!.accessTokenExpiresAt)) {
+    throw new OlimanagerGraphQLError(401, 'Scadenza del token non disponibile. Esci e accedi nuovamente prima di accodare una verifica.')
+  }
+  return { accessToken: token!.accessToken as string, expiresAt: token!.accessTokenExpiresAt }
+}
+
 export async function queryOlimanager<T = unknown>(
   req: NextRequest,
   query: string,

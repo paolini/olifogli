@@ -1,5 +1,5 @@
 import { ObjectId, type ClientSession, type Db, type Filter } from 'mongodb'
-import type { OlimanagerJob, OlimanagerJobItem, Row, Sheet, Workbook, User } from './models'
+import type { OlimanagerJob, OlimanagerJobItem, OlimanagerJobCredential, OlimanagerCheckResult, Row, Sheet, Workbook, User } from './models'
 
 export type Transaction = <T>(fn: (session: ClientSession) => Promise<T>) => Promise<T>
 const LEASE_MS = 60_000
@@ -10,21 +10,24 @@ export function jobCollections(db: Db) {
     return {
         jobs: db.collection<OlimanagerJob>('olimanager_jobs'),
         items: db.collection<OlimanagerJobItem>('olimanager_job_items'),
+        credentials: db.collection<OlimanagerJobCredential>('olimanager_job_credentials'),
         rows: db.collection<Row>('rows'), sheets: db.collection<Sheet>('sheets'),
         workbooks: db.collection<Workbook>('workbooks'), users: db.collection<User>('users'),
     }
 }
 
 export async function ensureJobIndexes(db: Db) {
-    const { jobs, items } = jobCollections(db)
+    const { jobs, items, credentials } = jobCollections(db)
     await jobs.createIndex({ status: 1, leaseExpiresAt: 1, createdAt: 1 })
     await jobs.createIndex({ affectedSheetIds: 1, createdAt: -1 })
     await items.createIndex({ jobId: 1, rowId: 1 }, { unique: true })
     await items.createIndex({ jobId: 1, status: 1, _id: 1 })
+    await credentials.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 }
 
 export async function queueOlimanagerCheck(db: Db, transaction: Transaction, user: User,
     targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, endpoint: string,
+    protect?: (job: OlimanagerJob) => OlimanagerJobCredential,
 ): Promise<OlimanagerJob> {
     if (!user.isAdmin) throw new Error('non autorizzato')
     const rowIds = unique(targets.rowIds || []), sheetIds = unique(targets.sheetIds || [])
@@ -34,7 +37,7 @@ export async function queueOlimanagerCheck(db: Db, transaction: Transaction, use
         throw new Error('OLIMANAGER_GRAPHQL_ENDPOINT non valido.')
     }
     await ensureJobIndexes(db)
-    const { jobs, rows, sheets } = jobCollections(db)
+    const { jobs, rows, sheets, credentials } = jobCollections(db)
     return transaction(async session => {
         const explicitRows = await rows.find({ _id: { $in: rowIds } }, { session, projection: { sheetId: 1 } }).toArray()
         if (explicitRows.length !== rowIds.length) throw new Error('Una delle righe selezionate non esiste più.')
@@ -46,16 +49,35 @@ export async function queueOlimanagerCheck(db: Db, transaction: Transaction, use
             if (sheet.olimanagerJobId) throw new Error(`Il foglio «${sheet.name}» ha già un lavoro Olimanager attivo.`)
         }
         const job: OlimanagerJob = {
-            _id: new ObjectId(), operation: 'check_participants', rowIds, sheetIds, affectedSheetIds,
+            _id: new ObjectId(), operation: 'check_participants', checkMode: protect ? 'remote' : 'local', rowIds, sheetIds, affectedSheetIds,
             endpoint: url.href, createdBy: user._id, createdAt: new Date(), status: 'queued',
-            totalRows: 0, succeededRows: 0, failedRows: 0,
+            totalRows: 0, succeededRows: 0, failedRows: 0, skippedRows: 0,
         }
         // Lock sheets and enqueue atomically, also serializing concurrent queue/reopen requests.
         const locked = await sheets.updateMany({ _id: { $in: affectedSheetIds }, locked: true,
             olimanagerJobId: { $exists: false } }, { $set: { olimanagerJobId: job._id } }, { session })
         if (locked.matchedCount !== affectedSheetIds.length) throw new Error('La selezione è cambiata: riprovare.')
+        if (protect) await credentials.insertOne(protect(job), { session })
         await jobs.insertOne(job, { session })
         return job
+    })
+}
+
+export async function resumeOlimanagerCheck(db: Db, transaction: Transaction, user: User, jobId: ObjectId,
+    protect: (job: OlimanagerJob) => OlimanagerJobCredential, endpoint: string,
+): Promise<OlimanagerJob> {
+    if (!user.isAdmin) throw new Error('non autorizzato')
+    const { jobs, credentials } = jobCollections(db)
+    return transaction(async session => {
+        const job = await jobs.findOne({ _id: jobId }, { session })
+        if (!job || job.checkMode !== 'remote' || job.status !== 'needs_login') throw new Error('Il lavoro non è in attesa di un nuovo login.')
+        if (!job.createdBy.equals(user._id)) throw new Error('Solo l’amministratore che ha avviato il lavoro può rinnovare la delega OAuth.')
+        if (job.endpoint !== new URL(endpoint).href) throw new Error('L’endpoint configurato è diverso da quello del lavoro.')
+        await credentials.replaceOne({ _id: job._id }, protect(job), { upsert: true, session })
+        await jobs.updateOne({ _id: job._id, status: 'needs_login' }, {
+            $set: { status: 'queued' }, $unset: { error: '', leaseOwner: '', leaseExpiresAt: '' },
+        }, { session })
+        return { ...job, status: 'queued', error: undefined }
     })
 }
 
@@ -65,12 +87,13 @@ class WorkerStopped extends Error {}
 type WorkerOptions = {
     workerId: string
     validate: (row: Row, sheet: Sheet, workbook: Workbook) => void
+    createInspector?: (job: OlimanagerJob) => Promise<(row: Row, sheet: Sheet, workbook: Workbook) => Promise<OlimanagerCheckResult>>
     now?: () => Date
     shouldStop?: () => boolean
 }
 
 export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, options: WorkerOptions): Promise<boolean> {
-    const { jobs, items, rows, sheets, workbooks, users } = jobCollections(db)
+    const { jobs, items, rows, sheets, workbooks, users, credentials } = jobCollections(db)
     const now = options.now || (() => new Date())
     // A unique lease per claim prevents an old incarnation of a worker from committing.
     const owner = `${options.workerId}:${new ObjectId()}`
@@ -94,6 +117,7 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
                 $set: { status, finishedAt: now(), ...(error ? { error } : {}) },
                 $unset: { leaseOwner: '', leaseExpiresAt: '' },
             }, { session })
+            await credentials.deleteOne({ _id: job!._id }, { session })
             await sheets.updateMany({ olimanagerJobId: job!._id }, { $unset: { olimanagerJobId: '' } }, { session })
         })
     }
@@ -104,6 +128,8 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
             await finish('failed', 'L’utente che ha richiesto il lavoro non è più amministratore.')
             return true
         }
+        const inspect = job.checkMode === 'remote' ? await options.createInspector?.(job) : null
+        if (job.checkMode === 'remote' && !inspect) throw new Error('Verifica remota non supportata da questa versione del worker.')
         if (!job.preparedAt) {
             const selection: Filter<Row> = { $or: [
                 { _id: { $in: job.rowIds } }, { sheetId: { $in: job.sheetIds } },
@@ -141,9 +167,9 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
 
         while (true) {
             checkStop()
-            const batch = await items.find({ jobId: job._id, status: 'pending' }).sort({ _id: 1 }).limit(BATCH_SIZE).toArray()
+            const batch = await items.find({ jobId: job._id, status: 'pending' }).sort({ _id: 1 }).limit(inspect ? 1 : BATCH_SIZE).toArray()
             if (!batch.length) break
-            const outcomes: { item: OlimanagerJobItem, sheetId?: ObjectId, error?: string }[] = []
+            const outcomes: { item: OlimanagerJobItem, sheetId?: ObjectId, error?: string, check?: OlimanagerCheckResult }[] = []
             for (const item of batch) {
                 try {
                     const row = await rows.findOne({ _id: item.rowId })
@@ -154,23 +180,47 @@ export async function runNextOlimanagerCheck(db: Db, transaction: Transaction, o
                     if (!sheet.olimanagerJobId?.equals(job._id)) throw new Error('Il foglio non è riservato a questo lavoro.')
                     const workbook = await workbooks.findOne({ _id: sheet.workbookId })
                     if (!workbook) throw new Error('La raccolta non esiste più.')
-                    options.validate(row, sheet, workbook)
-                    outcomes.push({ item, sheetId: row.sheetId })
+                    if (inspect) {
+                        await transaction(session => checkpoint(session))
+                        const check = await inspect(row, sheet, workbook)
+                        if (check.result === 'needs_login') {
+                            await transaction(async session => {
+                                await checkpoint(session)
+                                await jobs.updateOne({ _id: job._id, leaseOwner: owner }, {
+                                    $set: { status: 'needs_login', error: check.error }, $unset: { leaseOwner: '', leaseExpiresAt: '' },
+                                }, { session })
+                                await credentials.deleteOne({ _id: job._id }, { session })
+                            })
+                            return true
+                        }
+                        outcomes.push({ item, sheetId: row.sheetId, check,
+                            ...(check.result !== 'matched' && check.result !== 'unmatched' ? { error: check.error || 'Verifica non riuscita.' } : {}),
+                        })
+                    } else {
+                        options.validate(row, sheet, workbook)
+                        outcomes.push({ item, sheetId: row.sheetId })
+                    }
                 } catch (error) {
+                    if (error instanceof LeaseLost) throw error
                     outcomes.push({ item, sheetId: item.sheetId, error: error instanceof Error ? error.message : 'Verifica fallita.' })
                 }
             }
             await transaction(async session => {
                 await checkpoint(session)
-                await items.bulkWrite(outcomes.map(({ item, sheetId, error }) => ({ updateOne: {
+                await items.bulkWrite(outcomes.map(({ item, sheetId, error, check }) => ({ updateOne: {
                     filter: { _id: item._id, jobId: job._id, status: 'pending' },
-                    update: { $set: { status: error ? 'failed' : 'succeeded', finishedAt: now(),
+                    update: { $set: { status: check?.result === 'unmatched' ? 'skipped' : error ? 'failed' : 'succeeded', finishedAt: now(),
+                        ...(check ? { checkResult: check.result, differences: check.differences || [],
+                            ...(check.participantId ? { participantId: check.participantId } : {}),
+                            ...(check.competitorId ? { competitorId: check.competitorId } : {}),
+                        } : {}),
                         ...(sheetId ? { sheetId } : {}), ...(error ? { error } : {}) }, $inc: { attempts: 1 } },
                 } })), { session })
                 // Recompute from durable item state: retries cannot double-count progress.
                 const succeededRows = await items.countDocuments({ jobId: job._id, status: 'succeeded' }, { session })
                 const failedRows = await items.countDocuments({ jobId: job._id, status: 'failed' }, { session })
-                await checkpoint(session, { succeededRows, failedRows })
+                const skippedRows = await items.countDocuments({ jobId: job._id, status: 'skipped' }, { session })
+                await checkpoint(session, { succeededRows, failedRows, skippedRows })
             })
         }
         const failedRows = await items.countDocuments({ jobId: job._id, status: 'failed' })

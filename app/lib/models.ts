@@ -141,20 +141,22 @@ export type Setting = {
     updatedOn: Date
 }
 
-// First worker operation is a local check; it never transfers data to Olimanager.
+// Checks are read-only; legacy jobs without checkMode keep their local-only behavior.
 export type OlimanagerJob = {
     _id: ObjectId
     operation: 'check_participants'
+    checkMode?: 'local' | 'remote'
     rowIds: ObjectId[]
     sheetIds: ObjectId[]
     affectedSheetIds: ObjectId[]
     endpoint: string
     createdBy: ObjectId
     createdAt: Date
-    status: 'queued' | 'preparing' | 'running' | 'completed' | 'completed_with_errors' | 'failed'
+    status: 'queued' | 'preparing' | 'running' | 'completed' | 'completed_with_errors' | 'failed' | 'needs_login'
     totalRows: number
     succeededRows: number
     failedRows: number
+    skippedRows?: number
     preparedAt?: Date
     startedAt?: Date
     finishedAt?: Date
@@ -168,8 +170,29 @@ export type OlimanagerJobItem = {
     jobId: ObjectId
     rowId: ObjectId
     sheetId?: ObjectId
-    status: 'pending' | 'succeeded' | 'failed'
+    status: 'pending' | 'succeeded' | 'failed' | 'skipped'
+    checkResult?: OlimanagerCheckResult['result']
+    differences?: string[]
+    participantId?: string
+    competitorId?: string
     attempts: number
     error?: string
     finishedAt?: Date
+}
+
+export type OlimanagerCheckResult = {
+    result: 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login'
+    error?: string
+    differences?: string[]
+    participantId?: string
+    competitorId?: string
+}
+
+// Private collection, never exposed through GraphQL or websocket payloads.
+export type OlimanagerJobCredential = {
+    _id: ObjectId
+    ciphertext: string
+    iv: string
+    tag: string
+    expiresAt: Date
 }

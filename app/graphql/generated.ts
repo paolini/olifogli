@@ -114,6 +114,7 @@ export type Mutation = {
   patchRow?: Maybe<Row>;
   requestOlimanagerCheck: OlimanagerJob;
   requestScanSheetGeneration?: Maybe<Scalars['Boolean']['output']>;
+  resumeOlimanagerCheck: OlimanagerJob;
   unlockSheet?: Maybe<Scalars['Boolean']['output']>;
   updateSetting: Setting;
   updateSheet?: Maybe<Scalars['Boolean']['output']>;
@@ -271,6 +272,11 @@ export type MutationRequestScanSheetGenerationArgs = {
 };
 
 
+export type MutationResumeOlimanagerCheckArgs = {
+  jobId: Scalars['ObjectId']['input'];
+};
+
+
 export type MutationUnlockSheetArgs = {
   _id: Scalars['ObjectId']['input'];
 };
@@ -330,6 +336,7 @@ export type OlimanagerCreateResult = {
 export type OlimanagerJob = {
   __typename?: 'OlimanagerJob';
   _id: Scalars['ObjectId']['output'];
+  checkMode?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Timestamp']['output'];
   createdBy: Scalars['ObjectId']['output'];
   endpoint: Scalars['String']['output'];
@@ -339,6 +346,7 @@ export type OlimanagerJob = {
   operation: Scalars['String']['output'];
   rowIds: Array<Scalars['ObjectId']['output']>;
   sheetIds: Array<Scalars['ObjectId']['output']>;
+  skippedRows?: Maybe<Scalars['Int']['output']>;
   startedAt?: Maybe<Scalars['Timestamp']['output']>;
   status: Scalars['String']['output'];
   succeededRows: Scalars['Int']['output'];
@@ -349,9 +357,13 @@ export type OlimanagerJobItem = {
   __typename?: 'OlimanagerJobItem';
   _id: Scalars['ObjectId']['output'];
   attempts: Scalars['Int']['output'];
+  checkResult?: Maybe<Scalars['String']['output']>;
+  competitorId?: Maybe<Scalars['String']['output']>;
+  differences?: Maybe<Array<Scalars['String']['output']>>;
   error?: Maybe<Scalars['String']['output']>;
   finishedAt?: Maybe<Scalars['Timestamp']['output']>;
   jobId: Scalars['ObjectId']['output'];
+  participantId?: Maybe<Scalars['String']['output']>;
   rowId: Scalars['ObjectId']['output'];
   sheetId?: Maybe<Scalars['ObjectId']['output']>;
   status: Scalars['String']['output'];
@@ -651,6 +663,7 @@ export enum SheetState {
 export type Subscription = {
   __typename?: 'Subscription';
   cursorChanged: UserCursor;
+  olimanagerJobsUpdated: Scalars['Boolean']['output'];
   rowChanged: Row;
   rowsDeleted: Array<Scalars['ObjectId']['output']>;
   scanJobUpdated: Scalars['Boolean']['output'];
@@ -745,6 +758,11 @@ export type Workbook = {
   sheetsCount?: Maybe<Scalars['Int']['output']>;
 };
 
+export type OlimanagerJobsUpdatedSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OlimanagerJobsUpdatedSubscription = { __typename?: 'Subscription', olimanagerJobsUpdated: boolean };
+
 export type AddRowsMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
   columns: Array<Scalars['String']['input']> | Scalars['String']['input'];
@@ -774,7 +792,7 @@ export type OlimanagerJobsQueryVariables = Exact<{
 }>;
 
 
-export type OlimanagerJobsQuery = { __typename?: 'Query', olimanagerJobs: Array<{ __typename?: 'OlimanagerJob', _id: ObjectId, status: string, totalRows: number, succeededRows: number, failedRows: number, createdAt: Date, error?: string | null }> };
+export type OlimanagerJobsQuery = { __typename?: 'Query', olimanagerJobs: Array<{ __typename?: 'OlimanagerJob', _id: ObjectId, checkMode?: string | null, status: string, totalRows: number, succeededRows: number, failedRows: number, skippedRows?: number | null, createdAt: Date, error?: string | null }> };
 
 export type OlimanagerJobItemsQueryVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
@@ -783,7 +801,14 @@ export type OlimanagerJobItemsQueryVariables = Exact<{
 }>;
 
 
-export type OlimanagerJobItemsQuery = { __typename?: 'Query', olimanagerJobItems: Array<{ __typename?: 'OlimanagerJobItem', _id: ObjectId, rowId: ObjectId, sheetId?: ObjectId | null, status: string, attempts: number, error?: string | null }> };
+export type OlimanagerJobItemsQuery = { __typename?: 'Query', olimanagerJobItems: Array<{ __typename?: 'OlimanagerJobItem', _id: ObjectId, rowId: ObjectId, sheetId?: ObjectId | null, status: string, attempts: number, error?: string | null, checkResult?: string | null, differences?: Array<string> | null, participantId?: string | null, competitorId?: string | null }> };
+
+export type ResumeOlimanagerCheckMutationVariables = Exact<{
+  jobId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type ResumeOlimanagerCheckMutation = { __typename?: 'Mutation', resumeOlimanagerCheck: { __typename?: 'OlimanagerJob', _id: ObjectId, status: string } };
 
 export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1208,6 +1233,33 @@ export type GetConfigQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetConfigQuery = { __typename?: 'Query', config?: { __typename?: 'Config', OLIMANAGER_URL?: string | null } | null };
 
 
+export const OlimanagerJobsUpdatedDocument = gql`
+    subscription OlimanagerJobsUpdated {
+  olimanagerJobsUpdated
+}
+    `;
+
+/**
+ * __useOlimanagerJobsUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useOlimanagerJobsUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerJobsUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOlimanagerJobsUpdatedSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useOlimanagerJobsUpdatedSubscription(baseOptions?: Apollo.SubscriptionHookOptions<OlimanagerJobsUpdatedSubscription, OlimanagerJobsUpdatedSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OlimanagerJobsUpdatedSubscription, OlimanagerJobsUpdatedSubscriptionVariables>(OlimanagerJobsUpdatedDocument, options);
+      }
+export type OlimanagerJobsUpdatedSubscriptionHookResult = ReturnType<typeof useOlimanagerJobsUpdatedSubscription>;
+export type OlimanagerJobsUpdatedSubscriptionResult = Apollo.SubscriptionResult<OlimanagerJobsUpdatedSubscription>;
 export const AddRowsDocument = gql`
     mutation addRows($sheetId: ObjectId!, $columns: [String!]!, $rows: [[String!]!]!) {
   addRows(sheetId: $sheetId, columns: $columns, rows: $rows)
@@ -1327,10 +1379,12 @@ export const OlimanagerJobsDocument = gql`
     query OlimanagerJobs($sheetIds: [ObjectId!]) {
   olimanagerJobs(sheetIds: $sheetIds) {
     _id
+    checkMode
     status
     totalRows
     succeededRows
     failedRows
+    skippedRows
     createdAt
     error
   }
@@ -1378,6 +1432,10 @@ export const OlimanagerJobItemsDocument = gql`
     status
     attempts
     error
+    checkResult
+    differences
+    participantId
+    competitorId
   }
 }
     `;
@@ -1416,6 +1474,40 @@ export type OlimanagerJobItemsQueryHookResult = ReturnType<typeof useOlimanagerJ
 export type OlimanagerJobItemsLazyQueryHookResult = ReturnType<typeof useOlimanagerJobItemsLazyQuery>;
 export type OlimanagerJobItemsSuspenseQueryHookResult = ReturnType<typeof useOlimanagerJobItemsSuspenseQuery>;
 export type OlimanagerJobItemsQueryResult = Apollo.QueryResult<OlimanagerJobItemsQuery, OlimanagerJobItemsQueryVariables>;
+export const ResumeOlimanagerCheckDocument = gql`
+    mutation ResumeOlimanagerCheck($jobId: ObjectId!) {
+  resumeOlimanagerCheck(jobId: $jobId) {
+    _id
+    status
+  }
+}
+    `;
+export type ResumeOlimanagerCheckMutationFn = Apollo.MutationFunction<ResumeOlimanagerCheckMutation, ResumeOlimanagerCheckMutationVariables>;
+
+/**
+ * __useResumeOlimanagerCheckMutation__
+ *
+ * To run a mutation, you first call `useResumeOlimanagerCheckMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResumeOlimanagerCheckMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resumeOlimanagerCheckMutation, { data, loading, error }] = useResumeOlimanagerCheckMutation({
+ *   variables: {
+ *      jobId: // value for 'jobId'
+ *   },
+ * });
+ */
+export function useResumeOlimanagerCheckMutation(baseOptions?: Apollo.MutationHookOptions<ResumeOlimanagerCheckMutation, ResumeOlimanagerCheckMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ResumeOlimanagerCheckMutation, ResumeOlimanagerCheckMutationVariables>(ResumeOlimanagerCheckDocument, options);
+      }
+export type ResumeOlimanagerCheckMutationHookResult = ReturnType<typeof useResumeOlimanagerCheckMutation>;
+export type ResumeOlimanagerCheckMutationResult = Apollo.MutationResult<ResumeOlimanagerCheckMutation>;
+export type ResumeOlimanagerCheckMutationOptions = Apollo.BaseMutationOptions<ResumeOlimanagerCheckMutation, ResumeOlimanagerCheckMutationVariables>;
 export const ScanJobsDocument = gql`
     query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
@@ -3839,6 +3931,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   requestOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerCheckArgs>>;
   requestScanSheetGeneration?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRequestScanSheetGenerationArgs, 'sheetId'>>;
+  resumeOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, RequireFields<MutationResumeOlimanagerCheckArgs, 'jobId'>>;
   unlockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlockSheetArgs, '_id'>>;
   updateSetting?: Resolver<ResolversTypes['Setting'], ParentType, ContextType, RequireFields<MutationUpdateSettingArgs, 'key' | 'value'>>;
   updateSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUpdateSheetArgs, '_id'>>;
@@ -3863,6 +3956,7 @@ export type OlimanagerCreateResultResolvers<ContextType = any, ParentType extend
 
 export type OlimanagerJobResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerJob'] = ResolversParentTypes['OlimanagerJob']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  checkMode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   createdBy?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   endpoint?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -3872,6 +3966,7 @@ export type OlimanagerJobResolvers<ContextType = any, ParentType extends Resolve
   operation?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   rowIds?: Resolver<Array<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   sheetIds?: Resolver<Array<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  skippedRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   startedAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   succeededRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -3882,9 +3977,13 @@ export type OlimanagerJobResolvers<ContextType = any, ParentType extends Resolve
 export type OlimanagerJobItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerJobItem'] = ResolversParentTypes['OlimanagerJobItem']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   attempts?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  checkResult?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  competitorId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  differences?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   finishedAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   jobId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rowId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -4061,6 +4160,7 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
 
 export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
   cursorChanged?: SubscriptionResolver<ResolversTypes['UserCursor'], "cursorChanged", ParentType, ContextType, RequireFields<SubscriptionCursorChangedArgs, 'sheetId'>>;
+  olimanagerJobsUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "olimanagerJobsUpdated", ParentType, ContextType>;
   rowChanged?: SubscriptionResolver<ResolversTypes['Row'], "rowChanged", ParentType, ContextType, RequireFields<SubscriptionRowChangedArgs, 'sheetId'>>;
   rowsDeleted?: SubscriptionResolver<Array<ResolversTypes['ObjectId']>, "rowsDeleted", ParentType, ContextType, RequireFields<SubscriptionRowsDeletedArgs, 'sheetId'>>;
   scanJobUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "scanJobUpdated", ParentType, ContextType, RequireFields<SubscriptionScanJobUpdatedArgs, 'sheetId'>>;

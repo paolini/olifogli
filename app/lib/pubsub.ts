@@ -9,6 +9,7 @@ const subscriber = new Redis(redisUrl)
 export const pubsub = new RedisPubSub({ publisher, subscriber })
 
 export const TOPICS = {
+	OLIMANAGER_JOBS_UPDATED: 'OLIMANAGER_JOBS_UPDATED',
 	ROW_CHANGED: (sheetId: string) => `ROW_CHANGED.${sheetId}`,
 	ROWS_DELETED: (sheetId: string) => `ROWS_DELETED.${sheetId}`,
 	SHEET_UPDATED: (sheetId: string) => `SHEET_UPDATED.${sheetId}`,

@@ -328,21 +328,33 @@ error log del proxy possono ancora includere dettagli della richiesta e vanno
 gestiti separatamente. Il logging delle URL delle richieste in sviluppo Next.js
 è disabilitato per non registrare parametri OAuth.
 
-## Worker Olimanager: prima verifica asincrona
+## Worker Olimanager: verifica asincrona dei collegamenti
 
-Il primo passo del worker è una **verifica locale**: non crea partecipanti e non
-invia risultati, non usa token OAuth e non modifica le righe del foglio.
+Il worker verifica in sola lettura i collegamenti esistenti e confronta nome,
+cognome, data di nascita, anno di corso e sezione con Olimanager. Controlla anche
+gara e scuola. Le righe senza `participantId` vengono segnalate come non abbinate:
+non cerca nuovi abbinamenti, non crea partecipanti, non invia risultati e non
+modifica le righe del foglio.
 I comandi di trasferimento già esistenti rimangono sincroni.
 
 Un amministratore può scegliere **«Verifica Olimanager in background»** sulle
 righe selezionate di un foglio o sui fogli selezionati della raccolta. Sono
-accettati solo fogli finalizzati (`locked`); la sola chiusura non basta. La pagina **Verifiche Olimanager** mostra gli ultimi
-20 lavori per quei fogli; **Aggiorna stato** ricarica i progressi e **Dettagli
-righe** mostra gli esiti, con paginazione. Non ci sono ancora notifiche WebSocket.
+accettati solo fogli finalizzati (`locked`); la sola chiusura non basta. L’icona **Operazioni in background** nella barra superiore è disponibile agli
+amministratori su tutte le pagine e apre gli ultimi 20 lavori, per tutti i fogli.
+Il server WebSocket osserva `olimanager_jobs` con MongoDB Change Streams e invia
+agli amministratori una notifica quando cambiano stato o conteggi (ignora i
+rinnovi della lease). Riepilogo e dettagli si aggiornano automaticamente;
+le notifiche ravvicinate vengono raggruppate entro 500 ms. Un punto blu sull’icona
+segnala aggiornamenti mentre il pannello è chiuso. Alla riconnessione vengono
+ricaricati i dati per recuperare gli aggiornamenti persi. **Aggiorna stato** resta
+disponibile anche in assenza di notifiche. Il pannello si chiude con la croce o Esc.
+Dopo modifiche allo schema delle subscription occorre riavviare anche il server WebSocket.
 
 Per una prova in sviluppo:
 
-1. Lasciare spento il worker e accodare una verifica: il lavoro resta in attesa.
+1. Accedere come amministratore con scope OAuth `api` e permessi sulla gara
+   Olimanager. Lasciare spento il worker e accodare una verifica sui fogli
+   finalizzati: il lavoro resta in attesa.
 2. Avviare `npm run olimanager:worker -- --once`: elabora al massimo un job ed esce.
 3. Premere **Aggiorna stato** per vedere conteggi ed esiti delle singole righe.
 
@@ -353,8 +365,9 @@ npm run olimanager:worker
 ```
 
 Il worker carica la configurazione `.env*` come Next.js, rispettando le variabili
-esportate e `NODE_ENV`, e usa la stessa `MONGODB_URI` dell'applicazione. Servono
-transazioni MongoDB (replica set, già previsto dal Compose). Non richiede Redis.
+esportate e `NODE_ENV`, e usa la stessa `MONGODB_URI` dell'applicazione. Occorrono
+anche lo stesso `NEXTAUTH_SECRET` e `OLIMANAGER_GRAPHQL_ENDPOINT` del server.
+Servono transazioni MongoDB (replica set, già previsto dal Compose). Non richiede Redis.
 In produzione l'immagine include `olimanager-worker.js`; entrambi gli esempi
 Compose prevedono il servizio separato `olimanager-worker` con riavvio automatico.
 
@@ -363,18 +376,30 @@ entrambi possono essere popolati; il lavoro riguarda la loro unione.
 La preparazione registra la selezione in `olimanager_job_items`, con un indice
 univoco `(jobId, rowId)`. Dopo la preparazione non viene più ricalcolata.
 I job attraversano `queued`, `preparing`, `running` e terminano in `completed`,
-`completed_with_errors` o `failed`. Ogni item conserva stato, tentativi ed errore.
+`completed_with_errors` o `failed`. Ogni item conserva stato, tentativi, esito,
+campi anagrafici diversi ed eventuale errore.
 Gli errori di questa verifica restano negli item; non sovrascrivono
 `row.olimanager.error`, che riguarda i trasferimenti effettivi.
 
 I fogli vengono riservati al job nell'accodamento e non possono essere sbloccati o riaperti
 né inclusi in un altro job attivo fino alla conclusione. In questa prima versione
 si assume che gli amministratori non modifichino o cancellino i dati nel frattempo.
-La verifica controlla finalizzazione, schema, configurazione della gara e della scuola,
-righe criptate ed eventuali errori di validazione già presenti.
+La verifica richiede finalizzazione, schema e configurazione di gara e scuola.
+Le righe criptate sono segnalate come non verificabili. I vecchi job privi della
+modalità remota mantengono la precedente verifica locale.
+
+Il token OAuth viene delegato al singolo job, cifrato con `NEXTAUTH_SECRET` e
+vincolato a utente, job ed endpoint. La collezione privata
+`olimanager_job_credentials` non è esposta via GraphQL; le credenziali sono
+eliminate alla conclusione o alla scadenza. Se il token scade o viene rifiutato,
+il job passa a `needs_login` mantenendo i fogli riservati. Lo stesso amministratore
+può rifare il login con scope `api` e premere **Riprendi con la sessione attuale**:
+il worker prosegue dalle sole righe ancora da verificare.
 
 Il worker acquisisce una lease di 60 secondi e salva i progressi in transazioni
-per blocchi di 200 righe. Dopo un arresto un altro worker può riprendere il job
+dopo ogni riga remota (blocchi di 200 per i vecchi controlli locali). Le richieste
+remote sono seriali, distanziate di almeno 250 ms e hanno timeout di 15 secondi.
+Dopo un arresto un altro worker può riprendere il job
 alla scadenza della lease; un arresto regolare la rende subito disponibile.
 Non vengono rieseguiti gli item già completati. Gli indici vengono creati
 idempotentemente all'accodamento e all'avvio del worker.

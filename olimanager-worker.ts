@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { unprotectJobAccess } from './app/lib/olimanagerJobCredentials'
+import { createRemoteInspector } from './app/lib/olimanagerRemoteCheck'
 import { loadEnvConfig } from '@next/env'
 import { MongoClient } from 'mongodb'
 import { randomUUID } from 'node:crypto'
@@ -17,7 +19,7 @@ process.on('SIGTERM', () => { stopping = true })
 
 async function main() {
     if (values.help) {
-        console.log('Uso: npm run olimanager:worker -- [--once]\nVerifica locale dei lavori accodati; non invia dati a Olimanager. --once elabora al massimo un lavoro.')
+        console.log('Uso: npm run olimanager:worker -- [--once]\nVerifica locale o remota in sola lettura; non modifica dati su Olimanager. --once elabora al massimo un lavoro.')
         return
     }
     const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli')
@@ -31,10 +33,15 @@ async function main() {
             finally { await session.endSession() }
         }
         const workerId = `${hostname()}:${process.pid}:${randomUUID()}`
-        console.log('Worker Olimanager avviato: sola verifica, nessun trasferimento remoto.')
+        console.log('Worker Olimanager avviato: verifiche in sola lettura, nessuna modifica su Olimanager.')
         do {
             const processed = await runNextOlimanagerCheck(db, transaction, {
                 workerId, validate: validateOlimanagerJobRow, shouldStop: () => stopping,
+                createInspector: async job => {
+                    const credential = await db.collection<import('./app/lib/models').OlimanagerJobCredential>('olimanager_job_credentials').findOne({ _id: job._id })
+                    const access = credential ? unprotectJobAccess(job, credential) : null
+                    return createRemoteInspector(job, access)
+                },
             })
             if (values.once) { console.log(processed ? 'Lavoro elaborato.' : 'Nessun lavoro in attesa.'); break }
             if (!processed && !stopping) await delay(1000)

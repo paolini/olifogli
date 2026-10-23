@@ -55,9 +55,9 @@ test('active job prevents reopening a sheet', async () => {
   assert.equal(writes, 0);
 });
 
-for (const name of ['requestOlimanagerCheck', 'olimanagerJobs', 'olimanagerJobItems']) test(`${name} requires administrator privileges before domain access`, async () => {
+for (const name of ['requestOlimanagerCheck', 'resumeOlimanagerCheck', 'olimanagerJobs', 'olimanagerJobItems']) test(`${name} requires administrator privileges before domain access`, async () => {
   const resolver = load('app/graphql/resolvers/olimanagerJobs.ts', {
-    '@/app/lib/mongodb': {}, '@/app/lib/olimanagerJobs': {},
+    '@/app/lib/mongodb': {}, '@/app/lib/olimanagerJobs': {}, '@/app/lib/olimanager': {}, '@/app/lib/olimanagerJobCredentials': {},
     './utils': { async get_authenticated_user() { return { isAdmin: false }; },
       check_admin(user) { if (!user.isAdmin) throw new Error('non autorizzato'); } },
   });
@@ -104,7 +104,7 @@ test('MongoDB worker integration', { skip: !integrationUri }, async t => {
     };
     const queue = targets => core.queueOlimanagerCheck(db, transaction, user, targets, 'https://provider.invalid/graphql/');
     const run = options => core.runNextOlimanagerCheck(db, transaction, { workerId: 'test', validate() {}, ...options });
-    return { db, user, sheet, rows, queue, run };
+    return { db, user, sheet, rows, queue, run, transaction };
   }
   await t.test('queued work persists while worker is stopped; union deduplicates rows and releases locks', async t => {
     const f = await fixture(t);
@@ -186,4 +186,45 @@ test('MongoDB worker integration', { skip: !integrationUri }, async t => {
     assert.equal((await f.db.collection('olimanager_jobs').findOne()).status, 'failed');
     assert.equal((await f.db.collection('sheets').findOne()).olimanagerJobId, undefined);
   });
+  await t.test('remote checks persist per-row outcomes, pause for login and resume only pending rows', async t => {
+    const f = await fixture(t);
+    const endpoint = 'https://provider.invalid/graphql/';
+    const protect = job => ({ _id: job._id, ciphertext: 'test', iv: 'test', tag: 'test', expiresAt: new Date(Date.now() + 60000) });
+    const job = await core.queueOlimanagerCheck(f.db, f.transaction, f.user, { sheetIds: [f.sheet._id] }, endpoint, protect);
+    let calls = 0;
+    const firstPass = [];
+    await f.run({ createInspector: async () => async row => {
+      firstPass.push(row._id.toString());
+      return ++calls === 1 ? { result: 'matched', participantId: '325', competitorId: '88' }
+        : { result: 'needs_login', error: 'Rifare il login' };
+    }, validate() { assert.fail('Remote checks must not validate scores'); } });
+    const paused = await f.db.collection('olimanager_jobs').findOne();
+    assert.equal(paused.status, 'needs_login');
+    assert.equal(paused.succeededRows, 1);
+    assert.equal(await f.db.collection('olimanager_job_credentials').countDocuments(), 0);
+    assert.equal(await f.db.collection('olimanager_job_items').countDocuments({ status: 'pending' }), 2);
+    assert.ok((await f.db.collection('sheets').findOne()).olimanagerJobId.equals(job._id));
+    await assert.rejects(core.resumeOlimanagerCheck(f.db, f.transaction, { ...f.user, _id: new ObjectId() }, job._id, protect, endpoint), /Solo/);
+    await assert.rejects(core.resumeOlimanagerCheck(f.db, f.transaction, f.user, job._id, protect, 'https://other.invalid/graphql/'), /endpoint/);
+    await core.resumeOlimanagerCheck(f.db, f.transaction, f.user, job._id, protect, endpoint);
+    assert.equal(await f.db.collection('olimanager_job_credentials').countDocuments(), 1);
+    const resumed = [];
+    await f.run({ createInspector: async () => async row => {
+      resumed.push(row._id.toString());
+      return resumed.length === 1 ? { result: 'different', differences: ['Nome'], error: 'Anagrafica diversa: Nome.' } : { result: 'unmatched' };
+    } });
+    assert.equal(resumed.length, 2);
+    assert.ok(!resumed.includes(firstPass[0]));
+    const finished = await f.db.collection('olimanager_jobs').findOne();
+    assert.equal(finished.status, 'completed_with_errors');
+    assert.equal(finished.succeededRows, 1);
+    assert.equal(finished.failedRows, 1);
+    assert.equal(finished.skippedRows, 1);
+    const different = await f.db.collection('olimanager_job_items').findOne({ checkResult: 'different' });
+    assert.deepEqual(different.differences, ['Nome']);
+    assert.equal(await f.db.collection('olimanager_job_credentials').countDocuments(), 0);
+    assert.equal((await f.db.collection('sheets').findOne()).olimanagerJobId, undefined);
+    assert.equal(await f.db.collection('rows').countDocuments({ olimanager: { $exists: true } }), 0);
+  });
+
 });

@@ -13,6 +13,7 @@ enum SheetState {
 type OlimanagerJob {
   _id: ObjectId!
   operation: String!
+  checkMode: String
   rowIds: [ObjectId!]!
   sheetIds: [ObjectId!]!
   endpoint: String!
@@ -22,6 +23,7 @@ type OlimanagerJob {
   totalRows: Int!
   succeededRows: Int!
   failedRows: Int!
+  skippedRows: Int
   startedAt: Timestamp
   finishedAt: Timestamp
   error: String
@@ -34,6 +36,10 @@ type OlimanagerJobItem {
   sheetId: ObjectId
   status: String!
   attempts: Int!
+  checkResult: String
+  differences: [String!]
+  participantId: String
+  competitorId: String
   error: String
   finishedAt: Timestamp
 }
@@ -308,6 +314,7 @@ type OlimanagerUpdateExtraFieldsResult {
 }
 
 type Mutation {
+  resumeOlimanagerCheck(jobId: ObjectId!): OlimanagerJob!
   requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
 
   updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User
@@ -390,6 +397,7 @@ type UserCursor {
 }
 
 type Subscription {
+  olimanagerJobsUpdated: Boolean!
   sheetUpdated(sheetId: ObjectId!): Sheet!
   rowChanged(sheetId: ObjectId!): Row!
   rowsDeleted(sheetId: ObjectId!): [ObjectId!]!

@@ -20,6 +20,8 @@ import { GraphQLError, getOperationAST, parse } from 'graphql';
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
 import { pubsub, TOPICS } from './app/lib/pubsub.js'; // Import the singleton pubsub
 import { getUsersCollection, getScanJobsCollection, getScanSheetJobsCollection } from './app/lib/mongodb.js';
+import { watchOlimanagerJobs } from './app/lib/olimanagerJobEvents.js';
+import { getDb } from './app/lib/mongodb.js';
 import { redis, CURSOR_KEY } from './app/lib/redis.js';
 
 import { typeDefs } from './app/graphql/typedefs.js';
@@ -183,9 +185,14 @@ async function start() {
     }
   });
 
+  const olimanagerJobsStream = watchOlimanagerJobs(await getDb(),
+    () => pubsub.publish(TOPICS.OLIMANAGER_JOBS_UPDATED, { olimanagerJobsUpdated: true }),
+    error => logDiagnostic('ws.olimanager_jobs.watch_failed', error));
+
   // Gestione della chiusura pulita del server e delle connessioni Redis
   const shutDown = async () => {
     console.log('\nSpegnimento del server in corso...');
+    await olimanagerJobsStream.close();
     await serverCleanup.dispose();
     await server.stop();
     serverInstance.close(async () => {
