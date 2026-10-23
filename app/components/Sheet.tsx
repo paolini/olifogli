@@ -179,19 +179,21 @@ function SheetBody({sheet,profile}: {
     const [otherCursors, setOtherCursors] = useState<Record<string, { email: string, lineKey: string | null, fieldName: string | null }>>({})
 
     // Carica i cursori attivi al montaggio del componente
-    useQuery<{ cursors: { email: string, lineKey: string | null, fieldName: string | null, tabId: string }[] }>(CURSORS_QUERY, {
+    const { data: cursorData } = useQuery<{ cursors: { email: string, lineKey: string | null, fieldName: string | null, tabId: string }[] }>(CURSORS_QUERY, {
         variables: { sheetId: sheet._id },
-        onCompleted: (data) => {
-            const initial: Record<string, { email: string, lineKey: string | null, fieldName: string | null }> = {}
-            for (const c of data.cursors) {
-                if (c.tabId === tabId) continue
-                if (c.lineKey !== null || c.fieldName !== null) {
-                    initial[c.tabId] = { email: c.email, lineKey: c.lineKey, fieldName: c.fieldName }
-                }
-            }
-            setOtherCursors(prev => ({ ...initial, ...prev }))
-        },
     })
+
+    useEffect(() => {
+        if (!cursorData) return
+        const initial: Record<string, { email: string, lineKey: string | null, fieldName: string | null }> = {}
+        for (const c of cursorData.cursors) {
+            if (c.tabId === tabId) continue
+            if (c.lineKey !== null || c.fieldName !== null) {
+                initial[c.tabId] = { email: c.email, lineKey: c.lineKey, fieldName: c.fieldName }
+            }
+        }
+        setOtherCursors(prev => ({ ...initial, ...prev }))
+    }, [cursorData, tabId])
 
     useSubscription(CURSOR_CHANGED_SUBSCRIPTION, {
         variables: { sheetId: sheet._id },
