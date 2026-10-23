@@ -623,3 +623,71 @@ test('date fields without age limits accept any valid calendar year', async t =>
   assert.equal(f.error(), '');
   assert.equal(f.patches[0].data.birthDate, '01/01/1900');
 });
+
+test('new rows stay empty and autosave does not accept a suggested value', async t => {
+  const f = await mountTable(t, { suggestions: true });
+  await f.newRow();
+  assert.equal(f.cell('classYear', 2).textContent, '');
+  assert.equal(f.cell('classSection', 2).textContent, '');
+  await f.autosave();
+  assert.equal(f.created.length, 0);
+  await f.click(f.cell('classYear', 2));
+  await f.key('F2');
+  assert.equal(f.input().value, '');
+  assert.equal(f.input().placeholder, '3');
+  await f.autosave();
+  assert.equal(f.created.length, 0);
+  assert.equal(f.input().value, '');
+  await f.key('Tab', { shiftKey: true });
+  assert.equal(f.input().value, '');
+  assertElement(f.focusCell(), f.cell('birthDate', 2));
+  await f.key('ArrowUp');
+  assert.equal(f.created.length, 0);
+});
+
+test('right arrow explicitly accepts the previous value without moving to another column', async t => {
+  const f = await mountTable(t, { suggestions: true });
+  await f.newRow();
+  await f.click(f.cell('classYear', 2));
+  await f.key('F2');
+  await f.key('ArrowRight');
+  assert.equal(f.input().value, '3');
+  assertElement(f.focusCell(), f.cell('classYear', 2));
+  await f.autosave();
+  assert.equal(f.created.length, 1);
+  assert.equal(f.created[0].data.classYear, '3');
+  assert.equal(f.created[0].data.classSection, undefined);
+});
+
+test('Tab accepts each suggestion, advances and includes the accepted values in autosave', async t => {
+  const f = await mountTable(t, { suggestions: true });
+  await f.newRow();
+  await f.click(f.cell('classYear', 2));
+  await f.key('F2');
+  await f.key('Tab');
+  assert.equal(f.cell('classYear', 2).textContent, '3');
+  assertElement(f.focusCell(), f.cell('classSection', 2));
+  assertElement(f.active(), f.input());
+  assert.equal(f.input().value, '');
+  assert.equal(f.input().placeholder, 'B');
+  await f.key('Tab');
+  assert.equal(f.cell('classSection', 2).textContent, 'B');
+  assertElement(f.focusCell(), f.cell('r01', 2));
+  await f.autosave();
+  assert.equal(f.created.length, 1);
+  assert.equal(f.created[0].data.classYear, '3');
+  assert.equal(f.created[0].data.classSection, 'B');
+});
+
+test('typing another value overrides the suggestion and later autosaves only that value', async t => {
+  const f = await mountTable(t, { suggestions: true });
+  await f.newRow();
+  await f.click(f.cell('classYear', 2));
+  await f.key('4');
+  assert.equal(f.input().value, '4');
+  await f.key('Tab');
+  assert.equal(f.input().value, '');
+  await f.autosave();
+  assert.equal(f.created[0].data.classYear, '4');
+  assert.equal(f.created[0].data.classSection, undefined);
+});

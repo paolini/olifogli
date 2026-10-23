@@ -19,7 +19,7 @@ type FieldOptions = {
     type?: FieldType
     titleCase?: boolean
     upperCase?: boolean
-    precompileValue?: boolean
+    suggestPreviousValue?: boolean
     csv_import_ignore?: boolean
 }
 
@@ -50,10 +50,10 @@ export class Field {
     type: FieldType = 'text'
     titleCase: boolean = false
     upperCase: boolean = false
-    precompileValue: boolean = false
+    suggestPreviousValue: boolean = false
     csv_import_ignore: boolean = false
 
-    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, upperCase, precompileValue, csv_import_ignore}: FieldOptions = {}) {
+    constructor(name: string, {header, editable, type, alternativeNames, additionalCssStyle, css_style, hidden, required, titleCase, upperCase, suggestPreviousValue, csv_import_ignore}: FieldOptions = {}) {
         this.name = name
         this.header = header || name
         this.css_class = `field-${this.name}`
@@ -68,7 +68,7 @@ export class Field {
         this.required = required !== undefined ? required : true
         this.titleCase = titleCase || false
         this.upperCase = upperCase || false
-        this.precompileValue = precompileValue || false
+        this.suggestPreviousValue = suggestPreviousValue || false
         this.csv_import_ignore = csv_import_ignore || false
     }
 

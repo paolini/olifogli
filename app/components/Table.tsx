@@ -393,12 +393,17 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     function startEditing(line: Line, field: Field, firstCharacter?: string) {
         if (!canEditCell(field, line.row, adminEditMode, standardAnswers)) return
         const value = field.display(line.data[field.name] ?? line.row?.data[field.name] ?? '', '', false).value
+        const index = tableState.lines.findIndex(candidate => candidate.key === line.key)
+        const suggestion = field.suggestPreviousValue
+            ? tableState.lines.slice(0, index < 0 ? undefined : index).reverse()
+                .map(previous => previous.data[field.name] ?? previous.row?.data[field.name] ?? '').find(Boolean) ?? ''
+            : ''
         if (firstCharacter === undefined) {
-            cellEditor.begin(line.key, field, value)
+            cellEditor.begin(line.key, field, value, true, suggestion)
         } else {
             const result = field.editKey(firstCharacter, '', 0, 0)
             if (result && 'rejected' in result) return
-            cellEditor.begin(line.key, field, result?.value ?? firstCharacter, false)
+            cellEditor.begin(line.key, field, result?.value ?? firstCharacter, false, suggestion)
             if (result?.advance) moveRightOrLeft(result.advance, true)
         }
     }
@@ -411,6 +416,14 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         const key = e.key
         if (editing && input) {
             if (e.ctrlKey || e.metaKey || e.altKey) return
+            const draft = cellEditor.editor
+            if ((key === 'ArrowRight' || key === 'Tab') && draft.mode === 'editing' && !draft.value && draft.suggestion && !e.shiftKey) {
+                e.preventDefault()
+                e.stopPropagation()
+                cellEditor.change(draft.suggestion)
+                if (key === 'Tab') moveRightOrLeft(1, true)
+                return
+            }
             const result = cellEditor.key(key, input.selectionStart ?? 0, input.selectionEnd ?? 0)
             if (result) {
                 e.preventDefault()
@@ -496,12 +509,6 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         const committed = result.value ?? focusLine
         saveLineIfNeeded(committed)
         const line = newLine()
-        for (const field of columns) {
-            if (field instanceof Field && field.precompileValue) {
-                const value = committed?.data[field.name] ?? committed?.row?.data[field.name]
-                if (value) line.data[field.name] = value
-            }
-        }
         const first = columns.find(columnCanReceiveFocus)
         setTableState(prev => stateMoveFocusTo({ ...prev, lines: [...prev.lines, line] }, line, first?.name ?? ''))
         if (editing && first instanceof Field) startEditing(line, first)

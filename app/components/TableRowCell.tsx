@@ -91,6 +91,7 @@ export default function TableCellInput({editor, onChange, onBlur}: {
 
     return <>
         <input className="table-row" ref={inputRef} value={editor.value}
+            placeholder={editor.suggestion || undefined}
             aria-invalid={!!editor.error} aria-describedby={editor.error ? errorId : undefined}
             onChange={event => onChange(event.currentTarget.value)} onBlur={onBlur} />
         {editor.error && <span id={errorId} role="alert" className="block text-sm text-red-700">{editor.error}</span>}

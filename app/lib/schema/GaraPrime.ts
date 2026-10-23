@@ -16,7 +16,7 @@ export default class GaraPrime extends Competition {
             new Field('codice_meccanografico',{header: 'Codice meccanografico'}),
             new Field('nome_scuola',{header: 'Scuola', hidden: true, required: false}),
             new Field('città_scuola',{header: 'Città', hidden: true, required: false}),
-            new Field('classSection',{header:'Sezione', precompileValue: true}),
+            new Field('classSection',{header:'Sezione', suggestPreviousValue: true}),
             new VariantField('variant',{header: "Codice compito (0 se assente)", additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r01', {header: '1', additionalCssStyle: 'thick-border-left'}),
             new ChoiceAnswerField('r02', {header: '2'}),

@@ -14,6 +14,7 @@ export type CellEditorState = { mode: 'navigation' } | {
     lineKey: string
     field: Field
     value: string
+    suggestion: string
     selection: EditorSelection
     error: string
     focusRequest: number
@@ -35,8 +36,8 @@ export default function useCellEditor<T>(
         setEditor(next)
     }
 
-    function begin(lineKey: string, field: Field, value: string, selectAll = true) {
-        update({ mode: 'editing', lineKey, field, value, error: '', focusRequest: 0,
+    function begin(lineKey: string, field: Field, value: string, selectAll = true, suggestion = '') {
+        update({ mode: 'editing', lineKey, field, value, suggestion, error: '', focusRequest: 0,
             selection: selectAll ? 'all' : { start: value.length, end: value.length } })
     }
 
