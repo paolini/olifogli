@@ -86,6 +86,7 @@ export type Row = {
         contestId?: string
         participantCreatedOn?: Date 
         resultsUpdatedOn?: Date
+        resultsSnapshot?: OlimanagerResultsSnapshot
         error: string
     }
     encrypted_data?: string // se presente, i dati originali della riga criptati
@@ -172,6 +173,7 @@ export type OlimanagerJobItem = {
     sheetId?: ObjectId
     status: 'pending' | 'succeeded' | 'failed' | 'skipped'
     checkResult?: OlimanagerCheckResult['result']
+    resultDifferences?: OlimanagerResultDifference[]
     differences?: string[]
     participantId?: string
     competitorId?: string
@@ -183,8 +185,21 @@ export type OlimanagerJobItem = {
     finishedAt?: Date
 }
 
+export type OlimanagerResultsSnapshot = {
+    endpoint: string
+    contestId: string
+    participantId: string
+    scores: { problemIndex: number, score: number | null, disqualified: boolean | null }[]
+    totalScore: number | null
+}
+
+export type OlimanagerResultDifference = { field: string, localValue: string, remoteValue: string }
+
 export type OlimanagerCheckResult = {
-    result: 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login' | 'created' | 'linked' | 'already_linked' | 'absent' | 'results_updated'
+    result: 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login' | 'created' | 'linked' | 'already_linked' | 'absent' | 'results_updated' | 'results_unchanged' | 'results_conflict'
+    remoteResults?: OlimanagerResultsSnapshot
+    resultsSnapshot?: OlimanagerResultsSnapshot
+    resultDifferences?: OlimanagerResultDifference[]
     contestId?: string
     competitorCreated?: boolean
     participantCreated?: boolean

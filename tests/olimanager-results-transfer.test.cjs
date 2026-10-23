@@ -20,7 +20,7 @@ const job = { endpoint, operation: 'update_results' };
 const row = () => ({ data: { name: 'Ada', surname: 'Lovelace', birthDate: '05/01/2010', classYear: '3', classSection: 'B', score: '10' },
   olimanager: { participantId: '326', contestId: '10' }, error: '' });
 const scores = () => [5, 0, null, 5].map((score, index) => ({ participantId: 326, problemIndex: index + 1, score, disqualified: index === 1 }));
-const node = () => ({ pk: 326, officialVenue: { contest: { id: 10 } }, competitor: { pk: 88, school: { externalId: 'TEST0001' },
+const node = () => ({ pk: 326, problemResults: [], result: { totalScore: null }, officialVenue: { contest: { id: 10 } }, competitor: { pk: 88, school: { externalId: 'TEST0001' },
   members: [{ name: 'Ada', surname: 'Lovelace', birthDate: '2010-01-05', classYear: 11, section: 'B' }] } });
 const success = { data: { participants: { bulkUpdateResults: { __typename: 'BulkUpdateResultsSuccess', nothing: null } } } };
 function fixture({ results = scores(), participant = node(), allowed = true, respond, credential = access, mutation = success } = {}) {
@@ -125,4 +125,111 @@ test('provider validation errors, malformed successes and GraphQL errors never c
     const result = await fixture({ mutation }).send(row());
     assert.equal(result.result, 'unverifiable'); assert.ok(!JSON.stringify(result).includes('PRIVATE'));
   }
+});
+
+function snapshot(results = scores(), totalScore = 10) {
+  return { endpoint, contestId: '10', participantId: '326',
+    scores: results.map(({ problemIndex, score, disqualified }) => ({ problemIndex, score, disqualified })), totalScore };
+}
+function withRemoteResults(results = scores(), totalScore = 10) {
+  return { ...node(), problemResults: results.map(({ problemIndex, score, disqualified }) => ({ problem: { index: problemIndex }, score, disqualified })),
+    result: { totalScore } };
+}
+
+test('matching results use the existing participant read and skip the mutation, establishing a legacy baseline', async () => {
+  const f = fixture({ participant: withRemoteResults([...scores()].reverse()) });
+  const result = await f.send(row());
+  assert.equal(result.result, 'results_unchanged');
+  assert.equal(f.calls.length, 2);
+  assert.equal(f.calls[1].variables.includeResults, true);
+  assert.match(f.calls[1].query, /problemResults @include/);
+  assert.match(f.calls[1].query, /result @include/);
+  assert.equal(JSON.stringify(result.resultsSnapshot), JSON.stringify(snapshot()));
+});
+
+test('a different first remote result is reported with local/remote values, without a write', async () => {
+  const remote = scores(); remote[0].score = 4;
+  const f = fixture({ participant: withRemoteResults(remote, 9) });
+  const result = await f.send(row());
+  assert.equal(result.result, 'results_conflict'); assert.equal(f.calls.length, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.resultDifferences)), [
+    { field: 'Esercizio 1', localValue: '5', remoteValue: '4' }, { field: 'Totale', localValue: '10', remoteValue: '9' },
+  ]);
+  assert.equal(result.resultsSnapshot, undefined);
+});
+
+test('only a local change may update an unchanged remote baseline', async () => {
+  const updated = scores(); updated[0].score = 4;
+  const value = row(); value.data.score = '9'; value.olimanager.resultsSnapshot = snapshot();
+  const f = fixture({ results: updated, participant: withRemoteResults() });
+  const result = await f.send(value);
+  assert.equal(result.result, 'results_updated'); assert.equal(f.calls.length, 3);
+  assert.deepEqual(f.calls[2].variables.problemResults, updated);
+  assert.equal(JSON.stringify(result.resultsSnapshot), JSON.stringify(snapshot(updated, 9)));
+});
+
+test('remote-only and divergent simultaneous changes preserve the shared baseline and never overwrite remote results', async () => {
+  const remote = scores(); remote[0].score = 4;
+  for (const changeLocal of [false, true]) {
+    const local = scores(); if (changeLocal) local[3].score = 3;
+    const value = row(); value.data.score = changeLocal ? '8' : '10'; value.olimanager.resultsSnapshot = snapshot();
+    const before = JSON.stringify(value);
+    const f = fixture({ results: local, participant: withRemoteResults(remote, 9) });
+    const result = await f.send(value);
+    assert.equal(result.result, 'results_conflict'); assert.equal(f.calls.length, 2);
+    assert.equal(JSON.stringify(value), before);
+  }
+});
+
+test('converging local and remote changes accept a new shared baseline without a mutation', async () => {
+  const changed = scores(); changed[0].score = 4;
+  const value = row(); value.data.score = '9'; value.olimanager.resultsSnapshot = snapshot();
+  const f = fixture({ results: changed, participant: withRemoteResults(changed, 9) });
+  const result = await f.send(value);
+  assert.equal(result.result, 'results_unchanged'); assert.equal(f.calls.length, 2);
+  assert.equal(result.resultsSnapshot.totalScore, 9);
+});
+
+test('a baseline for a different endpoint, contest or participant cannot authorize an overwrite', async () => {
+  const local = scores(); local[0].score = 4;
+  for (const binding of [{ endpoint: 'https://other.invalid/graphql/' }, { contestId: '99' }, { participantId: '999' }]) {
+    const value = row(); value.data.score = '9'; value.olimanager.resultsSnapshot = { ...snapshot(), ...binding };
+    const f = fixture({ results: local, participant: withRemoteResults() });
+    assert.equal((await f.send(value)).result, 'results_conflict'); assert.equal(f.calls.length, 2);
+  }
+});
+
+test('manual totals, disqualification, missing or extra exercises and zero versus null are not treated as equivalent', async () => {
+  const disqualified = scores(); disqualified[0].disqualified = true;
+  const zero = scores(); zero[2].score = 0;
+  const swapped = scores(); swapped[0].score = 0; swapped[1].score = 5;
+  for (const participant of [withRemoteResults(scores(), 99), withRemoteResults(disqualified), withRemoteResults(zero),
+    withRemoteResults(scores().slice(0, -1), 5), withRemoteResults([...scores(), { participantId: 326, problemIndex: 99, score: 0, disqualified: false }]),
+    withRemoteResults(swapped)]) {
+    const f = fixture({ participant });
+    const result = await f.send(row());
+    assert.equal(result.result, 'results_conflict'); assert.ok(result.resultDifferences.length > 0);
+    assert.equal(f.calls.length, 2);
+  }
+});
+
+test('remote deletion after a synchronization is a conflict even when the remote is now empty', async () => {
+  const value = row(); value.olimanager.resultsSnapshot = snapshot();
+  const f = fixture();
+  assert.equal((await f.send(value)).result, 'results_conflict'); assert.equal(f.calls.length, 2);
+});
+
+test('incomplete or malformed remote scores never permit a write', async () => {
+  const duplicate = withRemoteResults(); duplicate.problemResults.push(duplicate.problemResults[0]);
+  for (const participant of [{ ...node(), problemResults: undefined }, { ...node(), result: undefined }, duplicate,
+    { ...node(), result: { totalScore: '10' } }, { ...node(), problemResults: [{ problem: { index: 1 }, score: 5, disqualified: 'false' }] }]) {
+    const f = fixture({ participant });
+    assert.equal((await f.send(row())).result, 'unverifiable'); assert.equal(f.calls.length, 2);
+  }
+});
+
+test('a removed local exercise cannot leave an unnoticed remote score even if the baseline matches', async () => {
+  const local = scores().slice(0, -1), value = row(); value.data.score = '5'; value.olimanager.resultsSnapshot = snapshot();
+  const f = fixture({ results: local, participant: withRemoteResults() });
+  assert.equal((await f.send(value)).result, 'results_conflict'); assert.equal(f.calls.length, 2);
 });

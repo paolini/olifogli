@@ -192,3 +192,10 @@ il controllo preventivo del collegamento e del totale, righe assenti/non valide,
 permessi, scadenza OAuth e rifiuti del provider. L’integrazione opzionale con
 MongoDB verifica data di sincronizzazione, conteggio esatto anche al reinvio,
 pausa/ripresa, perdita della lease e rollback di metadati/esiti/contatori.
+
+I test dei risultati coprono inoltre uguaglianza senza mutation, prima
+sincronizzazione, modifiche solo locali, modifiche remote o simultanee,
+convergenza, binding dello storico a endpoint/gara/partecipante, totali manuali,
+squalifiche, esercizi mancanti/in più e distinzione tra zero e null. L’integrazione
+verifica che i conflitti conservino storico, timestamp e conteggi e che i valori
+diversi siano disponibili negli item del lavoro.

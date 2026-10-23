@@ -381,11 +381,19 @@ export type OlimanagerJobItem = {
   multipleCompetitorsMatched?: Maybe<Scalars['Boolean']['output']>;
   participantCreated?: Maybe<Scalars['Boolean']['output']>;
   participantId?: Maybe<Scalars['String']['output']>;
+  resultDifferences?: Maybe<Array<OlimanagerResultDifference>>;
   rowId: Scalars['ObjectId']['output'];
   rowSurname?: Maybe<Scalars['String']['output']>;
   sheetId?: Maybe<Scalars['ObjectId']['output']>;
   sheetName?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
+};
+
+export type OlimanagerResultDifference = {
+  __typename?: 'OlimanagerResultDifference';
+  field: Scalars['String']['output'];
+  localValue: Scalars['String']['output'];
+  remoteValue: Scalars['String']['output'];
 };
 
 export type OlimanagerRowData = {
@@ -820,7 +828,7 @@ export type OlimanagerJobItemsQueryVariables = Exact<{
 }>;
 
 
-export type OlimanagerJobItemsQuery = { __typename?: 'Query', olimanagerJobItems: Array<{ __typename?: 'OlimanagerJobItem', _id: ObjectId, rowId: ObjectId, rowSurname?: string | null, sheetId?: ObjectId | null, sheetName?: string | null, status: string, attempts: number, error?: string | null, checkResult?: string | null, differences?: Array<string> | null, participantId?: string | null, competitorId?: string | null, competitorCreated?: boolean | null, participantCreated?: boolean | null, multipleCompetitorsMatched?: boolean | null }> };
+export type OlimanagerJobItemsQuery = { __typename?: 'Query', olimanagerJobItems: Array<{ __typename?: 'OlimanagerJobItem', _id: ObjectId, rowId: ObjectId, rowSurname?: string | null, sheetId?: ObjectId | null, sheetName?: string | null, status: string, attempts: number, error?: string | null, checkResult?: string | null, differences?: Array<string> | null, participantId?: string | null, competitorId?: string | null, competitorCreated?: boolean | null, participantCreated?: boolean | null, multipleCompetitorsMatched?: boolean | null, resultDifferences?: Array<{ __typename?: 'OlimanagerResultDifference', field: string, localValue: string, remoteValue: string }> | null }> };
 
 export type ResumeOlimanagerCheckMutationVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
@@ -1477,6 +1485,11 @@ export const OlimanagerJobItemsDocument = gql`
     competitorCreated
     participantCreated
     multipleCompetitorsMatched
+    resultDifferences {
+      field
+      localValue
+      remoteValue
+    }
   }
 }
     `;
@@ -3870,6 +3883,7 @@ export type ResolversTypes = {
   OlimanagerCreateResult: ResolverTypeWrapper<OlimanagerCreateResult>;
   OlimanagerJob: ResolverTypeWrapper<Omit<OlimanagerJob, '_id' | 'createdBy' | 'rowIds' | 'sheetIds'> & { _id: ResolversTypes['ObjectId'], createdBy: ResolversTypes['ObjectId'], rowIds: Array<ResolversTypes['ObjectId']>, sheetIds: Array<ResolversTypes['ObjectId']> }>;
   OlimanagerJobItem: ResolverTypeWrapper<Omit<OlimanagerJobItem, '_id' | 'jobId' | 'rowId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'], rowId: ResolversTypes['ObjectId'], sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
+  OlimanagerResultDifference: ResolverTypeWrapper<OlimanagerResultDifference>;
   OlimanagerRowData: ResolverTypeWrapper<OlimanagerRowData>;
   OlimanagerUpdateExtraFieldsResult: ResolverTypeWrapper<OlimanagerUpdateExtraFieldsResult>;
   Permission: ResolverTypeWrapper<Permission>;
@@ -3920,6 +3934,7 @@ export type ResolversParentTypes = {
   OlimanagerCreateResult: OlimanagerCreateResult;
   OlimanagerJob: Omit<OlimanagerJob, '_id' | 'createdBy' | 'rowIds' | 'sheetIds'> & { _id: ResolversParentTypes['ObjectId'], createdBy: ResolversParentTypes['ObjectId'], rowIds: Array<ResolversParentTypes['ObjectId']>, sheetIds: Array<ResolversParentTypes['ObjectId']> };
   OlimanagerJobItem: Omit<OlimanagerJobItem, '_id' | 'jobId' | 'rowId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'], rowId: ResolversParentTypes['ObjectId'], sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
+  OlimanagerResultDifference: OlimanagerResultDifference;
   OlimanagerRowData: OlimanagerRowData;
   OlimanagerUpdateExtraFieldsResult: OlimanagerUpdateExtraFieldsResult;
   Permission: Permission;
@@ -4102,11 +4117,19 @@ export type OlimanagerJobItemResolvers<ContextType = any, ParentType extends Res
   multipleCompetitorsMatched?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   participantCreated?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  resultDifferences?: Resolver<Maybe<Array<ResolversTypes['OlimanagerResultDifference']>>, ParentType, ContextType>;
   rowId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   rowSurname?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   sheetName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OlimanagerResultDifferenceResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerResultDifference'] = ResolversParentTypes['OlimanagerResultDifference']> = {
+  field?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  localValue?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  remoteValue?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4353,6 +4376,7 @@ export type Resolvers<ContextType = any> = {
   OlimanagerCreateResult?: OlimanagerCreateResultResolvers<ContextType>;
   OlimanagerJob?: OlimanagerJobResolvers<ContextType>;
   OlimanagerJobItem?: OlimanagerJobItemResolvers<ContextType>;
+  OlimanagerResultDifference?: OlimanagerResultDifferenceResolvers<ContextType>;
   OlimanagerRowData?: OlimanagerRowDataResolvers<ContextType>;
   OlimanagerUpdateExtraFieldsResult?: OlimanagerUpdateExtraFieldsResultResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;

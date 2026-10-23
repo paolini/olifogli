@@ -17,6 +17,7 @@ const GET_ITEMS = gql`
   query OlimanagerJobItems($jobId: ObjectId!, $after: ObjectId, $limit: Int) {
     olimanagerJobItems(jobId: $jobId, after: $after, limit: $limit) {
       _id rowId rowSurname sheetId sheetName status attempts error checkResult differences participantId competitorId competitorCreated participantCreated multipleCompetitorsMatched
+      resultDifferences { field localValue remoteValue }
     }
   }
 `
@@ -32,11 +33,11 @@ const statusLabels: Record<string, string> = {
   matched: 'Collegamento valido e anagrafica corrispondente', unmatched: 'Non abbinata', different: 'Anagrafica diversa',
   not_found: 'Partecipante non trovato nella gara prevista', wrong_contest: 'Gara diversa', wrong_school: 'Scuola diversa',
   unverifiable: 'Operazione non riuscita', created: 'Partecipante creato', linked: 'Partecipante trovato e collegato',
-  results_updated: 'Risultati inviati',
+  results_updated: 'Risultati inviati', results_unchanged: 'Risultati già corrispondenti', results_conflict: 'Disallineamento nei risultati da risolvere',
   already_linked: 'Collegamento già presente e verificato', absent: 'Assente: operazione saltata',
 }
 type Job = { _id: string, operation: string, checkMode?: string | null, skippedRows?: number | null, status: string, totalRows: number, succeededRows: number, failedRows: number, createdAt: string, error?: string }
-type Item = { _id: string, competitorCreated?: boolean, multipleCompetitorsMatched?: boolean, checkResult?: string | null, differences?: string[], participantId?: string, competitorId?: string, rowId: string, rowSurname?: string | null, sheetId?: string, sheetName?: string | null, status: string, attempts: number, error?: string }
+type Item = { _id: string, resultDifferences?: { field: string, localValue: string, remoteValue: string }[] | null, competitorCreated?: boolean, multipleCompetitorsMatched?: boolean, checkResult?: string | null, differences?: string[], participantId?: string, competitorId?: string, rowId: string, rowSurname?: string | null, sheetId?: string, sheetName?: string | null, status: string, attempts: number, error?: string }
 
 export default function OlimanagerJobStatus({ sheetIds }: { sheetIds?: ObjectId[] }) {
   const [selected, setSelected] = useState<string | null>(null)
@@ -77,6 +78,11 @@ export default function OlimanagerJobStatus({ sheetIds }: { sheetIds?: ObjectId[
         {item.participantId && <span> — partecipante {item.participantId}</span>}
         {item.competitorCreated && <span> — nuova anagrafica</span>}
         {item.multipleCompetitorsMatched && <span className="text-amber-700"> — Più anagrafiche compatibili: verificare l’abbinamento.</span>}
+        {!!item.resultDifferences?.length && <ul className="ml-4 list-disc">
+          {item.resultDifferences.map(difference => <li key={difference.field}>
+            {difference.field}: Olifogli {difference.localValue}; Olimanager {difference.remoteValue}
+          </li>)}
+        </ul>}
         {item.error && <span className="text-red-700"> — {item.error}</span>}
       </li>)}</ul>
       {entries.length > 0 && entries.length < (data?.olimanagerJobs.find(job => job._id === selected)?.totalRows || 0) && <Button disabled={items.loading} onClick={async () => {

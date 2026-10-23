@@ -29,6 +29,12 @@ type OlimanagerJob {
   error: String
 }
 
+type OlimanagerResultDifference {
+  field: String!
+  localValue: String!
+  remoteValue: String!
+}
+
 type OlimanagerJobItem {
   _id: ObjectId!
   jobId: ObjectId!
@@ -39,6 +45,7 @@ type OlimanagerJobItem {
   status: String!
   attempts: Int!
   checkResult: String
+  resultDifferences: [OlimanagerResultDifference!]
   competitorCreated: Boolean
   participantCreated: Boolean
   multipleCompetitorsMatched: Boolean

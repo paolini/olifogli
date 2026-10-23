@@ -350,9 +350,27 @@ Il comando **«Invia risultati in background (Olimanager)»** accoda invece un l
 (gara, scuola e anagrafica), estrae i punteggi dei singoli esercizi con lo schema
 del foglio e verifica che la loro somma corrisponda al totale locale. Le righe non
 collegate producono un errore: occorre prima creare/abbinare il partecipante.
+La lettura del partecipante include anche `problemResults` e il totale, senza
+aggiungere richieste HTTP. Se punteggi, squalifiche dei singoli esercizi e totale
+coincidono, il lavoro registra **Risultati già corrispondenti** senza mutation.
+Dopo un invio riuscito (o questa verifica di uguaglianza) la riga conserva uno
+storico `olimanager.resultsSnapshot`, vincolato a endpoint, gara e partecipante.
+Un cambiamento solo locale può essere inviato se il remoto coincide ancora con
+lo storico. Modifiche remote inattese, totali corretti a mano e primi invii con
+valori remoti diversi producono **Disallineamento nei risultati da risolvere**:
+nessuna scrittura remota e dettagli Olifogli/Olimanager per ogni esercizio diverso.
+Non c’è ancora un comando per forzare la risoluzione del conflitto.
+
+I vecchi collegamenti senza storico lo acquisiscono solo quando i risultati
+coincidono; un remoto completamente vuoto consente il primo invio. Se uno storico
+esiste e i risultati remoti vengono cancellati, la cancellazione è un conflitto.
+Righe con risultati uguali sono considerate sincronizzate anche se la mutation è
+stata evitata. In caso di conflitto timestamp, storico e contatori locali restano
+invariati. La verifica in sola lettura dell’anagrafica non richiede i punteggi.
+
 La mutation `bulkUpdateResults` invia una riga alla volta, con punteggi assoluti:
 anche una ripetizione dopo un’interruzione sovrascrive gli stessi valori.
-Solo dopo `BulkUpdateResultsSuccess` il worker registra
+Dopo `BulkUpdateResultsSuccess` o la verifica di risultati già corrispondenti il worker registra
 `row.olimanager.resultsUpdatedOn`, l’esito del job e l’eventuale incremento di
 `sheet.nSyncedRows` nella stessa transazione MongoDB. Righe già sincronizzate
 possono essere reinviate, senza incrementare nuovamente il contatore. Errori e
@@ -452,3 +470,8 @@ nel pannello. Confrontare il totale del partecipante su staging e la data di
 sincronizzazione locale. I dettagli, le righe e i conteggi dei fogli aperti vengono
 ricaricati dalle notifiche dei lavori. Un token scaduto usa lo stesso percorso
 `needs_login` e **Riprendi con la sessione attuale** delle altre operazioni.
+
+Il confronto dei risultati non è un controllo di versione atomico sul provider:
+una modifica remota tra la lettura e la mutation può ancora essere sovrascritta.
+Per eliminare questa finestra occorre supporto di versione/compare-and-set nell’API
+Olimanager. Non vengono eseguite letture aggiuntive dopo l’invio.

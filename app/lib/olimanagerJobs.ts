@@ -199,7 +199,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                             return true
                         }
                         outcomes.push({ item, sheetId: row.sheetId, check,
-                            ...(!['matched', 'unmatched', 'created', 'linked', 'already_linked', 'absent', 'results_updated'].includes(check.result) ? { error: check.error || 'Verifica non riuscita.' } : {}),
+                            ...(!['matched', 'unmatched', 'created', 'linked', 'already_linked', 'absent', 'results_updated', 'results_unchanged'].includes(check.result) ? { error: check.error || 'Verifica non riuscita.' } : {}),
                         })
                     } else {
                         options.validate(row, sheet, workbook)
@@ -229,7 +229,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                 }
                 if (job.operation === 'update_results') {
                     for (const { item, check, error } of outcomes) {
-                        if (error || check?.result !== 'results_updated') continue
+                        if (error || !check || !['results_updated', 'results_unchanged'].includes(check.result)) continue
                         const row = await rows.findOne({ _id: item.rowId }, { session })
                         if (!row?.olimanager || !check.participantId || !check.contestId || row.olimanager.participantId !== check.participantId ||
                             (row.olimanager.contestId && row.olimanager.contestId !== check.contestId)) {
@@ -238,6 +238,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                         const syncedOn = now()
                         await rows.updateOne({ _id: item.rowId }, { $set: {
                             'olimanager.resultsUpdatedOn': syncedOn, 'olimanager.error': '',
+                            ...(check.resultsSnapshot ? { 'olimanager.resultsSnapshot': check.resultsSnapshot } : {}),
                             updatedOn: syncedOn, updatedBy: user.email,
                         } }, { session })
                         if (!row.olimanager.resultsUpdatedOn) {
@@ -251,6 +252,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                     filter: { _id: item._id, jobId: job._id, status: 'pending' },
                     update: { $set: { status: check && ['unmatched', 'absent', 'already_linked'].includes(check.result) ? 'skipped' : error ? 'failed' : 'succeeded', finishedAt: now(),
                         ...(check ? { checkResult: check.result, differences: check.differences || [],
+                            resultDifferences: check.resultDifferences || [],
                             ...(check.participantId ? { participantId: check.participantId } : {}),
                             ...(check.competitorId ? { competitorId: check.competitorId } : {}),
                             ...(job.operation === 'match_or_create_participants' ? {

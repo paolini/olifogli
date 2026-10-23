@@ -1,4 +1,4 @@
-import type { OlimanagerCheckResult, Row, Sheet, Workbook, OlimanagerJob } from './models'
+import type { OlimanagerCheckResult, Row, Sheet, Workbook, OlimanagerJob, OlimanagerResultsSnapshot } from './models'
 import type { DelegatedOlimanagerAccess } from './olimanagerJobCredentials'
 import { schemas } from './schema'
 
@@ -6,14 +6,19 @@ const PERMISSIONS = `query OlimanagerCheckPermissions($contestId: Int!) {
   users { me { isStaff } }
   contests { contests(filters: {id: $contestId}) { id edition { olympiad { admin { __typename } } } } }
 }`
-const PARTICIPANT = `query OlimanagerCheckParticipant($contestId: Int!, $participantId: Int!) {
+const PARTICIPANT = `query OlimanagerCheckParticipant($contestId: Int!, $participantId: Int!, $includeResults: Boolean! = false) {
   participants { participants(contestId: $contestId, participantId: $participantId) { edges { node {
     pk officialVenue { contest { id } }
+    problemResults @include(if: $includeResults) { problem { index } score disqualified }
+    result @include(if: $includeResults) { totalScore }
     competitor { pk school { externalId } members { name surname birthDate classYear section } }
   } } } }
 }`
 type Member = { name: string, surname: string, birthDate: string | null, classYear: number | null, section: string }
-type Participant = { pk: number, officialVenue: { contest: { id: number } },
+type Participant = { pk: number,
+    problemResults?: { problem: { index: number }, score: number | null, disqualified: boolean | null }[]
+    result?: { totalScore: number | null }
+    officialVenue: { contest: { id: number } },
     competitor: { pk: number, school: { externalId: string }, members: Member[] } }
 type QueryData = { users?: { me?: { isStaff: boolean } },
     contests?: { contests: { id: number, edition: { olympiad: { admin: object | null } } }[] },
@@ -77,6 +82,7 @@ export function createOlimanagerRequester(job: OlimanagerJob, access: DelegatedO
 export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlimanagerAccess | null,
     options: Parameters<typeof createOlimanagerRequester>[2] = {},
     request = createOlimanagerRequester(job, access, options),
+    includeResults = false,
 ) {
     const query = (document: string, variables: Record<string, unknown>) => request<QueryData>(document, variables)
     const permissions = new Map<number, boolean>()
@@ -103,7 +109,7 @@ export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlima
             }
             if (!permissions.get(contestId)) throw new CheckFailed('L’account OAuth non è amministratore dell’olimpiade: partecipante non verificabile.')
             const participantId = Number(row.olimanager.participantId)
-            const data = await query(PARTICIPANT, { contestId, participantId })
+            const data = await query(PARTICIPANT, { contestId, participantId, ...(includeResults ? { includeResults: true } : {}) })
             const edges = data.participants?.participants?.edges
             if (!Array.isArray(edges)) throw new CheckFailed('Elenco dei partecipanti non disponibile.')
             if (!edges.length) {
@@ -118,7 +124,24 @@ export function createRemoteInspector(job: OlimanagerJob, access: DelegatedOlima
                 return { result: 'not_found', participantId: String(participantId), error: 'Partecipante non trovato nella gara prevista.' }
             }
             if (edges.length !== 1 || Number(edges[0].node.pk) !== participantId) throw new CheckFailed('Risposta ambigua per il partecipante richiesto.')
-            return compareParticipant(row, edges[0].node, contestId, school)
+            const participant = edges[0].node
+            const checked = compareParticipant(row, participant, contestId, school)
+            if (!includeResults || checked.result !== 'matched') return checked
+            if (!Array.isArray(participant.problemResults) || !participant.result ||
+                (participant.result.totalScore !== null && !Number.isFinite(participant.result.totalScore)) ||
+                participant.problemResults.some(result => !Number.isSafeInteger(result.problem?.index) || result.problem.index <= 0 ||
+                    (result.score !== null && !Number.isFinite(result.score)) ||
+                    (result.disqualified !== null && typeof result.disqualified !== 'boolean')) ||
+                new Set(participant.problemResults.map(result => result.problem.index)).size !== participant.problemResults.length) {
+                throw new CheckFailed('Risultati remoti non disponibili o non validi: nessun punteggio è stato sovrascritto.')
+            }
+            const remoteResults: OlimanagerResultsSnapshot = {
+                endpoint: job.endpoint, contestId: String(contestId), participantId: String(participantId),
+                scores: participant.problemResults.map(result => ({ problemIndex: result.problem.index,
+                    score: result.score, disqualified: result.disqualified })).sort((a, b) => a.problemIndex - b.problemIndex),
+                totalScore: participant.result.totalScore,
+            }
+            return { ...checked, remoteResults }
         } catch (error) {
             if (error instanceof LoginRequired) return { result: 'needs_login', error: 'La delega OAuth è scaduta o non è più valida. Rifare il login con scope api e riprendere il lavoro.' }
             return { result: 'unverifiable', error: error instanceof CheckFailed ? error.message : 'Verifica non riuscita: controllare configurazione e risposta Olimanager.' }

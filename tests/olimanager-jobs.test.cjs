@@ -356,4 +356,31 @@ test('MongoDB worker integration', { skip: !integrationUri }, async t => {
     assert.equal((await f.db.collection('olimanager_jobs').findOne()).status, 'failed');
   });
 
+  await t.test('matching remote results establish a baseline while conflicts preserve local synchronization metadata', async t => {
+    const f = await resultsFixture(t, 2);
+    const firstId = f.rows[0]._id, secondId = f.rows[1]._id;
+    const baseline = { endpoint: f.endpoint, contestId: '10', participantId: '326',
+      scores: [{ problemIndex: 1, score: 5, disqualified: false }], totalScore: 5 };
+    await f.queueResults({ rowIds: [firstId] });
+    await f.run({ createInspector: async () => async row => ({ ...resultsSuccess(row), result: 'results_unchanged', resultsSnapshot: baseline }) });
+    const first = await f.db.collection('rows').findOne({ _id: firstId });
+    assert.deepEqual(first.olimanager.resultsSnapshot, baseline);
+    assert.ok(first.olimanager.resultsUpdatedOn instanceof Date);
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 1);
+    const differences = [{ field: 'Esercizio 1', localValue: '5', remoteValue: '4' }];
+    const job = await f.queueResults({ sheetIds: [f.sheet._id] });
+    await f.run({ createInspector: async () => async () => ({
+      result: 'results_conflict', error: 'Risultati remoti modificati', resultDifferences: differences,
+    }) });
+    const retained = await f.db.collection('rows').findOne({ _id: firstId });
+    assert.deepEqual(retained.olimanager, first.olimanager);
+    assert.equal((await f.db.collection('rows').findOne({ _id: secondId })).olimanager.resultsSnapshot, undefined);
+    assert.equal((await f.db.collection('rows').findOne({ _id: secondId })).olimanager.resultsUpdatedOn, undefined);
+    assert.equal((await f.db.collection('sheets').findOne()).nSyncedRows, 1);
+    const conflict = await f.db.collection('olimanager_job_items').findOne({ jobId: job._id, rowId: firstId });
+    assert.equal(conflict.status, 'failed'); assert.equal(conflict.checkResult, 'results_conflict');
+    assert.deepEqual(conflict.resultDifferences, differences);
+    assert.equal((await f.db.collection('olimanager_jobs').findOne({ _id: job._id })).status, 'completed_with_errors');
+  });
+
 });
