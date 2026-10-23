@@ -48,7 +48,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
       patches.push(variables);
       const row = serverRows.get(variables._id.toString());
       const merged = { ...row.data, ...variables.data };
-      const result = { data: { patchRow: { ...row, ...(competition
+      const result = { data: { patchRow: { ...row, updatedOn: new Date(row.updatedOn.getTime() + 1), ...(competition
         ? schema.computeDerivedData(schema.clean(merged), context) : { data: merged }) } } };
       serverRows.set(variables._id.toString(), result.data.patchRow);
       if (deferPatches) return new Promise(resolve => pendingPatches.push(() => resolve(result)));
@@ -125,10 +125,11 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
       else delete globalThis[key];
     }
   });
-  await act(async () => root.render(React.createElement(Table, {
+  const props = {
     edit, standardAnswers, rows, sheet: { _id: new ObjectId(), schema: 'test', workbook: { commonData: {} } },
     csvDownload() {}, setCsvImport() {}, adminEditMode,
-  })));
+  };
+  await act(async () => root.render(React.createElement(Table, props)));
 
   function cell(field, row = 0) { return container.querySelectorAll('tbody > tr')[row].querySelector(`td.field-${field}`); }
   async function click(target) { await act(async () => target.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); }
@@ -153,9 +154,13 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     }
   }
   async function resolvePatch() { await act(async () => pendingPatches.shift()()); }
+  async function receiveSavedRows() {
+    // Apollo can publish a mutation's normalized rows before its promise settles.
+    await act(async () => root.render(React.createElement(Table, { ...props, rows: [...serverRows.values()] })));
+  }
   async function autosave() { await act(async () => { for (const run of [...intervals.values()]) run(); }); }
   async function blur() { await act(async () => dom.window.document.activeElement.blur()); }
-  return { cell, click, key, change, flushTimers, resolvePatch, autosave, blur, patches, created, schema, context,
+  return { cell, click, key, change, flushTimers, resolvePatch, receiveSavedRows, autosave, blur, patches, created, schema, context,
     error: () => container.querySelector('[role="alert"]')?.textContent ?? '',
     newRow: () => click(container.querySelector('tbody button')),
     active: () => dom.window.document.activeElement,

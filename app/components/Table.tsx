@@ -282,6 +282,12 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
               if (incomingRow.updatedOn === l.row.updatedOn) {
                 // la riga non è stata modificata
                 lines.push(l);
+              } else if (l.saving) {
+                // Apollo can publish the saved row before the mutation promise
+                // resolves. Keep newer local edits and the in-flight flag until
+                // acknowledgeSave removes only the values actually submitted.
+                lines.push({ ...l, row: incomingRow })
+                modified_count++
               } else {
                 // console.log(`Row ${id} has been modified externally ${l.row.updatedOn} -> ${incomingRow.updatedOn}`);
                 if (Object.keys(l.data).length>0) {

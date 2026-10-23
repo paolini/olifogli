@@ -31,6 +31,31 @@ test('pending answer edits hide stale scores and are saved after an in-flight re
   assert.equal(f.cell('score').textContent, '70');
 });
 
+test('rapid answers survive a cache update before the pending save is acknowledged', async t => {
+  const f = await mountTable(t, { competition: true, deferPatches: true });
+  await f.click(f.cell('r01'));
+  await f.key('b');
+  await f.key('c');
+  await f.key('d');
+  assert.equal(f.patches.length, 1);
+  assert.equal(f.cell('r02').textContent, 'C');
+  assert.equal(f.cell('r03').textContent, 'D');
+
+  await f.receiveSavedRows();
+  assert.equal(f.cell('r02').textContent, 'C');
+  assert.equal(f.cell('r03').textContent, 'D');
+  assertElement(f.focusCell(), f.cell('r04'));
+  await f.resolvePatch();
+  assert.equal(f.patches.length, 2);
+  assert.equal(f.patches[1].data.r02, 'C');
+  assert.equal(f.patches[1].data.r03, 'D');
+  await f.resolvePatch();
+  await f.receiveSavedRows();
+  assert.equal(f.cell('r01').textContent, 'B');
+  assert.equal(f.cell('r02').textContent, 'C');
+  assert.equal(f.cell('r03').textContent, 'D');
+});
+
 test('score calculation ignores missing identity fields and clears stale scores for invalid answers', async t => {
   const f = await mountTable(t, { competition: true });
   const answers = Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`r${String(i + 1).padStart(2, '0')}`, i === 1 ? 'B' : 'A']));
