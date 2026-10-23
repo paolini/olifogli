@@ -691,3 +691,43 @@ test('typing another value overrides the suggestion and later autosaves only tha
   assert.equal(f.created[0].data.classYear, '4');
   assert.equal(f.created[0].data.classSection, undefined);
 });
+
+for (const field of ['r01', 'r02']) {
+  test(`autosave leaves an unchanged corrected answer in ${field} untouched`, async t => {
+    const f = await mountTable(t, { competition: true, correctedAnswers: true, deferPatches: true });
+    await f.click(f.cell(field));
+    await f.key('F2');
+    const input = f.input();
+    const value = input.value;
+    assert.equal(f.cell('score').textContent, '80');
+    for (let tick = 0; tick < 3; tick++) {
+      await f.autosave();
+      assert.equal(f.patches.length, 0);
+      assert.equal(f.cell('score').textContent, '80');
+      assertElement(f.active(), input);
+      assert.equal(input.value, value);
+    }
+    await f.key('Escape');
+    assert.equal(f.patches.length, 0);
+  });
+}
+
+test('an answer saved with correction metadata is not submitted again while its editor stays open', async t => {
+  const f = await mountTable(t, { competition: true, correctedAnswers: true, deferPatches: true });
+  await f.click(f.cell('r02'));
+  await f.key('F2');
+  await f.key('Delete');
+  assert.equal(f.patches.length, 1);
+  await f.resolvePatch();
+  // Replace the empty answer, then leave the destination editor open.
+  await f.key('c');
+  assert.equal(f.patches.length, 2);
+  await f.resolvePatch();
+  await f.click(f.cell('r02'));
+  assert.equal(f.input().value, 'C');
+  const count = f.patches.length;
+  for (let tick = 0; tick < 3; tick++) await f.autosave();
+  assert.equal(f.patches.length, count);
+  assert.equal(f.input().value, 'C');
+  assert.equal(f.cell('score').textContent, '75');
+});

@@ -564,7 +564,10 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         if (!line || !canEditCell(field, line.row, adminEditMode, standardAnswers)) return
         const original = line.row?.data[field.name] ?? ''
         const { [field.name]: removed, ...data } = line.data
-        if (line.saving || field.display(value, original, false).changed) data[field.name] = value
+        // Compare editable values: saved answers can include correction metadata
+        // such as "A [BCD]", while the editor contains only "A".
+        const originalValue = field.clean(field.display(original, original, false).value)
+        if (line.saving || value !== originalValue) data[field.name] = value
         if (Object.keys(data).length === Object.keys(line.data).length &&
             Object.keys(data).every(key => data[key] === line.data[key])) return line
         const updated = { ...line, data }

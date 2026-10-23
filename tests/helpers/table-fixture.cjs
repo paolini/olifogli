@@ -12,7 +12,7 @@ const compiled = new Map();
 // Mount the real table/cells. Only network hooks and unrelated toolbar/header UI
 // are replaced; React state, effects, DOM focus and event bubbling are real.
 async function mountTable(t, { edit = true, standardAnswers = false, synced = false, adminEditMode = false, deferPatches = false, deferAdds = false,
-  dateOptions = { expectedMinAge: 10, expectedMaxAge: 16 }, competition = false, suggestions = false } = {}) {
+  dateOptions = { expectedMinAge: 10, expectedMaxAge: 16 }, competition = false, suggestions = false, correctedAnswers = false } = {}) {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://table.invalid' });
   const saved = new Map();
   for (const [key, value] of Object.entries({
@@ -119,6 +119,9 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     for (const row of rows) Object.assign(row.data, Object.fromEntries(extra.map(name => [name, 'A'])), { score: '80' });
     schema = new Competition('test', 'Test', [...schema.fields, ...extra.map(name => new ChoiceAnswerField(name, {})), new VariantField('variante', {})]);
     schema.displayValidationContext = () => context;
+    if (correctedAnswers) {
+      for (const row of rows) Object.assign(row, schema.computeDerivedData(schema.clean(row.data), context));
+    }
   }
   const Table = load('app/components/Table.tsx').default;
   const container = dom.window.document.getElementById('root');
