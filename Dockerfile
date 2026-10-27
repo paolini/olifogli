@@ -11,7 +11,7 @@
 # To push the image:
 # $ docker push paolini/${APP}
 
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 
 # Install mongodump
 RUN apk add --no-cache mongodb-tools
@@ -40,14 +40,14 @@ RUN npm run build
 RUN node_modules/.bin/esbuild ws-server.ts \
     --bundle \
     --platform=node \
-    --target=node22 \
+    --target=node24 \
     --packages=external \
     --outfile=ws-server.bundle.js
 
 RUN node_modules/.bin/esbuild olimanager-worker.ts \
     --bundle \
     --platform=node \
-    --target=node22 \
+    --target=node24 \
     --packages=external \
     --outfile=olimanager-worker.bundle.js
 

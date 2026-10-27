@@ -258,7 +258,9 @@ Tested deployment with docker-compose-production.yml for a template configuratio
 
 ### Aggiornamenti di sicurezza delle dipendenze (#49)
 
-Usare Node.js 22 o successivo, come nell'immagine Docker e nella CI. Il lockfile
+Usare Node.js 24 LTS, come nell'immagine Docker, nella CI e in `.nvmrc`.
+Con nvm eseguire `nvm install` e `nvm use` nella radice del repository.
+Il lockfile
 include Next.js 16.4.3, React/React DOM 19.2.9, NextAuth 4.24.15 e Apollo Server 5.
 Il servizio WebSocket usa l'adattatore `@as-integrations/express5`, compatibile
 con Express 5. I tipi Express e body-parser sono dipendenze di sviluppo esplicite.

@@ -6,7 +6,7 @@ Eseguire dalla radice del repository, con le dipendenze di sviluppo installate:
 npm test
 ```
 
-Si usa il test runner integrato in Node.js (Node 20 o successivo).
+Si usa il test runner integrato in Node.js (Node 24 LTS, come in CI e Docker).
 TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
 fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
