@@ -44,7 +44,8 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 
   // create directory if not exists
-  if (!fs.existsSync(SPOOL_DIR)) {
+  // Runtime volume, not a build asset to include in the standalone image.
+  if (!fs.existsSync(/* turbopackIgnore: true */ SPOOL_DIR)) {
     fs.mkdirSync(SPOOL_DIR, { recursive: true });
   }
 

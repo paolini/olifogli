@@ -38,7 +38,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     try {
         // Resolve the configured root, but reject symlinks in job/image paths,
         // including links to another job inside the same root.
-        const root = await realpath(SCANS_DATA_DIR);
+        // Images live on a runtime volume; do not trace it into the build.
+        const root = await realpath(/* turbopackIgnore: true */ SCANS_DATA_DIR);
         const directory = join(root, jobId);
         if (await realpath(directory) !== directory) {
             return new NextResponse('Not Found', { status: 404 });

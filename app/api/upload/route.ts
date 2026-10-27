@@ -20,7 +20,8 @@ if (!JWT_SECRET) {
 async function getSCANS_SPOOL_DIR() {
     const SCANS_SPOOL_DIR = process.env.SCANS_SPOOL_DIR || '';
     if (SCANS_SPOOL_DIR) {
-        if (!existsSync(SCANS_SPOOL_DIR)) {
+        // Runtime volume, not a build asset to include in the standalone image.
+        if (!existsSync(/* turbopackIgnore: true */ SCANS_SPOOL_DIR)) {
             await mkdir(SCANS_SPOOL_DIR, { recursive: true });
         }
     }

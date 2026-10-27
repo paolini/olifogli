@@ -48,19 +48,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     }
 
     // Il file PDF dovrebbe essere nella directory SHEETGENDATA_DIR/{jobId}/*.pdf
-    const jobDir = join(SHEETGENDATA_DIR, jobId);
+    // Generated PDFs live on a runtime volume, outside the standalone build.
+    const jobDir = join(/* turbopackIgnore: true */ SHEETGENDATA_DIR, jobId);
 
     try {
-        const files = fs.readdirSync(jobDir);
+        const files = fs.readdirSync(/* turbopackIgnore: true */ jobDir);
         const pdfFile = files.find((f: string) => f.endsWith('.pdf'));
 
         if (!pdfFile) {
             return new NextResponse('PDF not found', { status: 404 });
         }
 
-        const filePath = join(jobDir, pdfFile);
+        const filePath = join(/* turbopackIgnore: true */ jobDir, pdfFile);
 
-        const file = await readFile(filePath);
+        const file = await readFile(/* turbopackIgnore: true */ filePath);
 
         return new NextResponse(new Uint8Array(file), {
             status: 200,

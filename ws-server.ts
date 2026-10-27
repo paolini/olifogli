@@ -7,7 +7,7 @@ import 'dotenv/config';
 import http from 'http';
 import { logDiagnostic, logWebSocketEvent } from './app/lib/logging';
 import { WebSocketServer } from 'ws';
-import { useServer } from 'graphql-ws/use/ws'; // <-- Cambiato da 'graphql-ws' a 'graphql-ws/use/ws'
+import { useServer as createGraphQLWSServer } from 'graphql-ws/use/ws';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import express from 'express';
@@ -78,7 +78,7 @@ async function start() {
     };
   }
 
-  const serverCleanup = useServer({
+  const serverCleanup = createGraphQLWSServer({
     schema,
     context: async (ctx) => {
       const identity = await authenticate(ctx.extra.request.headers.cookie);

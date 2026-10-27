@@ -259,26 +259,37 @@ Tested deployment with docker-compose-production.yml for a template configuratio
 ### Aggiornamenti di sicurezza delle dipendenze (#49)
 
 Usare Node.js 22 o successivo, come nell'immagine Docker e nella CI. Il lockfile
-include Next.js 15.5.28, React/React DOM 19.2.9, NextAuth 4.24.15 e Apollo Server 5.
+include Next.js 16.4.3, React/React DOM 19.2.9, NextAuth 4.24.15 e Apollo Server 5.
 Il servizio WebSocket usa l'adattatore `@as-integrations/express5`, compatibile
 con Express 5. I tipi Express e body-parser sono dipendenze di sviluppo esplicite.
 
 `sharp` è una dipendenza esplicita con versione minima 0.35.5 per includere le
 correzioni delle librerie native usate nell'ottimizzazione delle immagini.
-L'override PostCSS usa la versione dichiarata in `devDependencies` (minimo
-8.5.32), anche per la dipendenza bloccata da Next.js 15. Conservare l'override
-finché Next.js richiede una versione precedente alle correzioni di sicurezza.
+Next.js 16 include PostCSS 8.5.23, successivo alle correzioni richieste: non è
+più necessario l'override usato con Next.js 15.
+
+Sviluppo e build usano Turbopack, predefinito in Next.js 16. Le route server
+leggono già `params` in modo asincrono. L'autenticazione rimane su NextAuth.
+Il lint usa direttamente ESLint con la configurazione flat di Next.js 16:
+`next lint` non è più disponibile e la build non esegue il lint automaticamente.
+La CI esegue quindi `npm run lint` separatamente. Le nuove diagnostiche React
+Compiler sui pattern già presenti nei componenti sono mantenute come avvisi
+nei soli file interessati; React Compiler non è abilitato.
+Gli accessi ai volumi di scansioni e PDF generati sono esclusi dal tracciamento
+Turbopack tramite `turbopackIgnore`: questi dati devono essere disponibili a
+runtime nei volumi configurati, senza essere inclusi nell'immagine standalone.
 
 Prima di distribuire un aggiornamento:
 
 ```sh
 npm ci
 npm test
+npm run lint
 npm audit --omit=dev
 npm run build
 ```
 
-La CI esegue test e audit prima di costruire e pubblicare l'immagine. Dopo la
+La CI esegue test, lint e audit prima di costruire e pubblicare l'immagine. Dopo la
 pubblicazione, l'amministratore deve aggiornare tutti i servizi che usano
 l'immagine (app, WebSocket e worker) e verificare le versioni effettive nei
 container. Collaudare login OAuth, navigazione dei fogli, upload PDF e ricezione
