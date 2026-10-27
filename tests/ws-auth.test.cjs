@@ -42,7 +42,7 @@ async function loadWebSocketOptions(env = {}) {
       },
     },
     '@apollo/server': { ApolloServer: class { async start() {} } },
-    '@apollo/server/express4': { expressMiddleware: () => () => {} },
+    '@as-integrations/express5': { expressMiddleware: () => () => {} },
     express,
     cors: () => () => {},
     'body-parser': { json: () => () => {} },

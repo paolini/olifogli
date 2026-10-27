@@ -11,6 +11,12 @@ TypeScript traspila i moduli per i test; jsdom 26, dipendenza di sviluppo,
 fornisce il DOM per i test dei componenti React.
 Non sono necessari `.env`, credenziali, MongoDB, Redis o porte di rete.
 
+`graphql-http.test.cjs` usa Apollo Server e le integrazioni HTTP reali per Next.js
+ed Express 5 con schema e identità sintetici. Verifica il passaggio del contesto,
+il rifiuto anonimo, la risposta autorizzata, il blocco CSRF e dell'introspezione
+e l'assenza di stack trace con i default di produzione. Non apre porte e non
+sostituisce i test dei permessi applicativi o il collaudo OAuth del deploy.
+
 I test JavaScript dello script di setup Archimede sono inclusi in `npm test` e
 si possono eseguire separatamente con `npm run test:olimanager`.
 Usano un'istanza simulata in memoria: verificano le

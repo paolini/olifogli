@@ -256,6 +256,35 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 Tested deployment with docker-compose-production.yml for a template configuration file.
 
+### Aggiornamenti di sicurezza delle dipendenze (#49)
+
+Usare Node.js 22 o successivo, come nell'immagine Docker e nella CI. Il lockfile
+include Next.js 15.5.28, React/React DOM 19.2.9, NextAuth 4.24.15 e Apollo Server 5.
+Il servizio WebSocket usa l'adattatore `@as-integrations/express5`, compatibile
+con Express 5. I tipi Express e body-parser sono dipendenze di sviluppo esplicite.
+
+`sharp` è una dipendenza esplicita con versione minima 0.35.5 per includere le
+correzioni delle librerie native usate nell'ottimizzazione delle immagini.
+L'override PostCSS usa la versione dichiarata in `devDependencies` (minimo
+8.5.32), anche per la dipendenza bloccata da Next.js 15. Conservare l'override
+finché Next.js richiede una versione precedente alle correzioni di sicurezza.
+
+Prima di distribuire un aggiornamento:
+
+```sh
+npm ci
+npm test
+npm audit --omit=dev
+npm run build
+```
+
+La CI esegue test e audit prima di costruire e pubblicare l'immagine. Dopo la
+pubblicazione, l'amministratore deve aggiornare tutti i servizi che usano
+l'immagine (app, WebSocket e worker) e verificare le versioni effettive nei
+container. Collaudare login OAuth, navigazione dei fogli, upload PDF e ricezione
+degli aggiornamenti tramite sottoscrizioni. I test isolati non sostituiscono
+questo collaudo del deploy con MongoDB, Redis e il provider OAuth reali.
+
 
 ## Log applicativi e conservazione
 

@@ -9,7 +9,7 @@ import { logDiagnostic, logWebSocketEvent } from './app/lib/logging';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/use/ws'; // <-- Cambiato da 'graphql-ws' a 'graphql-ws/use/ws'
 import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
+import { expressMiddleware } from '@as-integrations/express5';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
