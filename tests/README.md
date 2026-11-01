@@ -85,6 +85,13 @@ ogni nuova operazione e la ricezione di un evento da una subscription autorizzat
 Database, rete e resolver applicativi sono isolati: l'evento usa un resolver di
 prova e non sostituisce un collaudo con MongoDB e Redis.
 
+`scan-job-events.test.cjs` verifica gli eventi per scansioni, risultati acquisiti
+e PDF generati, la chiusura dei change stream e la notifica delle eliminazioni
+solo dopo il commit. `scan-pages.test.cjs` esegue i componenti delle due schede
+con hook di rete isolati e verifica la rilettura di log, risultati e PDF anche
+al segnale iniziale di riconnessione. `sheet-subscriptions.test.cjs` copre i
+permessi, il segnale iniziale e la cancellazione delle subscription.
+
 In ambienti isolati che non consentono al runner di gestire correttamente i
 processi figli, con Node 22.8 o successivo si può usare:
 

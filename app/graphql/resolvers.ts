@@ -198,10 +198,10 @@ export const resolvers: Resolvers = {
       ) as any,
     },
     scanJobUpdated: {
-      subscribe: sheetSubscription(TOPICS.SCAN_JOB_UPDATED),
+      subscribe: sheetSubscription(TOPICS.SCAN_JOB_UPDATED, { scanJobUpdated: false }),
     },
     scanSheetJobUpdated: {
-      subscribe: sheetSubscription(TOPICS.SCAN_SHEET_JOB_UPDATED),
+      subscribe: sheetSubscription(TOPICS.SCAN_SHEET_JOB_UPDATED, { scanSheetJobUpdated: false }),
     },
   },
 

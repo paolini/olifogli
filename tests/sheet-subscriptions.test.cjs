@@ -105,6 +105,9 @@ for (const name of Object.keys(topics)) {
   test(`${name}: delivers only events for the authorized sheet without per-event database reads`, async () => {
     const f = fixture();
     const iterator = await f.subscribe(name);
+    if (name === 'scanJobUpdated' || name === 'scanSheetJobUpdated') {
+      assert.equal((await iterator.next()).value[name], false);
+    }
     const secret = { [name]: 'other sheet private data' };
     const allowed = { [name]: 'authorized event' };
     f.publish(name, f.otherId, secret);
@@ -179,3 +182,17 @@ test('cancelling while waiting for an event closes the Redis iterator', async ()
   assert.equal((await pending).done, true);
   assert.equal(f.state.sources[0].closed, true);
 });
+
+for (const name of ['scanJobUpdated', 'scanSheetJobUpdated']) {
+  test(`${name}: refreshes on every subscription/reconnect and cancels pending reads`, async () => {
+    const f = fixture();
+    for (let reconnect = 0; reconnect < 2; reconnect++) {
+      const iterator = await f.subscribe(name);
+      assert.equal((await iterator.next()).value[name], false);
+      const pending = iterator.next();
+      await iterator.return();
+      assert.equal((await pending).done, true);
+      assert.equal(f.state.sources.at(-1).closed, true);
+    }
+  });
+}

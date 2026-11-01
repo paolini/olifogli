@@ -19,8 +19,9 @@ import { NextRequest } from 'next/server';
 import { GraphQLError, getOperationAST, parse } from 'graphql';
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
 import { pubsub, TOPICS } from './app/lib/pubsub.js'; // Import the singleton pubsub
-import { getUsersCollection, getScanJobsCollection, getScanSheetJobsCollection } from './app/lib/mongodb.js';
+import { getUsersCollection } from './app/lib/mongodb.js';
 import { watchOlimanagerJobs } from './app/lib/olimanagerJobEvents.js';
+import { watchScanJobs } from './app/lib/scanJobEvents.js';
 import { getDb } from './app/lib/mongodb.js';
 import { redis, CURSOR_KEY } from './app/lib/redis.js';
 
@@ -164,26 +165,11 @@ async function start() {
     console.log(`GraphQL HTTP+WS server listening on http://localhost:${PORT}/graphql`);
   });
 
-  // MongoDB Change Streams: pubblica eventi WS quando scan_jobs o scan_sheet_jobs vengono aggiornati dall'OMR worker
-  const scanJobsCollection = await getScanJobsCollection();
-  scanJobsCollection.watch([], { fullDocument: 'updateLookup' }).on('change', (change) => {
-    if (change.operationType === 'update' || change.operationType === 'insert') {
-      const doc = (change as { fullDocument?: { sheetId?: { toString(): string } } }).fullDocument;
-      if (doc?.sheetId) {
-        pubsub.publish(TOPICS.SCAN_JOB_UPDATED(doc.sheetId.toString()), { scanJobUpdated: true });
-      }
-    }
-  });
-
-  const scanSheetJobsCollection = await getScanSheetJobsCollection();
-  scanSheetJobsCollection.watch([], { fullDocument: 'updateLookup' }).on('change', (change) => {
-    if (change.operationType === 'update' || change.operationType === 'insert') {
-      const doc = (change as { fullDocument?: { sheetId?: { toString(): string } } }).fullDocument;
-      if (doc?.sheetId) {
-        pubsub.publish(TOPICS.SCAN_SHEET_JOB_UPDATED(doc.sheetId.toString()), { scanSheetJobUpdated: true });
-      }
-    }
-  });
+  const scanJobsStream = watchScanJobs(await getDb(),
+    (sheetId, kind) => kind === 'scan'
+      ? pubsub.publish(TOPICS.SCAN_JOB_UPDATED(sheetId), { scanJobUpdated: true })
+      : pubsub.publish(TOPICS.SCAN_SHEET_JOB_UPDATED(sheetId), { scanSheetJobUpdated: true }),
+    error => logDiagnostic('ws.scan_jobs.watch_failed', error));
 
   const olimanagerJobsStream = watchOlimanagerJobs(await getDb(),
     () => pubsub.publish(TOPICS.OLIMANAGER_JOBS_UPDATED, { olimanagerJobsUpdated: true }),
@@ -193,6 +179,7 @@ async function start() {
   const shutDown = async () => {
     console.log('\nSpegnimento del server in corso...');
     await olimanagerJobsStream.close();
+    await scanJobsStream.close();
     await serverCleanup.dispose();
     await server.stop();
     serverInstance.close(async () => {

@@ -1,5 +1,6 @@
 import { getScanJobsCollection, getScanResultsCollection, getSheetsCollection, withTransaction } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
+import { TOPICS } from '@/app/lib/pubsub'
 import { Context } from '../types'
 import { get_authenticated_user, check_user_can_delete_job } from './utils'
 
@@ -27,6 +28,9 @@ export default async function deleteScan(_: unknown, { jobId }: {
     })
 
     /* i files non vengono cancellati */
+
+    // A deleted MongoDB document no longer contains the sheetId for the watcher.
+    await context.pubsub?.publish(TOPICS.SCAN_JOB_UPDATED(job.sheetId.toString()), { scanJobUpdated: true })
 
     return true
 }

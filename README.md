@@ -108,6 +108,14 @@ verificano i permessi aggiornati; riavviare soltanto Next.js non basta.
 
 Eseguire `npm test` per i [test di regressione](tests/README.md).
 
+Le schede di importazione scansioni e dei PDF generati si aggiornano tramite
+WebSocket: il server osserva `scan_jobs`, `scan_results` e `scan_sheet_jobs`,
+inclusi gli aggiornamenti scritti dai worker esterni. Le eliminazioni effettuate
+dall'app notificano gli altri browser dopo la transazione. Ogni nuova iscrizione,
+anche dopo una riconnessione, provoca una rilettura dei dati via HTTP per
+recuperare eventuali aggiornamenti persi. Riavviare il server WebSocket dopo
+gli aggiornamenti al suo codice.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

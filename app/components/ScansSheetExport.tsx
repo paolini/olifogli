@@ -30,8 +30,9 @@ export default function ScansPdfExport({sheet}:{
 }) {
     const { data: jobsData, loading: jobsLoading, error: jobsError, refetch: refetchJobs } = useScanSheetJobsQuery({
         variables: { sheetId: new ObjectId(sheet._id) },
+        fetchPolicy: 'cache-and-network',
     })
-    useSubscription(SCAN_SHEET_JOB_UPDATED_SUBSCRIPTION, {
+    const { error: subscriptionError } = useSubscription(SCAN_SHEET_JOB_UPDATED_SUBSCRIPTION, {
         variables: { sheetId: new ObjectId(sheet._id) },
         onData: () => { refetchJobs() },
     });
@@ -41,6 +42,7 @@ export default function ScansPdfExport({sheet}:{
         
         {jobsLoading && <Loading />}
         <Error error={jobsError} />
+        <Error error={subscriptionError} />
         {jobsData?.scanSheetJobs && jobsData.scanSheetJobs.length > 0 ? (
             <table className="border-collapse border border-gray-300 w-auto">
                 <thead>

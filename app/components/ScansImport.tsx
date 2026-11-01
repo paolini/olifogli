@@ -88,21 +88,24 @@ function ScansLog({sheet,data_rows}:{
     sheet: Sheet,
     data_rows: Row[],
 }) {
-    const { data, error, refetch } = useScanJobsQuery({ variables: { sheetId: sheet._id } });
-    useSubscription(SCAN_JOB_UPDATED_SUBSCRIPTION, {
+    const { data, error, refetch } = useScanJobsQuery({ variables: { sheetId: sheet._id }, fetchPolicy: 'cache-and-network' });
+    const { error: subscriptionError } = useSubscription(SCAN_JOB_UPDATED_SUBSCRIPTION, {
         variables: { sheetId: sheet._id },
         onData: () => { refetch() },
     });
     const jobs = data?.scanJobs
 
-    if (!jobs || error) return <ErrorElement error={error} />
-    if (!data) return <Loading />
+    if (error) return <ErrorElement error={error} />
+    if (!jobs) return <Loading />
 
-    return <ul className="list-disc pl-5 space-y-2">
-        {jobs.map(job => <li key={job._id.toString()} className="pt-8">
+    return <>
+        {subscriptionError && <ErrorElement error={subscriptionError} />}
+        <ul className="list-disc pl-5 space-y-2">
+            {jobs.map(job => <li key={job._id.toString()} className="pt-8">
                 <ScansJob sheet={sheet} data_rows={data_rows} job={job}/>
             </li>)}
-    </ul>
+        </ul>
+    </>
 }
 
 const SCANS_DELETE_MUTATION = gql`
@@ -118,7 +121,7 @@ function ScansJob({sheet, data_rows, job}: {
 }) {
     const [deleteChecked, setDeleteChecked] = useState(false)
     const [deleteScan, { loading: deleteLoading, error: deleteError }] 
-        = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCAN_JOBS_QUERY}]})
+        = useMutation(SCANS_DELETE_MUTATION, {refetchQueries: [{query: SCAN_JOBS_QUERY, variables: { sheetId: sheet._id }}]})
     const [raw,setRaw] = useState(false)
     const message = job.messages.length>0 ? job.messages[job.messages.length-1] : null
     const done = message && (message.status === 'completed' || message.status === 'error' || message.timestamp < new Date(Date.now() - 60 * 1000)) // more than 1 minute old   
@@ -191,7 +194,14 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     const [addRow, {loading: addLoading, error: addError}] = useAddRowMutation()
     const [patchRow, {loading: patchLoading, error: patchError}] = usePatchRowMutation()
     const [selected, setSelected] = useState<ObjectId[]>([])
-    const { data, error } = useQuery(SCAN_RESULTS_QUERY, { variables: { jobId: job._id } })
+    const { data, error, refetch } = useQuery(SCAN_RESULTS_QUERY, {
+        variables: { jobId: job._id }, fetchPolicy: 'cache-and-network',
+    })
+    // Apollo shares this sheet subscription with the log and the other results.
+    useSubscription(SCAN_JOB_UPDATED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onData: () => { refetch() },
+    })
     if (error) return <ErrorElement error={error} />
     if (addError) return <ErrorElement error={addError} />
     if (patchError) return <ErrorElement error={patchError} />

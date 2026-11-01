@@ -51,6 +51,9 @@ async function loadWebSocketOptions(env = {}) {
     './app/lib/olimanagerJobEvents.js': {
       watchOlimanagerJobs: () => ({ async close() {} }),
     },
+    './app/lib/scanJobEvents.js': {
+      watchScanJobs: () => ({ async close() {} }),
+    },
     './app/lib/mongodb.js': {
       getDb: async () => ({}),
       getUsersCollection: async () => users,
