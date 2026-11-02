@@ -20,6 +20,7 @@ export async function ensureJobIndexes(db: Db) {
     const { jobs, items, credentials } = jobCollections(db)
     await jobs.createIndex({ status: 1, leaseExpiresAt: 1, createdAt: 1 })
     await jobs.createIndex({ affectedSheetIds: 1, createdAt: -1 })
+    await jobs.createIndex({ operation: 1, status: 1, cryptKeyExpiresAt: 1 })
     await items.createIndex({ jobId: 1, rowId: 1 }, { unique: true })
     await items.createIndex({ jobId: 1, status: 1, _id: 1 })
     await credentials.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
@@ -31,12 +32,13 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
     operation: OlimanagerJob['operation'] = 'check_participants',
 ): Promise<OlimanagerJob> {
     if (!user.isAdmin) throw new Error('non autorizzato')
-    if (!['check_participants', 'match_or_create_participants', 'update_results'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
-    if (operation !== 'check_participants' && !protect) throw new Error('Il trasferimento richiede una delega OAuth.')
+    if (!['check_participants', 'match_or_create_participants', 'update_results', 'crypt_sheets', 'decrypt_sheets'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
+    if (operation !== 'check_participants' && operation !== 'crypt_sheets' && operation !== 'decrypt_sheets' && !protect) throw new Error('Il trasferimento richiede una delega OAuth.')
     const rowIds = unique(targets.rowIds || []), sheetIds = unique(targets.sheetIds || [])
     if (!rowIds.length && !sheetIds.length) throw new Error('Selezionare almeno una riga o un foglio.')
-    const url = new URL(endpoint)
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    const crypt = operation === 'crypt_sheets' || operation === 'decrypt_sheets'
+    const url = crypt ? null : new URL(endpoint)
+    if (url && (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash)) {
         throw new Error('OLIMANAGER_GRAPHQL_ENDPOINT non valido.')
     }
     await ensureJobIndexes(db)
@@ -48,18 +50,19 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
         const selectedSheets = await sheets.find({ _id: { $in: affectedSheetIds } }, { session }).toArray()
         if (selectedSheets.length !== affectedSheetIds.length) throw new Error('Uno dei fogli selezionati non esiste più.')
         for (const sheet of selectedSheets) {
-            if (!sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del lavoro Olimanager.`)
+            if (!crypt && !sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del lavoro Olimanager.`)
             if (sheet.olimanagerJobId) throw new Error(`Il foglio «${sheet.name}» ha già un lavoro Olimanager attivo.`)
         }
         const job: OlimanagerJob = {
             _id: new ObjectId(), operation, checkMode: protect ? 'remote' : 'local', rowIds, sheetIds, affectedSheetIds,
-            endpoint: url.href, createdBy: user._id, createdAt: new Date(), status: 'queued',
+            endpoint: url?.href || '', createdBy: user._id, createdAt: new Date(), status: 'queued',
             totalRows: 0, succeededRows: 0, failedRows: 0, skippedRows: 0,
         }
         // Lock sheets and enqueue atomically, also serializing concurrent queue/reopen requests.
-        const locked = await sheets.updateMany({ _id: { $in: affectedSheetIds }, locked: true,
+        const locked = await sheets.updateMany({ _id: { $in: affectedSheetIds }, ...(crypt ? {} : { locked: true }),
             olimanagerJobId: { $exists: false } }, { $set: { olimanagerJobId: job._id } }, { session })
         if (locked.matchedCount !== affectedSheetIds.length) throw new Error('La selezione è cambiata: riprovare.')
+        if (crypt) job.cryptKeyExpiresAt = new Date(Date.now() + LEASE_MS)
         if (protect) await credentials.insertOne(protect(job), { session })
         await jobs.insertOne(job, { session })
         return job
@@ -93,6 +96,7 @@ type WorkerOptions = {
     workerId: string
     validate: (row: Row, sheet: Sheet, workbook: Workbook) => void
     createInspector?: (job: OlimanagerJob) => Promise<(row: Row, sheet: Sheet, workbook: Workbook) => Promise<OlimanagerCheckResult>>
+    encryptionKeys?: ReadonlyMap<string, (row: Row, sheet: Sheet) => Record<string, string> | Promise<Record<string, string>>>
     now?: () => Date
     shouldStop?: () => boolean
 }
@@ -102,16 +106,31 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
     const now = options.now || (() => new Date())
     // A unique lease per claim prevents an old incarnation of a worker from committing.
     const owner = `${options.workerId}:${new ObjectId()}`
-    const job = await jobs.findOneAndUpdate({ operation: { $in: ['check_participants', 'match_or_create_participants', 'update_results'] }, $or: [
+    // A lost in-memory key cannot be recovered after a worker restart.
+    for await (const expired of jobs.find({ operation: { $in: ['crypt_sheets', 'decrypt_sheets'] }, status: { $in: ['queued', 'preparing', 'running'] },
+        cryptKeyExpiresAt: { $lte: now() } })) {
+        await transaction(async session => {
+            const failed = await jobs.updateOne({ _id: expired._id, status: { $in: ['queued', 'preparing', 'running'] }, cryptKeyExpiresAt: { $lte: now() } },
+                { $set: { status: 'failed', finishedAt: now(), error: `Il worker è stato interrotto e il segreto in memoria è andato perso. Avviare nuovamente ${expired.operation === 'decrypt_sheets' ? 'Decripta' : 'Cripta'}.` },
+                    $unset: { leaseOwner: '', leaseExpiresAt: '' } }, { session })
+            if (failed.matchedCount) await sheets.updateMany({ olimanagerJobId: expired._id }, { $unset: { olimanagerJobId: '' } }, { session })
+        })
+    }
+    const job = await jobs.findOneAndUpdate({ $and: [ { $or: [
+        { operation: { $in: ['check_participants', 'match_or_create_participants', 'update_results'] } },
+        { operation: { $in: ['crypt_sheets', 'decrypt_sheets'] }, _id: { $in: [...(options.encryptionKeys?.keys() || [])].map(id => new ObjectId(id)) }, cryptKeyExpiresAt: { $gt: now() } },
+    ] }, { $or: [
         { status: 'queued' },
         { status: { $in: ['preparing', 'running'] }, leaseExpiresAt: { $lte: now() } },
-    ] }, { $set: { status: 'preparing', leaseOwner: owner, leaseExpiresAt: new Date(now().getTime() + LEASE_MS) } },
+    ] } ] }, { $set: { status: 'preparing', leaseOwner: owner, leaseExpiresAt: new Date(now().getTime() + LEASE_MS) } },
     { sort: { createdAt: 1 }, returnDocument: 'after' })
     if (!job) return false
     const startedAt = job.startedAt || now()
+    const isCryptography = job.operation === 'crypt_sheets' || job.operation === 'decrypt_sheets'
 
     async function checkpoint(session: ClientSession, update: Partial<OlimanagerJob> = {}) {
-        const result = await jobs.updateOne({ _id: job!._id, leaseOwner: owner, leaseExpiresAt: { $gt: now() } },
+        const result = await jobs.updateOne({ _id: job!._id, leaseOwner: owner, leaseExpiresAt: { $gt: now() },
+            ...(isCryptography ? { cryptKeyExpiresAt: { $gt: now() } } : {}) },
             { $set: { ...update, leaseExpiresAt: new Date(now().getTime() + LEASE_MS) } }, { session })
         if (!result.matchedCount) throw new LeaseLost()
     }
@@ -172,7 +191,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
 
         while (true) {
             checkStop()
-            const batch = await items.find({ jobId: job._id, status: 'pending' }).sort({ _id: 1 }).limit(inspect ? 1 : BATCH_SIZE).toArray()
+            const batch = await items.find({ jobId: job._id, status: 'pending' }).sort({ _id: 1 }).limit(inspect ? 1 : job.operation === 'decrypt_sheets' ? 20 : BATCH_SIZE).toArray()
             if (!batch.length) break
             const outcomes: { item: OlimanagerJobItem, sheetId?: ObjectId, error?: string, check?: OlimanagerCheckResult }[] = []
             for (const item of batch) {
@@ -181,7 +200,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                     if (!row) throw new Error('La riga non esiste più.')
                     const sheet = await sheets.findOne({ _id: row.sheetId })
                     if (!sheet) throw new Error('Il foglio non esiste più.')
-                    if (!sheet.locked) throw new Error('Il foglio non è finalizzato.')
+                    if (job.operation !== 'crypt_sheets' && job.operation !== 'decrypt_sheets' && !sheet.locked) throw new Error('Il foglio non è finalizzato.')
                     if (!sheet.olimanagerJobId?.equals(job._id)) throw new Error('Il foglio non è riservato a questo lavoro.')
                     const workbook = await workbooks.findOne({ _id: sheet.workbookId })
                     if (!workbook) throw new Error('La raccolta non esiste più.')
@@ -202,7 +221,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                             ...(!['matched', 'unmatched', 'created', 'linked', 'already_linked', 'absent', 'results_updated', 'results_unchanged'].includes(check.result) ? { error: check.error || 'Verifica non riuscita.' } : {}),
                         })
                     } else {
-                        options.validate(row, sheet, workbook)
+                        if (job.operation !== 'crypt_sheets' && job.operation !== 'decrypt_sheets') options.validate(row, sheet, workbook)
                         outcomes.push({ item, sheetId: row.sheetId })
                     }
                 } catch (error) {
@@ -212,6 +231,25 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
             }
             await transaction(async session => {
                 await checkpoint(session)
+                if (job.operation === 'crypt_sheets' || job.operation === 'decrypt_sheets') {
+                    const encrypt = options.encryptionKeys?.get(job._id.toString())
+                    if (!encrypt) throw new Error('Segreto di crittografia/decrittazione non disponibile.')
+                    for (const outcome of outcomes) {
+                        if (outcome.error) continue
+                        // Read and write within the transaction so concurrent edits cannot be lost.
+                        const row = await rows.findOne({ _id: outcome.item.rowId }, { session })
+                        const sheet = row && await sheets.findOne({ _id: row.sheetId, olimanagerJobId: job._id }, { session })
+                        if (!row || !sheet) { outcome.error = 'La riga o il foglio non è più disponibile.'; continue }
+                        let update: Record<string, string>
+                        try { update = await encrypt(row, sheet) }
+                        catch { outcome.error = job.operation === 'decrypt_sheets'
+                            ? 'Impossibile decriptare la riga: password errata o dati cifrati danneggiati.'
+                            : 'Impossibile cifrare la riga con lo schema del foglio.'; continue }
+                        if (Object.keys(update).length || (job.operation === 'decrypt_sheets' && row.encrypted_data)) await rows.updateOne({ _id: row._id },
+                            { $set: { ...update, updatedOn: now(), updatedBy: user.email },
+                                ...(job.operation === 'decrypt_sheets' ? { $unset: { encrypted_data: '' as const } } : {}) }, { session })
+                    }
+                }
                 if (job.operation === 'match_or_create_participants') {
                     for (const { item, check, error } of outcomes) {
                         if (!error && check && ['created', 'linked'].includes(check.result)) {
@@ -277,7 +315,11 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
             await jobs.updateOne({ _id: job._id, leaseOwner: owner }, { $set: { leaseExpiresAt: now() } })
             return true
         }
-        await finish('failed', job.operation === 'check_participants'
+        await finish('failed', job.operation === 'decrypt_sheets'
+            ? 'Decrittazione interrotta. Avviare nuovamente Decripta: le righe già decriptate verranno saltate.'
+            : job.operation === 'crypt_sheets'
+            ? 'Crittografia interrotta. Avviare nuovamente Cripta: le righe già cifrate verranno saltate.'
+            : job.operation === 'check_participants'
             ? 'Errore interno durante la verifica; il lavoro non ha trasferito dati a Olimanager.'
             : 'Lavoro interrotto: alcune operazioni potrebbero essere già state eseguite su Olimanager. Controllare gli esiti prima di riprovare.')
         throw error

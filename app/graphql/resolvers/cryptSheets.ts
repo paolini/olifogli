@@ -1,81 +1,49 @@
-import { logDiagnostic } from '../../lib/logging'
-import { getRowsCollection, getSheetsCollection } from '@/app/lib/mongodb'
-import { Context } from '../types'
+import { getDb, withTransaction } from '@/app/lib/mongodb'
+import { queueOlimanagerJob, jobCollections } from '@/app/lib/olimanagerJobs'
+import { deriveSheetEncryptionKey, sealSheetEncryptionKey, sealSheetDecryptionPassword } from '@/app/lib/sheetEncryption'
+import { deliverSheetEncryptionKey } from '@/app/lib/sheetEncryptionTransport'
+import type { Context } from '../types'
 import { get_authenticated_user } from './utils'
-// use any for generated types to avoid codegen mismatch
-import crypto from 'crypto'
-import { schemas } from '@/app/lib/schema'
-import { ObjectId } from 'bson'
+import type { ObjectId } from 'bson'
 
-function deriveKey(password: string, salt: Buffer) {
-    return crypto.pbkdf2Sync(password, salt, 200000, 32, 'sha256')
+type Arguments = { sheetIds?: ObjectId[], password: string }
+export async function requestSheetCryptography({ sheetIds, password }: Arguments, context: Context, operation: 'crypt_sheets' | 'decrypt_sheets') {
+    const decrypt = operation === 'decrypt_sheets'
+    const action = decrypt ? 'Decripta' : 'Cripta'
+    const user = await get_authenticated_user(context)
+    if (!user?.isAdmin) throw new Error(decrypt ? 'only admins can decrypt sheets' : 'only admins can crypt sheets')
+    if (!password) throw new Error('password required')
+    if (!sheetIds?.length) return true
+
+    const material = decrypt ? null : await deriveSheetEncryptionKey(password)
+    const secret = material ? material.key : Buffer.from(password, 'utf8')
+    const seal = (id: string) => material ? sealSheetEncryptionKey(id, material) : sealSheetDecryptionPassword(id, secret)
+    try {
+        // Validate the shared transport secret before reserving sheets or enqueueing work.
+        seal('configuration-check')
+        const db = await getDb()
+        const job = await queueOlimanagerJob(db, withTransaction, user, { sheetIds }, '', undefined, operation)
+        try {
+            await deliverSheetEncryptionKey(job._id.toString(), seal(job._id.toString()))
+        } catch {
+            // If delivery failed, release only a job the worker has not started yet.
+            const { jobs, sheets } = jobCollections(db)
+            const cancelled = await withTransaction(async session => {
+                const result = await jobs.updateOne({ _id: job._id, status: 'queued' }, { $set: {
+                    status: 'failed', finishedAt: new Date(), error: `Segreto non consegnato al worker. Avviare nuovamente ${action}.`,
+                } }, { session })
+                if (result.matchedCount) await sheets.updateMany({ olimanagerJobId: job._id }, { $unset: { olimanagerJobId: '' } }, { session })
+                return result.matchedCount > 0
+            })
+            const current = await jobs.findOne({ _id: job._id })
+            if (cancelled || !current || ['failed', 'completed_with_errors'].includes(current.status)) throw new Error(`Worker non disponibile per la ${decrypt ? 'decrittazione' : 'crittografia'}. Verificare che sia avviato e riprovare.`)
+        }
+        return true
+    } finally {
+        secret.fill(0)
+    }
 }
 
-export default async function cryptSheets(_: unknown, { sheetIds, password }: { sheetIds?: ObjectId[] , password: string }, context: Context) {
-    const user = await get_authenticated_user(context)
-    if (!user?.isAdmin) throw new Error('only admins can crypt sheets')
-
-    if (!password) throw new Error('password required')
-
-    const sheets_collection = await getSheetsCollection()
-    const rows_collection = await getRowsCollection()
-    const ids = sheetIds || []
-    if (ids.length === 0) return true
-
-    const salt = crypto.randomBytes(16)
-    const key = deriveKey(password, salt)
-
-    const makeEncryptFunction = () => {
-        return (plaintext: string) => {
-            const iv = crypto.randomBytes(12)
-            const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
-            const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
-            const tag = cipher.getAuthTag()
-            const payloadObj = {
-                salt: salt.toString('base64'),
-                iv: iv.toString('base64'),
-                ct: encrypted.toString('base64'),
-                tag: tag.toString('base64')
-            }
-            return Buffer.from(JSON.stringify(payloadObj), 'utf8').toString('base64')
-        }
-    }
-
-    // launch background encryption job and return immediately
-    ;(async () => {
-        try {
-            await Promise.all(ids.map(async (id) => {
-                try {
-                    const doc = await sheets_collection.findOne({ _id: id })
-                    if (!doc) return
-                    const schema = schemas[doc.schema]
-                    const encryptFn = makeEncryptFunction()
-
-                    for await (const row of rows_collection.find({ sheetId: id })) {
-                        if (row.encrypted_data) continue; // skip already encrypted rows
-                        try {
-                            const { encrypted_data, truncated_fields } = schema.encrypt(row.data || {}, encryptFn)
-                            if (encrypted_data) {
-                                const setObj: Record<string, string> = { encrypted_data }
-                                for (const [k, v] of Object.entries(truncated_fields || {})) {
-                                    setObj[`data.${k}`] = v
-                                }
-                                await rows_collection.updateOne({ _id: row._id }, { $set: setObj })
-                            }
-                        } catch (e: unknown) {
-                            logDiagnostic('app/graphql/resolvers/cryptSheets.cryptsheets_failed_to_encrypt_row', e)
-                            continue
-                        }
-                    }
-                } catch (e) {
-                    logDiagnostic('app/graphql/resolvers/cryptSheets.cryptsheets_failed_for_sheet', e)
-                    return
-                }
-            }))
-        } catch (e) {
-            logDiagnostic('app/graphql/resolvers/cryptSheets.cryptsheets_background_job_failed', e)
-        }
-    })()
-
-    return true
+export default async function cryptSheets(_: unknown, args: Arguments, context: Context) {
+    return requestSheetCryptography(args, context, 'crypt_sheets')
 }

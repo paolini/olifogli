@@ -525,3 +525,34 @@ Il confronto dei risultati non è un controllo di versione atomico sul provider:
 una modifica remota tra la lettura e la mutation può ancora essere sovrascritta.
 Per eliminare questa finestra occorre supporto di versione/compare-and-set nell’API
 Olimanager. Non vengono eseguite letture aggiuntive dopo l’invio.
+
+### Crittografia e decrittazione dei fogli tramite worker
+
+I pulsanti **Cripta in background** e **Decripta in background** accodano lavori
+`crypt_sheets` e `decrypt_sheets` allo stesso worker avviato con
+`npm run olimanager:worker`. Lo stato e gli esiti per riga sono
+visibili nelle **Operazioni in background**. Non richiede OAuth, un endpoint
+Olimanager o la finalizzazione dei fogli.
+
+App e worker devono avere `REDIS_URL` e lo stesso `NEXTAUTH_SECRET`. Per cifrare,
+l'app deriva la chiave PBKDF2 in memoria e la consegna al worker tramite Redis
+**Pub/Sub**, in una busta cifrata e autenticata con il segreto del server. Per
+decriptare, consegna la password con lo stesso canale temporaneo protetto: il
+worker deriva in memoria una chiave per ogni salt presente nelle righe, anche
+quando provengono da cifrature effettuate in momenti diversi. Password, chiavi e
+buste non vengono salvate in MongoDB, in chiavi Redis o nei log. I segreti sono
+eliminati dalla memoria del worker al termine del lavoro. Il formato dei dati
+cifrati resta compatibile con i dati preesistenti.
+
+Le righe già cifrate vengono ignorate da Cripta; quelle già in chiaro vengono
+ignorate da Decripta. Password errata o dati cifrati danneggiati producono un
+esito di errore per riga: il contenuto cifrato resta intatto. Il ripristino dei
+campi e la rimozione di `encrypted_data` avvengono nella stessa transazione.
+
+Il worker deve essere attivo quando si preme il pulsante: se non conferma la
+ricezione della chiave, la richiesta fallisce e libera i fogli. Se la chiave va
+persa per un arresto del worker, il lavoro viene segnato come fallito alla scadenza
+della disponibilità della chiave (entro circa un minuto dalla ripresa del worker).
+Avviare di nuovo **Cripta** o **Decripta** con la stessa password: le righe già
+elaborate vengono saltate. I fogli restano riservati al lavoro fino al completamento o all'errore.
+Dopo l'aggiornamento, riavviare sia l'app sia il worker.

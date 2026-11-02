@@ -108,6 +108,7 @@ services:
       <<: *common-env
     depends_on:
       - db
+      - redis
     networks:
       - backend
 

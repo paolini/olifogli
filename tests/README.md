@@ -212,3 +212,18 @@ convergenza, binding dello storico a endpoint/gara/partecipante, totali manuali,
 squalifiche, esercizi mancanti/in più e distinzione tra zero e null. L’integrazione
 verifica che i conflitti conservino storico, timestamp e conteggi e che i valori
 diversi siano disponibili negli item del lavoro.
+
+`sheet-encryption.test.cjs` verifica la compatibilità della crittografia con
+Decripta, le righe già cifrate o già in chiaro, password errate, payload alterati,
+salt diversi e l'autenticazione delle buste temporanee contenenti chiavi o password. I test opzionali su MongoDB verificano accodamento senza chiavi
+persistenti, cifratura dei fogli non finalizzati, perdita della chiave dopo un
+blocco committato e nuova richiesta senza ricifrare le righe già completate.
+Per Decripta verificano anche il ripristino atomico, gli errori per riga con
+cifrato preservato e il rilancio dopo un blocco di righe già decriptate.
+Il test Redis usa solo Pub/Sub, con chiavi sintetiche e senza scritture persistenti:
+
+```sh
+OLIMANAGER_WORKER_TEST_URI=mongodb://127.0.0.1:27017/ \
+SHEET_ENCRYPTION_TEST_REDIS_URL=redis://127.0.0.1:6379 \
+node --test tests/sheet-encryption.test.cjs
+```

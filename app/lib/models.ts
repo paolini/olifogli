@@ -145,7 +145,7 @@ export type Setting = {
 // Legacy check jobs without checkMode keep their local-only behavior.
 export type OlimanagerJob = {
     _id: ObjectId
-    operation: 'check_participants' | 'match_or_create_participants' | 'update_results'
+    operation: 'check_participants' | 'match_or_create_participants' | 'update_results' | 'crypt_sheets' | 'decrypt_sheets'
     checkMode?: 'local' | 'remote'
     rowIds: ObjectId[]
     sheetIds: ObjectId[]
@@ -158,6 +158,7 @@ export type OlimanagerJob = {
     succeededRows: number
     failedRows: number
     skippedRows?: number
+    cryptKeyExpiresAt?: Date // Availability of the key held only in worker memory
     preparedAt?: Date
     startedAt?: Date
     finishedAt?: Date

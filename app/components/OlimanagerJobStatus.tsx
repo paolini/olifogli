@@ -51,18 +51,18 @@ export default function OlimanagerJobStatus({ sheetIds }: { sheetIds?: ObjectId[
   const entries = items.data?.olimanagerJobItems || []
   return <section className="my-4 border rounded p-3 hide-print">
     <div className="flex items-center gap-3">
-      <b>Lavori Olimanager</b>
+      <b>Lavori in background</b>
       <Button disabled={loading || items.loading} onClick={async () => {
         await refetch()
         if (selected) await items.refetch({ jobId: selected, after: null, limit: 100 })
       }}>Aggiorna stato</Button>
     </div>
-    <p>Le verifiche leggono i collegamenti; gli altri lavori creano/abbinano partecipanti o aggiornano i risultati su Olimanager.</p>
+    <p>Verifiche, trasferimenti Olimanager e crittografia/decrittazione dei fogli.</p>
     {resumeState.error && <ErrorElement error={resumeState.error} />}
     {error && <ErrorElement error={error} />}
     {!loading && data?.olimanagerJobs.length === 0 && <p>Nessun lavoro accodato.</p>}
     <ul>{data?.olimanagerJobs.map(job => <li key={job._id} className="my-2">
-      {job.operation === 'update_results' ? 'Invio risultati' : job.operation === 'match_or_create_participants' ? 'Crea/abbina partecipanti' : job.checkMode === 'remote' ? 'Verifica collegamenti' : 'Verifica locale'} — {new Date(job.createdAt).toLocaleString('it-IT')}: {statusLabels[job.status] || job.status}
+      {job.operation === 'decrypt_sheets' ? 'Decrittazione fogli' : job.operation === 'crypt_sheets' ? 'Crittografia fogli' : job.operation === 'update_results' ? 'Invio risultati' : job.operation === 'match_or_create_participants' ? 'Crea/abbina partecipanti' : job.checkMode === 'remote' ? 'Verifica collegamenti' : 'Verifica locale'} — {new Date(job.createdAt).toLocaleString('it-IT')}: {statusLabels[job.status] || job.status}
       {' — '}{job.succeededRows + job.failedRows + (job.skippedRows || 0)}/{job.totalRows} righe, {job.failedRows} errori, {job.skippedRows || 0} {job.operation === 'check_participants' ? 'non abbinate' : 'saltate'}.
       <Button className="ml-2" onClick={() => setSelected(selected === job._id ? null : job._id)}>Dettagli righe</Button>
       {job.status === 'needs_login' && <Button className="ml-2" disabled={resumeState.loading} onClick={async () => {

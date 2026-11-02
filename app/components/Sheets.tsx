@@ -75,8 +75,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     })
     const [requestOlimanagerResults, { loading: resultsLoading, error: resultsError }] = useRequestOlimanagerResultsMutation({ refetchQueries: ['OlimanagerJobs'] })
     const [olimanagerUpdateExtraFields, { loading: olimanagerUpdateExtraFieldsLoading, error: olimanagerUpdateExtraFieldsError}] = useOlimanagerUpdateExtraFieldsMutation()
-    const [cryptSheetsMutation, { loading: cryptSheetsLoading, error: cryptSheetsError }] = useMutation(CRYPT_SHEETS)
-    const [decryptSheetsMutation, { loading: decryptSheetsLoading, error: decryptSheetsError }] = useMutation(DECRYPT_SHEETS)
+    const [cryptSheetsMutation, { loading: cryptSheetsLoading, error: cryptSheetsError }] = useMutation(CRYPT_SHEETS, { refetchQueries: ['OlimanagerJobs'] })
+    const [decryptSheetsMutation, { loading: decryptSheetsLoading, error: decryptSheetsError }] = useMutation(DECRYPT_SHEETS, { refetchQueries: ['OlimanagerJobs'] })
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [displayLimit, setDisplayLimit] = useState(20)
@@ -272,11 +272,11 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                 <Button disabled={selectedIds.length === 0 || resultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
                     ⚙ Invia risultati in background (Olimanager)
                 </Button>
-                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => cryptSelectedSheets()}>
-                    ⚙ Cripta
+                <Button disabled={selectedIds.length === 0 || cryptSheetsLoading} onClick={() => cryptSelectedSheets()}>
+                    ⚙ Cripta in background
                 </Button>
-                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => decryptSelectedSheets()}>
-                    ⚙ Decripta
+                <Button disabled={selectedIds.length === 0 || decryptSheetsLoading} onClick={() => decryptSelectedSheets()}>
+                    ⚙ Decripta in background
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta
@@ -394,9 +394,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         if (!password) return
         try {
             await cryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
-            alert('Crittografia richiesta inviata')
+            alert('Crittografia accodata al worker. Puoi seguirne lo stato nelle operazioni in background.')
         } catch (e) {
-            alert('Errore durante la richiesta di crittografia')
+            alert(e instanceof globalThis.Error ? e.message : 'Errore durante la richiesta di crittografia')
         }
         refetch()
     }
@@ -414,9 +414,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         const password = pw1
         try {
             await decryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
-            alert('Decrittazione richiesta inviata')
+            alert('Decrittazione accodata al worker. Puoi seguirne lo stato nelle operazioni in background.')
         } catch (e) {
-            alert('Errore durante la richiesta di decrittazione')
+            alert(e instanceof globalThis.Error ? e.message : 'Errore durante la richiesta di decrittazione')
         }
         refetch()
     }
