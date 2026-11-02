@@ -3,7 +3,7 @@ import type { OlimanagerJob, OlimanagerJobCredential } from './models'
 
 export type DelegatedOlimanagerAccess = { accessToken: string, expiresAt: number }
 function key(secret: string | undefined) {
-    if (!secret) throw new Error('Configurare NEXTAUTH_SECRET anche nel worker Olimanager.')
+    if (!secret) throw new Error('Configurare NEXTAUTH_SECRET anche nel worker Olifogli.')
     return Buffer.from(hkdfSync('sha256', secret, '', 'olifogli:olimanager-job-access:v1', 32))
 }
 function binding(job: OlimanagerJob) {

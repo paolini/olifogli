@@ -65,9 +65,9 @@ services:
     networks:
       - backend
 
-  olimanager-worker:
+  olifogli-worker:
     <<: *app-common
-    command: ["node", "olimanager-worker.js"]
+    command: ["node", "olifogli-worker.js"]
     environment:
       <<: *common-env
     depends_on:

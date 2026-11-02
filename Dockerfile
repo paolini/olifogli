@@ -44,12 +44,12 @@ RUN node_modules/.bin/esbuild ws-server.ts \
     --packages=external \
     --outfile=ws-server.bundle.js
 
-RUN node_modules/.bin/esbuild olimanager-worker.ts \
+RUN node_modules/.bin/esbuild olifogli-worker.ts \
     --bundle \
     --platform=node \
     --target=node24 \
     --packages=external \
-    --outfile=olimanager-worker.bundle.js
+    --outfile=olifogli-worker.bundle.js
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -69,7 +69,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 # Copy ws-server bundle and the schema file it reads at runtime via readFileSync
 COPY --from=builder --chown=nextjs:nodejs /app/ws-server.bundle.js ./ws-server.js
-COPY --from=builder --chown=nextjs:nodejs /app/olimanager-worker.bundle.js ./olimanager-worker.js
+COPY --from=builder --chown=nextjs:nodejs /app/olifogli-worker.bundle.js ./olifogli-worker.js
 COPY --from=builder --chown=nextjs:nodejs /app/app/graphql/schema.gql ./app/graphql/schema.gql
 # Install migrate-mongo globally
 RUN npm install -g migrate-mongo

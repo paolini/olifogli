@@ -100,9 +100,9 @@ services:
     networks:
       - backend
 
-  olimanager-worker:
+  olifogli-worker:
     image: paolini/olifogli:latest
-    command: ["node", "olimanager-worker.js"]
+    command: ["node", "olifogli-worker.js"]
     restart: unless-stopped
     environment:
       <<: *common-env

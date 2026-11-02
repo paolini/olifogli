@@ -378,9 +378,10 @@ error log del proxy possono ancora includere dettagli della richiesta e vanno
 gestiti separatamente. Il logging delle URL delle richieste in sviluppo Next.js
 è disabilitato per non registrare parametri OAuth.
 
-## Worker Olimanager: verifiche, partecipanti e risultati
+## Worker Olifogli: lavori in background
 
-Il worker verifica in sola lettura i collegamenti esistenti e confronta nome,
+Il worker gestisce verifiche e trasferimenti Olimanager, cifratura e decrittazione
+dei fogli. Per le verifiche legge i collegamenti esistenti e confronta nome,
 cognome, data di nascita, anno di corso e sezione con Olimanager. Controlla anche
 gara e scuola. Le righe senza `participantId` vengono segnalate come non abbinate:
 non cerca nuovi abbinamenti, non crea partecipanti, non invia risultati e non
@@ -448,21 +449,24 @@ Per una prova in sviluppo:
 1. Accedere come amministratore con scope OAuth `api` e permessi sulla gara
    Olimanager. Lasciare spento il worker e accodare una verifica sui fogli
    finalizzati: il lavoro resta in attesa.
-2. Avviare `npm run olimanager:worker -- --once`: elabora al massimo un job ed esce.
+2. Avviare `npm run olifogli:worker -- --once`: elabora al massimo un job ed esce.
 3. Premere **Aggiorna stato** per vedere conteggi ed esiti delle singole righe.
 
 Per lasciarlo in attesa di nuovi lavori:
 
 ```sh
-npm run olimanager:worker
+npm run olifogli:worker
 ```
 
 Il worker carica la configurazione `.env*` come Next.js, rispettando le variabili
 esportate e `NODE_ENV`, e usa la stessa `MONGODB_URI` dell'applicazione. Occorrono
-anche lo stesso `NEXTAUTH_SECRET` e `OLIMANAGER_GRAPHQL_ENDPOINT` del server.
-Servono transazioni MongoDB (replica set, già previsto dal Compose). Non richiede Redis.
-In produzione l'immagine include `olimanager-worker.js`; entrambi gli esempi
-Compose prevedono il servizio separato `olimanager-worker` con riavvio automatico.
+anche lo stesso `NEXTAUTH_SECRET` e `REDIS_URL` del server. Per i lavori Olimanager
+serve inoltre `OLIMANAGER_GRAPHQL_ENDPOINT`. Servono transazioni MongoDB
+(replica set, già previsto dal Compose).
+In produzione l'immagine include `olifogli-worker.js`; entrambi gli esempi
+Compose prevedono il servizio separato `olifogli-worker` con riavvio automatico.
+Per aggiornare un Compose esistente, rinominare anche il vecchio servizio
+`olimanager-worker` e rimuovere il relativo container con `docker compose up -d --remove-orphans`.
 
 I job sono salvati in `olimanager_jobs`, con `rowIds` e `sheetIds` indipendenti:
 entrambi possono essere popolati; il lavoro riguarda la loro unione.
@@ -530,7 +534,7 @@ Olimanager. Non vengono eseguite letture aggiuntive dopo l’invio.
 
 I pulsanti **Cripta in background** e **Decripta in background** accodano lavori
 `crypt_sheets` e `decrypt_sheets` allo stesso worker avviato con
-`npm run olimanager:worker`. Lo stato e gli esiti per riga sono
+`npm run olifogli:worker`. Lo stato e gli esiti per riga sono
 visibili nelle **Operazioni in background**. Non richiede OAuth, un endpoint
 Olimanager o la finalizzazione dei fogli.
 
