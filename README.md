@@ -468,6 +468,17 @@ Compose prevedono il servizio separato `olifogli-worker` con riavvio automatico.
 Per aggiornare un Compose esistente, rinominare anche il vecchio servizio
 `olimanager-worker` e rimuovere il relativo container con `docker compose up -d --remove-orphans`.
 
+Il pannello **Operazioni in background** mostra se almeno un worker Olifogli è
+in esecuzione, anche senza lavori accodati. Ogni processo annuncia la propria
+presenza ogni 10 secondi nella collezione `olifogli_workers`; il pannello controlla
+lo stato ogni 10 secondi mentre è aperto. Un segnale più vecchio di 35 secondi non
+è considerato attivo: un arresto improvviso viene quindi rilevato entro circa
+45 secondi. Un arresto regolare rimuove subito la presenza del processo. Con più
+worker viene mostrato il numero di istanze attive. Se la lettura dello stato
+fallisce, appare **Stato non verificabile**. I segnali scaduti vengono eliminati
+automaticamente da MongoDB dopo 24 ore. La query è riservata agli amministratori.
+Dopo l'aggiornamento riavviare anche il worker per attivare questo segnale.
+
 I job sono salvati in `olimanager_jobs`, con `rowIds` e `sheetIds` indipendenti:
 entrambi possono essere popolati; il lavoro riguarda la loro unione.
 La preparazione registra la selezione in `olimanager_job_items`, con un indice

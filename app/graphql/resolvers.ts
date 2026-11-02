@@ -1,3 +1,4 @@
+import olifogliWorkerStatus from './resolvers/olifogliWorkerStatus'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
 import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
 import { Context } from './types'
@@ -64,6 +65,7 @@ import decryptSheets from './resolvers/decryptSheets'
 // Definizione dei resolver
 export const resolvers: Resolvers = {
   Query: {
+    olifogliWorkerStatus,
     olimanagerJobs,
     olimanagerJobItems,
     hello: () => 'Hello, world!',

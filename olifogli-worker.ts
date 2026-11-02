@@ -15,6 +15,7 @@ import { logDiagnostic } from './app/lib/logging'
 import { createSheetEncryptor, openSheetEncryptionKey, createSheetDecryptor, openSheetDecryptionPassword } from './app/lib/sheetEncryption'
 import { receiveSheetEncryptionKeys } from './app/lib/sheetEncryptionTransport'
 import { ObjectId } from 'mongodb'
+import { startWorkerHeartbeat } from './app/lib/workerHeartbeat'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 const { values } = parseArgs({ options: { once: { type: 'boolean', default: false }, help: { type: 'boolean', default: false } } })
@@ -30,6 +31,7 @@ async function main() {
     const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli')
     const encryptionKeys = new Map<string, ReturnType<typeof createSheetEncryptor> | ReturnType<typeof createSheetDecryptor>>()
     const disposeSecrets = new Map<string, () => void>()
+    let stopHeartbeat: (() => Promise<void>) | undefined
     let stopReceiving: (() => void) | undefined
     let heartbeat: ReturnType<typeof setInterval> | undefined
     try {
@@ -76,6 +78,7 @@ async function main() {
             })().catch(() => { /* Expired keys fail their jobs; never log material. */ }).finally(() => { renewing = false })
         }, 10_000)
         const workerId = `${hostname()}:${process.pid}:${randomUUID()}`
+        stopHeartbeat = await startWorkerHeartbeat(db, workerId, error => logDiagnostic('olifogli.worker.heartbeat_failed', error))
         console.log('Worker Olifogli avviato: verifiche Olimanager, creazione/abbinamento partecipanti, invio risultati e crittografia/decrittazione fogli.')
         do {
             const processed = await runNextOlimanagerJob(db, transaction, {
@@ -105,7 +108,9 @@ async function main() {
         stopReceiving?.()
         for (const dispose of disposeSecrets.values()) dispose()
         encryptionKeys.clear()
-        await client.close()
+        try { await stopHeartbeat?.() }
+        catch (error) { logDiagnostic('olifogli.worker.heartbeat_stop_failed', error) }
+        finally { await client.close() }
     }
 }
 main().catch(error => { logDiagnostic('olifogli.worker.failed', error); process.exitCode = 1 })

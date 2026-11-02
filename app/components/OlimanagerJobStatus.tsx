@@ -13,6 +13,11 @@ const GET_JOBS = gql`
     }
   }
 `
+const GET_WORKER_STATUS = gql`
+  query OlifogliWorkerStatus {
+    olifogliWorkerStatus { running activeWorkers lastSeenAt }
+  }
+`
 const GET_ITEMS = gql`
   query OlimanagerJobItems($jobId: ObjectId!, $after: ObjectId, $limit: Int) {
     olimanagerJobItems(jobId: $jobId, after: $after, limit: $limit) {
@@ -44,6 +49,9 @@ export default function OlimanagerJobStatus({ sheetIds }: { sheetIds?: ObjectId[
   const { data, error, loading, refetch } = useQuery<{ olimanagerJobs: Job[] }>(GET_JOBS, {
     variables: { sheetIds }, fetchPolicy: 'network-only',
   })
+  const worker = useQuery<{ olifogliWorkerStatus: { running: boolean, activeWorkers: number, lastSeenAt?: string | null } }>(GET_WORKER_STATUS, {
+    fetchPolicy: 'network-only', pollInterval: 10_000,
+  })
   const items = useQuery<{ olimanagerJobItems: Item[] }>(GET_ITEMS, {
     variables: { jobId: selected, limit: 100 }, skip: !selected, fetchPolicy: 'network-only',
   })
@@ -53,10 +61,22 @@ export default function OlimanagerJobStatus({ sheetIds }: { sheetIds?: ObjectId[
     <div className="flex items-center gap-3">
       <b>Lavori in background</b>
       <Button disabled={loading || items.loading} onClick={async () => {
-        await refetch()
-        if (selected) await items.refetch({ jobId: selected, after: null, limit: 100 })
+        // Each query displays its own error; a failed presence check must not block queue refreshes.
+        await Promise.allSettled([
+          refetch(), worker.refetch(),
+          ...(selected ? [items.refetch({ jobId: selected, after: null, limit: 100 })] : []),
+        ])
       }}>Aggiorna stato</Button>
     </div>
+    <p role="status" className={`my-2 ${worker.error ? 'text-amber-700' : worker.data?.olifogliWorkerStatus.running ? 'text-green-700' : 'text-gray-700'}`}>
+      Worker Olifogli: <b>{worker.error ? 'Stato non verificabile' : !worker.data ? 'Verifica in corso…' : worker.data.olifogliWorkerStatus.running ? 'In esecuzione' : 'Nessun worker attivo'}</b>
+      {!worker.error && worker.data && <>
+        {worker.data.olifogliWorkerStatus.activeWorkers > 1 && ` (${worker.data.olifogliWorkerStatus.activeWorkers} istanze)`}
+        {!worker.data.olifogliWorkerStatus.running && worker.data.olifogliWorkerStatus.lastSeenAt &&
+          ` — Ultimo segnale: ${new Date(worker.data.olifogliWorkerStatus.lastSeenAt).toLocaleString('it-IT')}`}
+      </>}
+      <span className="block text-sm text-gray-600">Controllo automatico ogni 10 secondi.</span>
+    </p>
     <p>Verifiche, trasferimenti Olimanager e crittografia/decrittazione dei fogli.</p>
     {resumeState.error && <ErrorElement error={resumeState.error} />}
     {error && <ErrorElement error={error} />}

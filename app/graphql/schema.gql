@@ -10,6 +10,12 @@ enum SheetState {
   locked
 }
 
+type OlifogliWorkerStatus {
+  running: Boolean!
+  activeWorkers: Int!
+  lastSeenAt: Timestamp
+}
+
 type OlimanagerJob {
   _id: ObjectId!
   operation: String!
@@ -285,6 +291,7 @@ type AgeDistributionReport {
 }
 
 type Query {
+  olifogliWorkerStatus: OlifogliWorkerStatus!
   olimanagerJobs(sheetIds: [ObjectId!]): [OlimanagerJob!]!
   olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
 

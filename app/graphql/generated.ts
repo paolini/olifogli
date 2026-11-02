@@ -338,6 +338,13 @@ export type MutationValidateRowsArgs = {
   sheetId: Scalars['ObjectId']['input'];
 };
 
+export type OlifogliWorkerStatus = {
+  __typename?: 'OlifogliWorkerStatus';
+  activeWorkers: Scalars['Int']['output'];
+  lastSeenAt?: Maybe<Scalars['Timestamp']['output']>;
+  running: Scalars['Boolean']['output'];
+};
+
 export type OlimanagerCreateResult = {
   __typename?: 'OlimanagerCreateResult';
   converted?: Maybe<Scalars['Boolean']['output']>;
@@ -432,6 +439,7 @@ export type Query = {
   getSetting?: Maybe<Setting>;
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
+  olifogliWorkerStatus: OlifogliWorkerStatus;
   olimanager?: Maybe<Scalars['String']['output']>;
   olimanagerJobItems: Array<OlimanagerJobItem>;
   olimanagerJobs: Array<OlimanagerJob>;
@@ -820,6 +828,11 @@ export type OlimanagerJobsQueryVariables = Exact<{
 
 
 export type OlimanagerJobsQuery = { __typename?: 'Query', olimanagerJobs: Array<{ __typename?: 'OlimanagerJob', _id: ObjectId, operation: string, checkMode?: string | null, status: string, totalRows: number, succeededRows: number, failedRows: number, skippedRows?: number | null, createdAt: Date, error?: string | null }> };
+
+export type OlifogliWorkerStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OlifogliWorkerStatusQuery = { __typename?: 'Query', olifogliWorkerStatus: { __typename?: 'OlifogliWorkerStatus', running: boolean, activeWorkers: number, lastSeenAt?: Date | null } };
 
 export type OlimanagerJobItemsQueryVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
@@ -1467,6 +1480,50 @@ export type OlimanagerJobsQueryHookResult = ReturnType<typeof useOlimanagerJobsQ
 export type OlimanagerJobsLazyQueryHookResult = ReturnType<typeof useOlimanagerJobsLazyQuery>;
 export type OlimanagerJobsSuspenseQueryHookResult = ReturnType<typeof useOlimanagerJobsSuspenseQuery>;
 export type OlimanagerJobsQueryResult = Apollo.QueryResult<OlimanagerJobsQuery, OlimanagerJobsQueryVariables>;
+export const OlifogliWorkerStatusDocument = gql`
+    query OlifogliWorkerStatus {
+  olifogliWorkerStatus {
+    running
+    activeWorkers
+    lastSeenAt
+  }
+}
+    `;
+
+/**
+ * __useOlifogliWorkerStatusQuery__
+ *
+ * To run a query within a React component, call `useOlifogliWorkerStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOlifogliWorkerStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOlifogliWorkerStatusQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useOlifogliWorkerStatusQuery(baseOptions?: Apollo.QueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>(OlifogliWorkerStatusDocument, options);
+      }
+export function useOlifogliWorkerStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>(OlifogliWorkerStatusDocument, options);
+        }
+// @ts-ignore
+export function useOlifogliWorkerStatusSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>): Apollo.UseSuspenseQueryResult<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>;
+export function useOlifogliWorkerStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>): Apollo.UseSuspenseQueryResult<OlifogliWorkerStatusQuery | undefined, OlifogliWorkerStatusQueryVariables>;
+export function useOlifogliWorkerStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>(OlifogliWorkerStatusDocument, options);
+        }
+export type OlifogliWorkerStatusQueryHookResult = ReturnType<typeof useOlifogliWorkerStatusQuery>;
+export type OlifogliWorkerStatusLazyQueryHookResult = ReturnType<typeof useOlifogliWorkerStatusLazyQuery>;
+export type OlifogliWorkerStatusSuspenseQueryHookResult = ReturnType<typeof useOlifogliWorkerStatusSuspenseQuery>;
+export type OlifogliWorkerStatusQueryResult = Apollo.QueryResult<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>;
 export const OlimanagerJobItemsDocument = gql`
     query OlimanagerJobItems($jobId: ObjectId!, $after: ObjectId, $limit: Int) {
   olimanagerJobItems(jobId: $jobId, after: $after, limit: $limit) {
@@ -3880,6 +3937,7 @@ export type ResolversTypes = {
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectId: ResolverTypeWrapper<ObjectId>;
+  OlifogliWorkerStatus: ResolverTypeWrapper<OlifogliWorkerStatus>;
   OlimanagerCreateResult: ResolverTypeWrapper<OlimanagerCreateResult>;
   OlimanagerJob: ResolverTypeWrapper<Omit<OlimanagerJob, '_id' | 'createdBy' | 'rowIds' | 'sheetIds'> & { _id: ResolversTypes['ObjectId'], createdBy: ResolversTypes['ObjectId'], rowIds: Array<ResolversTypes['ObjectId']>, sheetIds: Array<ResolversTypes['ObjectId']> }>;
   OlimanagerJobItem: ResolverTypeWrapper<Omit<OlimanagerJobItem, '_id' | 'jobId' | 'rowId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'], rowId: ResolversTypes['ObjectId'], sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
@@ -3931,6 +3989,7 @@ export type ResolversParentTypes = {
   JSON: Scalars['JSON']['output'];
   Mutation: {};
   ObjectId: ObjectId;
+  OlifogliWorkerStatus: OlifogliWorkerStatus;
   OlimanagerCreateResult: OlimanagerCreateResult;
   OlimanagerJob: Omit<OlimanagerJob, '_id' | 'createdBy' | 'rowIds' | 'sheetIds'> & { _id: ResolversParentTypes['ObjectId'], createdBy: ResolversParentTypes['ObjectId'], rowIds: Array<ResolversParentTypes['ObjectId']>, sheetIds: Array<ResolversParentTypes['ObjectId']> };
   OlimanagerJobItem: Omit<OlimanagerJobItem, '_id' | 'jobId' | 'rowId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'], rowId: ResolversParentTypes['ObjectId'], sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
@@ -4075,6 +4134,13 @@ export interface ObjectIdScalarConfig extends GraphQLScalarTypeConfig<ResolversT
   name: 'ObjectId';
 }
 
+export type OlifogliWorkerStatusResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlifogliWorkerStatus'] = ResolversParentTypes['OlifogliWorkerStatus']> = {
+  activeWorkers?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  lastSeenAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  running?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type OlimanagerCreateResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerCreateResult'] = ResolversParentTypes['OlimanagerCreateResult']> = {
   converted?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -4163,6 +4229,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getSetting?: Resolver<Maybe<ResolversTypes['Setting']>, ParentType, ContextType, RequireFields<QueryGetSettingArgs, 'key'>>;
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  olifogliWorkerStatus?: Resolver<ResolversTypes['OlifogliWorkerStatus'], ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanagerJobItems?: Resolver<Array<ResolversTypes['OlimanagerJobItem']>, ParentType, ContextType, RequireFields<QueryOlimanagerJobItemsArgs, 'jobId'>>;
   olimanagerJobs?: Resolver<Array<ResolversTypes['OlimanagerJob']>, ParentType, ContextType, Partial<QueryOlimanagerJobsArgs>>;
@@ -4373,6 +4440,7 @@ export type Resolvers<ContextType = any> = {
   JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   ObjectId?: GraphQLScalarType;
+  OlifogliWorkerStatus?: OlifogliWorkerStatusResolvers<ContextType>;
   OlimanagerCreateResult?: OlimanagerCreateResultResolvers<ContextType>;
   OlimanagerJob?: OlimanagerJobResolvers<ContextType>;
   OlimanagerJobItem?: OlimanagerJobItemResolvers<ContextType>;

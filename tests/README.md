@@ -227,3 +227,13 @@ OLIMANAGER_WORKER_TEST_URI=mongodb://127.0.0.1:27017/ \
 SHEET_ENCRYPTION_TEST_REDIS_URL=redis://127.0.0.1:6379 \
 node --test tests/sheet-encryption.test.cjs
 ```
+
+
+`worker-heartbeat.test.cjs` verifica il segnale di presenza anche senza job,
+rinnovo, scadenza, più istanze e arresto con una scrittura ancora in corso.
+Controlla inoltre accesso riservato agli amministratori e i quattro stati del
+pannello (verifica, attivo, nessun worker, stato non verificabile), compreso un
+errore di rete dopo un risultato attivo memorizzato nella cache. Con
+`OLIMANAGER_WORKER_TEST_URI` impostato verifica anche presenza e indice TTL su
+un database MongoDB temporaneo, usando le stesse restrizioni locali delle altre
+suite del worker.
