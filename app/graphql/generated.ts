@@ -1513,9 +1513,6 @@ export function useOlifogliWorkerStatusLazyQuery(baseOptions?: Apollo.LazyQueryH
           const options = {...defaultOptions, ...baseOptions}
           return Apollo.useLazyQuery<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>(OlifogliWorkerStatusDocument, options);
         }
-// @ts-ignore
-export function useOlifogliWorkerStatusSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>): Apollo.UseSuspenseQueryResult<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>;
-export function useOlifogliWorkerStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>): Apollo.UseSuspenseQueryResult<OlifogliWorkerStatusQuery | undefined, OlifogliWorkerStatusQueryVariables>;
 export function useOlifogliWorkerStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>) {
           const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return Apollo.useSuspenseQuery<OlifogliWorkerStatusQuery, OlifogliWorkerStatusQueryVariables>(OlifogliWorkerStatusDocument, options);
