@@ -2,9 +2,10 @@
 
 import { gql, useMutation } from '@apollo/client'
 import { useState } from 'react'
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { useRouter } from 'next/navigation'
 import Button from './Button'
-import Error from './Error'
+import ErrorMessage from './Error'
 import { Workbook, User } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
 
@@ -20,238 +21,167 @@ const DELETE_WORKBOOK = gql`
   }
 `
 
+type DataFormat = 'yaml' | 'json'
+
+function formatData(data: Data, format: DataFormat) {
+    return format === 'yaml' ? stringifyYaml(data) : JSON.stringify(data, null, 2)
+}
+
+function parseData(value: string, format: DataFormat): Data {
+    const parsed = format === 'yaml' ? parseYaml(value) : JSON.parse(value)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Inserisci un oggetto con i nomi delle variabili e i relativi valori.')
+    }
+    // Both formats must contain data that can be sent as JSON to the server.
+    JSON.stringify(parsed, (_key, value) => {
+        if (typeof value === 'number' && !Number.isFinite(value)) {
+            throw new Error('I valori numerici devono essere finiti.')
+        }
+        return value
+    })
+    return parsed
+}
+
 export default function WorkbookConfigure({workbook, profile, sheetsCount}: {
     workbook: Workbook
     profile: User | null
     sheetsCount?: number
 }) {
-    // Funzione per copiare il JSON nella clipboard
-    function copyJsonToClipboard() {
-    const text = showJson && edit ? jsonValue : JSON.stringify(commonData, null, 2)
-        if (navigator && navigator.clipboard) {
-            navigator.clipboard.writeText(text)
-                .then(() => {
-                    alert('JSON copiato nella clipboard')
-                })
-                .catch(() => {
-                    alert('Errore nella copia')
-                })
-        } else {
-            alert('Clipboard API non disponibile')
-        }
-    }
-        const router = useRouter()
-        const [deleteWorkbook, {loading: deleting, error: deleteError, reset: deleteReset}] = useMutation(DELETE_WORKBOOK)
-        const [edit, setEdit] = useState(false)
-        const [newFieldKey, setNewFieldKey] = useState('')
-        const [newFieldValue, setNewFieldValue] = useState('')
-        const [commonData, setCommonData] = useState<Data>(workbook.commonData || {})
-        const [updateWorkbook, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_WORKBOOK)
-        const canModify = profile?.isAdmin || profile?._id.toString() === workbook.ownerId?.toString()
-        const [showJson, setShowJson] = useState(false)
-    // jsonEdit non serve, usiamo solo edit
-    const [jsonValue, setJsonValue] = useState(JSON.stringify(workbook.commonData || {}, null, 2))
-
-    if (deleteError) return <Error error={deleteError} dismiss={deleteReset}/>
-    if (updateError) return <Error error={updateError} dismiss={updateReset}/>
+    const router = useRouter()
+    const [deleteWorkbook, {loading: deleting, error: deleteError, reset: deleteReset}] = useMutation(DELETE_WORKBOOK)
+    const [updateWorkbook, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_WORKBOOK)
+    const [edit, setEdit] = useState(false)
+    const [commonData, setCommonData] = useState<Data>(workbook.commonData || {})
+    const [format, setFormat] = useState<DataFormat>('yaml')
+    const [dataValue, setDataValue] = useState(() => formatData(workbook.commonData || {}, 'yaml'))
+    const [validationError, setValidationError] = useState<string | null>(null)
+    const canModify = profile?.isAdmin || profile?._id.toString() === workbook.ownerId?.toString()
+    const busy = updating || deleting
 
     return (
-    <div className="max-w-xl px-2">
-        <div className="flex items-center mb-2">
-            <input
-                type="checkbox"
-                id="show-json"
-                checked={showJson}
-                onChange={e => {
-                    setShowJson(e.target.checked)
-                    setEdit(false)
-                }}
-                className="mr-2"
-            />
-            <label htmlFor="show-json">Visualizza variabili in formato JSON</label>
-        </div>
-        {/* Pulsante modifica sempre visibile se canModify */}
-        {!edit && canModify && (
-            <Button onClick={() => {
-                if (showJson) {
-                    setJsonValue(JSON.stringify(commonData, null, 2))
-                }
-                setEdit(true)
-            }}>
-                modifica
-            </Button>
-        )}
-        {/* Modalità JSON visualizzazione */}
-        {showJson && !edit && (
-            <div>
-                <div className="mb-2 flex gap-2">
-                    <Button onClick={copyJsonToClipboard} variant="default">Copia JSON</Button>
-                </div>
-                <pre className="bg-gray-100 p-2 rounded text-xs mb-4 max-w-full overflow-auto">
-                    {JSON.stringify(commonData, null, 2)}
-                </pre>
-            </div>
-        )}
-        {/* Modalità JSON modifica */}
-        {showJson && edit && canModify && (
-            <div className="mb-4">
-                <div className="mb-2 flex gap-2">
-                    <Button onClick={copyJsonToClipboard} variant="default">Copia JSON</Button>
-                </div>
-                <textarea
-                    className="w-full h-48 p-2 border rounded font-mono text-xs"
-                    value={jsonValue}
-                    onChange={e => setJsonValue(e.target.value)}
-                    disabled={updating}
-                />
-                <div className="mt-2 flex gap-2">
-                    <Button
-                        onClick={async () => {
-                            try {
-                                const parsed = JSON.parse(jsonValue)
-                                setCommonData(parsed)
-                                await persistCommonData(parsed)
-                                setEdit(false)
-                            } catch (err) {
-                                alert('JSON non valido')
-                            }
-                        }}
-                        disabled={updating}
-                    >
-                        Salva
+        <div className="w-full max-w-6xl px-2">
+            <label htmlFor="workbook-common-data" className="block mb-2 font-medium">
+                Variabili del workbook
+            </label>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+                <label htmlFor="workbook-data-format">Formato</label>
+                <select
+                    id="workbook-data-format"
+                    className="p-1 border rounded"
+                    value={format}
+                    disabled={busy}
+                    onChange={e => changeFormat(e.target.value as DataFormat)}
+                >
+                    <option value="yaml">YAML</option>
+                    <option value="json">JSON</option>
+                </select>
+                {!edit && canModify && (
+                    <Button onClick={() => {
+                        setDataValue(formatData(commonData, format))
+                        setValidationError(null)
+                        updateReset()
+                        setEdit(true)
+                    }}>
+                        Modifica
                     </Button>
-                    <Button variant="default" onClick={() => setEdit(false)}>
+                )}
+                <Button onClick={copyToClipboard}>Copia {format.toUpperCase()}</Button>
+            </div>
+            {edit && canModify ? <textarea
+                id="workbook-common-data"
+                className="w-full h-80 resize p-2 border rounded font-mono text-sm"
+                value={dataValue}
+                onChange={e => {
+                    setDataValue(e.target.value)
+                    setValidationError(null)
+                }}
+                disabled={busy}
+                spellCheck={false}
+                aria-invalid={!!validationError}
+                aria-describedby={validationError ? 'workbook-common-data-error' : undefined}
+            /> : (
+                <pre id="workbook-common-data" className="w-full overflow-auto p-2 border rounded bg-gray-100 font-mono text-sm">
+                    {formatData(commonData, format)}
+                </pre>
+            )}
+            {validationError && (
+                <p id="workbook-common-data-error" role="alert" className="mt-2 text-red-600">
+                    {validationError}
+                </p>
+            )}
+            <ErrorMessage error={updateError} dismiss={updateReset}/>
+            <ErrorMessage error={deleteError} dismiss={deleteReset}/>
+            {edit && canModify && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                    <Button onClick={save} disabled={busy}>Salva</Button>
+                    <Button disabled={busy} onClick={() => {
+                        setDataValue(formatData(commonData, format))
+                        setValidationError(null)
+                        updateReset()
+                        setEdit(false)
+                    }}>
                         Annulla
                     </Button>
+                    <Button variant="danger" disabled={busy || (sheetsCount || 0) > 0} onClick={async () => {
+                        if (!confirm('Sei sicuro di voler eliminare questo workbook?')) return
+                        try {
+                            await deleteWorkbook({variables: {_id: workbook._id}})
+                            router.push('/')
+                        } catch {
+                            // The mutation error is displayed above without losing the draft.
+                        }
+                    }}>
+                        Elimina questo workbook
+                    </Button>
                 </div>
-            </div>
-        )}
-        {/* Modalità tabella */}
-        {!showJson && (
-            <>
-                {edit && (
-                    <>
-                        <Button className="mx-2" onClick={cancel}>
-                            termina modifiche
-                        </Button>
-                        {canModify && (
-                            <Button className="mx-2" variant="danger" disabled={deleting || (sheetsCount || 0) > 0} onClick={() => {
-                                if (confirm("Sei sicuro di voler eliminare questo workbook?")) {
-                                    doDelete()
-                                }
-                            }}>
-                                Elimina questo workbook
-                            </Button>
-                        )}
-                    </>
-                )}
-                <table className="my-2">
-                    <thead>
-                        <tr>
-                            <th className="bg-gray-200">campo</th>
-                            <th className="bg-gray-200">valore</th>
-                            {edit && canModify && <th className="bg-gray-200"></th>}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {Object.entries(commonData as Data).map(([key, value]) => (
-                            <tr key={key}>
-                                <th className="bg-gray-200">{key}</th>
-                                {edit && canModify ? (
-                                    <td className="workbook-data-value">
-                                        <input
-                                            type="text"
-                                            size={40}
-                                            value={value as string || ''}
-                                            onChange={e => updateCommonDataField(key, e.target.value)}
-                                            disabled={updating}
-                                        />
-                                    </td>
-                                ) : (
-                                    <td className="workbook-data-value">{value}</td>
-                                )}
-                                {edit && canModify && (
-                                    <td>
-                                        <Button variant="danger" disabled={updating} onClick={() => removeCommonDataField(key)}>
-                                            rimuovi
-                                        </Button>
-                                    </td>
-                                )}
-                            </tr>
-                        ))}
-                        {edit && canModify && (
-                            <tr>
-                                <td>
-                                    <input
-                                        type="text"
-                                        value={newFieldKey}
-                                        placeholder="nome campo"
-                                        onChange={e => setNewFieldKey(e.target.value)}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="text"
-                                        size={40}
-                                        value={newFieldValue}
-                                        placeholder="valore"
-                                        onChange={e => setNewFieldValue(e.target.value)}
-                                    />
-                                </td>
-                                <td>
-                                    <Button disabled={updating || !newFieldKey || !!commonData[newFieldKey]} onClick={addCommonDataField}>
-                                        Aggiungi
-                                    </Button>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </>
-        )}
-    </div>
+            )}
+        </div>
     )
 
-    function cancel() {
-        setCommonData(workbook.commonData || {})
-        setNewFieldKey('')
-        setNewFieldValue('')
-        setEdit(false)
+    async function save() {
+        let parsed: Data
+        try {
+            parsed = parseData(dataValue, format)
+        } catch (error) {
+            showParseError(error)
+            return
+        }
+        setValidationError(null)
+        try {
+            await updateWorkbook({
+                variables: {_id: workbook._id, commonData: parsed},
+                refetchQueries: ['GetWorkbook']
+            })
+            setCommonData(parsed)
+            setDataValue(formatData(parsed, format))
+            setEdit(false)
+        } catch {
+            // The mutation error is displayed above without losing the draft.
+        }
     }
 
-    function updateCommonDataField(key: string, value: string) {
-        const newData = { ...commonData, [key]: value }
-        setCommonData(newData)
-        persistCommonData(newData)
+    function showParseError(error: unknown) {
+        const detail = error instanceof Error ? error.message : 'Controlla la sintassi.'
+        setValidationError(`${format.toUpperCase()} non valido. ${detail}`)
     }
 
-    async function addCommonDataField() {
-        const key = newFieldKey.trim()
-        const value = newFieldValue.trim()
-        if (!key || commonData[key]) return
-        const newData = { ...commonData, [key]: value }
-        setCommonData(newData)
-        await persistCommonData(newData)
-        setNewFieldKey('')
-        setNewFieldValue('')
+    function changeFormat(nextFormat: DataFormat) {
+        try {
+            const data = edit ? parseData(dataValue, format) : commonData
+            setDataValue(formatData(data, nextFormat))
+            setFormat(nextFormat)
+            setValidationError(null)
+        } catch (error) {
+            showParseError(error)
+        }
     }
 
-    async function removeCommonDataField(key: string) {
-        const newData = { ...commonData }
-        delete newData[key]
-        setCommonData(newData)
-        await persistCommonData(newData)
-    }
-
-    async function persistCommonData(data = commonData) {
-      await updateWorkbook({ 
-        variables: { _id: workbook._id, commonData: data },
-        refetchQueries: ['GetWorkbook']
-      })
-    }
-
-    async function doDelete() {
-        await deleteWorkbook({variables: {_id: workbook._id}})
-        router.push('/')
+    async function copyToClipboard() {
+        try {
+            await navigator.clipboard.writeText(edit ? dataValue : formatData(commonData, format))
+            alert(`${format.toUpperCase()} copiato nella clipboard`)
+        } catch {
+            alert('Errore nella copia')
+        }
     }
 }
