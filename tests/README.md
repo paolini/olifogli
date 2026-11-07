@@ -132,6 +132,12 @@ Non viene eseguito un collaudo automatico in Excel o LibreOffice.
 `logging.test.cjs` verifica il plugin GraphQL, i log WebSocket e la diagnostica
 con valori personali/segreti sintetici, nomi di operazione e alias ostili,
 errori e codici non riconosciuti. Controlla anche i file giornalieri prodotti.
+`apollo-subscription-errors.test.cjs` verifica che gli errori di trasporto delle
+subscription abbiano il codice `WEBSOCKET_CONNECTION_ERROR`, preservando i
+codici degli errori GraphQL del server. La diagnostica riconosce anche gli
+errori incapsulati da Apollo e stampa solo un messaggio statico, senza dettagli
+grezzi. `sheet-cursors.test.cjs` verifica che tutte le subscription del foglio
+abbiano un callback di errore esplicito.
 La pulizia viene provata esclusivamente in directory temporanee: limite dei
 30 giorni UTC, vecchi formati, dry-run, esecuzioni ripetute, configurazioni
 invalide, date non valide, file estranei, directory e link simbolici.

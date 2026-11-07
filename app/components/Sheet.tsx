@@ -221,6 +221,7 @@ function SheetBody({sheet,profile}: {
         const unsubscribe = subscribeToMore({
             document: ROW_CHANGED_SUBSCRIPTION,
             variables: { sheetId: sheet._id },
+            onError: err => logDiagnostic('app/components/Sheet.rowchanged_subscription_error', err),
             updateQuery: (prev, { subscriptionData }) => {
                 if (!subscriptionData.data) return prev;
                 const newRow = (subscriptionData.data as unknown as { rowChanged: Row }).rowChanged;
@@ -245,6 +246,7 @@ function SheetBody({sheet,profile}: {
 
     useSubscription(ROWS_DELETED_SUBSCRIPTION, {
         variables: { sheetId: sheet._id },
+        onError: err => logDiagnostic('app/components/Sheet.rowsdeleted_subscription_error', err),
         onData: ({ client, data }) => {
             const deletedIds: string[] = (data.data?.rowsDeleted ?? []).map((id: unknown) => id!.toString())
             if (deletedIds.length === 0) return

@@ -85,6 +85,26 @@ test('diagnostic and WebSocket logs discard error bodies, stacks and identifiers
   assert.deepEqual(Object.keys(JSON.parse(lines[2])).sort(), ['timestamp','event','errorCount','errorCodes'].sort());
 });
 
+test('subscription diagnostics recognize Apollo wrappers without logging raw errors', () => {
+  const { ApolloError } = require('@apollo/client');
+  const { helper, lines } = loadLogging();
+  const socketError = Object.assign(new Error('PRIVATE'), { code: 'WEBSOCKET_CONNECTION_ERROR' });
+  for (const error of [socketError, new ApolloError({ protocolErrors: [socketError] }), new ApolloError({ networkError: socketError })]) {
+    helper.logDiagnostic('subscription.failed', error);
+    const entry = JSON.parse(lines.at(-1));
+    assert.equal(entry.code, 'WEBSOCKET_CONNECTION_ERROR');
+    assert.match(entry.message, /npm run ws-server:watch/);
+  }
+  helper.logDiagnostic('subscription.failed', new ApolloError({ graphQLErrors: [{ message: 'PRIVATE', extensions: { code: 'FORBIDDEN' } }] }));
+  assert.equal(JSON.parse(lines.at(-1)).code, 'FORBIDDEN');
+  helper.logDiagnostic('subscription.failed', new ApolloError({ graphQLErrors: [{ message: 'PRIVATE', extensions: { code: 'INTERNAL_SERVER_ERROR' } }] }));
+  assert.equal(JSON.parse(lines.at(-1)).code, 'INTERNAL_SERVER_ERROR');
+  const cyclic = {};
+  cyclic.networkError = cyclic;
+  assert.equal(helper.safeErrorCode(cyclic), 'INTERNAL_SERVER_ERROR');
+  assert.equal(lines.join('').includes('PRIVATE'), false);
+});
+
 test('cleanup removes only expired regular daily logs, including legacy files', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'olifogli-cleanup-'));
   try {

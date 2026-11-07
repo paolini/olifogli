@@ -5,20 +5,37 @@ const SAFE_ERROR_CODES = new Set([
     'GRAPHQL_VALIDATION_FAILED', 'INTERNAL_SERVER_ERROR', 'ECONNREFUSED',
     'SIGNIN_OAUTH_ERROR', 'OAUTH_CALLBACK_ERROR', 'JWT_SESSION_ERROR', 'SESSION_ERROR',
     'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EACCES', 'ENOENT', 'ENOSPC',
+    'WEBSOCKET_CONNECTION_ERROR',
 ])
 
-export function safeErrorCode(error: unknown): string {
+export function safeErrorCode(error: unknown, depth = 0): string {
     if (error && typeof error === 'object') {
-        const value = error as { code?: unknown; extensions?: { code?: unknown } }
+        const value = error as { code?: unknown; extensions?: { code?: unknown }; networkError?: unknown; protocolErrors?: unknown[]; graphQLErrors?: unknown[] }
         const code = value.extensions?.code ?? value.code
         if (typeof code === 'string' && SAFE_ERROR_CODES.has(code)) return code
+        // Apollo wraps transport and GraphQL errors differently across subscription APIs.
+        if (depth < 3) {
+            const nested = [value.networkError, ...(Array.isArray(value.protocolErrors) ? value.protocolErrors : []), ...(Array.isArray(value.graphQLErrors) ? value.graphQLErrors : [])]
+            for (const item of nested) {
+                if (!item) continue
+                const nestedCode = safeErrorCode(item, depth + 1)
+                if (nestedCode !== 'INTERNAL_SERVER_ERROR') return nestedCode
+            }
+        }
     }
     return 'INTERNAL_SERVER_ERROR'
 }
 
 // event must be a static identifier at the call site, never supplied by a user.
 export function logDiagnostic(event: string, error?: unknown, level: 'error' | 'warn' = 'error'): void {
-    console[level](JSON.stringify({ timestamp: new Date().toISOString(), event, code: safeErrorCode(error) }))
+    const code = safeErrorCode(error)
+    if (code === 'WEBSOCKET_CONNECTION_ERROR') {
+        console.warn(JSON.stringify({ timestamp: new Date().toISOString(), event, code,
+            message: 'Connessione WebSocket non disponibile: gli aggiornamenti in tempo reale sono interrotti. In locale, verifica che il server sia avviato con npm run ws-server:watch.',
+        }))
+        return
+    }
+    console[level](JSON.stringify({ timestamp: new Date().toISOString(), event, code }))
 }
 
 export function logWebSocketEvent(

@@ -27,12 +27,13 @@ async function fixture(t, initial) {
     }
   });
   let cursorData = initial, tableProps, cursorSubscription;
+  const diagnostics = [], subscriptions = [];
   const sheet = { _id: 'sheet', name: 'Test', schema: 'test', workbook: { _id: 'workbook' } };
   const sheetData = { sheet };
   const rowsData = { rows: [] };
   const breadcrumbs = { setBreadcrumbs() {} };
   const params = new URLSearchParams('tab=table');
-  const subscribeToMore = () => () => {};
+  const subscribeToMore = options => { subscriptions.push(options); return () => {}; };
   const exports = {};
   const source = ts.transpileModule(readFileSync(path.resolve(__dirname, '../app/components/Sheet.tsx'), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
@@ -52,6 +53,7 @@ async function fixture(t, initial) {
         return { data: cursorData };
       },
       useSubscription(query, options) {
+        subscriptions.push(options);
         if (query.includes('OnCursorChanged')) cursorSubscription = options;
       },
     };
@@ -61,12 +63,14 @@ async function fixture(t, initial) {
     if (name.endsWith('/BreadcrumbsProvider')) return { useBreadcrumbs: () => breadcrumbs };
     if (name.endsWith('/schema')) return { schemas: { test: { has_scan_functionality: () => false } } };
     if (name.endsWith('/tabId')) return { getTabId: () => 'self' };
+    if (name.endsWith('/logging')) return { logDiagnostic: (event, error) => diagnostics.push({ event, error }) };
     if (name === './Table') return { default: props => { tableProps = props; return null; } };
     return { default: () => null };
   } });
   const element = React.createElement(exports.default, { sheetId: 'sheet' });
   async function render() { await act(async () => root.render(element)); }
   return {
+    diagnostics, subscriptions,
     table: () => tableProps,
     serverRender() { renderToString(element); },
     render,
@@ -80,6 +84,22 @@ async function fixture(t, initial) {
 
 const cursor = (tabId, lineKey, fieldName = 'name') => ({ tabId, email: `${tabId}@example.org`, lineKey, fieldName });
 const value = ({ tabId, ...rest }) => rest;
+
+test('all sheet subscriptions handle failures explicitly', async t => {
+  const f = await fixture(t);
+  await f.render();
+  const error = new Error('socket unavailable');
+  for (const subscription of f.subscriptions) {
+    assert.equal(typeof subscription.onError, 'function');
+    subscription.onError(error);
+  }
+  assert.deepEqual(new Set(f.diagnostics.map(entry => entry.event)), new Set([
+    'app/components/Sheet.cursorchanged_subscription_error',
+    'app/components/Sheet.rowchanged_subscription_error',
+    'app/components/Sheet.rowsdeleted_subscription_error',
+  ]));
+  assert.ok(f.diagnostics.every(entry => entry.error === error));
+});
 
 test('cached cursors are initialized after mount and exclude this tab and inactive cursors', async t => {
   const other = cursor('other', 'row1');

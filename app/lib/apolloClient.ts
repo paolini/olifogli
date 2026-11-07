@@ -1,4 +1,4 @@
-import { ApolloClient, ApolloLink, InMemoryCache, HttpLink, split } from '@apollo/client';
+import { ApolloClient, ApolloError, ApolloLink, InMemoryCache, HttpLink, Observable, split } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { getWebSocketClient } from './webSocketConnection';
@@ -10,7 +10,22 @@ const createApolloClient = () => {
   });
 
   const wsLink = typeof window !== 'undefined'
-    ? new ApolloLink(operation => new GraphQLWsLink(getWebSocketClient()).request(operation))
+    ? new ApolloLink(operation => new Observable(observer => {
+        return new GraphQLWsLink(getWebSocketClient()).request(operation).subscribe({
+          next: result => observer.next(result),
+          complete: () => observer.complete(),
+          error: error => {
+            // GraphQL errors are server responses; socket failures have no GraphQL code.
+            if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
+              observer.error(error);
+            } else {
+              observer.error(Object.assign(new Error('Connessione WebSocket non disponibile.'), {
+                code: 'WEBSOCKET_CONNECTION_ERROR',
+              }));
+            }
+          },
+        });
+      }))
     : null;
 
   // Split link: usa WebSocket per le subscription, HTTP per il resto
