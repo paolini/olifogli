@@ -1,4 +1,5 @@
 import olifogliWorkerStatus from './resolvers/olifogliWorkerStatus'
+import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
 import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
 import { Context } from './types'
@@ -65,6 +66,7 @@ import decryptSheets from './resolvers/decryptSheets'
 // Definizione dei resolver
 export const resolvers: Resolvers = {
   Query: {
+    olimanagerVenueSheetChoices,
     olifogliWorkerStatus,
     olimanagerJobs,
     olimanagerJobItems,
@@ -125,6 +127,7 @@ export const resolvers: Resolvers = {
   },
 
   Mutation: {
+    prepareOlimanagerVenueSheets,
     requestOlimanagerCheck,
     requestOlimanagerMatch,
     requestOlimanagerResults,

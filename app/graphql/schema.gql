@@ -290,7 +290,39 @@ type AgeDistributionReport {
   unknownAgeRows: Int!
 }
 
+type OlimanagerSheetContest {
+  id: Int!
+  name: String!
+  scope: String!
+}
+
+type OlimanagerSheetEdition {
+  id: String!
+  name: String!
+  year: Int
+  contests: [OlimanagerSheetContest!]!
+}
+
+type OlimanagerSheetOlympiad {
+  id: String!
+  name: String!
+  editions: [OlimanagerSheetEdition!]!
+}
+
+type OlimanagerVenueSheet {
+  name: String!
+  schema: String!
+  commonData: Data!
+  permissions: [Permission!]!
+}
+
+type OlimanagerVenueSheetsPreview {
+  sheets: [OlimanagerVenueSheet!]!
+  warnings: [String!]!
+}
+
 type Query {
+  olimanagerVenueSheetChoices: [OlimanagerSheetOlympiad!]!
   olifogliWorkerStatus: OlifogliWorkerStatus!
   olimanagerJobs(sheetIds: [ObjectId!]): [OlimanagerJob!]!
   olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
@@ -333,6 +365,7 @@ type OlimanagerUpdateExtraFieldsResult {
 }
 
 type Mutation {
+  prepareOlimanagerVenueSheets(workbookId: ObjectId!, olympiadId: String!, biennioContestId: Int!, triennioContestId: Int!): OlimanagerVenueSheetsPreview!
   resumeOlimanagerCheck(jobId: ObjectId!): OlimanagerJob!
   requestOlimanagerResults(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!

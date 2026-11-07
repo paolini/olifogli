@@ -30,6 +30,23 @@ la precedenza delle variabili esportate, il confronto con l'hash Django e la
 stampa delle sole assegnazioni da correggere (secret incluso soltanto quando
 diverso), senza modifiche automatiche a `.env` o secret nel manifest JSON.
 
+`olimanager-venue-sheets.test.cjs` verifica la creazione delle proposte Biennio
+e Triennio dalle iscrizioni GraphQL, i permessi, le eccezioni territoriali,
+l'esclusione delle iscrizioni invalidate, la creazione anche senza amministratori
+o supervisori con avvisi per i dati mancanti, la paginazione
+delle edizioni storiche e la validazione dei contest. Controlla l'accesso riservato
+agli amministratori e il salvataggio di olimpiade, edizione e contest nei campi
+del workbook senza sovrascrivere altre impostazioni o salvare dopo errori remoti.
+`olimanager-venue-sheets-ui.test.cjs` monta il selettore in jsdom, verifica il
+ripristino dei vecchi codici, l'anteprima e la creazione dei soli fogli mancanti.
+Copre inoltre aggiunte, revoche e cambi di ruolo selezionabili singolarmente,
+modifiche deselezionate per default, selezione totale e parziale del foglio,
+conservazione degli aiutanti e dei ruoli non selezionati e blocco delle scritture
+quando i permessi cambiano dopo l'anteprima. Il piano di confronto verifica
+anche l'applicazione delle sole modifiche scelte, l'identificazione tramite
+codice meccanografico e i duplicati ambigui.
+Entrambi simulano Olimanager e non creano dati reali.
+
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare
 le chiamate GraphQL dal server, anche con cookie HTTPS suddivisi in chunk, e

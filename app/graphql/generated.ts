@@ -112,6 +112,7 @@ export type Mutation = {
   olimanagerUpdateExtraFields: Array<OlimanagerUpdateExtraFieldsResult>;
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
+  prepareOlimanagerVenueSheets: OlimanagerVenueSheetsPreview;
   requestOlimanagerCheck: OlimanagerJob;
   requestOlimanagerMatch: OlimanagerJob;
   requestOlimanagerResults: OlimanagerJob;
@@ -259,6 +260,14 @@ export type MutationPatchRowArgs = {
   data: Scalars['Data']['input'];
   tabId?: InputMaybe<Scalars['String']['input']>;
   updatedOn: Scalars['Timestamp']['input'];
+};
+
+
+export type MutationPrepareOlimanagerVenueSheetsArgs = {
+  biennioContestId: Scalars['Int']['input'];
+  olympiadId: Scalars['String']['input'];
+  triennioContestId: Scalars['Int']['input'];
+  workbookId: Scalars['ObjectId']['input'];
 };
 
 
@@ -413,12 +422,48 @@ export type OlimanagerRowData = {
   resultsUpdatedOn?: Maybe<Scalars['Timestamp']['output']>;
 };
 
+export type OlimanagerSheetContest = {
+  __typename?: 'OlimanagerSheetContest';
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  scope: Scalars['String']['output'];
+};
+
+export type OlimanagerSheetEdition = {
+  __typename?: 'OlimanagerSheetEdition';
+  contests: Array<OlimanagerSheetContest>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  year?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OlimanagerSheetOlympiad = {
+  __typename?: 'OlimanagerSheetOlympiad';
+  editions: Array<OlimanagerSheetEdition>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
 export type OlimanagerUpdateExtraFieldsResult = {
   __typename?: 'OlimanagerUpdateExtraFieldsResult';
   error?: Maybe<Scalars['String']['output']>;
   participantId?: Maybe<Scalars['String']['output']>;
   skipped?: Maybe<Scalars['Boolean']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type OlimanagerVenueSheet = {
+  __typename?: 'OlimanagerVenueSheet';
+  commonData: Scalars['Data']['output'];
+  name: Scalars['String']['output'];
+  permissions: Array<Permission>;
+  schema: Scalars['String']['output'];
+};
+
+export type OlimanagerVenueSheetsPreview = {
+  __typename?: 'OlimanagerVenueSheetsPreview';
+  sheets: Array<OlimanagerVenueSheet>;
+  warnings: Array<Scalars['String']['output']>;
 };
 
 export type Permission = {
@@ -443,6 +488,7 @@ export type Query = {
   olimanager?: Maybe<Scalars['String']['output']>;
   olimanagerJobItems: Array<OlimanagerJobItem>;
   olimanagerJobs: Array<OlimanagerJob>;
+  olimanagerVenueSheetChoices: Array<OlimanagerSheetOlympiad>;
   rows: Array<Row>;
   scanJobs: Array<ScanJob>;
   scanResults: Array<ScanResults>;
@@ -849,6 +895,21 @@ export type ResumeOlimanagerCheckMutationVariables = Exact<{
 
 
 export type ResumeOlimanagerCheckMutation = { __typename?: 'Mutation', resumeOlimanagerCheck: { __typename?: 'OlimanagerJob', _id: ObjectId, status: string } };
+
+export type OlimanagerVenueSheetChoicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OlimanagerVenueSheetChoicesQuery = { __typename?: 'Query', olimanagerVenueSheetChoices: Array<{ __typename?: 'OlimanagerSheetOlympiad', id: string, name: string, editions: Array<{ __typename?: 'OlimanagerSheetEdition', id: string, name: string, year?: number | null, contests: Array<{ __typename?: 'OlimanagerSheetContest', id: number, name: string, scope: string }> }> }> };
+
+export type PrepareOlimanagerVenueSheetsMutationVariables = Exact<{
+  workbookId: Scalars['ObjectId']['input'];
+  olympiadId: Scalars['String']['input'];
+  biennioContestId: Scalars['Int']['input'];
+  triennioContestId: Scalars['Int']['input'];
+}>;
+
+
+export type PrepareOlimanagerVenueSheetsMutation = { __typename?: 'Mutation', prepareOlimanagerVenueSheets: { __typename?: 'OlimanagerVenueSheetsPreview', warnings: Array<string>, sheets: Array<{ __typename?: 'OlimanagerVenueSheet', name: string, schema: string, commonData: any, permissions: Array<{ __typename?: 'Permission', email: string, role: string }> }> } };
 
 export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1616,6 +1677,106 @@ export function useResumeOlimanagerCheckMutation(baseOptions?: Apollo.MutationHo
 export type ResumeOlimanagerCheckMutationHookResult = ReturnType<typeof useResumeOlimanagerCheckMutation>;
 export type ResumeOlimanagerCheckMutationResult = Apollo.MutationResult<ResumeOlimanagerCheckMutation>;
 export type ResumeOlimanagerCheckMutationOptions = Apollo.BaseMutationOptions<ResumeOlimanagerCheckMutation, ResumeOlimanagerCheckMutationVariables>;
+export const OlimanagerVenueSheetChoicesDocument = gql`
+    query OlimanagerVenueSheetChoices {
+  olimanagerVenueSheetChoices {
+    id
+    name
+    editions {
+      id
+      name
+      year
+      contests {
+        id
+        name
+        scope
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useOlimanagerVenueSheetChoicesQuery__
+ *
+ * To run a query within a React component, call `useOlimanagerVenueSheetChoicesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerVenueSheetChoicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOlimanagerVenueSheetChoicesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useOlimanagerVenueSheetChoicesQuery(baseOptions?: Apollo.QueryHookOptions<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>(OlimanagerVenueSheetChoicesDocument, options);
+      }
+export function useOlimanagerVenueSheetChoicesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>(OlimanagerVenueSheetChoicesDocument, options);
+        }
+export function useOlimanagerVenueSheetChoicesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>(OlimanagerVenueSheetChoicesDocument, options);
+        }
+export type OlimanagerVenueSheetChoicesQueryHookResult = ReturnType<typeof useOlimanagerVenueSheetChoicesQuery>;
+export type OlimanagerVenueSheetChoicesLazyQueryHookResult = ReturnType<typeof useOlimanagerVenueSheetChoicesLazyQuery>;
+export type OlimanagerVenueSheetChoicesSuspenseQueryHookResult = ReturnType<typeof useOlimanagerVenueSheetChoicesSuspenseQuery>;
+export type OlimanagerVenueSheetChoicesQueryResult = Apollo.QueryResult<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>;
+export const PrepareOlimanagerVenueSheetsDocument = gql`
+    mutation PrepareOlimanagerVenueSheets($workbookId: ObjectId!, $olympiadId: String!, $biennioContestId: Int!, $triennioContestId: Int!) {
+  prepareOlimanagerVenueSheets(
+    workbookId: $workbookId
+    olympiadId: $olympiadId
+    biennioContestId: $biennioContestId
+    triennioContestId: $triennioContestId
+  ) {
+    sheets {
+      name
+      schema
+      commonData
+      permissions {
+        email
+        role
+      }
+    }
+    warnings
+  }
+}
+    `;
+export type PrepareOlimanagerVenueSheetsMutationFn = Apollo.MutationFunction<PrepareOlimanagerVenueSheetsMutation, PrepareOlimanagerVenueSheetsMutationVariables>;
+
+/**
+ * __usePrepareOlimanagerVenueSheetsMutation__
+ *
+ * To run a mutation, you first call `usePrepareOlimanagerVenueSheetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePrepareOlimanagerVenueSheetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [prepareOlimanagerVenueSheetsMutation, { data, loading, error }] = usePrepareOlimanagerVenueSheetsMutation({
+ *   variables: {
+ *      workbookId: // value for 'workbookId'
+ *      olympiadId: // value for 'olympiadId'
+ *      biennioContestId: // value for 'biennioContestId'
+ *      triennioContestId: // value for 'triennioContestId'
+ *   },
+ * });
+ */
+export function usePrepareOlimanagerVenueSheetsMutation(baseOptions?: Apollo.MutationHookOptions<PrepareOlimanagerVenueSheetsMutation, PrepareOlimanagerVenueSheetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PrepareOlimanagerVenueSheetsMutation, PrepareOlimanagerVenueSheetsMutationVariables>(PrepareOlimanagerVenueSheetsDocument, options);
+      }
+export type PrepareOlimanagerVenueSheetsMutationHookResult = ReturnType<typeof usePrepareOlimanagerVenueSheetsMutation>;
+export type PrepareOlimanagerVenueSheetsMutationResult = Apollo.MutationResult<PrepareOlimanagerVenueSheetsMutation>;
+export type PrepareOlimanagerVenueSheetsMutationOptions = Apollo.BaseMutationOptions<PrepareOlimanagerVenueSheetsMutation, PrepareOlimanagerVenueSheetsMutationVariables>;
 export const ScanJobsDocument = gql`
     query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
@@ -3940,7 +4101,12 @@ export type ResolversTypes = {
   OlimanagerJobItem: ResolverTypeWrapper<Omit<OlimanagerJobItem, '_id' | 'jobId' | 'rowId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'], rowId: ResolversTypes['ObjectId'], sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
   OlimanagerResultDifference: ResolverTypeWrapper<OlimanagerResultDifference>;
   OlimanagerRowData: ResolverTypeWrapper<OlimanagerRowData>;
+  OlimanagerSheetContest: ResolverTypeWrapper<OlimanagerSheetContest>;
+  OlimanagerSheetEdition: ResolverTypeWrapper<OlimanagerSheetEdition>;
+  OlimanagerSheetOlympiad: ResolverTypeWrapper<OlimanagerSheetOlympiad>;
   OlimanagerUpdateExtraFieldsResult: ResolverTypeWrapper<OlimanagerUpdateExtraFieldsResult>;
+  OlimanagerVenueSheet: ResolverTypeWrapper<OlimanagerVenueSheet>;
+  OlimanagerVenueSheetsPreview: ResolverTypeWrapper<OlimanagerVenueSheetsPreview>;
   Permission: ResolverTypeWrapper<Permission>;
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
@@ -3992,7 +4158,12 @@ export type ResolversParentTypes = {
   OlimanagerJobItem: Omit<OlimanagerJobItem, '_id' | 'jobId' | 'rowId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'], rowId: ResolversParentTypes['ObjectId'], sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
   OlimanagerResultDifference: OlimanagerResultDifference;
   OlimanagerRowData: OlimanagerRowData;
+  OlimanagerSheetContest: OlimanagerSheetContest;
+  OlimanagerSheetEdition: OlimanagerSheetEdition;
+  OlimanagerSheetOlympiad: OlimanagerSheetOlympiad;
   OlimanagerUpdateExtraFieldsResult: OlimanagerUpdateExtraFieldsResult;
+  OlimanagerVenueSheet: OlimanagerVenueSheet;
+  OlimanagerVenueSheetsPreview: OlimanagerVenueSheetsPreview;
   Permission: Permission;
   PermissionInput: PermissionInput;
   Query: {};
@@ -4113,6 +4284,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   olimanagerUpdateExtraFields?: Resolver<Array<ResolversTypes['OlimanagerUpdateExtraFieldsResult']>, ParentType, ContextType, Partial<MutationOlimanagerUpdateExtraFieldsArgs>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
+  prepareOlimanagerVenueSheets?: Resolver<ResolversTypes['OlimanagerVenueSheetsPreview'], ParentType, ContextType, RequireFields<MutationPrepareOlimanagerVenueSheetsArgs, 'biennioContestId' | 'olympiadId' | 'triennioContestId' | 'workbookId'>>;
   requestOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerCheckArgs>>;
   requestOlimanagerMatch?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerMatchArgs>>;
   requestOlimanagerResults?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerResultsArgs>>;
@@ -4206,11 +4378,47 @@ export type OlimanagerRowDataResolvers<ContextType = any, ParentType extends Res
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type OlimanagerSheetContestResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerSheetContest'] = ResolversParentTypes['OlimanagerSheetContest']> = {
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  scope?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OlimanagerSheetEditionResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerSheetEdition'] = ResolversParentTypes['OlimanagerSheetEdition']> = {
+  contests?: Resolver<Array<ResolversTypes['OlimanagerSheetContest']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  year?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OlimanagerSheetOlympiadResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerSheetOlympiad'] = ResolversParentTypes['OlimanagerSheetOlympiad']> = {
+  editions?: Resolver<Array<ResolversTypes['OlimanagerSheetEdition']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type OlimanagerUpdateExtraFieldsResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerUpdateExtraFieldsResult'] = ResolversParentTypes['OlimanagerUpdateExtraFieldsResult']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   participantId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   skipped?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OlimanagerVenueSheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerVenueSheet'] = ResolversParentTypes['OlimanagerVenueSheet']> = {
+  commonData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;
+  schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OlimanagerVenueSheetsPreviewResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerVenueSheetsPreview'] = ResolversParentTypes['OlimanagerVenueSheetsPreview']> = {
+  sheets?: Resolver<Array<ResolversTypes['OlimanagerVenueSheet']>, ParentType, ContextType>;
+  warnings?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4230,6 +4438,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanagerJobItems?: Resolver<Array<ResolversTypes['OlimanagerJobItem']>, ParentType, ContextType, RequireFields<QueryOlimanagerJobItemsArgs, 'jobId'>>;
   olimanagerJobs?: Resolver<Array<ResolversTypes['OlimanagerJob']>, ParentType, ContextType, Partial<QueryOlimanagerJobsArgs>>;
+  olimanagerVenueSheetChoices?: Resolver<Array<ResolversTypes['OlimanagerSheetOlympiad']>, ParentType, ContextType>;
   rows?: Resolver<Array<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
   scanJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
   scanResults?: Resolver<Array<ResolversTypes['ScanResults']>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
@@ -4443,7 +4652,12 @@ export type Resolvers<ContextType = any> = {
   OlimanagerJobItem?: OlimanagerJobItemResolvers<ContextType>;
   OlimanagerResultDifference?: OlimanagerResultDifferenceResolvers<ContextType>;
   OlimanagerRowData?: OlimanagerRowDataResolvers<ContextType>;
+  OlimanagerSheetContest?: OlimanagerSheetContestResolvers<ContextType>;
+  OlimanagerSheetEdition?: OlimanagerSheetEditionResolvers<ContextType>;
+  OlimanagerSheetOlympiad?: OlimanagerSheetOlympiadResolvers<ContextType>;
   OlimanagerUpdateExtraFieldsResult?: OlimanagerUpdateExtraFieldsResultResolvers<ContextType>;
+  OlimanagerVenueSheet?: OlimanagerVenueSheetResolvers<ContextType>;
+  OlimanagerVenueSheetsPreview?: OlimanagerVenueSheetsPreviewResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RankingReport?: RankingReportResolvers<ContextType>;

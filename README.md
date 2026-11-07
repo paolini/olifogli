@@ -126,6 +126,63 @@ See https://github.com/fph/archiomr/blob/main/worker.py
 
 set SCANS_SPOOL_DIR and SCANS_DATA_DIR to enable
 
+## Creazione fogli Archimede da Olimanager
+
+In Olimanager una **venue** è la sede di un singolo contest: normalmente una
+scuola per le gare scolastiche e una sede distrettuale per le fasi locali.
+Una **zone** è invece il distretto territoriale dell'olimpiade.
+La nuova integrazione usa quindi i nomi `VenueSheets`, con le operazioni
+GraphQL di Olifogli `olimanagerVenueSheetChoices` e `prepareOlimanagerVenueSheets`.
+Attualmente gestisce Archimede: le sedi corrispondono alle scuole iscritte e
+ciascuna scuola ha un foglio Biennio e uno Triennio. I responsabili della zone
+sono proposti come supervisori.
+
+Per le gare successive (gara delle prime, gara di febbraio, Senior, ecc.)
+l'anteprima andrà adattata alla struttura dei rispettivi contest, alle venue
+e ai relativi permessi. La terminologia generale `VenueSheets` non implica
+che questi casi siano già supportati: l'associazione sede–scuola e la suddivisione
+Biennio/Triennio sono specifiche del flusso Archimede. L'estensione alle altre
+gare è rimandata al momento in cui servirà.
+
+Nella linguetta **Fogli** di un raccoglitore, gli amministratori globali possono
+usare **Crea fogli da Olimanager**. Si selezionano olimpiade, edizione e i due
+contest scolastici da associare a Biennio e Triennio; **Salva configurazione e
+carica anteprima** legge tutte le scuole con iscrizione valida a quella edizione.
+Serve una sessione OAuth Olimanager con scope `api` e permessi di lettura sulle
+iscrizioni dell'edizione e sui responsabili dei distretti.
+
+La configurazione viene salvata in `commonData` del workbook, conservando gli
+altri campi:
+
+- `olimanager_olympiad_id`
+- `olimanager_edition_id`
+- `olimanager_archimede_biennio_contest_id`
+- `olimanager_archimede_triennio_contest_id`
+
+Le selezioni sono riproposte alla riapertura; per i workbook precedenti vengono
+ricavate dai codici dei contest già configurati. L'anteprima assegna al referente
+dell'iscrizione il ruolo di amministratore e a tutti i responsabili del distretto
+il ruolo di supervisore. L'associazione al distretto usa province ed eccezioni
+territoriali di Olimanager, anche per edizioni precedenti all'ultima.
+I fogli possono essere creati anche senza amministratori o supervisori. Referente
+senza email, distretto assente/ambiguo e responsabili mancanti producono avvisi;
+vengono assegnati solo i permessi ricavabili senza ambiguità.
+L'anteprima distingue nuovi fogli, fogli invariati e permessi da
+aggiornare; riconosce quelli esistenti da schema e nome/codice meccanografico.
+Mostra permessi attuali e proposti, accessi aggiunti e rimossi e cambi di ruolo.
+Solo i nuovi fogli sono preselezionati: per i fogli esistenti ciascuna aggiunta,
+rimozione e modifica di ruolo ha una propria casella, inizialmente deselezionata.
+Si applicano solo le modifiche scelte; gli altri accessi e ruoli vengono conservati.
+Per esempio si può aggiungere il nuovo referente e revocare il precedente lasciando
+deselezionata la rimozione degli aiutanti aggiunti a mano. La casella del foglio
+seleziona tutte le sue modifiche; quella generale seleziona tutte le creazioni e
+tutte le modifiche, comprese le rimozioni. Una selezione parziale è indicata sulla
+casella del foglio.
+Righe e altri metadati dei fogli esistenti restano invariati. Prima delle scritture
+si rileggono i fogli: se i permessi sono cambiati dall'anteprima occorre ricaricarla.
+I fogli con corrispondenze duplicate sono segnalati e non selezionabili.
+Non occorre importare il foglio «scuole e referenti».
+
 ## Dati di prova Archimede su Olimanager
 
 Il comando seguente verifica la configurazione senza creare dati:
