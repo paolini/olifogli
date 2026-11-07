@@ -113,8 +113,7 @@ function SheetInfoPanel({sheet,profile}:{
         </>
     } else {
         return <>
-            <PanelEdit sheet={sheet} profile={profile} />
-            <Button className="mb-4"onClick={() => setEdit(false)}>⚙ chiudi modifica</Button>
+            <PanelEdit sheet={sheet} profile={profile} onClose={() => setEdit(false)} />
         </>
     }
 }
@@ -146,20 +145,19 @@ function PanelDisplay({sheet}: {
     </>
 }
 
-function PanelEdit({sheet,profile}: {
+function PanelEdit({sheet,profile,onClose}: {
     sheet: Sheet
     profile: User | null
+    onClose: () => void
 }) {
     const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
-    const [newFieldKey, setNewFieldKey] = useState('')
-    const [newFieldValue, setNewFieldValue] = useState('')
+    const [newFields, setNewFields] = useState<{id: number, key: string, value: string}[]>([])
+    const [validationError, setValidationError] = useState<string | null>(null)
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
-    const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
     const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
- 
-    if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
+
 
     return <>
         <table className="my-2">
@@ -176,7 +174,7 @@ function PanelEdit({sheet,profile}: {
                         <td>
                             <input
                                 type="text"
-                                value={value as string || ''}
+                                value={value as string ?? ''}
                                 onChange={e => updateCommonDataField(key, e.target.value)}
                                 disabled={updating}
                             />
@@ -192,63 +190,106 @@ function PanelEdit({sheet,profile}: {
                         </td>
                     }
                 </tr>)}
-                {canModifySensibleData &&
-                    <tr>
+                {canModifySensibleData && newFields.map(field => (
+                    <tr key={`new-${field.id}`}>
                         <td>
                             <input
                                 type="text"
-                                value={newFieldKey}
+                                value={field.key}
+                                disabled={updating}
                                 placeholder="nome campo"
-                                onChange={e => setNewFieldKey(e.target.value)}
+                                aria-label="Nome del nuovo campo"
+                                onChange={e => updateNewField(field.id, 'key', e.target.value)}
                             />
                         </td>
                         <td>
                             <input
                                 type="text"
-                                value={newFieldValue}
+                                value={field.value}
+                                disabled={updating}
                                 placeholder="valore"
-                                onChange={e => setNewFieldValue(e.target.value)}
+                                aria-label="Valore del nuovo campo"
+                                onChange={e => updateNewField(field.id, 'value', e.target.value)}
                             />
                         </td>
                         <td>
-                            <Button disabled={updating || !newFieldKey || !!commonData[newFieldKey]} onClick={addCommonDataField}>
-                                Aggiungi
+                            <Button variant="danger" disabled={updating} onClick={() => {
+                                setNewFields(previous => previous.filter(row => row.id !== field.id))
+                                setValidationError(null)
+                            }}>
+                                rimuovi
                             </Button>
                         </td>
                     </tr>
-                }
+                ))}
+                {canModifySensibleData && (
+                    <tr>
+                        <td colSpan={2}></td>
+                        <td>
+                            <Button disabled={updating} onClick={addCommonDataField}>Aggiungi</Button>
+                        </td>
+                    </tr>
+                )}
             </tbody>
         </table>
+        {validationError && <p role="alert" className="my-2 text-red-600">{validationError}</p>}
+        <Error error={updateError} dismiss={updateReset}/>
+        <div className="mb-4 flex gap-2">
+            {canModifySensibleData && <Button disabled={updating} onClick={save}>Salva</Button>}
+            <Button disabled={updating} onClick={onClose}>Annulla</Button>
+        </div>
     </>
- 
-    async function persistCommonData(data = commonData) {
-      await updateSheet({ variables: { _id: sheet._id, commonData: data },
-        refetchQueries: ['getSheet']
-      })
+
+    async function save() {
+        let data = { ...commonData }
+        for (const field of newFields) {
+            const key = field.key.trim()
+            if (!key) {
+                setValidationError('Inserisci il nome di ogni nuovo campo oppure rimuovi la riga vuota.')
+                return
+            }
+            if (Object.hasOwn(data, key)) {
+                setValidationError(`Il campo "${key}" è già presente. Usa nomi diversi per ogni campo.`)
+                return
+            }
+            data = { ...data, [key]: field.value }
+        }
+        setValidationError(null)
+        try {
+            await updateSheet({
+                variables: { _id: sheet._id, commonData: data },
+                refetchQueries: ['getSheet'],
+                awaitRefetchQueries: true
+            })
+            onClose()
+        } catch {
+            // Keep the draft available for correction or retry.
+        }
     }
- 
+
     function updateCommonDataField(key: string, value: string) {
-        const newData = { ...commonData, [key]: value }
-        setCommonData(newData)
-        persistCommonData(newData)
+        setCommonData(previous => ({ ...previous, [key]: value }))
     }
 
-    async function addCommonDataField() {
-        const key = newFieldKey.trim()
-        const value = newFieldValue.trim()
-        if (!key || commonData[key]) return
-        const newData = { ...commonData, [key]: value }
-        setCommonData(newData)
-        await persistCommonData(newData)
-        setNewFieldKey('')
-        setNewFieldValue('')
+    function addCommonDataField() {
+        setNewFields(previous => [...previous, {
+            id: (previous.at(-1)?.id ?? -1) + 1,
+            key: '',
+            value: ''
+        }])
     }
 
-    async function removeCommonDataField(key: string) {
-        const newData = { ...commonData }
-        delete newData[key]
-        setCommonData(newData)
-        await persistCommonData(newData)
+    function updateNewField(id: number, field: 'key' | 'value', value: string) {
+        setNewFields(previous => previous.map(row => row.id === id ? { ...row, [field]: value } : row))
+        setValidationError(null)
+    }
+
+    function removeCommonDataField(key: string) {
+        setCommonData(previous => {
+            const newData = { ...previous }
+            delete newData[key]
+            return newData
+        })
     }
 }
 
