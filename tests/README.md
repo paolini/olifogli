@@ -199,6 +199,12 @@ eseguito l'operazione, storia non disponibile senza `LOG_DIR`.
 Controlla infine che la pagina segua gli eventi in tempo reale sul giorno più
 recente, anche senza `LOG_DIR`, e non sui giorni passati.
 
+`user-menu.test.cjs` monta il menu dell'utente nella barra superiore con React
+DOM e jsdom: il menu si apre cliccando l'email; gli amministratori vedono utenti,
+file, logs e logout, i supervisori utenti e logout, gli altri utenti solo
+logout. Verifica la chiusura con Esc (con il focus che torna sull'email), con un
+clic fuori dal menu e scegliendo una voce.
+
 `worker-files.test.cjs` verifica la pagina dei file condivisi con i worker
 archiomr su directory temporanee: elenco con lavoro e cartella di ogni file,
 aree non configurate o mancanti, rifiuto di traversal e link simbolici,

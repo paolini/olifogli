@@ -137,8 +137,8 @@ quando una richiesta fallisce per un errore imprevisto.
 
 ### Pagina «logs» per gli amministratori
 
-Il link **logs** nella barra superiore, accanto a **file**, apre la pagina
-`/logs` (`app/components/AppLogs.tsx`), visibile solo agli amministratori. Mostra
+La voce **logs** del menu che si apre cliccando l'email in alto a destra apre
+la pagina `/logs` (`app/components/AppLogs.tsx`), visibile solo agli amministratori. Mostra
 i log applicativi, non quelli del server:
 
 - all'apertura gli ultimi 500 eventi del giorno più recente, dal più nuovo, letti

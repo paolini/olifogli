@@ -79,8 +79,8 @@ studente con `sheet_name` e i dati della riga. Il PDF generato si scarica da
 
 ## Pagina «file» per gli amministratori
 
-Il link **file** nella barra superiore, accanto a **utenti**, apre la pagina
-`/files` (`app/components/WorkerFiles.tsx`), visibile solo agli amministratori.
+La voce **file** del menu che si apre cliccando l'email in alto a destra apre
+la pagina `/files` (`app/components/WorkerFiles.tsx`), visibile solo agli amministratori.
 Elenca i file delle quattro directory condivise, raggruppati per lavoro:
 
 - ogni gruppo mostra tipo (scansione o fogli generati), ID del lavoro, foglio

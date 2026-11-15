@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { signIn, signOut } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import BackgroundOperations from './BackgroundOperations';
+import UserMenu from './UserMenu';
 
 import packageJson from '@/package.json'
 import useProfile from '@/app/lib/useProfile'
@@ -41,14 +42,8 @@ export default function Navbar() {
         </div>
         <div className="flex items-center gap-4">
           {profile?.isAdmin && <BackgroundOperations />}
-          <div className="hidden md:flex space-x-4">
-          {profile && <i>{profile?.email}</i>}
-          {(profile?.isAdmin || profile?.isSupervisor) && <Link href="/users" className={linkClass}>utenti</Link>}
-          {profile?.isAdmin && <Link href="/files" className={linkClass}>file</Link>}
-          {profile?.isAdmin && <Link href="/logs" className={linkClass}>logs</Link>}
-          {profile && <a className={linkClass} href="#" onClick={() => signOut()}>logout</a>}
+          {profile && <UserMenu email={profile.email} isAdmin={profile.isAdmin} isSupervisor={profile.isSupervisor} />}
           {!profile && <a className={linkClass} href="#" onClick={() => signIn()}>login</a>}
-          </div>
         </div>
       </div>
     </nav>
