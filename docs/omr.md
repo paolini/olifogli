@@ -91,9 +91,13 @@ innocuo e si può cancellare.
    che arrivano.
 3. `app/components/ScansImport.tsx` converte i `rawData` di ogni pagina nei campi
    del foglio con lo schema (`scans_to_data_dict`) e li abbina alle righe
-   esistenti tramite il codice studente (`id`). OMRChecker usa `X` per le
-   domande senza risposta. Se in una domanda sono annerite quattro caselle su
-   cinque, vale la lettera rimasta bianca.
+   esistenti tramite il codice studente (`id`), confrontato senza zeri iniziali
+   (`app/lib/schema/scanMatching.ts`). Un codice vuoto, fatto solo di `X` o
+   uguale a zero non viene abbinato a nessuna riga: la pagina crea una riga
+   nuova senza codice. Le pagine dello stesso caricamento con lo stesso codice
+   sono evidenziate e non si possono importare, perché si sovrascriverebbero a
+   vicenda. OMRChecker usa `X` per le domande senza risposta. Se in una domanda
+   sono annerite quattro caselle su cinque, vale la lettera rimasta bianca.
 4. L'import è manuale: l'utente seleziona le righe e Olifogli le crea
    (`addRow`) o aggiorna solo i campi cambiati (`patchRow`).
 

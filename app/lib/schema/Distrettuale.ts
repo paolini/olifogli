@@ -5,6 +5,7 @@ import { Field, ChoiceAnswerField, NumericAnswerField, ScoreAnswerField, Numeric
 import Schema, { RowToSheetsResult, RowCalculationResult } from './Schema'
 import Competition from './Competition'
 import { ValidationContext } from './Context'
+import { rowsByStudentCode, studentCodeKey, withRepeatedStudentCodesFlagged, type ScanMatch } from './scanMatching'
 
 const expectedMinAge = 10
 const expectedMaxAge = 20
@@ -51,19 +52,15 @@ export default class Distrettuale extends Competition {
         this.fields_sensitive_dates = ['birthDate']
     }
 
-    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
-        const existing_data_dict = Object.fromEntries(rows
-            .map(row => [parseInt(row.data.id), row] as [number,Row])
-            .filter(([id,_]) => !isNaN(id))
-            .map(([id, data]) => [id.toString().padStart(4, '0'), data] as [string,Row])
-        )
+    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, ScanMatch<Row>>> {
+        const existing_data_dict = rowsByStudentCode(rows)
 
-        return Object.fromEntries(scan.map(scan => {
+        return withRepeatedStudentCodesFlagged(scan.map(scan => {
             // estraggo i dati dalla scansione
             const raw = scan.rawData || {}
 
+            const { StudentCode } = raw
             let {
-                StudentCode,
                 TestCode,
                 StudentYear,
                 Section,
@@ -76,17 +73,18 @@ export default class Distrettuale extends Competition {
 
             // pulisco i dati
             // le X sono usate per i campi non compilati
-            StudentCode = (StudentCode || '').replaceAll('X','').trim().padStart(4,'0')
+            // Codice vuoto o zero: nessun abbinamento a righe esistenti.
+            const studentKey = studentCodeKey(StudentCode)
             Section = (Section || '').replaceAll('X','').trim()
             TestCode = (TestCode || '').replaceAll('X','').trim()
             StudentYear = (StudentYear || '').replaceAll('X','').trim()
 
             // trova una eventuale riga già esistente
-            const row = existing_data_dict[StudentCode]
+            const row = studentKey ? existing_data_dict[studentKey] : undefined
 
             // riempi i dati in uscita
             const data: Data = {...(row?.data || {})}
-            data.id = `${parseInt(StudentCode,10)}`
+            data.id = studentKey
             if (TestCode) data['variant'] = TestCode
             if (StudentYear) data['classYear'] = `${parseInt(StudentYear,10)}`
             if (Section) data['classSection'] = Section
@@ -120,7 +118,7 @@ export default class Distrettuale extends Competition {
                 }
             });
 
-            return [scan._id,{row, data: this.clean(data)}]
+            return [`${scan._id}`, {row, data: this.clean(data)}] as [string, ScanMatch<Row>]
         }))
 
         function convert_answer(s: string) {

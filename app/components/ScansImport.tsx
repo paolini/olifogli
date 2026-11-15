@@ -213,6 +213,7 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
     const scans_to_data_dict = schema.scans_to_data_dict(rows, data_rows)
 
     if (rows.length === 0) return <p>Nessun dato acquisito</p>
+    const repeated = rows.filter(row => scans_to_data_dict[row._id.toString()]?.error).length
 
     return <>
         <span><b>{pluralize(rows.length, 'riga', 'righe')}</b> </span>
@@ -220,6 +221,10 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
                 importa {pluralize(selected.length, 'riga selezionata', 'righe selezionate')}
             </Button> {}
         { (addLoading || patchLoading) && <Loading /> }
+        { repeated > 0 && <p className="error" role="alert">
+            {pluralize(repeated, 'pagina ha', 'pagine hanno')} un codice studente ripetuto in questo caricamento
+            e non {repeated === 1 ? 'verrà importata' : 'verranno importate'}: controllare le scansioni (righe evidenziate).
+        </p>}
         {showRaw 
             ? <RawResultsTable job={job} rows={rows}/>
             : <MergedResultTable job={job} selected={selected} setSelected={setSelected} rows={rows} schema={schema} scans_to_data_dict={scans_to_data_dict}/>
@@ -230,7 +235,9 @@ function ScanResultsTable({sheet, job, data_rows, showRaw}:{
         for (let i=0; i < rows.length; i++) {
             const scan_row = rows[i]
             if (!selected.includes(scan_row._id)) continue
-            const {row, data} = scans_to_data_dict[scan_row._id.toString()] || {row: undefined, data: {}}
+            const {row, data, error} = scans_to_data_dict[scan_row._id.toString()] || {row: undefined, data: {}}
+            // Pages with a repeated student code would overwrite each other.
+            if (error) continue
             if (row) {
                 const oldData = row.data || {}
                 const patch = Object.fromEntries(Object.entries(data)
@@ -260,15 +267,16 @@ function MergedResultTable({job, selected, setSelected, rows, schema, scans_to_d
     selected: ObjectId[],
     setSelected: Dispatch<SetStateAction<ObjectId[]>>,
     rows: ScanResultsWithId[],
-    scans_to_data_dict: Partial<Record<string, {row: Row | undefined; data: Data;}>>
+    scans_to_data_dict: Partial<Record<string, {row: Row | undefined; data: Data; error?: string}>>
     schema: typeof schemas[string]
 }) {
+    const importable = rows.filter(row => !scans_to_data_dict[row._id.toString()]?.error)
     return <table>
         <thead>
             <tr>
                 <th><input type="checkbox" 
-                        checked={selected.length === rows.length}
-                        onChange={e => setSelected(lst => e.target.checked ? rows.map(row => row._id) : [])}
+                        checked={importable.length > 0 && selected.length === importable.length}
+                        onChange={e => setSelected(() => e.target.checked ? importable.map(row => row._id) : [])}
                     />
                 </th>
                 <th>scan</th>
@@ -286,6 +294,7 @@ function MergedResultTable({job, selected, setSelected, rows, schema, scans_to_d
                     selected={selected.includes(row._id)}
                     setSelected={(checked: boolean) => setSelected(lst => checked ? [...lst,row._id] : lst.filter(_ =>  `${_}` != `${row._id}`))}
                     data={scans_to_data_dict[row._id.toString()]?.data || {}}
+                    error={scans_to_data_dict[row._id.toString()]?.error}
                     schema={schema}
                 />)
             }
@@ -323,16 +332,17 @@ function RawResultsTable({job, rows}: {
     </table>
 }
 
-function ScanRow({job, row, selected, setSelected, data, schema} : {
+function ScanRow({job, row, selected, setSelected, data, error, schema} : {
     job: ScanJob,
     row: ScanResultsWithId,
     selected: boolean,
     setSelected: (checked: boolean) => void,
     data: Data,
+    error?: string,
     schema: typeof schemas[string]
 }) {
-    return <tr key={row._id}>
-        <td><input type="checkbox" checked={selected} onChange={e=>setSelected(e.target.checked)}/></td>
+    return <tr key={row._id} className={error ? 'error' : undefined} title={error}>
+        <td><input type="checkbox" checked={selected && !error} disabled={!!error} aria-label={error} onChange={e=>setSelected(e.target.checked)}/></td>
         <td className="text-center"><a href={`/scan/${job._id.toString()}/image/${row.image}`} target="_blank" rel="noopener noreferrer">👁</a></td>
         {schema.fields.map(field => 
             <td key={field.name}>

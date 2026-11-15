@@ -2,6 +2,7 @@ import { Field, ChoiceAnswerField, DateField, VariantField } from './fields'
 import Schema from './Schema'
 import { Row, ScanResults } from '@/app/graphql/generated'
 import { Data } from '@/app/lib/models'
+import { rowsByStudentCode, studentCodeKey, withRepeatedStudentCodesFlagged, type ScanMatch } from './scanMatching'
 
 export default class AmmissioneSenior extends Schema {
     constructor() {
@@ -63,20 +64,14 @@ export default class AmmissioneSenior extends Schema {
         return [...baseRow, answers]
     }
 
-    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, {row: Row|undefined, data: Data}>> {
-        const data_dict: Record<string,Row> = {}
-        for (const row of rows) {
-            const id = parseInt(row.data.id, 10)
-            if (!isNaN(id)) {
-                data_dict[`${id}`] = row
-            }
-        }
+    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string, ScanMatch<Row>>> {
+        const data_dict = rowsByStudentCode(rows)
 
-        return Object.fromEntries(scan.map(scan => {
+        return withRepeatedStudentCodesFlagged(scan.map(scan => {
             const raw = scan.rawData || {}
-            // remove initial zeroes
-            const id = `${parseInt(raw?.StudentCode || '',10) || ''}`
-            const row = data_dict[id]
+            // Codice vuoto o zero: nessun abbinamento a righe esistenti.
+            const id = studentCodeKey(raw?.StudentCode)
+            const row = id ? data_dict[id] : undefined
             const data: Data = {...(row?.data || {})}
             data.id = id
             data.variante = raw?.TestCode || ''
@@ -84,7 +79,7 @@ export default class AmmissioneSenior extends Schema {
                 .forEach((field,i) => {
                     data[field.name] = convert_answer(raw[`Answer${i+1}`]) || ''
                 })
-            return [scan._id, {row, data: this.clean(data)}]
+            return [`${scan._id}`, {row, data: this.clean(data)}] as [string, ScanMatch<Row>]
         }))
 
         function convert_answer(s: string) {

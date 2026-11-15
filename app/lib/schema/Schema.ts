@@ -148,7 +148,8 @@ export default class Schema {
     * e li converte in un dizionario scan_id: {row: Row, data: Data}
     * mappando i risultati sui dati già acquisiti <rows>
     */
-    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string,{row: Row|undefined, data: Data}>> {
+    // Entries with `error` must not be imported (see scanMatching.ts).
+    scans_to_data_dict(scan: ScanResults[], rows: Row[]): Partial<Record<string,{row: Row|undefined, data: Data, error?: string}>> {
         throw new Error(`scan_to_data not implemented for schema "${this.name}"`)
     }
 
