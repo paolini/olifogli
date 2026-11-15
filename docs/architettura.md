@@ -20,9 +20,10 @@ Browser ──WS────► ws-server (porta 4001) ◄─subscribe── Red
 - **Redis**: Pub/Sub tra i processi e stato dei cursori.
 - **MongoDB**: dati, in replica set (servono transazioni e change stream).
 
-Redis serve perché in produzione Next.js gira su più istanze (`app1`, `app2`,
-`app3`) dietro Nginx: le notifiche pubblicate da una qualunque istanza
-raggiungono tutti i client collegati al `ws-server`. I dettagli del deploy sono
+Redis serve perché Next.js, `ws-server` e worker sono processi separati, e
+Next.js può girare su più istanze dietro Nginx (variante multiapp: `app1`,
+`app2`, `app3`): le notifiche pubblicate da una qualunque istanza raggiungono
+tutti i client collegati al `ws-server`. I dettagli del deploy sono
 in [deploy.md](deploy.md).
 
 La scansione OMR dei PDF e la generazione dei fogli personalizzati sono nel

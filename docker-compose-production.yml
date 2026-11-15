@@ -12,11 +12,11 @@
 #   sudo docker compose down
 #
 # Per eseguire uno script:
-#   sudo docker compose exec [-T] app1 node scripts/test.js
+#   sudo docker compose exec [-T] app node scripts/test.js
 #
 # Le migrazioni del database sono applicate dal servizio "migrate" a ogni
 # "docker compose up -d", prima che partano app, ws-server e worker. Per vederle:
-#   sudo docker compose exec app1 npx migrate-mongo status
+#   sudo docker compose exec app npx migrate-mongo status
 #
 # Per fare un backup del database:
 #   sudo docker compose exec -T db mongodump -d olifogli --archive > $(date -u +%Y-%m-%d-%H-%M)-database-backup.archive
@@ -82,23 +82,13 @@ services:
     networks:
       - backend
 
-  app1:
+  # Una sola istanza Next.js; per tre istanze dietro nginx vedi
+  # docker-compose-production-multiapp.yml.
+  app:
     <<: *app-common
     environment:
       <<: *common-env
-      APP_INSTANCE: "app1"
-
-  app2:
-    <<: *app-common
-    environment:
-      <<: *common-env
-      APP_INSTANCE: "app2"
-
-  app3:
-    <<: *app-common
-    environment:
-      <<: *common-env
-      APP_INSTANCE: "app3"
+      APP_INSTANCE: "app"
 
   redis:
     image: redis:7-alpine
@@ -159,9 +149,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./media:/media:ro
     depends_on:
-      - app1
-      - app2
-      - app3
+      - app
       - ws-server
     networks:
       - backend

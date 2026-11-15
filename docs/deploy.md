@@ -9,7 +9,7 @@ Tutti i servizi applicativi usano l'immagine `paolini/olifogli`, costruita dal
 | Servizio | Ruolo |
 |---|---|
 | `migrate` | Applica le migrazioni del database (`migrate.sh`) e termina; gli altri servizi applicativi partono solo dopo il suo successo |
-| `app1`, `app2`, `app3` | Istanze Next.js (porta interna 3000) |
+| `app` | Istanza Next.js (porta interna 3000) |
 | `ws-server` | Server WebSocket delle subscription GraphQL (porta interna 4001) |
 | `olifogli-worker` | Worker dei lavori in background, vedi [worker.md](worker.md) |
 | `redis` | Pub/Sub tra le istanze e stato dei cursori |
@@ -17,13 +17,16 @@ Tutti i servizi applicativi usano l'immagine `paolini/olifogli`, costruita dal
 | `nginx` | Proxy pubblico sulla porta 8000 |
 | `oliscan`, `olisheet` | Worker Python OMR e generazione fogli, dal progetto **archiomr**; vedi [omr.md](omr.md) |
 
-Nginx ([nginx.conf](../nginx.conf)) distribuisce le richieste HTTP tra le tre
-istanze e inoltra `/ws/*` al `ws-server`, togliendo il prefisso: il client si
-collega a `/ws/graphql`.
+Nginx ([nginx.conf](../nginx.conf)) inoltra le richieste HTTP all'istanza `app`
+e `/ws/*` al `ws-server`, togliendo il prefisso: il client si collega a
+`/ws/graphql`.
 
 [docker-compose-production-multiapp.yml](../docker-compose-production-multiapp.yml)
-è una variante con gli stessi servizi applicativi. Nginx richiede il servizio
-`ws-server`: senza di esso non si avvia, perché `nginx.conf` lo cita come upstream.
+è la variante con tre istanze Next.js (`app1`, `app2`, `app3`) e usa
+[nginx-multiapp.conf](../nginx-multiapp.conf), che distribuisce le richieste tra
+le tre. Ogni Compose va usato con il suo file nginx: nginx non si avvia se un
+upstream cita un servizio che non esiste. Per lo stesso motivo serve sempre il
+servizio `ws-server`.
 
 I comandi di gestione più comuni (aggiornamento, arresto, backup e ripristino di
 MongoDB, esecuzione di script e migrazioni) sono nel commento in testa al file
@@ -57,7 +60,7 @@ Compose.
 | `LOG_RETENTION_DAYS` | `logs:cleanup` | Giorni di conservazione dei log (default 30) |
 | `WS_SERVER_PORT` | ws-server | Porta del server WebSocket (default 4001) |
 | `SERVER_NAME`, `SERVER_BACKGROUND_COLOR` | app | Nome e colore della barra superiore, per distinguere gli ambienti |
-| `APP_INSTANCE` | app | Etichetta dell'istanza mostrata al passaggio del mouse sul nome (`app1`, `app2`, …) |
+| `APP_INSTANCE` | app | Etichetta dell'istanza mostrata al passaggio del mouse sul nome (`app`, oppure `app1`, `app2`, … nella variante multiapp) |
 
 L'immagine non contiene file `.env`: i valori fittizi necessari a `next build`
 sono passati solo al comando di build nel `Dockerfile`, e `.dockerignore` tiene
@@ -127,7 +130,7 @@ più istanze avviate insieme applicavano in parallelo le stesse migrazioni.
 Per controllare lo stato:
 
 ```sh
-sudo docker compose exec app1 npx migrate-mongo status
+sudo docker compose exec app npx migrate-mongo status
 ```
 
 Dopo il deploy collaudare login OAuth, navigazione dei fogli, upload dei PDF e
@@ -155,7 +158,7 @@ Riferimento: issue #49.
 
 I log sono divisi in due canali, con lo stesso formato: una riga JSON con
 `timestamp` (UTC), `level` (`info`, `warn`, `error`), `source` (il processo:
-`app1`… da `APP_INSTANCE`, `ws-server`, `worker`) ed `event`, più i campi
+`app` o `app1`… da `APP_INSTANCE`, `ws-server`, `worker`) ed `event`, più i campi
 ammessi per quell'evento.
 
 | | Log del server | Log applicativi |
@@ -231,8 +234,8 @@ stesso file giornaliero `app-YYYY-MM-DD.log` (data UTC, permessi `0600`). Ogni
 riga è scritta con una sola operazione in modalità append, quindi le righe di
 processi diversi non si mescolano su un filesystem locale; non usare un
 filesystem di rete per `LOG_DIR`. La directory deve essere scrivibile
-dall'utente dei container: nel Compose di produzione `app1`…`app3` e
-`olifogli-worker` montano `./logs`.
+dall'utente dei container: nel Compose di produzione `app` (o `app1`…`app3`
+nella variante multiapp) e `olifogli-worker` montano `./logs`.
 
 I file del formato precedente (`graphql-YYYY-MM-DD.log` e
 `graphql-errors-YYYY-MM-DD.log`) non vengono più prodotti, ma `logs:cleanup` li
@@ -259,17 +262,17 @@ Con il Compose di produzione:
 
 ```bash
 # Container già avviato
-docker compose -f docker-compose-production.yml exec -T app1 npm run logs:cleanup -- --dry-run
+docker compose -f docker-compose-production.yml exec -T app npm run logs:cleanup -- --dry-run
 
 # Funziona anche con i servizi spenti: usa lo stesso volume logs
-docker compose -f docker-compose-production.yml run --rm --no-deps -T app1 npm run logs:cleanup
+docker compose -f docker-compose-production.yml run --rm --no-deps -T app npm run logs:cleanup
 ```
 
 Il sistema ospitante deve pianificare il comando, per esempio una volta al
 giorno, adattando il percorso:
 
 ```cron
-0 3 * * * cd /srv/olifogli && /usr/bin/docker compose -f docker-compose-production.yml run --rm --no-deps -T app1 npm run logs:cleanup
+0 3 * * * cd /srv/olifogli && /usr/bin/docker compose -f docker-compose-production.yml run --rm --no-deps -T app npm run logs:cleanup
 ```
 
 Basta un servizio applicativo per pulire il volume condiviso. La conservazione è
