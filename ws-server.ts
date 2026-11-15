@@ -12,6 +12,7 @@ import { WebSocketServer } from 'ws';
 import { useServer as createGraphQLWSServer } from 'graphql-ws/use/ws';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { getToken } from 'next-auth/jwt';
+import { checkSessionSecret } from './app/lib/sessionSecret.js';
 import { NextRequest } from 'next/server';
 import { GraphQLError, getOperationAST, parse } from 'graphql';
 import { ObjectId } from 'mongodb'; // For ObjectId conversion
@@ -32,9 +33,7 @@ setLogSource('ws-server');
 publishAppLogsToRedis();
 
 async function start() {
-  if (!process.env.NEXTAUTH_SECRET) {
-    throw new Error('Missing environment variable: NEXTAUTH_SECRET. Configure the same secret as Next.js in .env or the server environment.');
-  }
+  checkSessionSecret();
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
   // Plain HTTP requests get 404: this process serves only WebSocket upgrades.

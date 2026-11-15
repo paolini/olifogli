@@ -21,7 +21,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -30,12 +30,16 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-# Create a dummy .env file for build
-RUN echo "MONGODB_URI=mongodb://dummy:27017/dummy" > .env && \
-    echo "NEXTAUTH_SECRET=dummysecret" >> .env && \
-    echo "NEXTAUTH_URL=http://localhost:3000" >> .env && \
-    echo "OLIMANAGER_URL=https://olimpiadi-scientifiche.it" >> .env
-RUN npm run build
+# Build-time placeholders, passed only to this command: a .env file would be
+# copied by Next.js into the standalone output and loaded at runtime. The
+# services refuse to start with this secret (app/lib/sessionSecret.ts).
+RUN MONGODB_URI=mongodb://dummy:27017/dummy \
+    NEXTAUTH_SECRET=build-only-not-a-secret \
+    NEXTAUTH_URL=http://localhost:3000 \
+    OLIMANAGER_URL=https://olimpiadi-scientifiche.it \
+    npm run build
+# No environment file may reach the runtime image.
+RUN rm -f .next/standalone/.env .next/standalone/.env.*
 # Bundle ws-server with all local TypeScript imports; node_modules remain external
 RUN node_modules/.bin/esbuild ws-server.ts \
     --bundle \

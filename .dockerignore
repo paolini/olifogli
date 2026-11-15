@@ -1,0 +1,20 @@
+# Build context for the Dockerfile: only sources. Local secrets, data and
+# build output must not reach the image (see issue #50).
+.git
+.github
+node_modules
+.next
+next-env.d.ts
+tsconfig.tsbuildinfo
+.env
+.env.*
+*.pem
+database
+spool
+data
+logs
+media
+sheetgenspool
+sheetgendata
+worker
+sheetgenworker

@@ -18,6 +18,7 @@ import { receiveSheetEncryptionKeys } from './app/lib/sheetEncryptionTransport'
 import { ObjectId } from 'mongodb'
 import { startWorkerHeartbeat } from './app/lib/workerHeartbeat'
 import { runWorkerLoop } from './app/lib/workerLoop'
+import { checkSessionSecret } from './app/lib/sessionSecret'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 setLogSource('worker')
@@ -31,6 +32,7 @@ async function main() {
         console.log('Uso: npm run olifogli:worker -- [--once]\nVerifica collegamenti, crea/abbina partecipanti, invia risultati su Olimanager o cifra/decifra i fogli secondo il lavoro accodato. --once elabora al massimo un lavoro.')
         return
     }
+    checkSessionSecret()
     publishAppLogsToRedis()
     const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli')
     const encryptionKeys = new Map<string, ReturnType<typeof createSheetEncryptor> | ReturnType<typeof createSheetDecryptor>>()

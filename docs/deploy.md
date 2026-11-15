@@ -44,7 +44,7 @@ Compose.
 |---|---|---|
 | `MONGODB_URI` | app, ws-server, worker | Connessione MongoDB; deve essere un replica set |
 | `REDIS_URL` | app, ws-server, worker | Connessione Redis (default `redis://127.0.0.1:6379`) |
-| `NEXTAUTH_SECRET` | app, ws-server, worker | Segreto delle sessioni; deve essere identico in tutti i servizi |
+| `NEXTAUTH_SECRET` | app, ws-server, worker | Segreto delle sessioni; deve essere identico in tutti i servizi. Se manca o è un valore di esempio (`...`, `dummysecret`, …; vedi `app/lib/sessionSecret.ts`) i servizi non partono |
 | `NEXTAUTH_URL` | app, ws-server | URL pubblico dell'applicazione |
 | `OLIMANAGER_URL` | app | URL di Olimanager per il login OAuth, vedi [olimanager.md](olimanager.md#login-oauth) |
 | `OLIMANAGER_OAUTH_CLIENT_ID`, `OLIMANAGER_OAUTH_CLIENT_SECRET` | app | Credenziali dell'applicazione OAuth |
@@ -58,6 +58,13 @@ Compose.
 | `WS_SERVER_PORT` | ws-server | Porta del server WebSocket (default 4001) |
 | `SERVER_NAME`, `SERVER_BACKGROUND_COLOR` | app | Nome e colore della barra superiore, per distinguere gli ambienti |
 | `APP_INSTANCE` | app | Etichetta dell'istanza mostrata al passaggio del mouse sul nome (`app1`, `app2`, …) |
+
+L'immagine non contiene file `.env`: i valori fittizi necessari a `next build`
+sono passati solo al comando di build nel `Dockerfile`, e `.dockerignore` tiene
+fuori dal contesto di build `.env*`, chiavi, dati locali, `node_modules` e
+`.git`. Next.js non invia l'header `X-Powered-By` (`poweredByHeader: false`) e
+nginx non mostra la versione (`server_tokens off`) né l'elenco dei file di
+`/media/`.
 
 `APP_INSTANCE` è letta a runtime, quindi può essere diversa per ogni container.
 Una variabile `NEXT_PUBLIC_*` sarebbe invece fissata nell'immagine al momento

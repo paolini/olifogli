@@ -12,7 +12,10 @@ const SECRET = 'synthetic-test-secret-not-used-outside-tests';
 const ADMIN_ID = '000000000000000000000001';
 const ADMIN_EMAIL = 'admin@example.invalid';
 
+const { checkSessionSecret } = require('../app/lib/sessionSecret.ts');
+
 async function loadWebSocketOptions(env = {}) {
+  const processEnv = { NEXTAUTH_SECRET: SECRET, NEXTAUTH_URL: 'http://localhost:3000', ...env };
   let capture;
   let fail;
   const ready = new Promise((resolve, reject) => {
@@ -32,6 +35,8 @@ async function loadWebSocketOptions(env = {}) {
   const stubs = {
     './app/lib/logging': { logWebSocketEvent() {}, serverLog() {}, setLogSource() {}, logDiagnostic(event) { fail(new Error(event)); } },
     './app/lib/appLogPublisher.js': { publishAppLogsToRedis() {} },
+    // The real check, applied to the isolated environment.
+    './app/lib/sessionSecret.js': { checkSessionSecret: () => checkSessionSecret(processEnv.NEXTAUTH_SECRET) },
     'dotenv/config': {}, // Keep tests isolated from local credentials.
     http: { createServer: () => httpServer },
     ws: { WebSocketServer: class {} },
@@ -73,10 +78,10 @@ async function loadWebSocketOptions(env = {}) {
     exports: {},
     require(id) {
       if (Object.hasOwn(stubs, id)) return stubs[id];
-      if (['jsonwebtoken', 'mongodb', 'next-auth/jwt', 'next/server', 'graphql'].includes(id)) return require(id);
+      if (['mongodb', 'next-auth/jwt', 'next/server', 'graphql'].includes(id)) return require(id);
       throw new Error(`Unexpected dependency in isolated WS test: ${id}`);
     },
-    process: { env: { NEXTAUTH_SECRET: SECRET, NEXTAUTH_URL: 'http://localhost:3000', ...env }, on() {}, exit(code) { fail(new Error(`Server exited: ${code}`)); } },
+    process: { env: processEnv, on() {}, exit(code) { fail(new Error(`Server exited: ${code}`)); } },
     console: { log() {}, error(...args) { fail(new Error(args.map(String).join(' '))); } },
   }, { filename });
   return ready;
@@ -168,6 +173,13 @@ test('rejects tampered encrypted session cookie', async () => {
 test('fails closed when NEXTAUTH_SECRET is missing', async () => {
   await assert.rejects(loadWebSocketOptions({ NEXTAUTH_SECRET: '' }), /ws.start_failed/);
 });
+
+for (const placeholder of ['...', 'dummysecret', 'build-only-not-a-secret']) {
+  test(`regression #50: refuses to start with the placeholder secret ${JSON.stringify(placeholder)}`, async () => {
+    await assert.rejects(loadWebSocketOptions({ NEXTAUTH_SECRET: placeholder }), /ws.start_failed/);
+    assert.throws(() => checkSessionSecret(placeholder), /NEXTAUTH_SECRET/);
+  });
+}
 
 test('connection parameters cannot override the cookie identity', async () => {
   const forgedToken = `${Buffer.from('{"alg":"none"}').toString('base64url')}.${Buffer.from(JSON.stringify({ user_id: ADMIN_ID })).toString('base64url')}.`;
