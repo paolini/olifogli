@@ -105,6 +105,10 @@ export type Mutation = {
   deleteSheet?: Maybe<Scalars['Boolean']['output']>;
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
+  /** Solo amministratori: cancella tutti i file di un gruppo; non modifica il database. */
+  deleteWorkerFileGroup: Scalars['Int']['output'];
+  /** Solo amministratori: cancella i file indicati; restituisce quanti sono stati cancellati. */
+  deleteWorkerFiles: Scalars['Int']['output'];
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
   moveCursor?: Maybe<Scalars['Boolean']['output']>;
   olimanagerBulkUpdateResults: Scalars['Boolean']['output'];
@@ -216,6 +220,17 @@ export type MutationDeleteSheetsArgs = {
 
 export type MutationDeleteWorkbookArgs = {
   _id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationDeleteWorkerFileGroupArgs = {
+  jobId?: InputMaybe<Scalars['ObjectId']['input']>;
+  kind: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteWorkerFilesArgs = {
+  files: Array<WorkerFileInput>;
 };
 
 
@@ -505,6 +520,10 @@ export type Query = {
   workbookRankingReport: Array<RankingReport>;
   workbookTimeDistributionReport: Array<TimeDistributionReport>;
   workbooks: Array<Workbook>;
+  /** Solo amministratori: file di un gruppo restituito da workerFiles. */
+  workerFileGroupFiles: Array<WorkerFile>;
+  /** Solo amministratori: file condivisi con i worker archiomr, raggruppati per lavoro. */
+  workerFiles: WorkerFiles;
 };
 
 
@@ -607,6 +626,12 @@ export type QueryWorkbookTimeDistributionReportArgs = {
   schema?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<SheetState>;
   workbookId: Scalars['ObjectId']['input'];
+};
+
+
+export type QueryWorkerFileGroupFilesArgs = {
+  jobId?: InputMaybe<Scalars['ObjectId']['input']>;
+  kind: Scalars['String']['input'];
 };
 
 export type RankingReport = {
@@ -839,6 +864,54 @@ export type Workbook = {
   name?: Maybe<Scalars['String']['output']>;
   ownerId?: Maybe<Scalars['ObjectId']['output']>;
   sheetsCount?: Maybe<Scalars['Int']['output']>;
+};
+
+/** File in una directory condivisa con i worker archiomr. */
+export type WorkerFile = {
+  __typename?: 'WorkerFile';
+  area: Scalars['String']['output'];
+  /** queued, staging, processing, completed, aborted, tmp, data oppure other */
+  folder: Scalars['String']['output'];
+  modifiedAt: Scalars['Timestamp']['output'];
+  path: Scalars['String']['output'];
+  size: Scalars['Float']['output'];
+};
+
+/** Directory condivisa con i worker archiomr (docs/omr.md). */
+export type WorkerFileArea = {
+  __typename?: 'WorkerFileArea';
+  area: Scalars['String']['output'];
+  available: Scalars['Boolean']['output'];
+  kind: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
+/** File di un lavoro di scansione (kind=scan) o di generazione fogli (kind=sheet). */
+export type WorkerFileGroup = {
+  __typename?: 'WorkerFileGroup';
+  fileCount: Scalars['Int']['output'];
+  folders: Array<Scalars['String']['output']>;
+  jobExists: Scalars['Boolean']['output'];
+  /** null per i file che non appartengono a un lavoro */
+  jobId?: Maybe<Scalars['ObjectId']['output']>;
+  kind: Scalars['String']['output'];
+  lastModified: Scalars['Timestamp']['output'];
+  sheetId?: Maybe<Scalars['ObjectId']['output']>;
+  sheetName?: Maybe<Scalars['String']['output']>;
+  status?: Maybe<Scalars['String']['output']>;
+  timestamp?: Maybe<Scalars['Timestamp']['output']>;
+  totalSize: Scalars['Float']['output'];
+};
+
+export type WorkerFileInput = {
+  area: Scalars['String']['input'];
+  path: Scalars['String']['input'];
+};
+
+export type WorkerFiles = {
+  __typename?: 'WorkerFiles';
+  areas: Array<WorkerFileArea>;
+  groups: Array<WorkerFileGroup>;
 };
 
 export type OlimanagerJobsUpdatedSubscriptionVariables = Exact<{ [key: string]: never; }>;
@@ -4176,6 +4249,11 @@ export type ResolversTypes = {
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   UserCursor: ResolverTypeWrapper<UserCursor>;
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
+  WorkerFile: ResolverTypeWrapper<WorkerFile>;
+  WorkerFileArea: ResolverTypeWrapper<WorkerFileArea>;
+  WorkerFileGroup: ResolverTypeWrapper<Omit<WorkerFileGroup, 'jobId' | 'sheetId'> & { jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
+  WorkerFileInput: WorkerFileInput;
+  WorkerFiles: ResolverTypeWrapper<WorkerFiles>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -4232,6 +4310,11 @@ export type ResolversParentTypes = {
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   UserCursor: UserCursor;
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
+  WorkerFile: WorkerFile;
+  WorkerFileArea: WorkerFileArea;
+  WorkerFileGroup: Omit<WorkerFileGroup, 'jobId' | 'sheetId'> & { jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
+  WorkerFileInput: WorkerFileInput;
+  WorkerFiles: WorkerFiles;
 };
 
 export type AgeDistributionItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['AgeDistributionItem'] = ResolversParentTypes['AgeDistributionItem']> = {
@@ -4321,6 +4404,8 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
+  deleteWorkerFileGroup?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<MutationDeleteWorkerFileGroupArgs, 'kind'>>;
+  deleteWorkerFiles?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<MutationDeleteWorkerFilesArgs, 'files'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   moveCursor?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationMoveCursorArgs, 'sheetId' | 'tabId'>>;
   olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, Partial<MutationOlimanagerBulkUpdateResultsArgs>>;
@@ -4498,6 +4583,8 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   workbookRankingReport?: Resolver<Array<ResolversTypes['RankingReport']>, ParentType, ContextType, RequireFields<QueryWorkbookRankingReportArgs, 'workbookId'>>;
   workbookTimeDistributionReport?: Resolver<Array<ResolversTypes['TimeDistributionReport']>, ParentType, ContextType, RequireFields<QueryWorkbookTimeDistributionReportArgs, 'workbookId'>>;
   workbooks?: Resolver<Array<ResolversTypes['Workbook']>, ParentType, ContextType>;
+  workerFileGroupFiles?: Resolver<Array<ResolversTypes['WorkerFile']>, ParentType, ContextType, RequireFields<QueryWorkerFileGroupFilesArgs, 'kind'>>;
+  workerFiles?: Resolver<ResolversTypes['WorkerFiles'], ParentType, ContextType>;
 };
 
 export type RankingReportResolvers<ContextType = any, ParentType extends ResolversParentTypes['RankingReport'] = ResolversParentTypes['RankingReport']> = {
@@ -4678,6 +4765,44 @@ export type WorkbookResolvers<ContextType = any, ParentType extends ResolversPar
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type WorkerFileResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFile'] = ResolversParentTypes['WorkerFile']> = {
+  area?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  folder?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  modifiedAt?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
+  path?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  size?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type WorkerFileAreaResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFileArea'] = ResolversParentTypes['WorkerFileArea']> = {
+  area?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  available?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  kind?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type WorkerFileGroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFileGroup'] = ResolversParentTypes['WorkerFileGroup']> = {
+  fileCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  folders?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  jobExists?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  jobId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  kind?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  lastModified?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
+  sheetId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  sheetName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  status?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  timestamp?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  totalSize?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type WorkerFilesResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFiles'] = ResolversParentTypes['WorkerFiles']> = {
+  areas?: Resolver<Array<ResolversTypes['WorkerFileArea']>, ParentType, ContextType>;
+  groups?: Resolver<Array<ResolversTypes['WorkerFileGroup']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
   AgeDistributionItem?: AgeDistributionItemResolvers<ContextType>;
   AgeDistributionReport?: AgeDistributionReportResolvers<ContextType>;
@@ -4723,5 +4848,9 @@ export type Resolvers<ContextType = any> = {
   User?: UserResolvers<ContextType>;
   UserCursor?: UserCursorResolvers<ContextType>;
   Workbook?: WorkbookResolvers<ContextType>;
+  WorkerFile?: WorkerFileResolvers<ContextType>;
+  WorkerFileArea?: WorkerFileAreaResolvers<ContextType>;
+  WorkerFileGroup?: WorkerFileGroupResolvers<ContextType>;
+  WorkerFiles?: WorkerFilesResolvers<ContextType>;
 };
 

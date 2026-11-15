@@ -1,4 +1,5 @@
 import olifogliWorkerStatus from './resolvers/olifogliWorkerStatus'
+import { workerFiles, workerFileGroupFiles, deleteWorkerFiles, deleteWorkerFileGroup } from './resolvers/workerFiles'
 import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
 import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerActiveJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
@@ -70,6 +71,8 @@ export const resolvers: Resolvers = {
     olifogliWorkerStatus,
     olimanagerJobs,
     olimanagerActiveJobs,
+    workerFiles,
+    workerFileGroupFiles,
     olimanagerJobItems,
     hello: () => 'Hello, world!',
 
@@ -128,6 +131,8 @@ export const resolvers: Resolvers = {
   },
 
   Mutation: {
+    deleteWorkerFiles,
+    deleteWorkerFileGroup,
     prepareOlimanagerVenueSheets,
     requestOlimanagerCheck,
     requestOlimanagerMatch,

@@ -10,6 +10,50 @@ enum SheetState {
   locked
 }
 
+"""Directory condivisa con i worker archiomr (docs/omr.md)."""
+type WorkerFileArea {
+  area: String!
+  label: String!
+  kind: String!
+  available: Boolean!
+}
+
+"""File in una directory condivisa con i worker archiomr."""
+type WorkerFile {
+  area: String!
+  path: String!
+  """queued, staging, processing, completed, aborted, tmp, data oppure other"""
+  folder: String!
+  size: Float!
+  modifiedAt: Timestamp!
+}
+
+"""File di un lavoro di scansione (kind=scan) o di generazione fogli (kind=sheet)."""
+type WorkerFileGroup {
+  kind: String!
+  """null per i file che non appartengono a un lavoro"""
+  jobId: ObjectId
+  jobExists: Boolean!
+  sheetId: ObjectId
+  sheetName: String
+  status: String
+  timestamp: Timestamp
+  fileCount: Int!
+  totalSize: Float!
+  folders: [String!]!
+  lastModified: Timestamp!
+}
+
+type WorkerFiles {
+  areas: [WorkerFileArea!]!
+  groups: [WorkerFileGroup!]!
+}
+
+input WorkerFileInput {
+  area: String!
+  path: String!
+}
+
 type OlifogliWorkerStatus {
   running: Boolean!
   activeWorkers: Int!
@@ -327,6 +371,10 @@ type Query {
   olimanagerJobs(sheetIds: [ObjectId!]): [OlimanagerJob!]!
   """Numero di lavori Olimanager in attesa, in preparazione o in corso."""
   olimanagerActiveJobs: Int!
+  """Solo amministratori: file condivisi con i worker archiomr, raggruppati per lavoro."""
+  workerFiles: WorkerFiles!
+  """Solo amministratori: file di un gruppo restituito da workerFiles."""
+  workerFileGroupFiles(kind: String!, jobId: ObjectId): [WorkerFile!]!
   olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
 
   hello: String
@@ -372,6 +420,10 @@ type Mutation {
   requestOlimanagerResults(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
+  """Solo amministratori: cancella i file indicati; restituisce quanti sono stati cancellati."""
+  deleteWorkerFiles(files: [WorkerFileInput!]!): Int!
+  """Solo amministratori: cancella tutti i file di un gruppo; non modifica il database."""
+  deleteWorkerFileGroup(kind: String!, jobId: ObjectId): Int!
 
   updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId

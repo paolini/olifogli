@@ -185,6 +185,14 @@ esterni. Controlla inoltre la sostituzione del file con un link prima
 dell'apertura e la chiusura dei descrittori. Non richiede scansioni reali né
 esegue un test del routing HTTP attraverso un server Next.js avviato.
 
+`worker-files.test.cjs` verifica la pagina dei file condivisi con i worker
+archiomr su directory temporanee: elenco con lavoro e cartella di ogni file,
+aree non configurate o mancanti, rifiuto di traversal e link simbolici,
+cancellazione con rimozione delle sole cartelle dei lavori rimaste vuote. Esegue
+la route di download (solo amministratori, apertura o download) e i resolver con
+database simulato: unione con i lavori registrati e cancellazione di un gruppo
+senza toccare gli altri file.
+
 `spool-file.test.cjs` verifica che i file per i worker di archiomr restino con
 il suffisso `.part`, che i worker ignorano, finché non vengono pubblicati, e che
 si possano scartare. Esegue la route reale di upload con database simulato e

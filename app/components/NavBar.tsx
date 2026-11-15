@@ -44,6 +44,7 @@ export default function Navbar() {
           <div className="hidden md:flex space-x-4">
           {profile && <i>{profile?.email}</i>}
           {(profile?.isAdmin || profile?.isSupervisor) && <Link href="/users" className={linkClass}>utenti</Link>}
+          {profile?.isAdmin && <Link href="/files" className={linkClass}>file</Link>}
           {profile && <a className={linkClass} href="#" onClick={() => signOut()}>logout</a>}
           {!profile && <a className={linkClass} href="#" onClick={() => signIn()}>login</a>}
           </div>

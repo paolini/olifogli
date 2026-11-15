@@ -77,6 +77,38 @@ le righe selezionate, o tutte, in un file JSONL per `olisheet`, una riga JSON pe
 studente con `sheet_name` e i dati della riga. Il PDF generato si scarica da
 `/scansheet/{jobId}/pdf`.
 
+## Pagina «file» per gli amministratori
+
+Il link **file** nella barra superiore, accanto a **utenti**, apre la pagina
+`/files` (`app/components/WorkerFiles.tsx`), visibile solo agli amministratori.
+Elenca i file delle quattro directory condivise, raggruppati per lavoro:
+
+- ogni gruppo mostra tipo (scansione o fogli generati), ID del lavoro, foglio
+  collegato, stato, cartelle in cui si trovano i file (in coda, in scrittura, in
+  elaborazione, completato, annullato, temporaneo, dati), numero e dimensione;
+- i file senza un ID di lavoro nel nome finiscono in un gruppo «senza lavoro»;
+- si può filtrare per tipo e mostrare solo i lavori non più presenti nel
+  database, cioè i file rimasti dopo l'eliminazione della scansione.
+
+Da **mostra** si vedono i singoli file, che si possono aprire (PDF e immagini),
+scaricare o cancellare. Si possono cancellare anche tutti i file di un lavoro o
+di più lavori selezionati.
+
+La cancellazione riguarda **solo i file**: i lavori e i risultati in MongoDB non
+cambiano, ma immagini e PDF cancellati non saranno più visibili dal foglio.
+Dopo la cancellazione vengono rimosse le cartelle dei lavori rimaste vuote, ma
+non `processing/`, `completed/`, `aborted/` e `tmp/`. Anche i file in
+`processing/` sono cancellabili, con un avviso: se il worker li sta ancora
+elaborando, l'elaborazione fallisce o resta bloccata. Serve anche a ripulire i
+lavori rimasti bloccati dopo un arresto del worker.
+
+I file vengono serviti da `GET /api/worker-files?area=…&path=…` (con
+`download=1` per scaricarli). Le operazioni GraphQL sono `workerFiles`,
+`workerFileGroupFiles`, `deleteWorkerFiles` e `deleteWorkerFileGroup`, tutte
+riservate agli amministratori. I percorsi sono verificati in
+`app/lib/workerFiles.ts`: devono stare dentro una delle directory configurate e
+non possono attraversare link simbolici, che non vengono né elencati né seguiti.
+
 ## Configurazione
 
 | Variabile | Default | Uso |
@@ -97,13 +129,14 @@ Riguardano i worker, quindi vanno corretti in archiomr:
 - **Lavori interrotti.** Se un worker si ferma durante un'elaborazione, il file
   resta in `processing/` e nessuno lo riprende all'avvio; in Olifogli il lavoro
   resta in corso. Per questo il Compose di produzione consiglia di fermare
-  `oliscan` e `olisheet` per primi.
+  `oliscan` e `olisheet` per primi. Il file si può cancellare dalla pagina
+  **file** e poi caricare di nuovo.
 - **`ADJUST_COLORSPACE`** di `oliscan` si disattiva solo con una stringa vuota:
   anche `false` lo lascia attivo.
 - **`results.jsonl`** scritto da `oliscan` senza MongoDB non è JSON valido (usa la
   rappresentazione Python dei dizionari).
 - **Pulizia.** Dopo un errore `oliscan` lascia la cartella temporanea
-  `tmp/{jobId}`. Neanche Olifogli cancella i file quando si elimina una
-  scansione.
+  `tmp/{jobId}`, e l'eliminazione di una scansione non cancella i suoi file.
+  Entrambi si possono ripulire dalla pagina **file**.
 - Il README di archiomr cita un commit di OMRChecker diverso da quello usato nel
   Dockerfile.
