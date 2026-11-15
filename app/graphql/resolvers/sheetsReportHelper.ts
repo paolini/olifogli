@@ -50,17 +50,20 @@ export async function getAllSheets(
         ...schema ? { schema } : {},
         ...commonData ? { ...Object.fromEntries(Object.entries(commonData).map(([key, value]: [string, string]) => ([`commonData.${key}`, value]))) } : {},
         ...state === 'open' ? { closed: { $ne: true }, locked: { $ne: true } } : {},
-        ...state === 'closed_or_locked' ? { $or: [ { closed: true }, { locked: true } ] } : {},
         ...state === 'closed_not_locked' ? { closed: true, locked: { $ne: true } } : {},
         ...state === 'locked' ? { locked: true } : {},
     }
-    
+    // Both the state and the permissions are $or conditions: combine them with
+    // $and, so that neither replaces the other.
+    const conditions: Document[] = []
+    if (state === 'closed_or_locked') conditions.push({ $or: [ { closed: true }, { locked: true } ] })
     if (!(user.isAdmin || user.isSupervisor)) {
-        sheetFilter.$or = [
+        conditions.push({ $or: [
             { ownerId: user._id },
             { 'permissions.email': user.email },
-        ]
+        ] })
     }
+    if (conditions.length > 0) sheetFilter.$and = conditions
 
     // console.log("Sheet filter:", JSON.stringify(sheetFilter)) // DEBUG
     
