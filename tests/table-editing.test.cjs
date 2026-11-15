@@ -731,3 +731,56 @@ test('an answer saved with correction metadata is not submitted again while its 
   assert.equal(f.input().value, 'C');
   assert.equal(f.cell('score').textContent, '75');
 });
+
+test('regression #59: a rejected save unblocks the row, shows the error and is retried by the next edit', async t => {
+  const f = await mountTable(t);
+  f.failures.patch = 'La riga è stata modificata da qualcun altro';
+  await f.click(f.cell('name'));
+  await f.key('F2');
+  await f.change('Updated');
+  await f.key('Escape');
+  assert.equal(f.patches.length, 1);
+  assert.match(f.rowError(), /salvataggio non riuscito: La riga è stata modificata da qualcun altro/);
+  // The row and its unsaved value stay visible; the timer does not retry a failed row.
+  assert.equal(f.cell('name').textContent, 'Updated');
+  await f.autosave();
+  assert.equal(f.patches.length, 1);
+  // A new edit clears the error and saves the row again, including the earlier value.
+  await f.key('F2');
+  await f.change('Updated again');
+  await f.key('Escape');
+  assert.equal(f.patches.length, 2);
+  assert.equal(f.patches[1].data.name, 'Updated again');
+  assert.equal(f.rowError(), '');
+  assert.equal(f.cell('name').textContent, 'Updated again');
+});
+
+test('regression #59: a failed save is retried when leaving the row', async t => {
+  const f = await mountTable(t);
+  f.failures.patch = 'errore di rete';
+  await f.click(f.cell('name'));
+  await f.key('F2');
+  await f.change('Updated');
+  await f.key('Escape');
+  assert.match(f.rowError(), /errore di rete/);
+  await f.key('ArrowDown');
+  assert.equal(f.patches.length, 2);
+  assert.equal(f.patches[1].data.name, 'Updated');
+  assert.equal(f.rowError(), '');
+});
+
+test('regression #59: a rejected new row keeps its data and is created on retry', async t => {
+  const f = await mountTable(t);
+  f.failures.add = 'foglio chiuso';
+  await f.newRow();
+  await f.key('N');
+  await f.key('Escape');
+  assert.equal(f.created.length, 0);
+  assert.match(f.rowError(), /foglio chiuso/);
+  await f.key('F2');
+  await f.change('Nuovo');
+  await f.key('Escape');
+  assert.equal(f.created.length, 1);
+  assert.equal(f.created[0].data.name, 'Nuovo');
+  assert.equal(f.rowError(), '');
+});

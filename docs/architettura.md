@@ -285,6 +285,16 @@ L'autosalvataggio conferma una copia normalizzata senza alterare testo e cursore
 della bozza attiva. Le risposte del server eliminano solo le modifiche
 effettivamente salvate, conservando quelle successive.
 
+Se un salvataggio fallisce (errore GraphQL, per esempio un conflitto con la
+modifica di un altro utente, o errore di rete), la riga torna modificabile,
+conserva i valori non salvati e mostra l'errore in una riga sotto di essa
+(`Line.error`). L'autosalvataggio non ritenta una riga in errore: la nuova
+modifica di una cella o l'uscita dalla riga la salvano di nuovo. Gli avvisi
+generati durante la riconciliazione delle righe (riga modificata o cancellata da
+altri) sono mostrati dopo il render, non dentro gli aggiornamenti di stato.
+Nella linguetta dei dati la tabella è in sola lettura sui fogli chiusi o
+finalizzati; gli amministratori li modificano dalla linguetta **⚙ MODIFICA DATI**.
+
 ## Report del raccoglitore
 
 Le pagine del raccoglitore mostrano, nel rispetto dei permessi dell'utente, solo

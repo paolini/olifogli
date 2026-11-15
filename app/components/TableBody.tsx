@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react"
+import { Dispatch, Fragment, SetStateAction } from "react"
 import type { CellEditorState } from './useCellEditor'
 import TableRow, { RowSelectionState } from "./TableRow"
 import { Column, Line, OtherCursors, TableState } from "./Table"
@@ -40,10 +40,7 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
                 context: validationContext,
             }
             const focusColumnName=tableState.focusLineKey === line.key ? tableState.focusFieldName : ''
-            if (tableState.focusLineKey === line.key && error) {
-              return  <tr key={`error-${line.key}`} className="error" onClick={() => dismissErrors()}><td colSpan={columns.length + 1}>{error.message}</td><td></td></tr>
-            }
-            return <TableRow
+            const row = <TableRow
                   key={line.key}
                   line={scorePending ? { ...line, data: { ...line.data, score: '' } } : line}
                   columns={columns}
@@ -59,8 +56,15 @@ export default function TableBody({sheet, schema, edit, columns, tableState, set
                     .filter(([, c]) => c.lineKey === line.key)
                     .map(([, c]) => ({ email: c.email, fieldName: c.fieldName }))
                   }
-            />}
+            />
+            // The error stays under its own line, without hiding the line or its editor.
+            if (!line.error) return row
+            return <Fragment key={line.key}>
+                {row}
+                <tr className="error" role="alert"><td></td><td colSpan={columns.length}>{line.error}</td></tr>
+            </Fragment>}
         )}
+        {error && <tr className="error" role="alert" onClick={() => dismissErrors()}><td></td><td colSpan={columns.length}>{error.message}</td></tr>}
         <tr className="hide-print"><td></td><td colSpan={columns.length}>
         { edit && (!tableState.focusLineKey || focusLine?.row) && 
           <Button className="px-8" onClick={e => addNewRow()} disabled={loading}>

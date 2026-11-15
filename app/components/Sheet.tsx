@@ -310,7 +310,7 @@ function SheetBody({sheet,profile}: {
         }
         { tab === 'table' && !csvImport &&
             <Table 
-                edit={canEdit} 
+                edit={canEdit && !sheet.closed && !sheet.locked} 
                 sheet={sheet} 
                 rows={data.rows} 
                 lastCsvDownload={lastCsvDownload}

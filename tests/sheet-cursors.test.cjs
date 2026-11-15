@@ -9,7 +9,7 @@ const { act } = React;
 const { renderToString } = require('react-dom/server');
 const { JSDOM } = require('jsdom');
 
-async function fixture(t, initial) {
+async function fixture(t, initial, { profile = null, sheet: sheetFields = {} } = {}) {
   const dom = new JSDOM('<div id="root"></div>');
   const previous = new Map();
   for (const [key, value] of Object.entries({ window: dom.window, document: dom.window.document, navigator: dom.window.navigator, IS_REACT_ACT_ENVIRONMENT: true })) {
@@ -28,7 +28,7 @@ async function fixture(t, initial) {
   });
   let cursorData = initial, tableProps, cursorSubscription;
   const diagnostics = [], subscriptions = [];
-  const sheet = { _id: 'sheet', name: 'Test', schema: 'test', workbook: { _id: 'workbook' } };
+  const sheet = { _id: 'sheet', name: 'Test', schema: 'test', workbook: { _id: 'workbook' }, ...sheetFields };
   const sheetData = { sheet };
   const rowsData = { rows: [] };
   const breadcrumbs = { setBreadcrumbs() {} };
@@ -59,7 +59,7 @@ async function fixture(t, initial) {
     };
     if (name === 'next/navigation') return { useRouter: () => ({}), useSearchParams: () => params };
     if (name.endsWith('/generated')) return { useGetSheetQuery: () => ({ data: sheetData }) };
-    if (name.endsWith('/useProfile')) return { default: () => null };
+    if (name.endsWith('/useProfile')) return { default: () => profile };
     if (name.endsWith('/BreadcrumbsProvider')) return { useBreadcrumbs: () => breadcrumbs };
     if (name.endsWith('/schema')) return { schemas: { test: { has_scan_functionality: () => false } } };
     if (name.endsWith('/tabId')) return { getTabId: () => 'self' };
@@ -122,3 +122,14 @@ test('delayed initial cursors preserve newer subscription updates and subsequent
   await f.cursor(cursor('other', null, null));
   assert.deepEqual(Object.keys(f.table().otherCursors), ['another']);
 });
+
+for (const [state, editable] of [['open', true], ['closed', false], ['locked', false]]) {
+  test(`regression #59: an editor's data table is ${editable ? 'editable' : 'read-only'} on a ${state} sheet`, async t => {
+    const f = await fixture(t, undefined, {
+      profile: { email: 'editor@example.org' },
+      sheet: { permissions: [{ email: 'editor@example.org', role: 'editor' }], ...(state === 'open' ? {} : { [state]: true }) },
+    });
+    await f.render();
+    assert.equal(f.table().edit, editable);
+  });
+}

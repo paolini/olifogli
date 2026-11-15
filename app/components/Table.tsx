@@ -64,6 +64,12 @@ export type Line = {
     error: string, // saving error or ''
 }
 
+// Message shown on a line whose save failed (GraphQL or network error).
+export function saveErrorMessage(error: unknown): string {
+  const message = typeof (error as { message?: unknown })?.message === 'string' ? (error as { message: string }).message : ''
+  return message ? `salvataggio non riuscito: ${message}` : 'salvataggio non riuscito'
+}
+
 export function newLine(row?: Row, data: Data = {}) : Line {
   return {
     key: row ? row._id.toString() : Date.now().toString(),
@@ -118,16 +124,19 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     const [checkboxesState, setCheckboxesState] = useCheckboxesState();
     const [tableState, setTableState ] = useState<TableState>(EMPTY_TABLE_STATE);
     const [sortCriterium, setSortCriterium] = useState<SortCriterium>({field: '', direction: 1});
-    const [addRow, {loading: addLoading, error: addError, reset: addReset}] = useAddRowMutation() // useAddRow()
-    const [patchRow, {loading: patchLoading, error: patchError, reset: patchReset}] = usePatchRowMutation() // usePatchRow()
+    const [addRow, {loading: addLoading, reset: addReset}] = useAddRowMutation() // useAddRow()
+    const [patchRow, {loading: patchLoading, reset: patchReset}] = usePatchRowMutation() // usePatchRow()
     const [deleteRow, {loading: deleteLoading, error: deleteError, reset: deleteReset}] = useDeleteRowMutation() // useDeleteRow()
     const loading = addLoading || patchLoading || deleteLoading
-    const error = addError || patchError || deleteError
+    // Save errors are shown on the line that failed (Line.error).
+    const error = deleteError
     const dismissErrors = () => { addReset(); patchReset(); deleteReset(); }
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date()) // ultima sincronizzazione con il server
     const [lastAlive, setLastAlive] = useState<Date>(new Date()) // ultima interazione con l'utente.
     const cellEditor = useCellEditor(commitCell, validateCell)
     const acknowledgedLineKeys = useRef(new Set<string>())
+    // Messages collected by state updaters, which must stay pure (React may run them twice).
+    const pendingAlerts = useRef(new Set<string>())
 
     const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
     const moveCursorRef = useRef(moveCursorMutation)
@@ -137,6 +146,12 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     useEffect(() => {setTableState(prev => ({...prev, lastCsvDownload}))}, [lastCsvDownload, setTableState])
     useEffect(() => {setLastUpdate(new Date())}, [rows, setLastUpdate])
     useEffect(effectFunction, [rows, setTableState]);
+    useEffect(() => {
+        if (pendingAlerts.current.size === 0) return
+        const messages = [...pendingAlerts.current]
+        pendingAlerts.current.clear()
+        for (const message of messages) alert(message)
+    }, [tableState])
 
     // Invia la posizione del cursore al server (debounced)
     useEffect(() => {
@@ -183,7 +198,9 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         // avvia un timer per il salvataggio automatico della riga in modifica
         const intervalId = setInterval(() => {
             const result = cellEditor.commit({ preserveDraft: true })
-            if (result.ok) saveLineIfNeeded(result.value ?? focusLine)
+            const line = result.ok ? result.value ?? focusLine : undefined
+            // A failed line is retried on user actions (new edit, leaving the row), not by the timer.
+            if (line && !line.error) saveLineIfNeeded(line)
         }, 5000)
         return () => clearInterval(intervalId);
     }, [focusLine,lastAlive]);
@@ -297,7 +314,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
                   // UGH! la riga è stata modificata da un altro utente 
                   // mentre io pure la stavo modificando!
                   // ... ma forse l'altro utente sono io?
-                  if (!l.saving) alert(`La riga che stai modificando è stata modificata. Controlla e ripeti le tue modifiche.`);
+                  pendingAlerts.current.add(`La riga che stai modificando è stata modificata. Controlla e ripeti le tue modifiche.`)
                   // r.data viene perso!
                 }
                 lines.push(newLine(incomingRow))
@@ -306,7 +323,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             } else {
               // la riga non c'è più... deve essere stata cancellata da qualcun'altro
               if (focusLineKey === l.key) {
-                alert(`La riga che stai modificando è stata cancellata.`)
+                pendingAlerts.current.add(`La riga che stai modificando è stata cancellata.`)
                 focusLineKey = ''
                 focusFieldName = ''
               }
@@ -570,7 +587,8 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
         if (line.saving || value !== originalValue) data[field.name] = value
         if (Object.keys(data).length === Object.keys(line.data).length &&
             Object.keys(data).every(key => data[key] === line.data[key])) return line
-        const updated = { ...line, data }
+        // A new edit clears a previous save error: the line will be saved again.
+        const updated = { ...line, data, error: '' }
         setTableState(prev => ({ ...prev, lines: prev.lines.map(current => current.key === lineKey ? updated : current) }))
         return updated
     }
@@ -642,22 +660,23 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             })
         }
 
-        const res = await patchRow({variables: {
-            _id: row._id,
-            updatedOn: row.updatedOn || new Date(),
-            data,
-            tabId: tabId,
-        }})
-        // console.log('saveRow result', res)
-
-        const errors = res.errors
-        const r: Row | undefined | null = res.data?.patchRow
-        if (errors) {
-            updateLineState({saving: false,  error: errors.map(e=>`${e}`).join(', ')})
+        let r: Row | undefined | null
+        try {
+            const res = await patchRow({variables: {
+                _id: row._id,
+                updatedOn: row.updatedOn || new Date(),
+                data,
+                tabId: tabId,
+            }})
+            r = res.data?.patchRow
+        } catch (error) {
+            // Apollo rejects on GraphQL and network errors: unblock the line and
+            // keep its unsaved data so a later save can retry.
+            updateLineState({ saving: false, error: saveErrorMessage(error) })
             return
-        } 
+        }
         if (!r) {
-            updateLineState({saving: false, error: 'connection error'})
+            updateLineState({saving: false, error: 'errore di connessione'})
             return
         }
         // A response acknowledges only the submitted values, never later edits.
@@ -674,20 +693,20 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             })
         }
 
-        const res = await addRow({variables: {
-            sheetId: sheet._id,
-            data: data,
-            tabId: tabId,
-        }})
-
-        const row = res.data?.addRow
-        const errors = res.errors
-        if (errors) {
-            updateLineState({saving: false, error: errors.map(e => `${e}`).join(', ') })
+        let row: Row | undefined | null
+        try {
+            const res = await addRow({variables: {
+                sheetId: sheet._id,
+                data: data,
+                tabId: tabId,
+            }})
+            row = res.data?.addRow
+        } catch (error) {
+            updateLineState({ saving: false, error: saveErrorMessage(error) })
             return
         }
         if (!row) {
-            updateLineState({saving: false, error: 'connection error'})
+            updateLineState({saving: false, error: 'errore di connessione'})
             return
         }
         acknowledgeSave(lineKey, row, data)
