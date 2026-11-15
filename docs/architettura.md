@@ -168,7 +168,9 @@ inviato dal browser, anche nella variante HTTPS `__Secure-` e suddiviso in
 chunk; per questo deve avere gli stessi `NEXTAUTH_SECRET` e `NEXTAUTH_URL` di
 Next.js. I parametri di connessione non autenticano l'utente: servono solo per
 il `tabId`. Il trasporto WebSocket accetta solo subscription. La sessione viene
-verificata alla connessione e a ogni nuova operazione.
+verificata alla connessione e a ogni nuova operazione. Il `ws-server` non serve
+GraphQL via HTTP: le richieste HTTP ordinarie ricevono 404, query e mutation
+passano solo da Next.js (`/graphql`).
 
 Dopo il login il client apre la connessione e ne controlla la disponibilità,
 anche prima di aprire un foglio. Se il servizio non risponde compare un avviso;
@@ -203,15 +205,18 @@ altri, anche tra schede dello stesso utente.
 
 1. Quando l'utente sposta il cursore, `Table.tsx` invia la mutation `moveCursor`
    (debounce di 300 ms).
-2. Il resolver pubblica `{ email, lineKey, fieldName, tabId }` su
-   `CURSOR_CHANGED.<sheetId>` e salva il cursore nell'hash Redis
-   `ACTIVE_CURSORS.<sheetId>` (chiave `tabId`); con `lineKey` nullo lo rimuove.
+2. Il resolver verifica il permesso di lettura sul foglio, pubblica
+   `{ email, lineKey, fieldName, tabId }` su `CURSOR_CHANGED.<sheetId>` e salva
+   il cursore nell'hash Redis `SHEET_CURSORS.<sheetId>` (campo
+   `<userId>:<tabId>`, vedi `CURSOR_FIELD`); con `lineKey` nullo lo rimuove.
 3. `Sheet.tsx` riceve `cursorChanged`, scarta il proprio cursore e aggiorna lo
    stato; `TableRow.tsx` evidenzia la cella attiva.
 
-All'apertura del foglio la query `cursors(sheetId)` legge l'hash Redis, così i
-cursori già presenti compaiono subito. Alla disconnessione il `ws-server`
-rimuove il cursore dall'hash e pubblica un evento con `lineKey: null`.
+All'apertura del foglio la query `cursors(sheetId)`, riservata a chi può vedere
+il foglio, legge l'hash Redis, così i cursori già presenti compaiono subito.
+Alla disconnessione il `ws-server` rimuove dall'hash i cursori salvati da
+quell'utente con quel `tabId` e, solo per quelli effettivamente rimossi,
+pubblica un evento con `lineKey: null`.
 
 Ogni scheda genera un `tabId` casuale (`crypto.randomUUID()`) tenuto solo in
 memoria, così le schede duplicate non ereditano lo stesso ID. Il colore del

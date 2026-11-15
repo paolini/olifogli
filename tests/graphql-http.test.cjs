@@ -2,7 +2,6 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { ApolloServer } = require('@apollo/server');
 const { startServerAndCreateNextHandler } = require('@as-integrations/next');
-const { expressMiddleware } = require('@as-integrations/express5');
 const { NextRequest } = require('next/server');
 const { AuthenticationError } = require('apollo-server-errors');
 
@@ -25,40 +24,23 @@ function productionServer() {
   }
 }
 
-test('updated Next and Express HTTP integrations preserve production protections', async (t) => {
-  for (const transport of ['next', 'express5']) {
+test('updated Next HTTP integration preserves production protections', async (t) => {
+  for (const transport of ['next']) {
     await t.test(transport, async () => {
       const server = productionServer();
       const context = { authenticated: false };
       let request;
       try {
-        if (transport === 'next') {
-          const handler = startServerAndCreateNextHandler(server, { context: async () => context });
-          request = async (query, method = 'POST') => {
-            const response = await handler(new NextRequest('http://localhost/graphql', {
-              method,
-              ...(method === 'POST' ? {
-                headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query }),
-              } : {}),
-            }));
-            return { status: response.status, body: await response.json() };
-          };
-        } else {
-          await server.start();
-          const middleware = expressMiddleware(server, { context: async () => context });
-          request = async (query, method = 'POST') => {
-            const response = {
-              statusCode: 200, setHeader() {},
-              send(value) { this.body = JSON.parse(value); },
-            };
-            await middleware({
-              url: '/graphql', method,
-              headers: method === 'POST' ? { 'content-type': 'application/json' } : {},
-              body: method === 'POST' ? { query } : undefined,
-            }, response);
-            return { status: response.statusCode, body: response.body };
-          };
-        }
+        const handler = startServerAndCreateNextHandler(server, { context: async () => context });
+        request = async (query, method = 'POST') => {
+          const response = await handler(new NextRequest('http://localhost/graphql', {
+            method,
+            ...(method === 'POST' ? {
+              headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query }),
+            } : {}),
+          }));
+          return { status: response.status, body: await response.json() };
+        };
 
         const anonymous = await request('{ protected }');
         assert.equal(anonymous.body.data, null);

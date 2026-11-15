@@ -13,7 +13,6 @@ import { Resolvers } from './generated'
 import { getSheetsCollection } from '../lib/mongodb'
 
 import { pubsub, TOPICS } from '../lib/pubsub'
-import { redis, CURSOR_KEY } from '../lib/redis'
 import { get_authenticated_user } from './resolvers/utils'
 import { withFilter } from 'graphql-subscriptions'
 import sheetSubscription from './resolvers/sheetSubscription'
@@ -59,6 +58,7 @@ import unlockSheet from './resolvers/unlockSheet'
 import validateRows from './resolvers/validateRows'
 import olimanagerCreateParticipant from './resolvers/olimanagerCreateParticipant'
 import moveCursor from './resolvers/moveCursor'
+import cursors from './resolvers/cursors'
 import olimanagerBulkUpdateResults from './resolvers/olimanagerBulkUpdateResults'
 import olimanagerUpdateExtraFieldsResults from './resolvers/olimanagerUpdateExtraFields'
 import workbookExerciseReport from './resolvers/workbookExerciseReport'
@@ -102,11 +102,7 @@ export const resolvers: Resolvers = {
     workbookTimeDistributionReport,
     workbookAgeDistributionReport,
     getSetting: settingsResolvers.Query.getSetting,
-    cursors: async (_: unknown, { sheetId }: { sheetId: ObjectId }) => {
-      const data = await redis.hgetall(CURSOR_KEY(sheetId.toString()))
-      if (!data) return []
-      return Object.values(data).map((v: string) => JSON.parse(v))
-    },
+    cursors,
   },
 
   Workbook: {
@@ -176,9 +172,7 @@ export const resolvers: Resolvers = {
     cryptSheets: cryptSheets, 
     decryptSheets: decryptSheets,
     updateSetting: settingsResolvers.Mutation.updateSetting,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore -- moveCursor not yet in generated types (run codegen to fix)
-    moveCursor: moveCursor,
+    moveCursor,
   },
 
   Subscription: {

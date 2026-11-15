@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
-  Simple standalone server that exposes HTTP GraphQL endpoint and a WebSocket server
-  using graphql-ws `useServer`. It loads the same schema/resolvers as the Next app.
+  Standalone WebSocket server for GraphQL subscriptions (graphql-ws `useServer`).
+  It loads the same schema/resolvers as the Next app; queries and mutations are
+  served only by Next.js over HTTP.
 */
 import 'dotenv/config';
 import http from 'http';
@@ -9,11 +10,6 @@ import { logDiagnostic, logWebSocketEvent, serverLog, setLogSource } from './app
 import { publishAppLogsToRedis } from './app/lib/appLogPublisher.js';
 import { WebSocketServer } from 'ws';
 import { useServer as createGraphQLWSServer } from 'graphql-ws/use/ws';
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@as-integrations/express5';
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { getToken } from 'next-auth/jwt';
 import { NextRequest } from 'next/server';
@@ -24,7 +20,7 @@ import { getUsersCollection } from './app/lib/mongodb.js';
 import { watchOlimanagerJobs } from './app/lib/olimanagerJobEvents.js';
 import { watchScanJobs } from './app/lib/scanJobEvents.js';
 import { getDb } from './app/lib/mongodb.js';
-import { redis, CURSOR_KEY } from './app/lib/redis.js';
+import { redis, CURSOR_KEY, CURSOR_FIELD } from './app/lib/redis.js';
 
 import { typeDefs } from './app/graphql/typedefs.js';
 import { resolvers } from './app/graphql/resolvers.js';
@@ -41,16 +37,10 @@ async function start() {
   }
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-  const app = express();
-  app.use(cors());
-  app.use(bodyParser.json());
-
-  const httpServer = http.createServer(app);
-
-  // Apollo Server for HTTP
-  const server = new ApolloServer({ schema, plugins: [] });
-  await server.start();
-  app.use('/graphql', expressMiddleware(server, { context: async () => get_context({ pubsub }) }));
+  // Plain HTTP requests get 404: this process serves only WebSocket upgrades.
+  const httpServer = http.createServer((_req, res) => {
+    res.writeHead(404).end();
+  });
 
   // WebSocket server
   const wsServer = new WebSocketServer({ server: httpServer, path: '/graphql' });
@@ -58,6 +48,7 @@ async function start() {
   // Per-connection state: tracks tabId, email, and subscribed sheetIds
   interface ConnectionState {
     tabId: string | undefined
+    userId: string
     email: string | undefined
     sheetIds: Set<string>
     isAdmin?: boolean
@@ -114,19 +105,21 @@ async function start() {
       return get_context({ user_id, email, pubsub, isAdmin: conn?.isAdmin, isSupervisor: conn?.isSupervisor });
     },
     onConnect: async (ctx) => {
-      if (!await authenticate(ctx.extra.request.headers.cookie)) {
+      const identity = await authenticate(ctx.extra.request.headers.cookie)
+      if (!identity) {
         logWebSocketEvent('rejected');
         return false;
       }
       const tabId = ctx.connectionParams?.tabId as string | undefined
-      connectionData.set(ctx, { tabId, email: undefined, sheetIds: new Set() })
+      connectionData.set(ctx, { tabId, userId: identity.user_id.toString(), email: undefined, sheetIds: new Set() })
       logWebSocketEvent('connected');
     },
     onDisconnect: async (ctx) => {
       const conn = connectionData.get(ctx)
       if (conn?.tabId) {
         for (const sheetId of conn.sheetIds) {
-          await redis.hdel(CURSOR_KEY(sheetId), conn.tabId)
+          // Only cursors stored by this user through the authorized moveCursor are removed.
+          if (!await redis.hdel(CURSOR_KEY(sheetId), CURSOR_FIELD(conn.userId, conn.tabId))) continue
           await pubsub.publish(TOPICS.CURSOR_CHANGED(sheetId), {
             cursorChanged: { email: conn.email ?? '', lineKey: null, fieldName: null, tabId: conn.tabId }
           })
@@ -185,7 +178,6 @@ async function start() {
     await olimanagerJobsStream.close();
     await scanJobsStream.close();
     await serverCleanup.dispose();
-    await server.stop();
     serverInstance.close(async () => {
       serverLog('info', 'ws.stopped');
       process.exit(0);

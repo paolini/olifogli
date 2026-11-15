@@ -29,7 +29,6 @@ async function loadWebSocketOptions(env = {}) {
   const collection = { watch: () => ({ on() {} }) };
   const pubsub = { async publish() {} };
   const httpServer = { listen() { return { close() {} }; } };
-  const express = () => ({ use() {} });
   const stubs = {
     './app/lib/logging': { logWebSocketEvent() {}, serverLog() {}, setLogSource() {}, logDiagnostic(event) { fail(new Error(event)); } },
     './app/lib/appLogPublisher.js': { publishAppLogsToRedis() {} },
@@ -42,11 +41,6 @@ async function loadWebSocketOptions(env = {}) {
         return { async dispose() {} };
       },
     },
-    '@apollo/server': { ApolloServer: class { async start() {} } },
-    '@as-integrations/express5': { expressMiddleware: () => () => {} },
-    express,
-    cors: () => () => {},
-    'body-parser': { json: () => () => {} },
     '@graphql-tools/schema': { makeExecutableSchema: () => ({}) },
     './app/lib/pubsub.js': { pubsub, TOPICS: {} },
     './app/lib/olimanagerJobEvents.js': {
@@ -61,7 +55,7 @@ async function loadWebSocketOptions(env = {}) {
       getScanJobsCollection: async () => collection,
       getScanSheetJobsCollection: async () => collection,
     },
-    './app/lib/redis.js': { redis: {}, CURSOR_KEY: () => '' },
+    './app/lib/redis.js': { redis: {}, CURSOR_KEY: () => '', CURSOR_FIELD: () => '' },
     './app/graphql/typedefs.js': { typeDefs: '' },
     './app/graphql/resolvers.js': { resolvers: {} },
     // With no HTTP request, get_context forwards the identity and roles.

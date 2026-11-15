@@ -12,4 +12,7 @@ redis.on('error', (err) => {
   logDiagnostic('app/lib/redis.redis_connection_error', err)
 })
 
-export const CURSOR_KEY = (sheetId: string) => `ACTIVE_CURSORS.${sheetId}`
+// Fields are `<userId>:<tabId>` (CURSOR_FIELD). The previous ACTIVE_CURSORS.* hashes,
+// keyed by tabId only, are no longer read.
+export const CURSOR_KEY = (sheetId: string) => `SHEET_CURSORS.${sheetId}`
+export const CURSOR_FIELD = (userId: string, tabId: string) => `${userId}:${tabId}`
