@@ -784,3 +784,38 @@ test('regression #59: a rejected new row keeps its data and is created on retry'
   assert.equal(f.created[0].data.name, 'Nuovo');
   assert.equal(f.rowError(), '');
 });
+
+test('regression #60: a created row is added once to the cached rows of its sheet', async t => {
+  const f = await mountTable(t);
+  await f.newRow();
+  await f.key('N');
+  await f.key('Escape');
+  assert.equal(f.created.length, 1);
+  const id = f.created[0]._id.toString();
+  assert.deepEqual(f.cachedRows(['a', 'b']), ['a', 'b', id]);
+  assert.deepEqual(f.cachedRows(['a', id]), ['a', id]);
+  assert.deepEqual(f.cachedRows(['a'], 'other-sheet'), ['a']);
+});
+
+test('a created row stays visible when a refreshed rows list includes it', async t => {
+  const f = await mountTable(t);
+  await f.newRow();
+  await f.key('N');
+  await f.key('Escape');
+  assert.equal(f.lineCount(), 3);
+  // A later refresh of `rows` that includes the created row (as the cache now does).
+  await f.receiveSavedRows();
+  assert.equal(f.lineCount(), 3);
+  assert.equal(f.cell('name', 2).textContent, 'N');
+});
+
+test('regression #60: a created row that arrives before the mutation result is not duplicated', async t => {
+  const f = await mountTable(t, { deferAdds: true });
+  await f.newRow();
+  await f.key('N');
+  await f.key('Escape');
+  await f.receiveSavedRows();
+  await f.resolveAdd();
+  assert.equal(f.lineCount(), 3);
+  assert.equal(f.cell('name', 2).textContent, 'N');
+});

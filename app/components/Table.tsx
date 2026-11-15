@@ -15,7 +15,7 @@ import useCellEditor, { canEditCell } from './useCellEditor'
 import { Dispatch, KeyboardEvent, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { myTimestamp } from '../lib/util'
 import { Data } from '../lib/models'
-import { gql, useMutation } from '@apollo/client'
+import { gql, Reference, useApolloClient, useMutation } from '@apollo/client'
 
 export type SortCriterium = {
     field: string|Field,
@@ -138,6 +138,7 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
     // Messages collected by state updaters, which must stay pure (React may run them twice).
     const pendingAlerts = useRef(new Set<string>())
 
+    const apolloClient = useApolloClient()
     const [moveCursorMutation] = useMutation(MOVE_CURSOR_MUTATION)
     const moveCursorRef = useRef(moveCursorMutation)
     moveCursorRef.current = moveCursorMutation
@@ -637,14 +638,19 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
 
     function acknowledgeSave(key: string, row: Row, submitted: Data) {
         acknowledgedLineKeys.current.add(key)
-        setTableState(prev => ({ ...prev, lines: prev.lines.map(line => {
-            if (line.key !== key) return line
-            const remaining = { ...line.data }
-            for (const [field, value] of Object.entries(submitted)) {
-                if (remaining[field] === value) delete remaining[field]
-            }
-            return { ...line, row, data: remaining, saving: false, error: '' }
-        }) }))
+        const rowId = row._id.toString()
+        setTableState(prev => ({ ...prev, lines: prev.lines
+            // A created row may already have arrived through the rows query:
+            // keep only the line that the user was editing.
+            .filter(line => line.key === key || line.row?._id.toString() !== rowId)
+            .map(line => {
+                if (line.key !== key) return line
+                const remaining = { ...line.data }
+                for (const [field, value] of Object.entries(submitted)) {
+                    if (remaining[field] === value) delete remaining[field]
+                }
+                return { ...line, row, data: remaining, saving: false, error: '' }
+            }) }))
     }
 
     async function saveRow(row: Row, data: Data, key: string) {
@@ -710,6 +716,23 @@ export default function Table({edit, standardAnswers, rows, sheet, lastCsvDownlo
             return
         }
         acknowledgeSave(lineKey, row, data)
+        addRowToCachedList(row)
+    }
+
+    // The rowChanged event of this tab is ignored (Sheet.tsx), so add the created
+    // row to the cached rows list: otherwise the next refresh of `rows` would
+    // treat it as deleted. Its line already holds the row, so it is not duplicated.
+    function addRowToCachedList(row: Row) {
+        const rowId = row._id.toString()
+        apolloClient.cache.modify({ fields: {
+            rows(value, { storeFieldName, readField, toReference }) {
+                if (!Array.isArray(value) || !storeFieldName.includes(sheet._id.toString())) return value
+                const existing = value as readonly Reference[]
+                if (existing.some(ref => String(readField('_id', ref)) === rowId)) return existing
+                const ref = toReference({ __typename: 'Row', _id: row._id })
+                return ref ? [...existing, ref] : existing
+            },
+        } })
     }
 } // fine Table component
 
@@ -724,6 +747,12 @@ const _ = gql`
       createdBy
       updatedOn
       updatedBy
+      olimanager {
+        participantId
+        contestId
+        resultsUpdatedOn
+        error
+      }
     }
   }
 `

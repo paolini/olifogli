@@ -1298,7 +1298,7 @@ export type AddRowMutationVariables = Exact<{
 }>;
 
 
-export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string } | null };
+export type AddRowMutation = { __typename?: 'Mutation', addRow?: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null } | null };
 
 export type PatchRowMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
@@ -3108,6 +3108,12 @@ export const AddRowDocument = gql`
     createdBy
     updatedOn
     updatedBy
+    olimanager {
+      participantId
+      contestId
+      resultsUpdatedOn
+      error
+    }
   }
 }
     `;

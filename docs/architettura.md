@@ -295,6 +295,11 @@ altri) sono mostrati dopo il render, non dentro gli aggiornamenti di stato.
 Nella linguetta dei dati la tabella è in sola lettura sui fogli chiusi o
 finalizzati; gli amministratori li modificano dalla linguetta **⚙ MODIFICA DATI**.
 
+`Sheet.tsx` ignora gli eventi `rowChanged` generati dalla propria scheda
+(`sourceTabId`). Per questo, dopo `addRow`, `Table.tsx` aggiunge la riga creata
+alla lista `rows` in cache (`cache.modify`); se la riga arriva comunque prima
+della risposta, `acknowledgeSave` tiene una sola riga.
+
 ## Report del raccoglitore
 
 Le pagine del raccoglitore mostrano, nel rispetto dei permessi dell'utente, solo

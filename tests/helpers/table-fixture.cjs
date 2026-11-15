@@ -35,6 +35,8 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   const pendingAdds = [];
   // Set a message to make the next patch/add reject, as Apollo does on GraphQL errors.
   const failures = { patch: null, add: null };
+  // Recorded cache.modify calls; each is applied to a fake cached rows list.
+  const cacheModifications = [];
   const context = { contest_year: 2026, absent: () => false,
     permutation_object: { correct: { '2': 'AB' + 'A'.repeat(14) }, questions: { '1': Array.from({ length: 16 }, (_, i) => i + 1) }, answers: { '1': 'ABCDE' },
       points: { correct: 5, wrong: 0, empty: 1, invalid: 0 } } };
@@ -92,7 +94,8 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
         if (id === './Error' || id === './TableActions' || id === './TableHeader') return hidden;
         if (id === './Button') return { __esModule: true, default: props => React.createElement('button', props) };
         if (id === '../lib/util') return { pluralize: (count, one, many) => `${count} ${count === 1 ? one : many}` };
-        if (id === '@apollo/client') return { gql: () => ({}), useMutation: () => [async () => ({})] };
+        if (id === '@apollo/client') return { gql: () => ({}), useMutation: () => [async () => ({})],
+          useApolloClient: () => ({ cache: { modify: options => cacheModifications.push(options) } }) };
         if (['react', 'react/jsx-runtime'].includes(id)) return require(id);
         if (id.startsWith('.')) {
           const base = path.posix.normalize(path.posix.join(path.posix.dirname(relative), id));
@@ -128,6 +131,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     }
   }
   const Table = load('app/components/Table.tsx').default;
+  const sheetId = new ObjectId();
   const container = dom.window.document.getElementById('root');
   const root = createRoot(container);
   t.after(async () => {
@@ -139,7 +143,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     }
   });
   const props = {
-    edit, standardAnswers, rows, sheet: { _id: new ObjectId(), schema: 'test', workbook: { commonData: {} } },
+    edit, standardAnswers, rows, sheet: { _id: sheetId, schema: 'test', workbook: { commonData: {} } },
     csvDownload() {}, setCsvImport() {}, adminEditMode,
   };
   await act(async () => root.render(React.createElement(Table, props)));
@@ -174,7 +178,18 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
   }
   async function autosave() { await act(async () => { for (const run of [...intervals.values()]) run(); }); }
   async function blur() { await act(async () => dom.window.document.activeElement.blur()); }
-  return { cell, click, key, change, flushTimers, resolvePatch, resolveAdd, receiveSavedRows, autosave, blur, patches, created, schema, context, failures,
+  // Applies the recorded modifiers to a cached `rows` list of the given sheet.
+  function cachedRows(initial, id = sheetId) {
+    let value = initial.map(_id => ({ __ref: `Row:${_id}` }));
+    for (const { fields } of cacheModifications) value = fields.rows(value, {
+      storeFieldName: `rows({"sheetId":"${id}"})`,
+      readField: (name, ref) => ref.__ref.slice('Row:'.length),
+      toReference: ({ __typename, _id }) => ({ __ref: `${__typename}:${_id}` }),
+    });
+    return Array.from(value, ref => ref.__ref.slice('Row:'.length));
+  }
+  return { cell, click, key, change, flushTimers, resolvePatch, resolveAdd, receiveSavedRows, autosave, blur, patches, created, schema, context, failures, cachedRows,
+    lineCount: () => container.querySelectorAll('tbody > tr:not(.error):not(.hide-print)').length,
     rowError: () => [...container.querySelectorAll('tbody > tr.error')].map(row => row.textContent).join('\n'),
     error: () => container.querySelector('[role="alert"]')?.textContent ?? '',
     newRow: () => click(container.querySelector('tbody button')),
