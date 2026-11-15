@@ -96,14 +96,17 @@ test('deleting scans notifies other browsers only after a successful commit', as
       async deleteOne() { order.push('delete-job'); },
     }; },
     async getScanResultsCollection() { return { async deleteMany() { order.push('delete-results'); } }; },
-    async getSheetsCollection() { return { async updateOne() { order.push('update-sheet'); } }; },
+    async getSheetsCollection() { return {
+      async findOne() { return { _id: sheetId }; },
+      async updateOne() { order.push('update-sheet'); },
+    }; },
     async withTransaction(run) { await run({}); if (fail) throw new Error('commit failed'); order.push('commit'); },
   };
   const remove = load('app/graphql/resolvers/deleteScan.ts', {
     '@/app/lib/mongodb': database,
     '@/app/lib/pubsub': { TOPICS: { SCAN_JOB_UPDATED: id => `scan.${id}` } },
     '@/app/lib/appLog': { appLog: event => order.push(event) },
-    './utils': { async get_authenticated_user() { return {}; }, check_user_can_delete_job() {} },
+    './utils': { async get_authenticated_user() { return {}; }, check_user_can_delete_job() {}, check_user_can_edit_rows() {} },
   }).default;
   const context = { pubsub: { async publish(topic, payload) {
     order.push('publish');

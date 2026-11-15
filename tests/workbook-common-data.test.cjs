@@ -22,7 +22,8 @@ const utils = {
 };
 const database = {
   getWorkbooksCollection: async () => ({ findOne: async () => workbook, find: () => ({ toArray: async () => [workbook] }) }),
-  getSheetsCollection: async () => ({ aggregate: pipeline => ({ toArray: async () => pipeline.some(stage => stage.$replaceRoot) ? [workbook] : [sheet] }) }),
+  // findOne: the workbook query checks that the user has a sheet in the workbook.
+  getSheetsCollection: async () => ({ findOne: async () => sheet, aggregate: pipeline => ({ toArray: async () => pipeline.some(stage => stage.$replaceRoot) ? [workbook] : [sheet] }) }),
 };
 const cache = new Map();
 function load(relative) {

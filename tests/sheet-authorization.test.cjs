@@ -145,3 +145,24 @@ test('recountSheet is admin only and stores the counters computed from the rows'
   const { $set } = admin.state.sheetUpdates[0];
   assert.deepEqual([$set.nRows, $set.nValidRows, $set.nSyncedRows, $set.anomalies], [2, 1, 0, 3]);
 });
+
+test('scan results require current access to the sheet, even for the job owner', async () => {
+  const f = fixture({ role: null });
+  await assert.rejects(f.call('scanResults', { jobId: f.state.job._id }), code('FORBIDDEN'));
+  f.state.sheet.permissions = [{ email: 'teacher@example.org', role: 'view' }];
+  assert.equal((await f.call('scanResults', { jobId: f.state.job._id })).length, 1);
+});
+
+for (const status of ['locked', 'closed', 'view-only']) {
+  test(`the job owner cannot delete a scan on a ${status} sheet`, async () => {
+    const f = status === 'view-only' ? fixture({ role: 'view' }) : fixture({ role: 'editor', sheet: { [status]: true } });
+    await assert.rejects(f.call('deleteScan', { jobId: f.state.job._id }), code('FORBIDDEN'));
+    assert.deepEqual(f.state.deleted, []);
+  });
+}
+
+test('the job owner with edit rights can delete a scan', async () => {
+  const f = fixture({ role: 'editor' });
+  assert.equal(await f.call('deleteScan', { jobId: f.state.job._id }), true);
+  assert.deepEqual(f.state.deleted, ['results', 'job']);
+});

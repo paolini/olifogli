@@ -87,7 +87,7 @@ function uploadFixture(t, { failTransaction = false, failWrite = false } = {}) {
     '@/app/lib/spool': spool(),
     '@/app/lib/appLog': { appLog: (event, fields, options) => appLogs.push({ event, fields, userId: options?.userId }) },
   });
-  const file = { type: 'application/pdf', arrayBuffer: async () => new TextEncoder().encode('%PDF').buffer };
+  const file = { type: 'application/pdf', arrayBuffer: async () => new TextEncoder().encode('%PDF-1.7').buffer };
   const request = { formData: async () => new Map([['file', file], ['sheetId', sheet._id.toString()]]) };
   return { post: () => route.POST(request), spoolDir, committed, diagnostics, appLogs };
 }

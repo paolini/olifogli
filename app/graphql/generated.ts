@@ -622,7 +622,6 @@ export type QueryRowsArgs = {
 
 export type QueryScanJobsArgs = {
   sheetId: Scalars['ObjectId']['input'];
-  userId?: InputMaybe<Scalars['ObjectId']['input']>;
 };
 
 

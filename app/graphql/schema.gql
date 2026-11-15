@@ -458,7 +458,7 @@ type Query {
   workbookAgeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [AgeDistributionReport!]!
   workbookTimeDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [TimeDistributionReport!]!
   cursors(sheetId: ObjectId!): [UserCursor!]!
-  scanJobs(sheetId: ObjectId!, userId: ObjectId): [ScanJob!]!
+  scanJobs(sheetId: ObjectId!): [ScanJob!]!
   scanResults(jobId: ObjectId!): [ScanResults!]!
   scanSheetJobs(sheetId: ObjectId!): [ScanSheetJob!]!
   getSetting(key: String!): Setting

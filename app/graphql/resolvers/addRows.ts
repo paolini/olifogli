@@ -4,6 +4,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data, Row } from '@/app/lib/models'
 
+import { ForbiddenError } from 'apollo-server-errors'
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { MutationAddRowsArgs } from '../generated'
 
@@ -34,6 +35,8 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
                 };
                 const field = column.substring('olimanager.'.length);
                 if (field !== 'participantId') throw new Error(`invalid column: ${column}`);
+                // Linking rows to Olimanager participants is reserved to admins.
+                if (!user.isAdmin) throw new ForbiddenError('solo un amministratore può importare il collegamento a Olimanager');
                 olimanager[field] = value;
             } else {
                 if (column.startsWith('data.')) {

@@ -27,7 +27,8 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data, tabId}
 
     if (row?.olimanager?.participantId && !user.isAdmin) {
         ["name","surname","birthDate","classYear","classSection"].forEach(field => {
-            if (data[field]) {
+            // Clearing a field is a change too; resending the stored value is not.
+            if (field in data && (data[field] ?? '') !== (row.data?.[field] ?? '')) {
                 throw new Error(`Non è possibile modificare il campo ${field} di una riga importata da Olimanager`);
             }
         });

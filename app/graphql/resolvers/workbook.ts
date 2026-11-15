@@ -1,7 +1,7 @@
-import { check_admin, get_authenticated_user } from "./utils";
+import { get_authenticated_user } from "./utils";
 import { Context } from "../types";
 import { WithId, ObjectId } from "mongodb";
-import { getWorkbooksCollection } from "@/app/lib/mongodb";
+import { getSheetsCollection, getWorkbooksCollection } from "@/app/lib/mongodb";
 import { QueryWorkbookArgs, Workbook } from "../generated";
 
 export default async function workbook(_: unknown, { workbookId }: QueryWorkbookArgs, context: Context): Promise<WithId<Workbook> | null> {
@@ -16,6 +16,13 @@ export default async function workbook(_: unknown, { workbookId }: QueryWorkbook
     if (!workbook) return null;
     // se è admin o supervisore restituisce tutte le informazioni
     if (user.isAdmin || user.isSupervisor) return workbook;
+    // Gli altri utenti vedono solo i raccoglitori in cui hanno almeno un foglio.
+    const sheets = await getSheetsCollection()
+    const visibleSheet = await sheets.findOne({
+        workbookId: workbook._id,
+        $or: [{ ownerId: user._id }, { 'permissions.email': user.email }],
+    }, { projection: { _id: 1 } })
+    if (!visibleSheet) return null;
     // Gli altri utenti ricevono i metadati pubblici; il resolver del campo
     // Workbook.commonData applica la lista dei campi consentiti.
     return {

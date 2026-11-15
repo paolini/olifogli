@@ -19,8 +19,12 @@ export async function POST(req: NextRequest) {
     const SCANS_SPOOL_DIR = process.env.SCANS_SPOOL_DIR || ''
     if (!SCANS_SPOOL_DIR) return NextResponse.json({ error: 'upload disabled' }, { status: 503 });
 
-    const context = await get_context({ req })
-    const user = await get_authenticated_user(context)
+    let user
+    try {
+        user = await get_authenticated_user(await get_context({ req }))
+    } catch {
+        return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    }
 
     try {
         const formData = await req.formData()
@@ -28,7 +32,7 @@ export async function POST(req: NextRequest) {
         const sheetIdValue = formData.get('sheetId')
         if (!sheetIdValue) return NextResponse.json({ error: 'Missing sheetId' }, { status: 400 });
 
-        if ((typeof sheetIdValue) !== 'string') {
+        if ((typeof sheetIdValue) !== 'string' || !ObjectId.isValid(sheetIdValue)) {
             return NextResponse.json({ error: 'Invalid sheetId' }, { status: 400 });
         }
 
@@ -54,6 +58,11 @@ export async function POST(req: NextRequest) {
         // Convert file to buffer
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
+        // The declared type comes from the client: check the PDF signature too.
+        // (Request size is limited by nginx: client_max_body_size.)
+        if (buffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
+            return NextResponse.json({ error: 'Invalid file type, only PDF allowed' }, { status: 400 })
+        }
 
         const now = new Date()
         const jobId = new ObjectId()
