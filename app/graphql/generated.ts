@@ -509,6 +509,30 @@ export type OlimanagerVenueSheetsPreview = {
   warnings: Array<Scalars['String']['output']>;
 };
 
+/** Istanza attiva di un worker archiomr (collezione omr_workers). */
+export type OmrWorkerInstance = {
+  __typename?: 'OmrWorkerInstance';
+  busySince?: Maybe<Scalars['Timestamp']['output']>;
+  jobId?: Maybe<Scalars['ObjectId']['output']>;
+  lastSeenAt: Scalars['Timestamp']['output'];
+  startedAt?: Maybe<Scalars['Timestamp']['output']>;
+  /** idle oppure busy. */
+  state: Scalars['String']['output'];
+  /** Occupato da più di 30 minuti: il processo è vivo ma potrebbe essere bloccato. */
+  stuck: Scalars['Boolean']['output'];
+  version: Scalars['String']['output'];
+};
+
+export type OmrWorkerStatus = {
+  __typename?: 'OmrWorkerStatus';
+  activeWorkers: Scalars['Int']['output'];
+  instances: Array<OmrWorkerInstance>;
+  lastSeenAt?: Maybe<Scalars['Timestamp']['output']>;
+  running: Scalars['Boolean']['output'];
+  /** oliscan oppure olisheet. */
+  type: Scalars['String']['output'];
+};
+
 export type Permission = {
   __typename?: 'Permission';
   email: Scalars['String']['output'];
@@ -536,6 +560,8 @@ export type Query = {
   olimanagerJobItems: Array<OlimanagerJobItem>;
   olimanagerJobs: Array<OlimanagerJob>;
   olimanagerVenueSheetChoices: Array<OlimanagerSheetOlympiad>;
+  /** Stato dei worker archiomr, uno per tipo (oliscan, olisheet). */
+  omrWorkerStatus: Array<OmrWorkerStatus>;
   rows: Array<Row>;
   scanJobs: Array<ScanJob>;
   scanResults: Array<ScanResults>;
@@ -1043,6 +1069,11 @@ export type PrepareOlimanagerVenueSheetsMutationVariables = Exact<{
 
 
 export type PrepareOlimanagerVenueSheetsMutation = { __typename?: 'Mutation', prepareOlimanagerVenueSheets: { __typename?: 'OlimanagerVenueSheetsPreview', warnings: Array<string>, sheets: Array<{ __typename?: 'OlimanagerVenueSheet', name: string, schema: string, commonData: any, permissions: Array<{ __typename?: 'Permission', email: string, role: string }> }> } };
+
+export type OmrWorkerStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OmrWorkerStatusQuery = { __typename?: 'Query', omrWorkerStatus: Array<{ __typename?: 'OmrWorkerStatus', type: string, running: boolean, activeWorkers: number, lastSeenAt?: Date | null, instances: Array<{ __typename?: 'OmrWorkerInstance', version: string, state: string, jobId?: ObjectId | null, busySince?: Date | null, stuck: boolean }> }> };
 
 export type ScanJobsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1975,6 +2006,55 @@ export function usePrepareOlimanagerVenueSheetsMutation(baseOptions?: Apollo.Mut
 export type PrepareOlimanagerVenueSheetsMutationHookResult = ReturnType<typeof usePrepareOlimanagerVenueSheetsMutation>;
 export type PrepareOlimanagerVenueSheetsMutationResult = Apollo.MutationResult<PrepareOlimanagerVenueSheetsMutation>;
 export type PrepareOlimanagerVenueSheetsMutationOptions = Apollo.BaseMutationOptions<PrepareOlimanagerVenueSheetsMutation, PrepareOlimanagerVenueSheetsMutationVariables>;
+export const OmrWorkerStatusDocument = gql`
+    query OmrWorkerStatus {
+  omrWorkerStatus {
+    type
+    running
+    activeWorkers
+    lastSeenAt
+    instances {
+      version
+      state
+      jobId
+      busySince
+      stuck
+    }
+  }
+}
+    `;
+
+/**
+ * __useOmrWorkerStatusQuery__
+ *
+ * To run a query within a React component, call `useOmrWorkerStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOmrWorkerStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOmrWorkerStatusQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useOmrWorkerStatusQuery(baseOptions?: Apollo.QueryHookOptions<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>(OmrWorkerStatusDocument, options);
+      }
+export function useOmrWorkerStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>(OmrWorkerStatusDocument, options);
+        }
+export function useOmrWorkerStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>(OmrWorkerStatusDocument, options);
+        }
+export type OmrWorkerStatusQueryHookResult = ReturnType<typeof useOmrWorkerStatusQuery>;
+export type OmrWorkerStatusLazyQueryHookResult = ReturnType<typeof useOmrWorkerStatusLazyQuery>;
+export type OmrWorkerStatusSuspenseQueryHookResult = ReturnType<typeof useOmrWorkerStatusSuspenseQuery>;
+export type OmrWorkerStatusQueryResult = Apollo.QueryResult<OmrWorkerStatusQuery, OmrWorkerStatusQueryVariables>;
 export const ScanJobsDocument = gql`
     query ScanJobs($sheetId: ObjectId!) {
   scanJobs(sheetId: $sheetId) {
@@ -4486,6 +4566,8 @@ export type ResolversTypes = {
   OlimanagerUpdateExtraFieldsResult: ResolverTypeWrapper<OlimanagerUpdateExtraFieldsResult>;
   OlimanagerVenueSheet: ResolverTypeWrapper<OlimanagerVenueSheet>;
   OlimanagerVenueSheetsPreview: ResolverTypeWrapper<OlimanagerVenueSheetsPreview>;
+  OmrWorkerInstance: ResolverTypeWrapper<Omit<OmrWorkerInstance, 'jobId'> & { jobId?: Maybe<ResolversTypes['ObjectId']> }>;
+  OmrWorkerStatus: ResolverTypeWrapper<OmrWorkerStatus>;
   Permission: ResolverTypeWrapper<Permission>;
   PermissionInput: PermissionInput;
   Query: ResolverTypeWrapper<{}>;
@@ -4552,6 +4634,8 @@ export type ResolversParentTypes = {
   OlimanagerUpdateExtraFieldsResult: OlimanagerUpdateExtraFieldsResult;
   OlimanagerVenueSheet: OlimanagerVenueSheet;
   OlimanagerVenueSheetsPreview: OlimanagerVenueSheetsPreview;
+  OmrWorkerInstance: Omit<OmrWorkerInstance, 'jobId'> & { jobId?: Maybe<ResolversParentTypes['ObjectId']> };
+  OmrWorkerStatus: OmrWorkerStatus;
   Permission: Permission;
   PermissionInput: PermissionInput;
   Query: {};
@@ -4839,6 +4923,26 @@ export type OlimanagerVenueSheetsPreviewResolvers<ContextType = any, ParentType 
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type OmrWorkerInstanceResolvers<ContextType = any, ParentType extends ResolversParentTypes['OmrWorkerInstance'] = ResolversParentTypes['OmrWorkerInstance']> = {
+  busySince?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  jobId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  lastSeenAt?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
+  startedAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  state?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  stuck?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  version?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OmrWorkerStatusResolvers<ContextType = any, ParentType extends ResolversParentTypes['OmrWorkerStatus'] = ResolversParentTypes['OmrWorkerStatus']> = {
+  activeWorkers?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  instances?: Resolver<Array<ResolversTypes['OmrWorkerInstance']>, ParentType, ContextType>;
+  lastSeenAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
+  running?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type PermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission']> = {
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -4858,6 +4962,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   olimanagerJobItems?: Resolver<Array<ResolversTypes['OlimanagerJobItem']>, ParentType, ContextType, RequireFields<QueryOlimanagerJobItemsArgs, 'jobId'>>;
   olimanagerJobs?: Resolver<Array<ResolversTypes['OlimanagerJob']>, ParentType, ContextType, Partial<QueryOlimanagerJobsArgs>>;
   olimanagerVenueSheetChoices?: Resolver<Array<ResolversTypes['OlimanagerSheetOlympiad']>, ParentType, ContextType>;
+  omrWorkerStatus?: Resolver<Array<ResolversTypes['OmrWorkerStatus']>, ParentType, ContextType>;
   rows?: Resolver<Array<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
   scanJobs?: Resolver<Array<ResolversTypes['ScanJob']>, ParentType, ContextType, RequireFields<QueryScanJobsArgs, 'sheetId'>>;
   scanResults?: Resolver<Array<ResolversTypes['ScanResults']>, ParentType, ContextType, RequireFields<QueryScanResultsArgs, 'jobId'>>;
@@ -5133,6 +5238,8 @@ export type Resolvers<ContextType = any> = {
   OlimanagerUpdateExtraFieldsResult?: OlimanagerUpdateExtraFieldsResultResolvers<ContextType>;
   OlimanagerVenueSheet?: OlimanagerVenueSheetResolvers<ContextType>;
   OlimanagerVenueSheetsPreview?: OlimanagerVenueSheetsPreviewResolvers<ContextType>;
+  OmrWorkerInstance?: OmrWorkerInstanceResolvers<ContextType>;
+  OmrWorkerStatus?: OmrWorkerStatusResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RankingReport?: RankingReportResolvers<ContextType>;

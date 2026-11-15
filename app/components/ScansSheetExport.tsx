@@ -4,6 +4,7 @@ import { Sheet, useScanSheetJobsQuery } from "../graphql/generated"
 import Error from "./Error"
 import { ObjectId } from "bson"
 import Loading from "./Loading"
+import OmrWorkerStatus from "./OmrWorkerStatus"
 import { myTimestamp } from "../lib/util";
 
 const _ = gql`
@@ -39,6 +40,7 @@ export default function ScansPdfExport({sheet}:{
 
     return <div>
         <h2>PDF fogli generati</h2>
+        <OmrWorkerStatus type="olisheet" />
         
         {jobsLoading && <Loading />}
         <Error error={jobsError} />

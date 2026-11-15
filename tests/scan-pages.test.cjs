@@ -27,6 +27,7 @@ function page(file) {
     './Button': { __esModule: true, default: ({ children }) => React.createElement('button', {}, children) },
     './Error': { __esModule: true, default: () => null },
     './Loading': { __esModule: true, default: () => 'loading' },
+    './OmrWorkerStatus': { __esModule: true, default: ({ type }) => 'worker:' + type },
     '../lib/util': { myTimestamp: () => 'date', pluralize: () => '' },
     '../lib/schema': { schemas: { example: { scans_to_data_dict: () => ({}) } } },
   };
@@ -60,6 +61,7 @@ function page(file) {
 test('scan events refresh both the progress log and results already on screen', () => {
   const f = page('app/components/ScansImport.tsx');
   assert.ok(f.html.includes('Nessun dato acquisito'));
+  assert.ok(f.html.includes('worker:oliscan'));
   assert.equal(f.subscriptions.length, 2);
   for (const { document, options } of f.subscriptions) {
     assert.ok(document.includes('scanJobUpdated'));
@@ -76,6 +78,7 @@ test('scan events refresh both the progress log and results already on screen', 
 test('generated PDFs refresh after worker events and reconnect invalidations', () => {
   const f = page('app/components/ScansSheetExport.tsx');
   assert.ok(f.html.includes(`/scansheet/${f.job._id}/pdf`));
+  assert.ok(f.html.includes('worker:olisheet'));
   const { document, options } = f.subscriptions[0];
   assert.ok(document.includes('scanSheetJobUpdated'));
   assert.equal(String(options.variables.sheetId), String(f.sheet._id));

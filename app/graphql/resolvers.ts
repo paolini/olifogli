@@ -1,4 +1,5 @@
 import olifogliWorkerStatus from './resolvers/olifogliWorkerStatus'
+import omrWorkerStatus from './resolvers/omrWorkerStatus'
 import { workerFiles, workerFileGroupFiles, deleteWorkerFiles, deleteWorkerFileGroup } from './resolvers/workerFiles'
 import { appLogs, appLogAddedSubscription } from './resolvers/appLogs'
 import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
@@ -70,6 +71,7 @@ export const resolvers: Resolvers = {
   Query: {
     olimanagerVenueSheetChoices,
     olifogliWorkerStatus,
+    omrWorkerStatus,
     olimanagerJobs,
     olimanagerActiveJobs,
     workerFiles,

@@ -78,7 +78,8 @@ verità; qui ne è riassunto il ruolo.
 | `settings` | Impostazioni globali |
 | `olimanager_jobs`, `olimanager_job_items` | Lavori in background e singole righe |
 | `olimanager_job_credentials` | Token OAuth delegati ai lavori (non esposti via GraphQL) |
-| `olifogli_workers` | Segnale di presenza dei worker |
+| `olifogli_workers` | Segnale di presenza dei worker di Olifogli |
+| `omr_workers` | Segnale di presenza dei worker archiomr, scritto da `oliscan` e `olisheet` (vedi [omr.md](omr.md)) |
 
 I contatori di `sheets` (`nRows`, `nValidRows`, `nSyncedRows`, `anomalies`,
 `nScanJobs`, `nScanSheetJobs`) sono aggiornati nella stessa transazione che

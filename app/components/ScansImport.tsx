@@ -8,6 +8,7 @@ import { Data } from '@/app/lib/models'
 import Button from "./Button"
 import ErrorElement from "./Error"
 import Loading from "./Loading"
+import OmrWorkerStatus from "./OmrWorkerStatus"
 import { myTimestamp, pluralize } from "../lib/util"
 import { schemas } from "../lib/schema"
 
@@ -26,6 +27,7 @@ export default function ScansImport({sheet, data_rows}:{
 
     return <>
         <h2>Caricamento scansioni</h2>
+        <OmrWorkerStatus type="oliscan" />
         <div className="flex flex-col gap-4">
             { error && <ErrorElement error={error} dismiss={()=>setError('')}/> }
             <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="scansFileInput" />
