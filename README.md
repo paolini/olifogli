@@ -111,8 +111,8 @@ serve solo per i lavori in background. `npm run dev` avvia soltanto Next.js.
 ### Quando riavviare
 
 - **Server WebSocket**: dopo modifiche al suo codice, a `schema.gql` o ai
-  resolver delle subscription. Va riavviato anche per rendere effettiva la
-  revoca di un permesso sulle subscription già aperte
+  resolver delle subscription. Non serve riavviarlo dopo la revoca di un
+  permesso: le subscription aperte la applicano entro 30 secondi
   (vedi [docs/architettura.md](docs/architettura.md#permessi-sulle-subscription)).
 - **Worker**: dopo modifiche al codice dei lavori in background.
 - **Next.js** in modalità `dev` si aggiorna da solo.

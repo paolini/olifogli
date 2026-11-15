@@ -200,11 +200,10 @@ export const resolvers: Resolvers = {
         (payload: any, _variables: any, context: Context | undefined) => {
           if (!context) return false
           if (context.isAdmin || context.isSupervisor) return true
-          const email = context.email
-          if (!email) return false
+          // Payloads come from workbookUpdatedPayload; anything else is denied.
+          if (context.user_id && payload._ownerId === context.user_id.toString()) return true
           const allowedEmails = payload._allowedEmails as string[] | undefined
-          if (!allowedEmails) return true  // payload senza filtro → passa (retrocompatibilità)
-          return allowedEmails.includes(email)
+          return !!context.email && Array.isArray(allowedEmails) && allowedEmails.includes(context.email)
         }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as any,

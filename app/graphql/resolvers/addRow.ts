@@ -4,7 +4,7 @@ import { schemas } from '@/app/lib/schema'
 
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
 import { MutationAddRowArgs } from '../generated'
-import { TOPICS } from '../../lib/pubsub'
+import { TOPICS, workbookUpdatedPayload } from '../../lib/pubsub'
 
 export default async function addRow(_: unknown, args: MutationAddRowArgs, context: Context) {
     const user = await get_authenticated_user(context)
@@ -71,10 +71,7 @@ export default async function addRow(_: unknown, args: MutationAddRowArgs, conte
     context.pubsub?.publish(TOPICS.ROW_CHANGED(args.sheetId.toString()), {
         rowChanged: { ...row, sourceTabId: args.tabId ?? null }
     })
-    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
-        workbookUpdated: true,
-        _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
-    })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), workbookUpdatedPayload(sheet))
 
     return row
 }

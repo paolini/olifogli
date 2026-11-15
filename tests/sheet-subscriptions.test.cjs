@@ -18,8 +18,10 @@ function fixture() {
   const state = {
     user: { _id: userId, email: 'reader@example.org' },
     sheet: { _id: sheetId, ownerId: new ObjectId(), permissions: [{ email: 'reader@example.org', role: 'view' }] },
-    sources: [], userReads: 0, sheetReads: 0, failRead: false,
+    sources: [], userReads: 0, sheetReads: 0, failRead: false, now: Date.now(),
   };
+  // Controlled clock for the periodic permission check.
+  class FakeDate extends Date { static now() { return state.now; } }
   const pubsub = {
     asyncIterator(topic) {
       let pending;
@@ -65,11 +67,11 @@ function fixture() {
     const exports = {};
     cache.set(relative, exports);
     vm.runInNewContext(compiled.get(relative), {
-      exports, console,
+      exports, console, Date: FakeDate,
       require(id) {
         if (id.endsWith('/mongodb')) return database;
         if (id.endsWith('/pubsub')) return {
-          pubsub, TOPICS: Object.fromEntries(Object.values(topics).map(prefix => [prefix, id => `${prefix}.${id}`])),
+          pubsub, TOPICS: Object.fromEntries([...Object.values(topics), 'WORKBOOK_UPDATED'].map(prefix => [prefix, id => `${prefix}.${id}`])),
         };
         if (id === './resolvers/sheetSubscription') return load('app/graphql/resolvers/sheetSubscription.ts');
         if (id === './utils' || id === './resolvers/utils') return load('app/graphql/resolvers/utils.ts');
@@ -83,6 +85,7 @@ function fixture() {
     return exports;
   }
   const subscriptions = load('app/graphql/resolvers.ts').resolvers.Subscription;
+  state.subscriptions = subscriptions;
   return {
     state, userId, sheetId, otherId,
     subscribe: (name, context = { user_id: userId }, id = sheetId) => subscriptions[name].subscribe(null, { sheetId: id }, context),
@@ -150,7 +153,7 @@ test('nonexistent sheets and deleted users cannot subscribe', async () => {
 });
 
 for (const change of ['revoke-permission', 'remove-user', 'remove-sheet', 'revoke-admin', 'revoke-supervisor', 'database-error']) {
-  test(`existing access remains until disconnect; new subscriptions check ${change}`, async () => {
+  test(`existing access remains within the recheck interval; new subscriptions check ${change}`, async () => {
     const f = fixture();
     if (change === 'revoke-admin' || change === 'revoke-supervisor') {
       f.state.sheet.permissions = [];
@@ -174,6 +177,38 @@ for (const change of ['revoke-permission', 'remove-user', 'remove-sheet', 'revok
   });
 }
 
+for (const change of ['revoke-permission', 'remove-user', 'remove-sheet', 'revoke-admin', 'database-error']) {
+  test(`after the recheck interval an existing subscription ends on ${change}`, async () => {
+    const f = fixture();
+    if (change === 'revoke-admin') {
+      f.state.sheet.permissions = [];
+      f.state.user.isAdmin = true;
+    }
+    const iterator = await f.subscribe('rowChanged');
+    if (change === 'revoke-permission') f.state.sheet.permissions = [];
+    if (change === 'remove-user') f.state.user = null;
+    if (change === 'remove-sheet') f.state.sheet = null;
+    if (change === 'revoke-admin') f.state.user.isAdmin = false;
+    if (change === 'database-error') f.state.failRead = true;
+    f.state.now += 30_000;
+    f.publish('rowChanged', f.sheetId, { rowChanged: 'must not be delivered' });
+    await assert.rejects(iterator.next());
+    assert.equal(f.state.sources[0].closed, true);
+  });
+}
+
+test('after the recheck interval an authorized subscription keeps receiving events', async () => {
+  const f = fixture();
+  const iterator = await f.subscribe('rowChanged');
+  for (let i = 0; i < 2; i++) {
+    f.state.now += 30_000;
+    f.publish('rowChanged', f.sheetId, { rowChanged: `event ${i}` });
+    assert.equal((await iterator.next()).value.rowChanged, `event ${i}`);
+  }
+  assert.equal(f.state.sheetReads, 3);
+  await iterator.return();
+});
+
 test('cancelling while waiting for an event closes the Redis iterator', async () => {
   const f = fixture();
   const iterator = await f.subscribe('rowChanged');
@@ -196,3 +231,26 @@ for (const name of ['scanJobUpdated', 'scanSheetJobUpdated']) {
     }
   });
 }
+
+test('workbookUpdated delivers only to permitted emails, the owner, admins and supervisors', async () => {
+  const workbookId = new ObjectId();
+  const ownerId = new ObjectId();
+  const cases = [
+    [{ user_id: new ObjectId(), email: 'teacher@example.org' }, { _allowedEmails: ['teacher@example.org'], _ownerId: null }, true],
+    [{ user_id: new ObjectId(), email: 'other@example.org' }, { _allowedEmails: ['teacher@example.org'], _ownerId: null }, false],
+    [{ user_id: ownerId, email: 'owner@example.org' }, { _allowedEmails: [], _ownerId: ownerId.toString() }, true],
+    [{ user_id: new ObjectId(), email: 'other@example.org' }, {}, false],
+    [{ user_id: new ObjectId(), email: 'admin@example.org', isAdmin: true }, {}, true],
+    [{ user_id: new ObjectId(), email: 'sup@example.org', isSupervisor: true }, {}, true],
+  ];
+  for (const [context, extra, delivered] of cases) {
+    const f = fixture();
+    const iterator = await f.state.subscriptions.workbookUpdated.subscribe(null, { workbookId }, context);
+    const source = f.state.sources.find(s => s.topic === `WORKBOOK_UPDATED.${workbookId}`);
+    source.emit({ workbookUpdated: 'filtered', ...extra });
+    source.emit({ workbookUpdated: 'marker', _allowedEmails: [context.email] });
+    const first = await iterator.next();
+    assert.equal(first.value.workbookUpdated, delivered ? 'filtered' : 'marker', JSON.stringify(extra));
+    await iterator.return();
+  }
+});

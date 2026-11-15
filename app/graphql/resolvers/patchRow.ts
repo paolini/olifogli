@@ -5,7 +5,7 @@ import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data } from '@/app/lib/models'
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
-import { TOPICS } from '../../lib/pubsub'
+import { TOPICS, workbookUpdatedPayload } from '../../lib/pubsub'
 
 export default async function patchRow(_: unknown, {_id, updatedOn, data, tabId}: {
     _id: ObjectId,
@@ -84,10 +84,7 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data, tabId}
     context.pubsub?.publish(TOPICS.ROW_CHANGED(row.sheetId.toString()), {
         rowChanged: { ...updatedRow, sourceTabId: tabId ?? null }
     })
-    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), {
-        workbookUpdated: true,
-        _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
-    })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), workbookUpdatedPayload(sheet))
 
     return updatedRow
 }

@@ -4,32 +4,50 @@ import { pubsub } from '@/app/lib/pubsub'
 import { Context } from '../types'
 import { check_user_can_view_sheet, get_authenticated_user } from './utils'
 
+// Revoked permissions stop live subscriptions within this interval.
+export const SHEET_SUBSCRIPTION_RECHECK_MS = 30_000
+
 // Use the same read permissions as sheet queries, including for read-only users.
 export default function sheetSubscription<T>(topic: (sheetId: string) => string, initialValue?: T) {
     return async (_: unknown, { sheetId }: { sheetId: ObjectId }, context: Context) => {
-        const user = await get_authenticated_user(context)
-        const sheets = await getSheetsCollection()
-        const sheet = await sheets.findOne({ _id: sheetId })
-        check_user_can_view_sheet(user, sheet)
+        async function authorize() {
+            const user = await get_authenticated_user(context)
+            const sheets = await getSheetsCollection()
+            check_user_can_view_sheet(user, await sheets.findOne({ _id: sheetId }))
+        }
+        await authorize()
+        let checkedAt = Date.now()
 
-        // Permissions are checked only at subscription start. To enforce revocations
-        // on existing subscriptions, restart every WebSocket server instance.
+        // Permissions (and the user's global roles) are checked again before delivering
+        // an event when the last check is older than SHEET_SUBSCRIPTION_RECHECK_MS.
+        // On failure the subscription ends with the error (fail closed).
         const source = pubsub.asyncIterator<T>(topic(sheetId.toString()))
-        if (initialValue === undefined) return source
-        let initial = true
+        let initial = initialValue !== undefined
+        const close = async () => {
+            await source.return?.()
+            return { done: true as const, value: undefined }
+        }
         return {
-            next() {
+            async next(): Promise<IteratorResult<T>> {
                 // Also refresh on reconnect, when worker updates may have been missed.
                 if (initial) {
                     initial = false
-                    return Promise.resolve({ done: false as const, value: initialValue })
+                    return { done: false as const, value: initialValue as T }
                 }
-                return source.next()
+                const result = await source.next()
+                if (result.done) return result
+                if (Date.now() - checkedAt >= SHEET_SUBSCRIPTION_RECHECK_MS) {
+                    try {
+                        await authorize()
+                    } catch (error) {
+                        await source.return?.()
+                        throw error
+                    }
+                    checkedAt = Date.now()
+                }
+                return result
             },
-            async return() {
-                await source.return?.()
-                return { done: true as const, value: undefined }
-            },
+            return: close,
             [Symbol.asyncIterator]() { return this },
         }
     }

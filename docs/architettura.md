@@ -187,19 +187,20 @@ dati via HTTP per recuperare gli aggiornamenti persi.
 
 ### Permessi sulle subscription
 
-Le subscription dei fogli verificano utente e permessi di lettura in MongoDB al
-momento dell'iscrizione. I singoli eventi non rileggono i permessi: le
-subscription già aperte conservano l'accesso fino alla disconnessione. La scelta
-presuppone che durante l'uso normale non servano revoche immediate.
+Le subscription dei fogli (`sheetSubscription.ts`) verificano utente e permessi
+di lettura in MongoDB al momento dell'iscrizione. Prima di consegnare un evento
+li verificano di nuovo se l'ultimo controllo risale a più di
+`SHEET_SUBSCRIPTION_RECHECK_MS` (30 secondi): una revoca, la rimozione
+dell'utente o del foglio o la perdita del ruolo di amministratore chiudono la
+subscription con un errore entro quell'intervallo. Anche un errore del database
+durante il controllo chiude la subscription.
 
-Per rendere effettiva una revoca anche sulle subscription aperte, aggiornare
-prima i permessi e poi riavviare **tutte le istanze** del `ws-server`: le
-connessioni vengono chiuse e le nuove iscrizioni verificano i permessi
-aggiornati. Riavviare soltanto Next.js non basta.
-
-`workbookUpdated` è filtrata con `withFilter`: il payload contiene le email con
-accesso al foglio (`_allowedEmails`); amministratori e supervisori ricevono
-sempre l'evento, gli altri utenti solo se la loro email è nell'elenco.
+`workbookUpdated` è filtrata con `withFilter`. Il payload, costruito da
+`workbookUpdatedPayload` (`app/lib/pubsub.ts`), contiene le email con accesso al
+foglio (`_allowedEmails`) e il proprietario (`_ownerId`). Amministratori e
+supervisori ricevono sempre l'evento, gli altri utenti solo se sono il
+proprietario o se la loro email è nell'elenco; un payload senza elenco non
+viene consegnato.
 
 ### Cursori condivisi
 
