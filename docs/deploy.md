@@ -135,6 +135,27 @@ stdout. Le richieste GraphQL non vengono più duplicate su stdout: sul log del
 server arriva solo `graphql.internal_error`, con l'identificativo della richiesta,
 quando una richiesta fallisce per un errore imprevisto.
 
+### Pagina «logs» per gli amministratori
+
+Il link **logs** nella barra superiore, accanto a **file**, apre la pagina
+`/logs` (`app/components/AppLogs.tsx`), visibile solo agli amministratori. Mostra
+i log applicativi, non quelli del server:
+
+- all'apertura gli ultimi 500 eventi del giorno più recente, dal più nuovo, letti
+  da `LOG_DIR`; **Carica eventi precedenti** ne aggiunge altri 500, e si può
+  scegliere un giorno precedente;
+- i nuovi eventi di tutti i processi compaiono in cima in tempo reale (query
+  `appLogs` e subscription `appLogAdded`, entrambe riservate agli
+  amministratori). Con **pausa** i nuovi eventi vengono contati e mostrati alla
+  ripresa;
+- per gli eventi con `userId` mostra l'email dell'utente, se esiste ancora;
+- si può filtrare per livello, processo, nome dell'evento o email, e nascondere
+  le richieste GraphQL.
+
+Senza `LOG_DIR` la storia non è disponibile, ma gli eventi in tempo reale sì.
+La lettura (`app/lib/appLogReader.ts`) parte dalla fine del file, quindi anche un
+giorno con molti eventi si apre senza caricare tutto il file.
+
 ### Cosa viene registrato
 
 Le richieste GraphQL (`app/graphql/logger-plugin.ts`) registrano soltanto

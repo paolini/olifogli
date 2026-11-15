@@ -1,5 +1,6 @@
 import olifogliWorkerStatus from './resolvers/olifogliWorkerStatus'
 import { workerFiles, workerFileGroupFiles, deleteWorkerFiles, deleteWorkerFileGroup } from './resolvers/workerFiles'
+import { appLogs, appLogAddedSubscription } from './resolvers/appLogs'
 import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
 import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerActiveJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
@@ -73,6 +74,7 @@ export const resolvers: Resolvers = {
     olimanagerActiveJobs,
     workerFiles,
     workerFileGroupFiles,
+    appLogs,
     olimanagerJobItems,
     hello: () => 'Hello, world!',
 
@@ -179,6 +181,7 @@ export const resolvers: Resolvers = {
 
   Subscription: {
     olimanagerJobsUpdated: { subscribe: olimanagerJobsSubscription },
+    appLogAdded: { subscribe: appLogAddedSubscription },
     sheetUpdated: {
       subscribe: sheetSubscription(TOPICS.SHEET_UPDATED),
     },

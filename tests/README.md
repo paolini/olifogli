@@ -190,6 +190,15 @@ esterni. Controlla inoltre la sostituzione del file con un link prima
 dell'apertura e la chiusura dei descrittori. Non richiede scansioni reali né
 esegue un test del routing HTTP attraverso un server Next.js avviato.
 
+`app-logs.test.cjs` verifica la lettura dei log applicativi su directory
+temporanee: giorni in ordine, lettura dalla fine su più blocchi con limite e
+indicazione degli eventi più vecchi, righe non valide, file senza a capo finale,
+giorni non validi e link simbolici. Esegue query e subscription con database e
+Redis simulati: accesso riservato agli amministratori, email dell'utente che ha
+eseguito l'operazione, storia non disponibile senza `LOG_DIR`.
+Controlla infine che la pagina segua gli eventi in tempo reale sul giorno più
+recente, anche senza `LOG_DIR`, e non sui giorni passati.
+
 `worker-files.test.cjs` verifica la pagina dei file condivisi con i worker
 archiomr su directory temporanee: elenco con lavoro e cartella di ogni file,
 aree non configurate o mancanti, rifiuto di traversal e link simbolici,

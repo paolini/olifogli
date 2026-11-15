@@ -10,6 +10,32 @@ enum SheetState {
   locked
 }
 
+"""Evento del log applicativo (docs/deploy.md)."""
+type AppLogEntry {
+  """ISO 8601, UTC"""
+  timestamp: String!
+  level: String!
+  source: String!
+  event: String!
+  userId: String
+  """Email dell'utente userId, se esiste ancora"""
+  userEmail: String
+  """Gli altri campi dell'evento"""
+  data: JSON!
+}
+
+type AppLogs {
+  """false se LOG_DIR non è configurata"""
+  available: Boolean!
+  """Giorni con un file di log, dal più recente"""
+  days: [String!]!
+  day: String
+  """Dal più recente"""
+  entries: [AppLogEntry!]!
+  """true se il giorno contiene eventi più vecchi di quelli restituiti"""
+  truncated: Boolean!
+}
+
 """Directory condivisa con i worker archiomr (docs/omr.md)."""
 type WorkerFileArea {
   area: String!
@@ -386,6 +412,8 @@ type Query {
   olimanagerActiveJobs: Int!
   """Solo amministratori: file condivisi con i worker archiomr, raggruppati per lavoro."""
   workerFiles: WorkerFiles!
+  """Solo amministratori: eventi del log applicativo di un giorno (default: il più recente)."""
+  appLogs(day: String, limit: Int): AppLogs!
   """Solo amministratori: file di un gruppo restituito da workerFiles."""
   workerFileGroupFiles(kind: String!, jobId: ObjectId): [WorkerFile!]!
   olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
@@ -519,6 +547,8 @@ type UserCursor {
 
 type Subscription {
   olimanagerJobsUpdated: Boolean!
+  """Solo amministratori: nuovi eventi del log applicativo, da tutti i processi."""
+  appLogAdded: AppLogEntry!
   sheetUpdated(sheetId: ObjectId!): Sheet!
   rowChanged(sheetId: ObjectId!): Row!
   rowsDeleted(sheetId: ObjectId!): [ObjectId!]!

@@ -43,6 +43,34 @@ export type AgeDistributionReport = {
   variance?: Maybe<Scalars['Float']['output']>;
 };
 
+/** Evento del log applicativo (docs/deploy.md). */
+export type AppLogEntry = {
+  __typename?: 'AppLogEntry';
+  /** Gli altri campi dell'evento */
+  data: Scalars['JSON']['output'];
+  event: Scalars['String']['output'];
+  level: Scalars['String']['output'];
+  source: Scalars['String']['output'];
+  /** ISO 8601, UTC */
+  timestamp: Scalars['String']['output'];
+  /** Email dell'utente userId, se esiste ancora */
+  userEmail?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type AppLogs = {
+  __typename?: 'AppLogs';
+  /** false se LOG_DIR non è configurata */
+  available: Scalars['Boolean']['output'];
+  day?: Maybe<Scalars['String']['output']>;
+  /** Giorni con un file di log, dal più recente */
+  days: Array<Scalars['String']['output']>;
+  /** Dal più recente */
+  entries: Array<AppLogEntry>;
+  /** true se il giorno contiene eventi più vecchi di quelli restituiti */
+  truncated: Scalars['Boolean']['output'];
+};
+
 export type ClassYearDistributionItem = {
   __typename?: 'ClassYearDistributionItem';
   classYear: Scalars['Int']['output'];
@@ -494,6 +522,8 @@ export type PermissionInput = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Solo amministratori: eventi del log applicativo di un giorno (default: il più recente). */
+  appLogs: AppLogs;
   config?: Maybe<Config>;
   cursors: Array<UserCursor>;
   getSetting?: Maybe<Setting>;
@@ -524,6 +554,12 @@ export type Query = {
   workerFileGroupFiles: Array<WorkerFile>;
   /** Solo amministratori: file condivisi con i worker archiomr, raggruppati per lavoro. */
   workerFiles: WorkerFiles;
+};
+
+
+export type QueryAppLogsArgs = {
+  day?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -770,6 +806,8 @@ export enum SheetState {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  /** Solo amministratori: nuovi eventi del log applicativo, da tutti i processi. */
+  appLogAdded: AppLogEntry;
   cursorChanged: UserCursor;
   olimanagerJobsUpdated: Scalars['Boolean']['output'];
   rowChanged: Row;
@@ -4420,6 +4458,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type ResolversTypes = {
   AgeDistributionItem: ResolverTypeWrapper<AgeDistributionItem>;
   AgeDistributionReport: ResolverTypeWrapper<AgeDistributionReport>;
+  AppLogEntry: ResolverTypeWrapper<AppLogEntry>;
+  AppLogs: ResolverTypeWrapper<AppLogs>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   ClassYearDistributionItem: ResolverTypeWrapper<ClassYearDistributionItem>;
   Config: ResolverTypeWrapper<Config>;
@@ -4484,6 +4524,8 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   AgeDistributionItem: AgeDistributionItem;
   AgeDistributionReport: AgeDistributionReport;
+  AppLogEntry: AppLogEntry;
+  AppLogs: AppLogs;
   Boolean: Scalars['Boolean']['output'];
   ClassYearDistributionItem: ClassYearDistributionItem;
   Config: Config;
@@ -4558,6 +4600,26 @@ export type AgeDistributionReportResolvers<ContextType = any, ParentType extends
   unknownAgeRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   unknownClassYearRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   variance?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AppLogEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['AppLogEntry'] = ResolversParentTypes['AppLogEntry']> = {
+  data?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
+  event?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  level?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  source?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  userEmail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  userId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AppLogsResolvers<ContextType = any, ParentType extends ResolversParentTypes['AppLogs'] = ResolversParentTypes['AppLogs']> = {
+  available?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  day?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  days?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  entries?: Resolver<Array<ResolversTypes['AppLogEntry']>, ParentType, ContextType>;
+  truncated?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4784,6 +4846,7 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  appLogs?: Resolver<ResolversTypes['AppLogs'], ParentType, ContextType, Partial<QueryAppLogsArgs>>;
   config?: Resolver<Maybe<ResolversTypes['Config']>, ParentType, ContextType>;
   cursors?: Resolver<Array<ResolversTypes['UserCursor']>, ParentType, ContextType, RequireFields<QueryCursorsArgs, 'sheetId'>>;
   getSetting?: Resolver<Maybe<ResolversTypes['Setting']>, ParentType, ContextType, RequireFields<QueryGetSettingArgs, 'key'>>;
@@ -4933,6 +4996,7 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
 };
 
 export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
+  appLogAdded?: SubscriptionResolver<ResolversTypes['AppLogEntry'], "appLogAdded", ParentType, ContextType>;
   cursorChanged?: SubscriptionResolver<ResolversTypes['UserCursor'], "cursorChanged", ParentType, ContextType, RequireFields<SubscriptionCursorChangedArgs, 'sheetId'>>;
   olimanagerJobsUpdated?: SubscriptionResolver<ResolversTypes['Boolean'], "olimanagerJobsUpdated", ParentType, ContextType>;
   rowChanged?: SubscriptionResolver<ResolversTypes['Row'], "rowChanged", ParentType, ContextType, RequireFields<SubscriptionRowChangedArgs, 'sheetId'>>;
@@ -5045,6 +5109,8 @@ export type WorkerFilesResolvers<ContextType = any, ParentType extends Resolvers
 export type Resolvers<ContextType = any> = {
   AgeDistributionItem?: AgeDistributionItemResolvers<ContextType>;
   AgeDistributionReport?: AgeDistributionReportResolvers<ContextType>;
+  AppLogEntry?: AppLogEntryResolvers<ContextType>;
+  AppLogs?: AppLogsResolvers<ContextType>;
   ClassYearDistributionItem?: ClassYearDistributionItemResolvers<ContextType>;
   Config?: ConfigResolvers<ContextType>;
   Data?: GraphQLScalarType;
