@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-// Script per verificare la coerenza dei dati nel database
+// Verifica (e con --fix corregge) i contatori denormalizzati dei fogli:
+// nRows, nValidRows, nSyncedRows, anomalies (dalle righe) e nScanJobs,
+// nScanSheetJobs (dai lavori di scansione e di generazione dei fogli).
+// Le stesse regole di conteggio sono in app/graphql/resolvers/rowTrash.ts
+// (rowCounters) e nella mutation recountSheet.
 
 // Carica le variabili d'ambiente dal file .env
 try {
   require('dotenv').config();
-} catch (e) {
+} catch {
   // dotenv non installato: ignora in produzione
 }
 
@@ -21,131 +25,87 @@ if (!MONGODB_URI) {
 const args = process.argv.slice(2);
 const shouldFix = args.includes('--fix') || args.includes('-f');
 
+const COUNTERS = ['nRows', 'nValidRows', 'nSyncedRows', 'anomalies', 'nScanJobs', 'nScanSheetJobs'];
+
+async function countBySheet(collection, pipeline) {
+  const result = new Map();
+  for (const entry of await collection.aggregate(pipeline).toArray()) result.set(entry._id.toString(), entry);
+  return result;
+}
+
 async function main() {
   const client = new MongoClient(MONGODB_URI);
-  
+
   try {
     await client.connect();
     console.log('✓ Connesso a MongoDB');
-    
+
     const db = client.db();
     const sheetsCollection = db.collection('sheets');
-    const rowsCollection = db.collection('rows');
-    
+
+    const rowCounts = await countBySheet(db.collection('rows'), [{ $group: {
+      _id: '$sheetId',
+      nRows: { $sum: 1 },
+      nValidRows: { $sum: { $cond: [{ $in: [{ $ifNull: ['$error', ''] }, ['']] }, 1, 0] } },
+      nSyncedRows: { $sum: { $cond: [{ $ifNull: ['$olimanager.resultsUpdatedOn', false] }, 1, 0] } },
+      anomalies: { $sum: { $ifNull: ['$anomalies', 0] } },
+    } }]);
+    const scanJobs = await countBySheet(db.collection('scan_jobs'), [{ $group: { _id: '$sheetId', n: { $sum: 1 } } }]);
+    const scanSheetJobs = await countBySheet(db.collection('scan_sheet_jobs'), [{ $group: { _id: '$sheetId', n: { $sum: 1 } } }]);
+
     const sheets = await sheetsCollection.find({}).toArray();
     console.log(`\nVerifica di ${sheets.length} sheets...`);
-    if (shouldFix) {
-      console.log('Modalità FIX attiva: gli errori verranno corretti automaticamente\n');
-    } else {
-      console.log('');
-    }
-    
+    console.log(shouldFix ? 'Modalità FIX attiva: gli errori verranno corretti automaticamente\n' : '');
+
     let errors = 0;
-    let warnings = 0;
-    let checked = 0;
     let fixed = 0;
-    
+
     for (const sheet of sheets) {
-      checked++;
-      
-      // Conta le righe effettive
-      const actualNRows = await rowsCollection.countDocuments({ sheetId: sheet._id });
-      const actualNValidRows = await rowsCollection.countDocuments({
-        sheetId: sheet._id,
-        $or: [
-          { error: '' },
-          { error: { $exists: false } }
-        ]
-      });
-      
-      // Verifica nRows
-      const storedNRows = sheet.nRows ?? null;
-      const storedNValidRows = sheet.nValidRows ?? null;
-      
-      // Controllo nRows
-      if (storedNRows === null) {
-        console.error(`❌ Sheet "${sheet.name}" (${sheet._id}): campo nRows mancante`);
+      const id = sheet._id.toString();
+      const rows = rowCounts.get(id);
+      const actual = {
+        nRows: rows?.nRows ?? 0,
+        nValidRows: rows?.nValidRows ?? 0,
+        nSyncedRows: rows?.nSyncedRows ?? 0,
+        anomalies: rows?.anomalies ?? 0,
+        nScanJobs: scanJobs.get(id)?.n ?? 0,
+        nScanSheetJobs: scanSheetJobs.get(id)?.n ?? 0,
+      };
+      const $set = {};
+      for (const counter of COUNTERS) {
+        const stored = sheet[counter] ?? null;
+        if (stored === actual[counter]) continue;
         errors++;
-        if (shouldFix) {
-          await sheetsCollection.updateOne(
-            { _id: sheet._id },
-            { $set: { nRows: actualNRows } }
-          );
-          console.log(`   ✓ Corretto: nRows impostato a ${actualNRows}`);
-          fixed++;
-        }
-      } else if (storedNRows !== actualNRows) {
-        console.error(`❌ Sheet "${sheet.name}" (${sheet._id}): nRows=${storedNRows} ma ci sono ${actualNRows} righe effettive (diff: ${actualNRows - storedNRows})`);
-        errors++;
-        if (shouldFix) {
-          await sheetsCollection.updateOne(
-            { _id: sheet._id },
-            { $set: { nRows: actualNRows } }
-          );
-          console.log(`   ✓ Corretto: nRows aggiornato da ${storedNRows} a ${actualNRows}`);
-          fixed++;
-        }
+        console.error(stored === null
+          ? `❌ Sheet "${sheet.name}" (${id}): campo ${counter} mancante (valore effettivo ${actual[counter]})`
+          : `❌ Sheet "${sheet.name}" (${id}): ${counter}=${stored} ma il valore effettivo è ${actual[counter]} (diff: ${actual[counter] - stored})`);
+        $set[counter] = actual[counter];
       }
-      
-      // Controllo nValidRows
-      if (storedNValidRows === null) {
-        console.error(`❌ Sheet "${sheet.name}" (${sheet._id}): campo nValidRows mancante`);
-        errors++;
-        if (shouldFix) {
-          await sheetsCollection.updateOne(
-            { _id: sheet._id },
-            { $set: { nValidRows: actualNValidRows } }
-          );
-          console.log(`   ✓ Corretto: nValidRows impostato a ${actualNValidRows}`);
-          fixed++;
-        }
-      } else if (storedNValidRows !== actualNValidRows) {
-        console.error(`❌ Sheet "${sheet.name}" (${sheet._id}): nValidRows=${storedNValidRows} ma ci sono ${actualNValidRows} righe valide effettive (diff: ${actualNValidRows - storedNValidRows})`);
-        errors++;
-        if (shouldFix) {
-          await sheetsCollection.updateOne(
-            { _id: sheet._id },
-            { $set: { nValidRows: actualNValidRows } }
-          );
-          console.log(`   ✓ Corretto: nValidRows aggiornato da ${storedNValidRows} a ${actualNValidRows}`);
-          fixed++;
-        }
-      }
-      
-      // Mostra progresso ogni 100 sheet
-      if (checked % 100 === 0) {
-        console.log(`   Verificati ${checked}/${sheets.length} sheets...`);
+      if (shouldFix && Object.keys($set).length > 0) {
+        await sheetsCollection.updateOne({ _id: sheet._id }, { $set });
+        fixed += Object.keys($set).length;
+        console.log(`   ✓ Corretto: ${Object.entries($set).map(([k, v]) => `${k}=${v}`).join(', ')}`);
       }
     }
-    
+
     console.log('\n' + '='.repeat(60));
     console.log('RIEPILOGO:');
-    console.log(`  Sheets verificati: ${checked}`);
+    console.log(`  Sheets verificati: ${sheets.length}`);
     console.log(`  Errori trovati: ${errors}`);
-    if (shouldFix && fixed > 0) {
-      console.log(`  Errori corretti: ${fixed}`);
-    }
-    console.log(`  Avvisi: ${warnings}`);
-    
-    if (errors === 0 && warnings === 0) {
+    if (shouldFix) console.log(`  Errori corretti: ${fixed}`);
+
+    if (errors === 0) {
       console.log('\n✅ Tutti i contatori sono corretti!');
-      process.exit(0);
-    } else if (shouldFix && fixed > 0) {
+    } else if (shouldFix && fixed === errors) {
       console.log(`\n✅ Corretti ${fixed} errori di consistenza!`);
-      if (errors > fixed) {
-        console.log(`⚠️  Rimangono ancora ${errors - fixed} errori da verificare.`);
-        process.exit(1);
-      }
-      process.exit(0);
     } else {
       console.log('\n⚠️  Sono stati trovati problemi di coerenza.');
       console.log('   Esegui "npm run consistency-check -- --fix" per correggere automaticamente.');
-      process.exit(1);
+      process.exitCode = 1;
     }
-    
   } catch (error) {
-    console.error('Errore durante la verifica:', error);
-    process.exit(1);
+    console.error('Errore durante la verifica:', error?.message ?? 'errore sconosciuto');
+    process.exitCode = 1;
   } finally {
     await client.close();
   }

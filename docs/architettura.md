@@ -83,7 +83,16 @@ verità; qui ne è riassunto il ruolo.
 
 I contatori di `sheets` (`nRows`, `nValidRows`, `nSyncedRows`, `anomalies`,
 `nScanJobs`, `nScanSheetJobs`) sono aggiornati nella stessa transazione che
-modifica le righe o i lavori collegati. Non sono modificabili via
+modifica le righe o i lavori collegati. Le cancellazioni di righe e fogli
+passano da `moveRowsToTrash`/`moveSheetsToTrash` (`rowTrash.ts`), che leggono le
+righe con la sessione della transazione, le copiano in `deleted_rows` (e i
+fogli in `deleted_sheets`) e aggiornano i contatori, compreso `nSyncedRows`.
+`patchRow` ripete il controllo su `updatedOn` come condizione dell'aggiornamento
+nella transazione: di due salvataggi concorrenti della stessa riga ne riesce
+uno solo. `validateRows` ricalcola le righe e imposta i contatori nella stessa
+transazione. Import CSV (`addRows`) e `validateRows` pubblicano `sheetUpdated`:
+i client ricaricano righe e foglio via HTTP. `npm run consistency-check`
+confronta tutti i contatori con i dati (`--fix` li corregge). Non sono modificabili via
 `updateSheet`: se risultano disallineati, un amministratore li ricalcola dalle
 righe con la mutation `recountSheet` (pulsante **Sincronizza** nel pannello del
 foglio).

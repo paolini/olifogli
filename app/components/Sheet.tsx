@@ -127,6 +127,16 @@ const ROW_CHANGED_SUBSCRIPTION = gql`
   }
 `
 
+// Signal only: bulk changes (CSV import, revalidation, recount, settings)
+// are refetched over HTTP.
+const SHEET_UPDATED_SUBSCRIPTION = gql`
+  subscription OnSheetUpdated($sheetId: ObjectId!) {
+    sheetUpdated(sheetId: $sheetId) {
+      _id
+    }
+  }
+`
+
 const ROWS_DELETED_SUBSCRIPTION = gql`
   subscription OnRowsDeleted($sheetId: ObjectId!) {
     rowsDeleted(sheetId: $sheetId)
@@ -258,6 +268,15 @@ function SheetBody({sheet,profile}: {
                     (prev) => prev ? { rows: prev.rows.filter(r => !deletedIds.includes(r._id.toString())) } : prev
                 )
             }
+        },
+    })
+
+    useSubscription(SHEET_UPDATED_SUBSCRIPTION, {
+        variables: { sheetId: sheet._id },
+        onError: err => logDiagnostic('app/components/Sheet.sheetupdated_subscription_error', err),
+        onData: ({ client }) => {
+            refetch()
+            client.refetchQueries({ include: ['getSheet'] })
         },
     })
 

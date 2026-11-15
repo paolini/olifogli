@@ -65,7 +65,11 @@ export default async function patchRow(_: unknown, {_id, updatedOn, data, tabId}
             updatedOn: new Date(),
             updatedBy: user.email,
         }
-        await rowsCollection.updateOne({ _id }, { $set }, { session })
+        // The check on updatedOn above runs before the transaction: repeat it as
+        // the update condition, so that of two concurrent saves of the same row
+        // only one succeeds and the counter deltas are applied once.
+        const updated = await rowsCollection.updateOne({ _id, updatedOn: row.updatedOn ?? null }, { $set }, { session })
+        if (updated.matchedCount === 0) throw new Error(`La riga è stata modificata da qualcun altro`)
                 
         // Anche se la validità non cambia, aggiorna updatedAt perché la riga è stata modificata
         await sheetsCollection.updateOne(

@@ -3,6 +3,7 @@ import { WithoutId } from 'mongodb'
 import { Context } from '../types'
 import { schemas } from '@/app/lib/schema'
 import { Data, Row } from '@/app/lib/models'
+import { TOPICS, workbookUpdatedPayload } from '@/app/lib/pubsub'
 
 import { ForbiddenError } from 'apollo-server-errors'
 import { get_authenticated_user, check_user_can_edit_rows } from './utils'
@@ -92,6 +93,9 @@ export default async function addRows(_: unknown, {sheetId, columns, rows}: Muta
         
         return res.insertedCount
     })
-    
+
+    // Clients refetch the rows when they receive sheetUpdated.
+    context.pubsub?.publish(TOPICS.SHEET_UPDATED(sheetId.toString()), { sheetUpdated: await sheetsCollection.findOne({ _id: sheetId }) })
+    context.pubsub?.publish(TOPICS.WORKBOOK_UPDATED(sheet.workbookId.toString()), workbookUpdatedPayload(sheet))
     return insertedCount
 }

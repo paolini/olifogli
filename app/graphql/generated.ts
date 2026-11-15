@@ -1140,6 +1140,13 @@ export type OnRowChangedSubscriptionVariables = Exact<{
 
 export type OnRowChangedSubscription = { __typename?: 'Subscription', rowChanged: { __typename?: 'Row', _id: ObjectId, error?: string | null, anomalies: number, data: any, createdOn?: Date | null, createdBy?: string | null, updatedOn: Date, updatedBy: string, sourceTabId?: string | null, olimanager?: { __typename?: 'OlimanagerRowData', participantId?: string | null, contestId?: string | null, resultsUpdatedOn?: Date | null, error?: string | null } | null } };
 
+export type OnSheetUpdatedSubscriptionVariables = Exact<{
+  sheetId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type OnSheetUpdatedSubscription = { __typename?: 'Subscription', sheetUpdated: { __typename?: 'Sheet', _id: ObjectId } };
+
 export type OnRowsDeletedSubscriptionVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
 }>;
@@ -2445,6 +2452,36 @@ export function useOnRowChangedSubscription(baseOptions: Apollo.SubscriptionHook
       }
 export type OnRowChangedSubscriptionHookResult = ReturnType<typeof useOnRowChangedSubscription>;
 export type OnRowChangedSubscriptionResult = Apollo.SubscriptionResult<OnRowChangedSubscription>;
+export const OnSheetUpdatedDocument = gql`
+    subscription OnSheetUpdated($sheetId: ObjectId!) {
+  sheetUpdated(sheetId: $sheetId) {
+    _id
+  }
+}
+    `;
+
+/**
+ * __useOnSheetUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useOnSheetUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnSheetUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnSheetUpdatedSubscription({
+ *   variables: {
+ *      sheetId: // value for 'sheetId'
+ *   },
+ * });
+ */
+export function useOnSheetUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<OnSheetUpdatedSubscription, OnSheetUpdatedSubscriptionVariables> & ({ variables: OnSheetUpdatedSubscriptionVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<OnSheetUpdatedSubscription, OnSheetUpdatedSubscriptionVariables>(OnSheetUpdatedDocument, options);
+      }
+export type OnSheetUpdatedSubscriptionHookResult = ReturnType<typeof useOnSheetUpdatedSubscription>;
+export type OnSheetUpdatedSubscriptionResult = Apollo.SubscriptionResult<OnSheetUpdatedSubscription>;
 export const OnRowsDeletedDocument = gql`
     subscription OnRowsDeleted($sheetId: ObjectId!) {
   rowsDeleted(sheetId: $sheetId)

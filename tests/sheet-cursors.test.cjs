@@ -97,6 +97,7 @@ test('all sheet subscriptions handle failures explicitly', async t => {
     'app/components/Sheet.cursorchanged_subscription_error',
     'app/components/Sheet.rowchanged_subscription_error',
     'app/components/Sheet.rowsdeleted_subscription_error',
+    'app/components/Sheet.sheetupdated_subscription_error',
   ]));
   assert.ok(f.diagnostics.every(entry => entry.error === error));
 });
