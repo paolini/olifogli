@@ -40,7 +40,7 @@ x-common-env: &common-env
     REDIS_URL: "redis://redis:6379"
 
 x-app-common: &app-common
-  image: paolini/olifogli:latest
+  image: paolini/olifogli:main
   restart: unless-stopped
   logging:
     driver: local
@@ -66,7 +66,7 @@ services:
       - backend
 
   ws-server:
-    image: paolini/olifogli:latest
+    image: paolini/olifogli:main
     command: ["node", "ws-server.js"]
     logging:
       driver: local
@@ -126,7 +126,7 @@ services:
       - backend
 
   oliscan:
-    image: harbor.cs.dm.unipi.it/olifogli/oliscan
+    image: harbor.cs.dm.unipi.it/olifogli/oliscan:main
     restart: unless-stopped
     environment:
       - SPOOL_DIR=/app/spool
@@ -139,7 +139,7 @@ services:
       - backend
 
   olisheet:
-    image: harbor.cs.dm.unipi.it/olifogli/olisheet
+    image: harbor.cs.dm.unipi.it/olifogli/olisheet:main
     restart: unless-stopped
     environment:
       - MONGODB_URI=mongodb://db:27017/olifogli?replicaSet=rs0&retryWrites=true&w=majority

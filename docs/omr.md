@@ -14,10 +14,19 @@ solo tramite directory condivise e MongoDB.
 | Stato | Messaggi aggiunti a `scan_jobs.messages` | Campi `status` e `message` di `scan_sheet_jobs` |
 | Template | `templates/{schema}/omr/template.json` | `templates/{schema}/tex/template.tex` |
 
-Le immagini Docker sono pubblicate su `harbor.cs.dm.unipi.it/olifogli/` a ogni
-tag di versione di archiomr e includono i template. Lo sviluppo di nuovi template
-è descritto nel README di archiomr; il protocollo con Olifogli è descritto nella
-sezione *Protocol with Olifogli* dello stesso README.
+Le immagini Docker, che includono i template, sono pubblicate su
+`harbor.cs.dm.unipi.it/olifogli/` con le stesse convenzioni di Olifogli (vedi
+[README](../README.md#rami-ci-e-staging)):
+
+| Tag | Da dove viene | Dove si usa |
+|---|---|---|
+| `:staging` | ramo `staging` di archiomr | server di staging |
+| `:main` | ramo `main` di archiomr | produzione |
+| `:vX.Y.Z` | tag di versione | per fissare o ripristinare una versione |
+
+Lo sviluppo di nuovi template è descritto nel README di archiomr; il protocollo
+con Olifogli è descritto nella sezione *Protocol with Olifogli* dello stesso
+README.
 
 Questa pagina descrive le immagini dalla `v0.7.0` in poi: segnale di vita in
 `omr_workers`, ripresa dei lavori interrotti, permessi dei file (`UMASK`).

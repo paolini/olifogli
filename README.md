@@ -148,6 +148,9 @@ parte a ogni push su uno di questi tre rami:
 | `staging` | Test, immagine `paolini/olifogli:staging` e deploy sul server di staging |
 | `main` | Test e immagini `:main`, `:latest` e `:<versione di package.json>`; il deploy in produzione è manuale ([docs/deploy.md](docs/deploy.md#aggiornamento-dellapplicazione)) |
 
+Il repository archiomr, che contiene i worker `oliscan` e `olisheet`, segue le
+stesse convenzioni (vedi [docs/omr.md](docs/omr.md)).
+
 Si lavora su `develop`. Il ramo `staging` non serve per sviluppare: indica solo
 quale commit gira sul server di staging, e lo si sposta con un push.
 
