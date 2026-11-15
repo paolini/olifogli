@@ -136,3 +136,48 @@ npm run codegen      # rigenera app/graphql/generated.ts dopo modifiche allo sch
 npm run migrate:status
 npm run migrate:up   # applica le migrazioni del database (migrate-mongo)
 ```
+
+## Rami, CI e staging
+
+La CI ([.github/workflows/docker-image.yml](.github/workflows/docker-image.yml))
+parte a ogni push su uno di questi tre rami:
+
+| Ramo | Cosa fa la CI |
+|---|---|
+| `develop` | Solo test, lint e audit delle dipendenze: niente immagine, niente deploy |
+| `staging` | Test, immagine `paolini/olifogli:staging` e deploy sul server di staging |
+| `main` | Test e immagini `:main`, `:latest` e `:<versione di package.json>`; il deploy in produzione è manuale ([docs/deploy.md](docs/deploy.md#aggiornamento-dellapplicazione)) |
+
+Si lavora su `develop`. Il ramo `staging` non serve per sviluppare: indica solo
+quale commit gira sul server di staging, e lo si sposta con un push.
+
+La forma generale è `git push origin <sorgente>:<destinazione>`: sposta il ramo
+`<destinazione>` su GitHub sullo stesso commit del ramo locale `<sorgente>`,
+senza merge e senza cambiare ramo sul proprio computer
+(`git push origin develop` è l'abbreviazione di `develop:develop`).
+
+| Per… | Comando |
+|---|---|
+| salvare il lavoro su GitHub (solo test) | `git push origin develop` |
+| mettere sullo staging l'ultimo `develop` | `git push origin develop:staging` |
+| provare sullo staging un branch non ancora in `develop` | `git push -f origin mio-branch:staging` |
+| riportare lo staging su `develop` dopo una prova | `git push -f origin develop:staging` |
+
+Prima di `develop:staging` fai `git push origin develop`, così lo staging riceve
+un commit già presente anche su `develop`.
+
+`-f` (force) serve quando lo spostamento toglie dei commit dal ramo remoto,
+per esempio passando da `develop` a un branch di prova e ritorno: senza, git
+rifiuta il push. Su `staging` è sicuro, perché i commit restano negli altri
+rami. **Non usare mai `-f` su `develop` o `main`**, dove cancellerebbe lavoro.
+
+Un push su `staging` mentre la build precedente è ancora in corso la annulla e
+mette sullo staging solo l'ultimo commit. Il deploy esegue sul server lo script
+`deploy.sh`, che scarica le immagini e riavvia app, `ws-server`, worker,
+`oliscan` e `olisheet`; non applica le migrazioni del database.
+
+Le versioni si segnano con un tag annotato, per esempio
+`git tag -a v1.10.0 -m "Olifogli 1.10.0"` seguito da `git push origin v1.10.0`.
+I tag non avviano la CI: il numero di versione delle immagini viene da
+`package.json`.
+

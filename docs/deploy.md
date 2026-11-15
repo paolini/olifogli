@@ -78,10 +78,13 @@ npm run build
 ```
 
 La CI ([.github/workflows/docker-image.yml](../.github/workflows/docker-image.yml))
-esegue test, lint e audit prima di costruire e pubblicare l'immagine. Dopo la
-pubblicazione occorre aggiornare **tutti** i servizi che usano l'immagine (app,
-`ws-server` e `olifogli-worker`) e verificare le versioni effettive nei
-container:
+esegue test, lint e audit prima di costruire e pubblicare l'immagine. Per la
+produzione le immagini sono quelle costruite dal ramo `main` (`:latest` e
+`:<versione>`); il ramo `staging` produce `:staging` e aggiorna da solo il
+server di staging, mentre `develop` non produce immagini (vedi
+[README](../README.md#rami-ci-e-staging)). Dopo la pubblicazione occorre
+aggiornare **tutti** i servizi che usano l'immagine (app, `ws-server` e
+`olifogli-worker`) e verificare le versioni effettive nei container:
 
 ```sh
 sudo docker compose pull
