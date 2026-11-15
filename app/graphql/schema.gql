@@ -451,7 +451,6 @@ type Query {
   sheets(workbookId: ObjectId): [Sheet!]!
   sheet(sheetId: ObjectId!): Sheet
   rows(sheetId: ObjectId!): [Row!]!
-  olimanager: String # testing
   workbookDistributionReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [DistributionReport!]!
   workbookExerciseReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState): [ExerciseReport!]!
   workbookRankingReport(workbookId: ObjectId!, schema: String, commonData: Data, state: SheetState, limit: Int, orderBy: String, orderDirection: Int): [RankingReport!]!

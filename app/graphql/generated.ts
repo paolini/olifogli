@@ -557,7 +557,6 @@ export type Query = {
   hello?: Maybe<Scalars['String']['output']>;
   me?: Maybe<User>;
   olifogliWorkerStatus: OlifogliWorkerStatus;
-  olimanager?: Maybe<Scalars['String']['output']>;
   /** Numero di lavori Olimanager in attesa, in preparazione o in corso. */
   olimanagerActiveJobs: Scalars['Int']['output'];
   olimanagerJobItems: Array<OlimanagerJobItem>;
@@ -1547,11 +1546,6 @@ export type GetProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', _id: ObjectId, isAdmin?: boolean | null, isSupervisor?: boolean | null, email: string, name?: string | null } | null };
-
-export type GetConfigQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetConfigQuery = { __typename?: 'Query', config?: { __typename?: 'Config', OLIMANAGER_URL?: string | null } | null };
 
 
 export const OlimanagerJobsUpdatedDocument = gql`
@@ -4493,45 +4487,6 @@ export type GetProfileQueryHookResult = ReturnType<typeof useGetProfileQuery>;
 export type GetProfileLazyQueryHookResult = ReturnType<typeof useGetProfileLazyQuery>;
 export type GetProfileSuspenseQueryHookResult = ReturnType<typeof useGetProfileSuspenseQuery>;
 export type GetProfileQueryResult = Apollo.QueryResult<GetProfileQuery, GetProfileQueryVariables>;
-export const GetConfigDocument = gql`
-    query GetConfig {
-  config {
-    OLIMANAGER_URL
-  }
-}
-    `;
-
-/**
- * __useGetConfigQuery__
- *
- * To run a query within a React component, call `useGetConfigQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetConfigQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetConfigQuery({
- *   variables: {
- *   },
- * });
- */
-export function useGetConfigQuery(baseOptions?: Apollo.QueryHookOptions<GetConfigQuery, GetConfigQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetConfigQuery, GetConfigQueryVariables>(GetConfigDocument, options);
-      }
-export function useGetConfigLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetConfigQuery, GetConfigQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetConfigQuery, GetConfigQueryVariables>(GetConfigDocument, options);
-        }
-export function useGetConfigSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetConfigQuery, GetConfigQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetConfigQuery, GetConfigQueryVariables>(GetConfigDocument, options);
-        }
-export type GetConfigQueryHookResult = ReturnType<typeof useGetConfigQuery>;
-export type GetConfigLazyQueryHookResult = ReturnType<typeof useGetConfigLazyQuery>;
-export type GetConfigSuspenseQueryHookResult = ReturnType<typeof useGetConfigSuspenseQuery>;
-export type GetConfigQueryResult = Apollo.QueryResult<GetConfigQuery, GetConfigQueryVariables>;
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -5025,7 +4980,6 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   hello?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   olifogliWorkerStatus?: Resolver<ResolversTypes['OlifogliWorkerStatus'], ParentType, ContextType>;
-  olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   olimanagerActiveJobs?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   olimanagerJobItems?: Resolver<Array<ResolversTypes['OlimanagerJobItem']>, ParentType, ContextType, RequireFields<QueryOlimanagerJobItemsArgs, 'jobId'>>;
   olimanagerJobs?: Resolver<Array<ResolversTypes['OlimanagerJob']>, ParentType, ContextType, Partial<QueryOlimanagerJobsArgs>>;

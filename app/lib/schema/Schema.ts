@@ -162,9 +162,6 @@ export default class Schema {
         }
     }
 
-    row_to_sheet_data(row: Row): Partial<Sheet> {
-        throw new Error(`row_to_sheet_data not implemented for schema "${this.name}"`)
-    }
 
     customized_common_data(data: Data) {
         const tabular: [string,string][] = Object.entries(data)

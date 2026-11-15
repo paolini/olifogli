@@ -58,7 +58,6 @@ Compose.
 | `WS_SERVER_PORT` | ws-server | Porta del server WebSocket (default 4001) |
 | `SERVER_NAME`, `SERVER_BACKGROUND_COLOR` | app | Nome e colore della barra superiore, per distinguere gli ambienti |
 | `APP_INSTANCE` | app | Etichetta dell'istanza mostrata al passaggio del mouse sul nome (`app1`, `app2`, …) |
-| `OLIMANAGER_PUBLIC_KEY` | app | Chiave pubblica usata solo dal vecchio endpoint `/api/auth/callback` |
 
 `APP_INSTANCE` è letta a runtime, quindi può essere diversa per ogni container.
 Una variabile `NEXT_PUBLIC_*` sarebbe invece fissata nell'immagine al momento

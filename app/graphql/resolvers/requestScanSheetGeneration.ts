@@ -1,7 +1,7 @@
 import { appLog } from '@/app/lib/appLog'
 import { getRowsCollection, getScanSheetJobsCollection, getSheetsCollection, withTransaction } from '@/app/lib/mongodb'
 import { Context } from '../types'
-import { get_authenticated_user, check_user_is_sheet_admin, check_user_can_update_sheet } from './utils'
+import { get_authenticated_user, check_user_is_sheet_admin } from './utils'
 import { ObjectId } from 'mongodb'
 import { MutationRequestScanSheetGenerationArgs } from '../generated'
 import { schemas } from '@/app/lib/schema'

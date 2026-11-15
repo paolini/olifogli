@@ -4,9 +4,8 @@ import { get_authenticated_user, check_admin } from './utils'
 import { getSettingsCollection } from '@/app/lib/mongodb'
 
 export async function getSetting(_: unknown, args: { key: string }, context: Context) {
-    // Chiunque autenticato può leggere un setting
-    // se la chiave non inizia con "public_" allora
-    // non è neanche necessario essere autenticati
+    // Le chiavi che iniziano con "public_" sono leggibili da tutti,
+    // anche senza autenticazione; le altre da qualsiasi utente autenticato
     if (!args.key.startsWith('public_')) await get_authenticated_user(context)
     
     const collection = await getSettingsCollection()

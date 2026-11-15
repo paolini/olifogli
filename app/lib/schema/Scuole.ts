@@ -18,15 +18,4 @@ export default class Scuole extends Schema {
         this.fields_sensitive_names = ['Nome_referente', 'Cognome_referente']
     }
 
-    row_to_sheet_data(row: Row) {
-        const email = row.data?.Email_referente || ''
-        return {
-            schema: "archimede",
-            name: row.data?.Codice_meccanografico || '',
-            permissions: email ? [{ email, role: 'admin' as const }] : [],
-            commonData: {
-                Nome_scuola: row.data?.Nome_scuola || '',                
-            }
-        }
-    }
 }

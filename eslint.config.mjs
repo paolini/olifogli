@@ -33,7 +33,6 @@ eslintConfig.push({
 eslintConfig.push({
   files: [
     'app/components/LoadingWrapper.tsx',
-    'app/components/OlimanagerLoginButton.tsx',
     'app/components/Sheet.tsx',
     'app/components/Table.tsx',
   ],
