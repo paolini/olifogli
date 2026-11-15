@@ -99,6 +99,12 @@ Ogni foglio ha uno schema, registrato in `app/lib/schema.ts`: `ArchimedeBiennio`
 la validazione delle righe e, per le gare, il calcolo del punteggio
 (`Competition.computeDerivedData`).
 
+Archimede e Gara delle prime calcolano il punteggio con le chiavi di correzione
+e le permutazioni delle impostazioni `permutations_*` del raccoglitore, lette da
+`buildPermutationObject` (`app/lib/schema/PERMUTATIONS.ts`) nel
+`validationContext` dello schema. Senza queste impostazioni il contesto di
+validazione segnala l'errore di configurazione.
+
 Per aggiungere uno schema: creare la classe in `app/lib/schema/`, registrarla in
 `app/lib/schema.ts` e, se serve la scansione OMR, aggiungere il template nel
 progetto **archiomr**.
