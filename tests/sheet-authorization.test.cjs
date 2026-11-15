@@ -99,3 +99,49 @@ test('moveCursor stores the cursor under the user and tab; viewers may read curs
   const field = `${f.state.user._id}:tab`;
   assert.deepEqual(f.state.redis.map(([op, , key]) => [op, key]), [['hset', field], ['hdel', field]]);
 });
+
+test('updateSheet no longer accepts counters', async () => {
+  const f = fixture({ role: 'admin' });
+  await f.call('updateSheet', { _id: f.sheetId, nValidRows: 100, anomalies: 0 });
+  assert.deepEqual(f.state.sheetUpdates, []);
+});
+
+test('updateSheet rejects unknown schemas and roles, and owner grants by sheet admins', async () => {
+  const f = fixture({ role: 'admin' });
+  await assert.rejects(f.call('updateSheet', { _id: f.sheetId, schema: 'missing' }), code('BAD_USER_INPUT'));
+  await assert.rejects(f.call('updateSheet', { _id: f.sheetId, schema: '__proto__' }), code('BAD_USER_INPUT'));
+  await assert.rejects(f.call('updateSheet', { _id: f.sheetId, permissions: [{ email: 'x@example.org', role: 'Editor' }] }), code('BAD_USER_INPUT'));
+  await assert.rejects(f.call('updateSheet', { _id: f.sheetId, permissions: [{ email: 'x@example.org', role: 'owner' }] }), code('FORBIDDEN'));
+  assert.deepEqual(f.state.sheetUpdates, []);
+  await f.call('updateSheet', { _id: f.sheetId, schema: 'known', permissions: [{ email: 'teacher@example.org', role: 'admin' }, { email: 'x@example.org', role: 'view' }] });
+  assert.equal(f.state.sheetUpdates.length, 1);
+});
+
+test('existing owner entries can be kept by sheet admins; system admins may grant owner', async () => {
+  const kept = fixture({ role: 'admin' });
+  kept.state.sheet.permissions.push({ email: 'boss@example.org', role: 'owner' });
+  await kept.call('updateSheet', { _id: kept.sheetId, permissions: kept.state.sheet.permissions });
+  const admin = fixture({ role: null, isAdmin: true });
+  await admin.call('updateSheet', { _id: admin.sheetId, permissions: [{ email: 'boss@example.org', role: 'owner' }] });
+  assert.equal(kept.state.sheetUpdates.length + admin.state.sheetUpdates.length, 2);
+});
+
+for (const status of ['locked', 'closed']) {
+  test(`name and schema of a ${status} sheet can be changed only by system admins`, async () => {
+    const f = fixture({ role: 'admin', sheet: { [status]: true } });
+    await assert.rejects(f.call('updateSheet', { _id: f.sheetId, name: 'Altro' }), code('FORBIDDEN'));
+    await assert.rejects(f.call('updateSheet', { _id: f.sheetId, schema: 'known' }), code('FORBIDDEN'));
+    const admin = fixture({ role: null, isAdmin: true, sheet: { [status]: true } });
+    await admin.call('updateSheet', { _id: admin.sheetId, name: 'Altro' });
+    assert.equal(admin.state.sheetUpdates.length, 1);
+  });
+}
+
+test('recountSheet is admin only and stores the counters computed from the rows', async () => {
+  const f = fixture({ role: 'admin' });
+  await assert.rejects(f.call('recountSheet', { _id: f.sheetId }), code('FORBIDDEN'));
+  const admin = fixture({ role: null, isAdmin: true });
+  await admin.call('recountSheet', { _id: admin.sheetId });
+  const { $set } = admin.state.sheetUpdates[0];
+  assert.deepEqual([$set.nRows, $set.nValidRows, $set.nSyncedRows, $set.anomalies], [2, 1, 0, 3]);
+});

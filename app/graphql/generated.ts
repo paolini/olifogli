@@ -145,6 +145,8 @@ export type Mutation = {
   openSheet?: Maybe<Scalars['Boolean']['output']>;
   patchRow?: Maybe<Row>;
   prepareOlimanagerVenueSheets: OlimanagerVenueSheetsPreview;
+  /** Ricalcola i contatori denormalizzati del foglio dalle righe (solo admin). */
+  recountSheet?: Maybe<Scalars['Boolean']['output']>;
   requestOlimanagerCheck: OlimanagerJob;
   requestOlimanagerMatch: OlimanagerJob;
   requestOlimanagerResults: OlimanagerJob;
@@ -314,6 +316,11 @@ export type MutationPrepareOlimanagerVenueSheetsArgs = {
 };
 
 
+export type MutationRecountSheetArgs = {
+  _id: Scalars['ObjectId']['input'];
+};
+
+
 export type MutationRequestOlimanagerCheckArgs = {
   rowIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
@@ -356,11 +363,7 @@ export type MutationUpdateSettingArgs = {
 
 export type MutationUpdateSheetArgs = {
   _id: Scalars['ObjectId']['input'];
-  anomalies?: InputMaybe<Scalars['Int']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
-  nRows?: InputMaybe<Scalars['Int']['input']>;
-  nSyncedRows?: InputMaybe<Scalars['Int']['input']>;
-  nValidRows?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   permissions?: InputMaybe<Array<PermissionInput>>;
   schema?: InputMaybe<Scalars['String']['input']>;
@@ -1180,14 +1183,17 @@ export type UpdateSheetMutationVariables = Exact<{
   _id: Scalars['ObjectId']['input'];
   permissions?: InputMaybe<Array<PermissionInput> | PermissionInput>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
-  nRows?: InputMaybe<Scalars['Int']['input']>;
-  nValidRows?: InputMaybe<Scalars['Int']['input']>;
-  nSyncedRows?: InputMaybe<Scalars['Int']['input']>;
-  anomalies?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
 export type UpdateSheetMutation = { __typename?: 'Mutation', updateSheet?: boolean | null };
+
+export type RecountSheetMutationVariables = Exact<{
+  _id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type RecountSheetMutation = { __typename?: 'Mutation', recountSheet?: boolean | null };
 
 export type DeleteAllRowsMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -2615,16 +2621,8 @@ export type DeleteSheetMutationHookResult = ReturnType<typeof useDeleteSheetMuta
 export type DeleteSheetMutationResult = Apollo.MutationResult<DeleteSheetMutation>;
 export type DeleteSheetMutationOptions = Apollo.BaseMutationOptions<DeleteSheetMutation, DeleteSheetMutationVariables>;
 export const UpdateSheetDocument = gql`
-    mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data, $nRows: Int, $nValidRows: Int, $nSyncedRows: Int, $anomalies: Int) {
-  updateSheet(
-    _id: $_id
-    permissions: $permissions
-    commonData: $commonData
-    nRows: $nRows
-    nValidRows: $nValidRows
-    nSyncedRows: $nSyncedRows
-    anomalies: $anomalies
-  )
+    mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data) {
+  updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData)
 }
     `;
 export type UpdateSheetMutationFn = Apollo.MutationFunction<UpdateSheetMutation, UpdateSheetMutationVariables>;
@@ -2645,10 +2643,6 @@ export type UpdateSheetMutationFn = Apollo.MutationFunction<UpdateSheetMutation,
  *      _id: // value for '_id'
  *      permissions: // value for 'permissions'
  *      commonData: // value for 'commonData'
- *      nRows: // value for 'nRows'
- *      nValidRows: // value for 'nValidRows'
- *      nSyncedRows: // value for 'nSyncedRows'
- *      anomalies: // value for 'anomalies'
  *   },
  * });
  */
@@ -2659,6 +2653,37 @@ export function useUpdateSheetMutation(baseOptions?: Apollo.MutationHookOptions<
 export type UpdateSheetMutationHookResult = ReturnType<typeof useUpdateSheetMutation>;
 export type UpdateSheetMutationResult = Apollo.MutationResult<UpdateSheetMutation>;
 export type UpdateSheetMutationOptions = Apollo.BaseMutationOptions<UpdateSheetMutation, UpdateSheetMutationVariables>;
+export const RecountSheetDocument = gql`
+    mutation RecountSheet($_id: ObjectId!) {
+  recountSheet(_id: $_id)
+}
+    `;
+export type RecountSheetMutationFn = Apollo.MutationFunction<RecountSheetMutation, RecountSheetMutationVariables>;
+
+/**
+ * __useRecountSheetMutation__
+ *
+ * To run a mutation, you first call `useRecountSheetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRecountSheetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [recountSheetMutation, { data, loading, error }] = useRecountSheetMutation({
+ *   variables: {
+ *      _id: // value for '_id'
+ *   },
+ * });
+ */
+export function useRecountSheetMutation(baseOptions?: Apollo.MutationHookOptions<RecountSheetMutation, RecountSheetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RecountSheetMutation, RecountSheetMutationVariables>(RecountSheetDocument, options);
+      }
+export type RecountSheetMutationHookResult = ReturnType<typeof useRecountSheetMutation>;
+export type RecountSheetMutationResult = Apollo.MutationResult<RecountSheetMutation>;
+export type RecountSheetMutationOptions = Apollo.BaseMutationOptions<RecountSheetMutation, RecountSheetMutationVariables>;
 export const DeleteAllRowsDocument = gql`
     mutation DeleteAllRows($sheetId: ObjectId!) {
   deleteAllRows(sheetId: $sheetId)
@@ -4786,6 +4811,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
   prepareOlimanagerVenueSheets?: Resolver<ResolversTypes['OlimanagerVenueSheetsPreview'], ParentType, ContextType, RequireFields<MutationPrepareOlimanagerVenueSheetsArgs, 'biennioContestId' | 'olympiadId' | 'triennioContestId' | 'workbookId'>>;
+  recountSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRecountSheetArgs, '_id'>>;
   requestOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerCheckArgs>>;
   requestOlimanagerMatch?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerMatchArgs>>;
   requestOlimanagerResults?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerResultsArgs>>;

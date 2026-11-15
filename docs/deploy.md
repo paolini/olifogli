@@ -182,6 +182,7 @@ eseguito l'operazione (`userId`), mai email, nomi o dati delle righe:
 | `scan_sheets.requested` | Richiesta di generazione dei fogli risposta |
 | `row.deleted`, `rows.deleted`, `rows.deleted_all` | Cancellazione di righe (con il numero di righe) |
 | `sheet.deleted`, `sheets.deleted`, `workbook.deleted` | Cancellazione di fogli o raccoglitori |
+| `sheet.recounted` | Ricalcolo dei contatori di un foglio (`recountSheet`) |
 | `worker_files.deleted` | Cancellazione dalla pagina **file** (numero di file cancellati e non cancellati) |
 | `olimanager_job.queued`, `olimanager_job.finished` | Lavori in background accodati e conclusi (per i conclusi, l'utente che li ha accodati) |
 

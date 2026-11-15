@@ -83,7 +83,10 @@ verità; qui ne è riassunto il ruolo.
 
 I contatori di `sheets` (`nRows`, `nValidRows`, `nSyncedRows`, `anomalies`,
 `nScanJobs`, `nScanSheetJobs`) sono aggiornati nella stessa transazione che
-modifica le righe o i lavori collegati.
+modifica le righe o i lavori collegati. Non sono modificabili via
+`updateSheet`: se risultano disallineati, un amministratore li ricalcola dalle
+righe con la mutation `recountSheet` (pulsante **Sincronizza** nel pannello del
+foglio).
 
 Le migrazioni usano `migrate-mongo` (`npm run migrate:status`, `migrate:up`,
 `migrate:create`).

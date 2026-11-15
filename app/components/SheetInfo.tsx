@@ -17,8 +17,14 @@ const DELETE_SHEET = gql`
     }`
 
 const UPDATE_SHEET = gql`
-  mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data, $nRows: Int, $nValidRows: Int, $nSyncedRows: Int, $anomalies: Int) {
-    updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData, nRows: $nRows, nValidRows: $nValidRows, nSyncedRows: $nSyncedRows, anomalies: $anomalies)
+  mutation UpdateSheet($_id: ObjectId!, $permissions: [PermissionInput!], $commonData: Data) {
+    updateSheet(_id: $_id, permissions: $permissions, commonData: $commonData)
+  }
+`
+
+const RECOUNT_SHEET = gql`
+  mutation RecountSheet($_id: ObjectId!) {
+    recountSheet(_id: $_id)
   }
 `
 
@@ -57,7 +63,7 @@ export default function SheetInfo({sheet,data,profile}:{
     data?: {rows: Row[]}
     profile: User | null
 }) {
-    const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
+    const [recountSheet, {loading: recounting, error: recountError, reset: recountReset}] = useMutation(RECOUNT_SHEET)
     const rows = data?.rows
     const n_valid_rows = rows?.filter(r => !r.error).length || 0
     
@@ -76,24 +82,18 @@ export default function SheetInfo({sheet,data,profile}:{
               <br />
               {(sheet.nRows !== rows.length || sheet.nValidRows !== n_valid_rows) && profile?.isAdmin && <>
                 <span className="error">attenzione: dati disallineati: </span>
-                <Button onClick={() => syncNormalizedData()}>⚙ Sincronizza</Button>
+                <Button disabled={recounting} onClick={() => syncNormalizedData()}>⚙ Sincronizza</Button>
                 <br /></>}
+              <Error error={recountError} dismiss={recountReset} />
         </div>
         
         <SheetConfigure sheet={sheet} profile={profile} sheetContainsErrors={sheetContainsErrors} />
     </>
 
     async function syncNormalizedData() {
-        if (!rows) return
-        updateSheet({
-            variables: {
-                _id: sheet._id,
-                nRows: rows.length,
-                nValidRows: n_valid_rows,
-                anomalies: rows.filter(r => !r.error).reduce((sum, r) => sum + r.anomalies, 0)
-            },
-            refetchQueries: ['getSheet']
-        })
+        // The server recomputes the counters from the stored rows.
+        await recountSheet({ variables: { _id: sheet._id }, refetchQueries: ['getSheet'] })
+            .catch(() => { /* shown by recountError */ })
     }
 }
 

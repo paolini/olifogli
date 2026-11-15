@@ -525,11 +525,10 @@ type Mutation {
     schema: String
     permissions: [PermissionInput!]
     commonData: Data
-    nRows: Int
-    nValidRows: Int
-    nSyncedRows: Int
-    anomalies: Int
   ): Boolean
+
+  "Ricalcola i contatori denormalizzati del foglio dalle righe (solo admin)."
+  recountSheet(_id: ObjectId!): Boolean
 
   closeSheet(_id: ObjectId!): Boolean
   openSheet(_id: ObjectId!): Boolean
