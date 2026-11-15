@@ -4,8 +4,7 @@ import { get_authenticated_user, check_user_is_sheet_admin, check_user_can_updat
 import { ObjectId } from 'mongodb'
 import { MutationRequestScanSheetGenerationArgs } from '../generated'
 import { schemas } from '@/app/lib/schema'
-import path from 'path'
-import fs from 'fs'
+import { stageSpoolFile } from '@/app/lib/spool'
 
 export default async function requestScanSheetGeneration(_: unknown, args: MutationRequestScanSheetGenerationArgs, context: Context): Promise<boolean> {
   const user = await get_authenticated_user(context)
@@ -43,41 +42,52 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
 
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 
-  // create directory if not exists
-  // Runtime volume, not a build asset to include in the standalone image.
-  if (!fs.existsSync(/* turbopackIgnore: true */ SPOOL_DIR)) {
-    fs.mkdirSync(SPOOL_DIR, { recursive: true });
-  }
-
   const now = new Date();
+  const jobId = new ObjectId()
 
   const scanSheetJobsCollection = await getScanSheetJobsCollection()
   const sheetsCollection = await getSheetsCollection()
 
-  // Usa una transazione per garantire la consistenza tra job e sheet
-  const job_id = await withTransaction(async (session) => {
-      const result = await scanSheetJobsCollection.insertOne({
+  // The records are written before the job exists and published after it is
+  // committed: olisheet never sees a partial file, and a failed write leaves
+  // neither an orphan job nor a wrong nScanSheetJobs counter.
+  const staged = await stageSpoolFile(SPOOL_DIR, `${schema.name}-${jobId.toString()}.jsonl`, payload)
+
+  try {
+    await withTransaction(async (session) => {
+      await scanSheetJobsCollection.insertOne({
+          _id: jobId,
           sheetId: sheet._id,
           timestamp: now,
           status: 'pending',
           message: 'submitting job',
           createdBy: user.email
       }, { session })
-
-      // Incrementa nScanSheetJobs nel sheet
       await sheetsCollection.updateOne(
           { _id: sheet._id },
           { $inc: { nScanSheetJobs: 1 } },
           { session }
       )
+    })
+  } catch (error) {
+    await staged.discard()
+    throw error
+  }
 
-      return result.insertedId
-  })
-
-  const filename = `${schema.name}-${job_id.toString()}.jsonl`
-  const filePath = path.join(SPOOL_DIR, filename)
-
-  fs.writeFileSync(filePath, payload);
+  try {
+    await staged.publish()
+  } catch (error) {
+    await staged.discard()
+    await withTransaction(async (session) => {
+      await scanSheetJobsCollection.deleteOne({ _id: jobId }, { session })
+      await sheetsCollection.updateOne(
+          { _id: sheet._id },
+          { $inc: { nScanSheetJobs: -1 } },
+          { session }
+      )
+    })
+    throw error
+  }
 
   return true
 }

@@ -185,6 +185,13 @@ esterni. Controlla inoltre la sostituzione del file con un link prima
 dell'apertura e la chiusura dei descrittori. Non richiede scansioni reali né
 esegue un test del routing HTTP attraverso un server Next.js avviato.
 
+`spool-file.test.cjs` verifica che i file per i worker di archiomr restino con
+il suffisso `.part`, che i worker ignorano, finché non vengono pubblicati, e che
+si possano scartare. Esegue la route reale di upload con database simulato e
+directory temporanee: il PDF compare con l'ID del lavoro registrato, mentre una
+transazione o una scrittura fallita non lasciano né file né lavori e non
+cambiano il contatore `nScanJobs`.
+
 `olimanager-transfers.test.cjs` esegue i tre resolver di trasferimento con dati
 simulati e verifica l’uso della richiesta OAuth dell’amministratore, i controlli
 di accesso locali e il rifiuto dei vecchi argomenti username/password. I test OAuth

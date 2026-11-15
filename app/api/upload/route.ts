@@ -1,15 +1,12 @@
 import { logDiagnostic } from '../../lib/logging'
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile } from 'fs/promises'
-import path from 'path'
-import { mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
 import { ObjectId } from 'mongodb'
 
 import { get_context } from '@/app/graphql/types'
 import { getScanJobsCollection, getSheetsCollection, withTransaction } from '@/app/lib/mongodb'
 import { check_user_can_edit_rows, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { schemas } from '@/app/lib/schema'
+import { stageSpoolFile, type StagedSpoolFile } from '@/app/lib/spool'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET
 
@@ -17,19 +14,8 @@ if (!JWT_SECRET) {
     throw new Error('NEXTAUTH_SECRET is not defined');
 }
 
-async function getSCANS_SPOOL_DIR() {
-    const SCANS_SPOOL_DIR = process.env.SCANS_SPOOL_DIR || '';
-    if (SCANS_SPOOL_DIR) {
-        // Runtime volume, not a build asset to include in the standalone image.
-        if (!existsSync(/* turbopackIgnore: true */ SCANS_SPOOL_DIR)) {
-            await mkdir(SCANS_SPOOL_DIR, { recursive: true });
-        }
-    }
-    return SCANS_SPOOL_DIR
-}
-
 export async function POST(req: NextRequest) {
-    const SCANS_SPOOL_DIR = await getSCANS_SPOOL_DIR()
+    const SCANS_SPOOL_DIR = process.env.SCANS_SPOOL_DIR || ''
     if (!SCANS_SPOOL_DIR) return NextResponse.json({ error: 'upload disabled' }, { status: 503 });
 
     const context = await get_context({ req })
@@ -69,46 +55,60 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(bytes);
 
         const now = new Date()
+        const jobId = new ObjectId()
         const jobsCollection = await getScanJobsCollection()
 
-        // Usa una transazione per garantire la consistenza tra job e sheet
-        const job = await withTransaction(async (session) => {
-            const insertion = await jobsCollection.insertOne({
-                sheetId: new ObjectId(sheetId),
-                timestamp: now,
-                messages: [{  
-                    status: 'uploading',
-                    message: 'caricamento PDF',
-                    timestamp: now}],
-                ownerId: user._id,
-            }, { session })
-
-            if (!insertion.acknowledged) {
-                throw new Error('Failed to create scan job')
-            }
-
-            // Incrementa nScanJobs nel sheet
-            await sheetsCollection.updateOne(
-                { _id: sheetId },
-                { $inc: { nScanJobs: 1 } },
-                { session }
-            )
-
-            return insertion.insertedId.toString()
-        })
-
-        const job_id = job
-
-        // Define upload path
-        const filePath = path.join(SCANS_SPOOL_DIR, `${schema.name}-${job_id}.pdf`)
-
+        // The PDF is written before the job exists and published after it is
+        // committed: oliscan never sees a partial file, and a failed write
+        // leaves neither an orphan job nor a wrong nScanJobs counter.
+        let staged: StagedSpoolFile
         try {
-            // Save file to disk
-            await writeFile(filePath, buffer);
+            staged = await stageSpoolFile(SCANS_SPOOL_DIR, `${schema.name}-${jobId}.pdf`, buffer)
         } catch (error) {
             logDiagnostic('app/api/upload/route.error_writing_file', error);
             return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
         }
+
+        try {
+            await withTransaction(async (session) => {
+                await jobsCollection.insertOne({
+                    _id: jobId,
+                    sheetId,
+                    timestamp: now,
+                    messages: [{
+                        status: 'uploading',
+                        message: 'caricamento PDF',
+                        timestamp: now}],
+                    ownerId: user._id,
+                }, { session })
+                await sheetsCollection.updateOne(
+                    { _id: sheetId },
+                    { $inc: { nScanJobs: 1 } },
+                    { session }
+                )
+            })
+        } catch (error) {
+            await staged.discard()
+            throw error
+        }
+
+        try {
+            await staged.publish()
+        } catch (error) {
+            logDiagnostic('app/api/upload/route.error_publishing_file', error);
+            await staged.discard()
+            await withTransaction(async (session) => {
+                await jobsCollection.deleteOne({ _id: jobId }, { session })
+                await sheetsCollection.updateOne(
+                    { _id: sheetId },
+                    { $inc: { nScanJobs: -1 } },
+                    { session }
+                )
+            })
+            return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
+        }
+
+        const job_id = jobId.toString()
 
         return NextResponse.json({ 
             jobId: job_id

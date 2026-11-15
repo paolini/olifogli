@@ -29,8 +29,7 @@ La scansione OMR dei PDF e la generazione dei fogli personalizzati sono nel
 progetto separato **archiomr** (worker Python `oliscan` e `olisheet`), che
 comunica con Olifogli tramite directory condivise (`SCANS_SPOOL_DIR`,
 `SCANS_DATA_DIR`, `SHEETGENDATA_DIR`) e le collezioni `scan_jobs`,
-`scan_results` e `scan_sheet_jobs`. Vedi
-https://github.com/fph/archiomr/blob/main/worker.py.
+`scan_results` e `scan_sheet_jobs`. Vedi [omr.md](omr.md).
 
 ## Struttura del codice
 

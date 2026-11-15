@@ -14,7 +14,7 @@ Tutti i servizi applicativi usano l'immagine `paolini/olifogli`, costruita dal
 | `redis` | Pub/Sub tra le istanze e stato dei cursori |
 | `db` | MongoDB 6 in replica set `rs0` |
 | `nginx` | Proxy pubblico sulla porta 8000 |
-| `oliscan`, `olisheet` | Worker Python OMR e generazione fogli, dal progetto **archiomr** |
+| `oliscan`, `olisheet` | Worker Python OMR e generazione fogli, dal progetto **archiomr**; vedi [omr.md](omr.md) |
 
 Nginx ([nginx.conf](../nginx.conf)) distribuisce le richieste HTTP tra le tre
 istanze e inoltra `/ws/*` al `ws-server`, togliendo il prefisso: il client si
@@ -50,6 +50,7 @@ Compose.
 | `OLIMANAGER_GRAPHQL_ENDPOINT` | app, worker | Endpoint GraphQL di Olimanager |
 | `ADMIN_EMAILS` | app | Email separate da virgole: all'avvio i relativi utenti ricevono `isAdmin` |
 | `SCANS_SPOOL_DIR`, `SCANS_DATA_DIR` | app | Directory condivise con `oliscan`; abilitano l'importazione delle scansioni |
+| `SHEETGENSPOOL_DIR` | app | Directory delle richieste di generazione per `olisheet` (default `/app/sheetgenspool`) |
 | `SHEETGENDATA_DIR` | app | Directory dei PDF generati da `olisheet` (default `/app/sheetgendata`) |
 | `LOG_DIR` | app | Se impostata, i log GraphQL vengono scritti anche su file |
 | `LOG_RETENTION_DAYS` | `logs:cleanup` | Giorni di conservazione dei log (default 30) |
