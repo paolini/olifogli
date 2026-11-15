@@ -37,6 +37,12 @@ prevedono il servizio `olifogli-worker` con riavvio automatico. Per aggiornare
 un Compose esistente, rinominare il vecchio servizio `olimanager-worker` e
 rimuovere il relativo container con `docker compose up -d --remove-orphans`.
 
+Il ciclo principale (`runWorkerLoop`, `app/lib/workerLoop.ts`) non termina se
+un lavoro fallisce o MongoDB dà un errore transitorio: registra l'evento
+`olifogli.worker.iteration_failed` e riprova dopo una pausa che raddoppia a ogni
+errore consecutivo (da 1 a 30 secondi). Così le chiavi in memoria degli altri
+lavori di cifratura non vanno perse. Con `--once` l'errore termina il processo.
+
 Riavviare il worker dopo ogni aggiornamento del codice; se cambia lo schema
 GraphQL, riavviare anche il server WebSocket.
 

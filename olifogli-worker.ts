@@ -17,6 +17,7 @@ import { createSheetEncryptor, openSheetEncryptionKey, createSheetDecryptor, ope
 import { receiveSheetEncryptionKeys } from './app/lib/sheetEncryptionTransport'
 import { ObjectId } from 'mongodb'
 import { startWorkerHeartbeat } from './app/lib/workerHeartbeat'
+import { runWorkerLoop } from './app/lib/workerLoop'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 setLogSource('worker')
@@ -83,29 +84,32 @@ async function main() {
         const workerId = `${hostname()}:${process.pid}:${randomUUID()}`
         stopHeartbeat = await startWorkerHeartbeat(db, workerId, error => logDiagnostic('olifogli.worker.heartbeat_failed', error))
         serverLog('info', 'worker.started')
-        do {
-            const processed = await runNextOlimanagerJob(db, transaction, {
-                workerId, encryptionKeys, validate: validateOlimanagerJobRow, shouldStop: () => stopping,
-                createInspector: async job => {
-                    const credential = await db.collection<import('./app/lib/models').OlimanagerJobCredential>('olimanager_job_credentials').findOne({ _id: job._id })
-                    const access = credential ? unprotectJobAccess(job, credential) : null
-                    if (job.operation === 'update_results') return createResultsSender(job, access)
-                    return job.operation === 'match_or_create_participants' ? createParticipantMatcher(job, access) : createRemoteInspector(job, access)
-                },
-            })
-            // Discard completed jobs' keys immediately, without waiting for the heartbeat.
-            for (const id of encryptionKeys.keys()) {
-                const active = await db.collection('olimanager_jobs').findOne({ _id: new ObjectId(id),
-                    status: { $in: ['queued', 'preparing', 'running'] } }, { projection: { _id: 1 } })
-                if (!active) {
-                    disposeSecrets.get(id)?.()
-                    disposeSecrets.delete(id)
-                    encryptionKeys.delete(id)
+        const processed = await runWorkerLoop({ once: values.once, shouldStop: () => stopping, delay,
+            onError: (error, failures) => logDiagnostic('olifogli.worker.iteration_failed', error, failures > 1 ? 'warn' : 'error'),
+            iteration: async () => {
+                const processed = await runNextOlimanagerJob(db, transaction, {
+                    workerId, encryptionKeys, validate: validateOlimanagerJobRow, shouldStop: () => stopping,
+                    createInspector: async job => {
+                        const credential = await db.collection<import('./app/lib/models').OlimanagerJobCredential>('olimanager_job_credentials').findOne({ _id: job._id })
+                        const access = credential ? unprotectJobAccess(job, credential) : null
+                        if (job.operation === 'update_results') return createResultsSender(job, access)
+                        return job.operation === 'match_or_create_participants' ? createParticipantMatcher(job, access) : createRemoteInspector(job, access)
+                    },
+                })
+                // Discard completed jobs' keys immediately, without waiting for the heartbeat.
+                for (const id of encryptionKeys.keys()) {
+                    const active = await db.collection('olimanager_jobs').findOne({ _id: new ObjectId(id),
+                        status: { $in: ['queued', 'preparing', 'running'] } }, { projection: { _id: 1 } })
+                    if (!active) {
+                        disposeSecrets.get(id)?.()
+                        disposeSecrets.delete(id)
+                        encryptionKeys.delete(id)
+                    }
                 }
-            }
-            if (values.once) { serverLog('info', processed ? 'worker.once_processed' : 'worker.once_idle'); break }
-            if (!processed && !stopping) await delay(1000)
-        } while (!stopping)
+                return processed
+            },
+        })
+        if (values.once) serverLog('info', processed ? 'worker.once_processed' : 'worker.once_idle')
     } finally {
         clearInterval(heartbeat)
         stopReceiving?.()

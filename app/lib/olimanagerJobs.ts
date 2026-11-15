@@ -17,7 +17,21 @@ export function jobCollections(db: Db) {
     }
 }
 
-export async function ensureJobIndexes(db: Db) {
+// Index creation is idempotent but not free: run it once per database and process.
+const indexesReady = new WeakMap<Db, Promise<void>>()
+
+export function ensureJobIndexes(db: Db): Promise<void> {
+    let ready = indexesReady.get(db)
+    if (!ready) {
+        ready = createJobIndexes(db)
+        indexesReady.set(db, ready)
+        // A failed attempt is retried on the next call.
+        ready.catch(() => indexesReady.delete(db))
+    }
+    return ready
+}
+
+async function createJobIndexes(db: Db) {
     const { jobs, items, credentials } = jobCollections(db)
     await jobs.createIndex({ status: 1, leaseExpiresAt: 1, createdAt: 1 })
     await jobs.createIndex({ affectedSheetIds: 1, createdAt: -1 })
