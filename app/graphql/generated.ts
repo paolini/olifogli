@@ -486,6 +486,8 @@ export type Query = {
   me?: Maybe<User>;
   olifogliWorkerStatus: OlifogliWorkerStatus;
   olimanager?: Maybe<Scalars['String']['output']>;
+  /** Numero di lavori Olimanager in attesa, in preparazione o in corso. */
+  olimanagerActiveJobs: Scalars['Int']['output'];
   olimanagerJobItems: Array<OlimanagerJobItem>;
   olimanagerJobs: Array<OlimanagerJob>;
   olimanagerVenueSheetChoices: Array<OlimanagerSheetOlympiad>;
@@ -843,6 +845,11 @@ export type OlimanagerJobsUpdatedSubscriptionVariables = Exact<{ [key: string]: 
 
 
 export type OlimanagerJobsUpdatedSubscription = { __typename?: 'Subscription', olimanagerJobsUpdated: boolean };
+
+export type BackgroundJobsStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BackgroundJobsStatusQuery = { __typename?: 'Query', olimanagerActiveJobs: number };
 
 export type AddRowsMutationVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1377,6 +1384,43 @@ export function useOlimanagerJobsUpdatedSubscription(baseOptions?: Apollo.Subscr
       }
 export type OlimanagerJobsUpdatedSubscriptionHookResult = ReturnType<typeof useOlimanagerJobsUpdatedSubscription>;
 export type OlimanagerJobsUpdatedSubscriptionResult = Apollo.SubscriptionResult<OlimanagerJobsUpdatedSubscription>;
+export const BackgroundJobsStatusDocument = gql`
+    query BackgroundJobsStatus {
+  olimanagerActiveJobs
+}
+    `;
+
+/**
+ * __useBackgroundJobsStatusQuery__
+ *
+ * To run a query within a React component, call `useBackgroundJobsStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBackgroundJobsStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBackgroundJobsStatusQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useBackgroundJobsStatusQuery(baseOptions?: Apollo.QueryHookOptions<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>(BackgroundJobsStatusDocument, options);
+      }
+export function useBackgroundJobsStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>(BackgroundJobsStatusDocument, options);
+        }
+export function useBackgroundJobsStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>(BackgroundJobsStatusDocument, options);
+        }
+export type BackgroundJobsStatusQueryHookResult = ReturnType<typeof useBackgroundJobsStatusQuery>;
+export type BackgroundJobsStatusLazyQueryHookResult = ReturnType<typeof useBackgroundJobsStatusLazyQuery>;
+export type BackgroundJobsStatusSuspenseQueryHookResult = ReturnType<typeof useBackgroundJobsStatusSuspenseQuery>;
+export type BackgroundJobsStatusQueryResult = Apollo.QueryResult<BackgroundJobsStatusQuery, BackgroundJobsStatusQueryVariables>;
 export const AddRowsDocument = gql`
     mutation addRows($sheetId: ObjectId!, $columns: [String!]!, $rows: [[String!]!]!) {
   addRows(sheetId: $sheetId, columns: $columns, rows: $rows)
@@ -4436,6 +4480,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   olifogliWorkerStatus?: Resolver<ResolversTypes['OlifogliWorkerStatus'], ParentType, ContextType>;
   olimanager?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  olimanagerActiveJobs?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   olimanagerJobItems?: Resolver<Array<ResolversTypes['OlimanagerJobItem']>, ParentType, ContextType, RequireFields<QueryOlimanagerJobItemsArgs, 'jobId'>>;
   olimanagerJobs?: Resolver<Array<ResolversTypes['OlimanagerJob']>, ParentType, ContextType, Partial<QueryOlimanagerJobsArgs>>;
   olimanagerVenueSheetChoices?: Resolver<Array<ResolversTypes['OlimanagerSheetOlympiad']>, ParentType, ContextType>;

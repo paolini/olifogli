@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { gql, useApolloClient, useSubscription } from '@apollo/client'
-import { ListTodo, X } from 'lucide-react'
+import { gql, useApolloClient, useQuery, useSubscription } from '@apollo/client'
+import { Cog, X } from 'lucide-react'
 import OlimanagerJobStatus from './OlimanagerJobStatus'
 
 const JOBS_UPDATED = gql`
   subscription OlimanagerJobsUpdated { olimanagerJobsUpdated }
+`
+const ACTIVE_JOBS = gql`
+  query BackgroundJobsStatus { olimanagerActiveJobs }
 `
 
 export default function BackgroundOperations() {
@@ -15,6 +18,11 @@ export default function BackgroundOperations() {
 
   const [unread, setUnread] = useState(false)
   const client = useApolloClient()
+  const jobs = useQuery<{ olimanagerActiveJobs: number }>(ACTIVE_JOBS, { fetchPolicy: 'network-only' })
+  const activeJobs = jobs.data?.olimanagerActiveJobs ?? 0
+  const label = activeJobs > 0
+    ? `Operazioni in background (${activeJobs} in corso)`
+    : 'Operazioni in background'
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => {
     if (refreshTimer.current !== null) clearTimeout(refreshTimer.current)
@@ -25,7 +33,7 @@ export default function BackgroundOperations() {
       if (refreshTimer.current === null) refreshTimer.current = setTimeout(() => {
         refreshTimer.current = null
         const include = [...client.getObservableQueries('active').values()]
-          .filter(query => query.queryName && ['OlimanagerJobs', 'OlimanagerJobItems', 'GetRows', 'GetSheets', 'getSheet'].includes(query.queryName))
+          .filter(query => query.queryName && ['BackgroundJobsStatus', 'OlimanagerJobs', 'OlimanagerJobItems', 'GetRows', 'GetSheets', 'getSheet'].includes(query.queryName))
           .map(query => query.options.query)
         void client.refetchQueries({ include }).catch(() => {
           // Query components display their own errors and offer manual refresh.
@@ -35,15 +43,16 @@ export default function BackgroundOperations() {
   })
 
   return <>
-    <button type="button" className="relative rounded p-2 text-gray-700 hover:bg-gray-100 hide-print"
-      title="Operazioni in background" aria-label="Operazioni in background"
+    <button type="button" className="relative cursor-pointer border-0 bg-transparent p-1 text-gray-700 hover:text-blue-500 hide-print"
+      title={label} aria-label={label}
       aria-haspopup="dialog" aria-expanded={open}
       onClick={() => {
         setUnread(false)
         setOpen(true)
         dialog.current?.showModal()
       }}>
-      <ListTodo size={22} aria-hidden="true" />
+      <Cog size={22} aria-hidden="true"
+        className={activeJobs > 0 ? 'text-blue-600 motion-safe:animate-spin motion-safe:[animation-duration:3s]' : undefined} />
       {unread && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-blue-600" aria-hidden="true" />}
       <span className="sr-only" role="status">{unread ? 'Nuovi aggiornamenti dei lavori in background' : ''}</span>
     </button>

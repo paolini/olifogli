@@ -1,7 +1,7 @@
 import olifogliWorkerStatus from './resolvers/olifogliWorkerStatus'
 import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
-import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
+import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerActiveJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
 import { Context } from './types'
 import { ObjectId } from 'bson'
 import { ObjectIdType, Timestamp, DataType } from './types'
@@ -69,6 +69,7 @@ export const resolvers: Resolvers = {
     olimanagerVenueSheetChoices,
     olifogliWorkerStatus,
     olimanagerJobs,
+    olimanagerActiveJobs,
     olimanagerJobItems,
     hello: () => 'Hello, world!',
 

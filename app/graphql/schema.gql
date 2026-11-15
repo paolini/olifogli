@@ -325,6 +325,8 @@ type Query {
   olimanagerVenueSheetChoices: [OlimanagerSheetOlympiad!]!
   olifogliWorkerStatus: OlifogliWorkerStatus!
   olimanagerJobs(sheetIds: [ObjectId!]): [OlimanagerJob!]!
+  """Numero di lavori Olimanager in attesa, in preparazione o in corso."""
+  olimanagerActiveJobs: Int!
   olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
 
   hello: String

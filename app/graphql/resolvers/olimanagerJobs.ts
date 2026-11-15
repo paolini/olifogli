@@ -36,6 +36,12 @@ export async function olimanagerJobs(_: unknown, { sheetIds }: { sheetIds?: Obje
     return jobs.find(sheetIds?.length ? { affectedSheetIds: { $in: sheetIds } } : {}).sort({ createdAt: -1 }).limit(20).toArray()
 }
 
+export async function olimanagerActiveJobs(_: unknown, _args: unknown, context: Context) {
+    check_admin(await get_authenticated_user(context))
+    const jobs = await getOlimanagerJobsCollection()
+    return jobs.countDocuments({ status: { $in: ['queued', 'preparing', 'running'] } })
+}
+
 export async function olimanagerJobItems(_: unknown, { jobId, after, failedOnly, limit }: {
     jobId: ObjectId, after?: ObjectId | null, failedOnly?: boolean | null, limit?: number | null,
 }, context: Context) {
