@@ -65,6 +65,23 @@ services:
     networks:
       - backend
 
+  ws-server:
+    image: paolini/olifogli:latest
+    command: ["node", "ws-server.js"]
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+
   olifogli-worker:
     <<: *app-common
     command: ["node", "olifogli-worker.js"]
@@ -78,19 +95,19 @@ services:
     <<: *app-common
     environment:
       <<: *common-env
-      NEXT_PUBLIC_APP_INSTANCE: "app1"
+      APP_INSTANCE: "app1"
 
   app2:
     <<: *app-common
     environment:
       <<: *common-env
-      NEXT_PUBLIC_APP_INSTANCE: "app2"
+      APP_INSTANCE: "app2"
 
   app3:
     <<: *app-common
     environment:
       <<: *common-env
-      NEXT_PUBLIC_APP_INSTANCE: "app3"
+      APP_INSTANCE: "app3"
 
   nginx:
     image: nginx:latest
@@ -104,6 +121,7 @@ services:
       - app1
       - app2
       - app3
+      - ws-server
     networks:
       - backend
 

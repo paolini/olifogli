@@ -63,19 +63,19 @@ services:
     <<: *app-common
     environment:
       <<: *common-env
-      NEXT_PUBLIC_APP_INSTANCE: "app1"
+      APP_INSTANCE: "app1"
 
   app2:
     <<: *app-common
     environment:
       <<: *common-env
-      NEXT_PUBLIC_APP_INSTANCE: "app2"
+      APP_INSTANCE: "app2"
 
   app3:
     <<: *app-common
     environment:
       <<: *common-env
-      NEXT_PUBLIC_APP_INSTANCE: "app3"
+      APP_INSTANCE: "app3"
 
   redis:
     image: redis:7-alpine
