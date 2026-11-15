@@ -5,6 +5,9 @@ import { decodePermutations, computeScoresWithVariants } from "./PERMUTATIONS";
 import Schema, { DerivedData, OlimanagerProblemResult, RowCalculationResult } from "./Schema";
 
 export default class Competition extends Schema {
+    // First digits accepted for three-digit task codes (undefined: any).
+    variant_years: string[] | undefined = undefined
+
     constructor(name: string, header: string, fields: Field[]) {
         super(name, header, fields)
         for (const field of fields) {
@@ -44,7 +47,7 @@ export default class Competition extends Schema {
         try {
             const permutations = context.permutation_object
             if (!permutations) throw new Error("permutation_object mancante nel context, configurazione della raccolta errata?")
-            const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations);
+            const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations, this.variant_years);
             
             if (error) {
                 return {

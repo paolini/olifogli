@@ -111,8 +111,18 @@ la validazione delle righe e, per le gare, il calcolo del punteggio
 Archimede e Gara delle prime calcolano il punteggio con le chiavi di correzione
 e le permutazioni delle impostazioni `permutations_*` del raccoglitore, lette da
 `buildPermutationObject` (`app/lib/schema/PERMUTATIONS.ts`) nel
-`validationContext` dello schema. Senza queste impostazioni il contesto di
-validazione segnala l'errore di configurazione.
+`validationContext` dello schema. Senza queste impostazioni, o se sono
+incomplete o incoerenti, il contesto di validazione segnala l'errore di
+configurazione (`checkPermutationObject`): devono esserci tutti e quattro i
+punteggi (`permutations_points_correct`, `_wrong`, `_empty`, `_invalid`), ogni
+`permutations_questions_*` deve essere una permutazione di 1…n con lo stesso n,
+ogni `permutations_answers_*` una permutazione di `ABCDE` e ogni
+`permutations_correct*` lunga n, con sole lettere A-E, `X` o `-`. Per Archimede
+la prima cifra del codice compito deve corrispondere allo schema
+(`variant_years`: 2 per il biennio, 3 per il triennio); un codice di un altro
+anno dà "codice compito non valido" invece di essere corretto con la chiave
+sbagliata. Il Distrettuale usa impostazioni diverse (`correct_answers`,
+`points_*`), con punteggio 0 per i valori mancanti.
 
 Per aggiungere uno schema: creare la classe in `app/lib/schema/`, registrarla in
 `app/lib/schema.ts` e, se serve la scansione OMR, aggiungere il template nel

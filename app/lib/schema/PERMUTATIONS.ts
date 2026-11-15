@@ -97,7 +97,39 @@ export function buildPermutationObject(commonData: Data): PermutationsObject {
         throw new Error(`Permutation object is empty, no keys starting with "permutations_" found in common data. Configurazione della raccolta errata?`);
     }
 
+    checkPermutationObject(permutation_object);
     return permutation_object;
+}
+
+/**
+ * Rejects incomplete or inconsistent settings, which would otherwise score
+ * silently wrong (a missing points value counted as -Infinity) or fail only
+ * while scoring a row.
+ */
+export function checkPermutationObject(permutations: PermutationsObject) {
+    for (const [name, value] of Object.entries(permutations.points)) {
+        if (!Number.isFinite(value)) throw new Error(`manca l'impostazione "permutations_points_${name}"`);
+    }
+    const lengths = new Set<number>();
+    for (const [code, questions] of Object.entries(permutations.questions)) {
+        const sorted = [...questions].sort((a, b) => a - b);
+        if (!sorted.every((q, i) => q === i + 1)) {
+            throw new Error(`"permutations_questions_${code}" non è una permutazione dei numeri da 1 a ${questions.length}`);
+        }
+        lengths.add(questions.length);
+    }
+    if (lengths.size > 1) throw new Error(`le impostazioni "permutations_questions_*" hanno lunghezze diverse`);
+    const n = [...lengths][0];
+    for (const [code, answers] of Object.entries(permutations.answers)) {
+        if ([...answers].sort().join('') !== 'ABCDE') {
+            throw new Error(`"permutations_answers_${code}" non è una permutazione di ABCDE`);
+        }
+    }
+    for (const [year, correct] of Object.entries(permutations.correct)) {
+        const key = year ? `permutations_correct_${year}` : 'permutations_correct';
+        if (!/^[A-EX-]*$/.test(correct)) throw new Error(`"${key}" contiene caratteri diversi da A-E, X e -`);
+        if (n !== undefined && correct.length !== n) throw new Error(`"${key}" ha ${correct.length} risposte invece di ${n}`);
+    }
 }
 
 type MappingResult = {
@@ -142,13 +174,13 @@ function computeVariantMappings(variantCode:string, permutations_data: Permutati
         } else return "codice compito non valido";
     }
 
-    const permutation_answers = permutations_data.answers[answerCode]+'X-';
-    if (!permutation_answers) {
+    if (!permutations_data.answers[answerCode]) {
         if (Object.keys(permutations_data.answers).length === 0) {
             return "configurazione errata (manca 'answers_permutation')";
         }
         return "codice compito non valido";
     }
+    const permutation_answers = permutations_data.answers[answerCode]+'X-';
 
     const correct_raw = permutations_data.correct[year];
     if (!correct_raw) {
@@ -160,7 +192,7 @@ function computeVariantMappings(variantCode:string, permutations_data: Permutati
     const correct_answers = correct_raw.split('');
 
     const answers_mapping = Object.fromEntries("ABCDEX-".split('').map((a,i) => ([a, permutation_answers.charAt(i)])));
-    const questions_inverse_permutation: number[] = Array(16).fill(-1);
+    const questions_inverse_permutation: number[] = Array(questions_permutation.length).fill(-1);
     questions_permutation.forEach((q: number,i: number) => {
         questions_inverse_permutation[q] = i;
     })
@@ -178,9 +210,21 @@ function computeVariantMappings(variantCode:string, permutations_data: Permutati
     return result;
 }
 
-export function decodePermutations(variantCode: string, answers: string[], permutations_data: PermutationsObject) {
+/**
+ * `allowedYears`: first digits accepted for three-digit codes (for example
+ * ['2'] on Archimede biennio), so that a code of another year is not scored
+ * with that year's answer key.
+ */
+export function decodePermutations(variantCode: string, answers: string[], permutations_data: PermutationsObject, allowedYears?: string[]) {
     if (!variantCode) {
         throw new Error("not yet implemented");        
+    }
+    if (allowedYears && variantCode.length === 3 && !allowedYears.includes(variantCode.charAt(0))) {
+        return {
+            error: `codice compito non valido: deve iniziare con ${allowedYears.join(' o ')}`,
+            score: 0,
+            extended_answers: answers,
+        };
     }
     const mappingResult = computeVariantMappings(variantCode, permutations_data);
     if (typeof mappingResult === 'string') {

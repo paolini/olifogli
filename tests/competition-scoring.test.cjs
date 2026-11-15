@@ -74,3 +74,49 @@ test('Archimede biennio scores all-correct answers with the standard variant', (
   assert.equal(result.error, '');
   assert.equal(result.data.score, '80');
 });
+
+function archimede(file = 'app/lib/schema/ArchimedeBiennio.ts') {
+  const Schema = load(file).default;
+  return new Schema();
+}
+const sheetData = { Codice_meccanografico: 'PIPS000001' };
+const workbook = (overrides = {}) => {
+  const data = { contest_year: '2026', ...archimedeKeys, ...overrides };
+  for (const [key, value] of Object.entries(data)) if (value === undefined) delete data[key];
+  return data;
+};
+
+test('regression #66: a missing points setting is a configuration error, not a -Infinity score', () => {
+  assert.throws(() => archimede().validationContext(sheetData, workbook({ permutations_points_wrong: undefined })),
+    /permutations_points_wrong/);
+});
+
+for (const [setting, value, message] of [
+  ['permutations_questions_2', '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,15]', /non è una permutazione dei numeri da 1 a 16/],
+  ['permutations_questions_3', '[1,2,3]', /lunghezze diverse/],
+  ['permutations_answers_2', 'ABCDD', /non è una permutazione di ABCDE/],
+  ['permutations_correct_2', 'ABC', /ha 3 risposte invece di 16/],
+  ['permutations_correct_3', 'ABCDEABCDEABCDEZ', /caratteri diversi/],
+]) {
+  test(`regression #66: inconsistent ${setting} is rejected when the context is built`, () => {
+    assert.throws(() => archimede().validationContext(sheetData, workbook({ [setting]: value })), message);
+  });
+}
+
+test('regression #66: Archimede biennio rejects a triennio task code (and vice versa)', () => {
+  const biennio = archimede();
+  const row = { ...student, classYear: '1', variant: '311', ...answers(archimedeKeys.permutations_correct_3) };
+  const result = score(biennio, row, sheetData, workbook());
+  assert.match(result.error, /deve iniziare con 2/);
+  assert.equal(result.data.score, '');
+  const triennio = archimede('app/lib/schema/ArchimedeTriennio.ts');
+  const ok = score(triennio, { ...row, classYear: '3' }, sheetData, workbook());
+  assert.equal(ok.error, '');
+  assert.equal(ok.data.score, '80');
+  assert.match(score(triennio, { ...row, classYear: '3', variant: '211' }, sheetData, workbook()).error, /deve iniziare con 3/);
+});
+
+test('regression #66: an unknown answers code is reported as an invalid task code', () => {
+  const result = score(archimede(), { ...student, classYear: '1', variant: '291', ...answers(archimedeKeys.permutations_correct_2) }, sheetData, workbook());
+  assert.equal(result.error, 'codice compito non valido');
+});

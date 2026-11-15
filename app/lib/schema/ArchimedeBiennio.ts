@@ -5,6 +5,7 @@ export default class ArchimedeBiennio extends ArchimedeCommon {
     constructor() {
         super('archimede_biennio', 'Archimede Biennio', 10, 18)
         this.header_essential = 'biennio'
+        this.variant_years = ['2']
         this.fields.filter(f => f instanceof OptionsField)
             .forEach(f => {f.choices = ['1','2']})        
     }
