@@ -119,7 +119,7 @@ esecuzione:
 |---|---|
 | `_id` | `{type}:{hostname}` |
 | `type` | `oliscan` oppure `olisheet` |
-| `version` | Tag dell'immagine, `dev` per le build locali |
+| `version` | `vX.Y.Z` per le immagini dei tag di versione, `main-<sha>` o `staging-<sha>` per quelle dei rami, `dev` per le build locali |
 | `startedAt` | Avvio dell'istanza |
 | `lastSeenAt` | Ultimo segnale, aggiornato ogni 10 secondi anche durante i lavori lunghi |
 | `state` | `idle` oppure `busy` |
