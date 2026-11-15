@@ -61,6 +61,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 #COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
+COPY --from=builder --chown=nextjs:nodejs /app/migrate.sh ./migrate.sh
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/migrate-mongo-config.js ./migrate-mongo-config.js
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
@@ -73,7 +74,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/olifogli-worker.bundle.js ./olifo
 COPY --from=builder --chown=nextjs:nodejs /app/app/graphql/schema.gql ./app/graphql/schema.gql
 # Install migrate-mongo globally
 RUN npm install -g migrate-mongo
-RUN chmod +x ./start.sh
+RUN chmod +x ./start.sh ./migrate.sh
 USER nextjs
 EXPOSE 3000
 EXPOSE 4001

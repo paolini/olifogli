@@ -177,7 +177,11 @@ rami. **Non usare mai `-f` su `develop` o `main`**, dove cancellerebbe lavoro.
 Un push su `staging` mentre la build precedente è ancora in corso la annulla e
 mette sullo staging solo l'ultimo commit. Il deploy esegue sul server lo script
 `deploy.sh`, che scarica le immagini e riavvia app, `ws-server`, worker,
-`oliscan` e `olisheet`; non applica le migrazioni del database.
+`oliscan` e `olisheet`. Le migrazioni del database le applica il servizio
+`migrate`, che Compose avvia prima di app, `ws-server` e worker se il file
+Compose del server lo prevede (vedi
+[docs/deploy.md](docs/deploy.md#migrazioni-del-database)); altrimenti le
+applica ogni istanza all'avvio.
 
 Le versioni si segnano con un tag annotato, per esempio
 `git tag -a v1.10.0 -m "Olifogli 1.10.0"` seguito da `git push origin v1.10.0`.

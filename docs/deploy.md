@@ -8,6 +8,7 @@ Tutti i servizi applicativi usano l'immagine `paolini/olifogli`, costruita dal
 
 | Servizio | Ruolo |
 |---|---|
+| `migrate` | Applica le migrazioni del database (`migrate.sh`) e termina; gli altri servizi applicativi partono solo dopo il suo successo |
 | `app1`, `app2`, `app3` | Istanze Next.js (porta interna 3000) |
 | `ws-server` | Server WebSocket delle subscription GraphQL (porta interna 4001) |
 | `olifogli-worker` | Worker dei lavori in background, vedi [worker.md](worker.md) |
@@ -97,11 +98,30 @@ sudo docker compose pull
 sudo docker compose up -d
 ```
 
-Se ci sono nuove migrazioni del database:
+### Migrazioni del database
+
+Le migrazioni (`migrate-mongo`, cartella `migrations/`) le applica il servizio
+`migrate` a ogni `docker compose up -d`: `migrate.sh` attende che MongoDB
+accetti scritture (`scripts/prepare-migrations.cjs`), esegue
+`migrate-mongo up` e termina. App, `ws-server` e `olifogli-worker` dipendono da
+`migrate` con `condition: service_completed_successfully`: se una migrazione
+fallisce non partono, e l'errore è nei log del servizio
+(`sudo docker compose logs migrate`). Corretto il problema, si rilancia
+`sudo docker compose up -d`.
+
+Le istanze hanno `MIGRATE_ON_START: "0"`, quindi `start.sh` non applica le
+migrazioni. Con un Compose che non imposta la variabile (default `1`) ogni
+istanza le applica all'avvio, come nelle versioni precedenti; in entrambi i casi
+il lock di `migrate-mongo` (`changelog_lock`, `lockTtl` 600 secondi) è reso
+atomico da un indice unico creato da `prepare-migrations.cjs`, perciò una sola
+esecuzione alla volta applica le migrazioni e le altre terminano con
+"Could not create a lock" (e vengono riavviate da Docker). Senza quell'indice,
+più istanze avviate insieme applicavano in parallelo le stesse migrazioni.
+
+Per controllare lo stato:
 
 ```sh
 sudo docker compose exec app1 npx migrate-mongo status
-sudo docker compose exec app1 npx migrate-mongo up
 ```
 
 Dopo il deploy collaudare login OAuth, navigazione dei fogli, upload dei PDF e

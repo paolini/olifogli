@@ -30,7 +30,10 @@ const config = {
   lockCollectionName: "changelog_lock",
 
   // The value in seconds for the TTL index that will be used for the lock. Value of 0 will disable the feature.
-  lockTtl: 0,
+  // The lock prevents two processes from applying the same migration concurrently
+  // (for example a manual `migrate-mongo up` during a deploy); a crashed run
+  // releases it after this many seconds.
+  lockTtl: 600,
 
   // The file extension to create migrations and search for in migration dir 
   migrationFileExtension: ".js",
