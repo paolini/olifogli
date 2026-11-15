@@ -43,6 +43,19 @@ Compose.
 
 ## Variabili d'ambiente
 
+I Compose di produzione non contengono segreti: `NEXTAUTH_SECRET`,
+`OLIMANAGER_OAUTH_CLIENT_ID` e `OLIMANAGER_OAUTH_CLIENT_SECRET` sono letti dal
+file `.env` nella stessa directory del Compose, che Docker Compose usa per
+sostituire `${...}`. Se una delle tre manca, `docker compose` si ferma con un
+errore che la nomina. Il modello è [.env.sample](../.env.sample): copiarlo in
+`.env` (permessi `0600`, mai nel repository) e compilarlo, per esempio:
+
+```sh
+NEXTAUTH_SECRET=<stringa casuale lunga, per esempio: openssl rand -base64 32>
+OLIMANAGER_OAUTH_CLIENT_ID=<client id dell'applicazione OAuth>
+OLIMANAGER_OAUTH_CLIENT_SECRET=<client secret dell'applicazione OAuth>
+```
+
 | Variabile | Usata da | Descrizione |
 |---|---|---|
 | `MONGODB_URI` | app, ws-server, worker | Connessione MongoDB; deve essere un replica set |
