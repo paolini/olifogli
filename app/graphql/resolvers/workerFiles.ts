@@ -86,16 +86,23 @@ export async function workerFileGroupFiles(_: unknown, { kind, jobId }: { kind: 
         .sort((a, b) => a.area.localeCompare(b.area) || a.path.localeCompare(b.path))
 }
 
+async function deleteAll(files: { area: string, path: string }[]) {
+    let deleted = 0
+    const failed: { area: string, path: string, reason: string }[] = []
+    for (const { area, path } of files) {
+        const outcome = await deleteWorkerFile(area, path)
+        if (outcome === 'deleted') deleted++
+        else failed.push({ area, path, reason: outcome })
+    }
+    return { deleted, failed }
+}
+
 export async function deleteWorkerFiles(_: unknown, { files }: { files: { area: string, path: string }[] }, context: Context) {
     check_admin(await get_authenticated_user(context))
-    let deleted = 0
-    for (const file of files) if (await deleteWorkerFile(file.area, file.path)) deleted++
-    return deleted
+    return deleteAll(files)
 }
 
 export async function deleteWorkerFileGroup(_: unknown, { kind, jobId }: { kind: string, jobId?: ObjectId | null }, context: Context) {
     check_admin(await get_authenticated_user(context))
-    let deleted = 0
-    for (const file of await groupFiles(kind, jobId)) if (await deleteWorkerFile(file.area, file.path)) deleted++
-    return deleted
+    return deleteAll(await groupFiles(kind, jobId))
 }

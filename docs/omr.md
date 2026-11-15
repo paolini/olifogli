@@ -109,6 +109,22 @@ riservate agli amministratori. I percorsi sono verificati in
 `app/lib/workerFiles.ts`: devono stare dentro una delle directory configurate e
 non possono attraversare link simbolici, che non vengono né elencati né seguiti.
 
+### Permessi dei file
+
+Per cancellare un file, l'utente con cui gira Olifogli deve poter scrivere nella
+cartella che lo contiene. I worker invece girano come root e creano le cartelle
+dei lavori (`{jobId}/` nelle directory dei dati, `tmp/{jobId}/` nello spool) con
+permessi `755`: Olifogli, che nell'immagine Docker gira come utente `nextjs`
+(uid 1001), non può cancellare i file al loro interno. I file nella cartella
+principale dello spool e in `completed/`, `aborted/` e `processing/` si
+cancellano solo se anche queste cartelle sono scrivibili dall'applicazione.
+
+Dopo ogni cancellazione la pagina mostra quanti file sono stati cancellati e
+l'elenco di quelli rimasti, con il motivo: permessi insufficienti, file non più
+presente o errore imprevisto. Finché i worker non creano file e cartelle
+scrivibili dall'applicazione, i file bloccati dai permessi vanno cancellati sul
+server, per esempio con `sudo docker compose exec oliscan rm -r /app/data/{jobId}`.
+
 ## Configurazione
 
 | Variabile | Default | Uso |
@@ -121,6 +137,55 @@ non possono attraversare link simbolici, che non vengono né elencati né seguit
 I worker usano lo stesso MongoDB: `oliscan` legge `MONGO_URI`, `olisheet`
 `MONGO_URI` oppure `MONGODB_URI`. Senza MongoDB `oliscan` salva i risultati in
 `{DATA_DIR}/{jobId}/results.jsonl`, utile solo per le prove.
+
+## Sviluppo locale
+
+I worker non sono necessari per sviluppare Olifogli: senza di loro i lavori
+restano in coda e i file restano nella cartella principale dello spool. Per
+provarli servono una copia di archiomr e Docker.
+
+1. In `.env` configura le quattro directory, per esempio dentro il repository
+   (le cartelle `worker/` e `sheetgenworker/` sono già ignorate da git):
+
+   ```
+   SCANS_SPOOL_DIR=/percorso/olifogli/worker/spool
+   SCANS_DATA_DIR=/percorso/olifogli/worker/data
+   SHEETGENSPOOL_DIR=/percorso/olifogli/sheetgenworker/sheetgenspool
+   SHEETGENDATA_DIR=/percorso/olifogli/sheetgenworker/sheetgendata
+   ```
+
+2. Costruisci le immagini da archiomr; il Compose di archiomr le chiama
+   `paolini/oliscan` e `paolini/olisheet`. In alternativa si possono usare le
+   immagini pubblicate su `harbor.cs.dm.unipi.it/olifogli/`.
+
+   ```sh
+   cd ../archiomr && docker compose build oliscan olisheet
+   ```
+
+3. Avvia i worker collegandoli alle directory e al MongoDB locale. Nei container
+   la directory di lavoro è `/app`, e i default sono `/app/spool`, `/app/data`,
+   `/app/sheetgenspool` e `/app/sheetgendata`:
+
+   ```sh
+   docker run --rm --network host \
+     -e MONGO_URI="mongodb://127.0.0.1:27017/?directConnection=true" \
+     -v "$PWD/worker/spool:/app/spool" -v "$PWD/worker/data:/app/data" \
+     paolini/oliscan:latest
+
+   docker run --rm --network host \
+     -e MONGO_URI="mongodb://127.0.0.1:27017/?directConnection=true" \
+     -v "$PWD/sheetgenworker/sheetgenspool:/app/sheetgenspool" \
+     -v "$PWD/sheetgenworker/sheetgendata:/app/sheetgendata" \
+     paolini/olisheet:latest
+   ```
+
+   Il database è `olifogli` per impostazione predefinita (variabile `DB_NAME`
+   dei worker). Con `-e CHECK_INTERVAL=-1` il worker elabora i file presenti ed
+   esce.
+
+I file creati dai container appartengono a root: vedi
+[Permessi dei file](#permessi-dei-file). Le istruzioni per creare o modificare
+i template sono nel README di archiomr.
 
 ## Limiti noti
 
@@ -137,6 +202,9 @@ Riguardano i worker, quindi vanno corretti in archiomr:
   rappresentazione Python dei dizionari).
 - **Pulizia.** Dopo un errore `oliscan` lascia la cartella temporanea
   `tmp/{jobId}`, e l'eliminazione di una scansione non cancella i suoi file.
-  Entrambi si possono ripulire dalla pagina **file**.
+  La pagina **file** li mostra, ma può cancellarli solo se i permessi lo
+  consentono.
+- **Permessi.** I worker girano come root e creano cartelle non scrivibili
+  dall'applicazione (vedi [Permessi dei file](#permessi-dei-file)).
 - Il README di archiomr cita un commit di OMRChecker diverso da quello usato nel
   Dockerfile.

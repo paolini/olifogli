@@ -94,17 +94,17 @@ test('deleting a file removes empty job directories but keeps the spool folders'
   const { base, env } = areas(t);
   const { deleteWorkerFile } = lib();
 
-  assert.equal(await deleteWorkerFile('scans-data', `${scanJob}/${scanJob}_001.png`, env), true);
+  assert.equal(await deleteWorkerFile('scans-data', `${scanJob}/${scanJob}_001.png`, env), 'deleted');
   assert.equal(fs.existsSync(path.join(base, `scans-data/${scanJob}`)), false);
-  assert.equal(await deleteWorkerFile('scans-spool', `tmp/${scanJob}/input/page.png`, env), true);
+  assert.equal(await deleteWorkerFile('scans-spool', `tmp/${scanJob}/input/page.png`, env), 'deleted');
   assert.equal(fs.existsSync(path.join(base, `scans-spool/tmp/${scanJob}`)), false);
   assert.equal(fs.existsSync(path.join(base, 'scans-spool/tmp')), true);
-  assert.equal(await deleteWorkerFile('sheets-spool', `processing/archimede_biennio-${sheetJob}.jsonl`, env), true);
+  assert.equal(await deleteWorkerFile('sheets-spool', `processing/archimede_biennio-${sheetJob}.jsonl`, env), 'deleted');
   assert.equal(fs.existsSync(path.join(base, 'sheets-spool/processing')), true);
 
-  assert.equal(await deleteWorkerFile('scans-data', 'link.txt', env), false);
+  assert.equal(await deleteWorkerFile('scans-data', 'link.txt', env), 'not_found');
   assert.equal(fs.existsSync(path.join(base, 'outside/secret.txt')), true);
-  assert.equal(await deleteWorkerFile('scans-data', '../outside/secret.txt', env), false);
+  assert.equal(await deleteWorkerFile('scans-data', '../outside/secret.txt', env), 'not_found');
 });
 
 class NextResponse {
@@ -204,7 +204,8 @@ test('groups join the database jobs and group deletion leaves other jobs alone',
   assert.equal(sheet.jobExists, false);
   assert.equal(groups.find(group => group.kind === 'scan' && group.jobId === null).fileCount, 1);
 
-  assert.equal(await admin.deleteWorkerFileGroup(null, { kind: 'scan', jobId: new ObjectId(scanJob) }, {}), 4);
+  assert.deepEqual(plain(await admin.deleteWorkerFileGroup(null, { kind: 'scan', jobId: new ObjectId(scanJob) }, {})),
+    { deleted: 4, failed: [] });
   const remaining = plain((await lib().listWorkerFiles(env)).files.map(file => file.path).sort());
   assert.deepEqual(remaining, [
     `${sheetJob}/archimede_biennio-${sheetJob}.pdf`,
@@ -213,4 +214,33 @@ test('groups join the database jobs and group deletion leaves other jobs alone',
     `processing/archimede_biennio-${sheetJob}.jsonl`,
   ]);
   assert.equal(fs.existsSync(path.join(base, 'outside/secret.txt')), true);
+});
+
+test('files in a directory the application cannot write are reported as a permission failure', {
+  skip: process.getuid?.() === 0 && 'root ignores directory permissions',
+}, async t => {
+  const { base, env } = areas(t);
+  Object.assign(process.env, env);
+  t.after(() => { for (const key of Object.keys(env)) delete process.env[key]; });
+  // A job directory created by a worker running as root, as seen by another user.
+  const jobDir = path.join(base, `scans-data/${scanJob}`);
+  fs.chmodSync(jobDir, 0o555);
+  try {
+    assert.equal(await lib().deleteWorkerFile('scans-data', `${scanJob}/${scanJob}_001.png`, env), 'permission');
+    assert.equal(fs.existsSync(path.join(jobDir, `${scanJob}_001.png`)), true);
+
+    const admin = resolvers({ isAdmin: true }, { scan: [], sheet: [], sheets: [] });
+    const result = plain(await admin.deleteWorkerFiles(null, { files: [
+      { area: 'scans-data', path: `${scanJob}/${scanJob}_001.png` },
+      { area: 'scans-spool', path: `archimede_biennio-${scanJob}.pdf` },
+      { area: 'scans-data', path: '../outside/secret.txt' },
+    ] }, {}));
+    assert.deepEqual(result, { deleted: 1, failed: [
+      { area: 'scans-data', path: `${scanJob}/${scanJob}_001.png`, reason: 'permission' },
+      { area: 'scans-data', path: '../outside/secret.txt', reason: 'not_found' },
+    ] });
+  } finally {
+    // Restored before the temporary directory is removed.
+    fs.chmodSync(jobDir, 0o755);
+  }
 });

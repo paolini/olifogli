@@ -22,6 +22,11 @@ The UI and user-facing messages are in Italian.
 MongoDB must be a replica set (transactions, change streams). Redis is the
 Pub/Sub between processes. `docker compose up -d --wait db redis` starts both.
 
+OMR scanning and answer-sheet generation run in two Python workers, `oliscan`
+and `olisheet`, from the separate **archiomr** repository. They exchange files
+with Olifogli through shared spool and data directories and update MongoDB
+directly. See [docs/omr.md](docs/omr.md) for the protocol.
+
 ## Commands
 
 ```bash
@@ -61,6 +66,10 @@ npm run codegen   # regenerate app/graphql/generated.ts
   identities, variables, or payloads.
 - **Denormalized counters** on `sheets` (`nRows`, `nValidRows`, `nSyncedRows`,
   `anomalies`, …) are updated in the same MongoDB transaction as the row change.
+- **Files for the archiomr workers**: never write them directly into a spool
+  directory; use `stageSpoolFile` (`app/lib/spool.ts`), which writes a `.part`
+  file and renames it only after the job is committed. The workers pick up any
+  top-level file with their extension (`.pdf`, `.jsonl`).
 - **Real-time updates**: most subscriptions carry only a signal; clients refetch
   over HTTP. Follow the same pattern for new ones.
 - **Documentation**: keep it in Italian and update the relevant file in `docs/`

@@ -38,7 +38,13 @@ OLIMANAGER_GRAPHQL_ENDPOINT=https://staging.olimpiadi-scientifiche.it/graphql/
 ADMIN_EMAILS=miaemail@esempio.it
 SCANS_SPOOL_DIR=<directory_spool_del_worker_OMR>
 SCANS_DATA_DIR=<directory_dati_del_worker_OMR>
+SHEETGENSPOOL_DIR=<directory_spool_del_generatore_di_fogli>
+SHEETGENDATA_DIR=<directory_pdf_del_generatore_di_fogli>
 ```
+
+Le ultime quattro directory sono condivise con i worker di archiomr, che leggono
+le scansioni e generano i fogli; come avviarli in locale è descritto in
+[docs/omr.md](docs/omr.md#sviluppo-locale).
 
 Le credenziali OAuth si ottengono con lo script descritto in
 [docs/olimanager.md](docs/olimanager.md#applicazione-oauth). L'elenco completo

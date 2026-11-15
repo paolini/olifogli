@@ -106,9 +106,9 @@ export type Mutation = {
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
   /** Solo amministratori: cancella tutti i file di un gruppo; non modifica il database. */
-  deleteWorkerFileGroup: Scalars['Int']['output'];
-  /** Solo amministratori: cancella i file indicati; restituisce quanti sono stati cancellati. */
-  deleteWorkerFiles: Scalars['Int']['output'];
+  deleteWorkerFileGroup: WorkerFileDeletion;
+  /** Solo amministratori: cancella i file indicati. */
+  deleteWorkerFiles: WorkerFileDeletion;
   lockSheet?: Maybe<Scalars['Boolean']['output']>;
   moveCursor?: Maybe<Scalars['Boolean']['output']>;
   olimanagerBulkUpdateResults: Scalars['Boolean']['output'];
@@ -886,6 +886,21 @@ export type WorkerFileArea = {
   label: Scalars['String']['output'];
 };
 
+export type WorkerFileDeletion = {
+  __typename?: 'WorkerFileDeletion';
+  deleted: Scalars['Int']['output'];
+  failed: Array<WorkerFileFailure>;
+};
+
+/** File che non è stato possibile cancellare. */
+export type WorkerFileFailure = {
+  __typename?: 'WorkerFileFailure';
+  area: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  /** permission (cartella non scrivibile dall'applicazione), not_found oppure error */
+  reason: Scalars['String']['output'];
+};
+
 /** File di un lavoro di scansione (kind=scan) o di generazione fogli (kind=sheet). */
 export type WorkerFileGroup = {
   __typename?: 'WorkerFileGroup';
@@ -1356,6 +1371,34 @@ export type AddWorkbookMutationVariables = Exact<{
 
 
 export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null } | null };
+
+export type WorkerFilesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WorkerFilesQuery = { __typename?: 'Query', workerFiles: { __typename?: 'WorkerFiles', areas: Array<{ __typename?: 'WorkerFileArea', area: string, label: string, kind: string, available: boolean }>, groups: Array<{ __typename?: 'WorkerFileGroup', kind: string, jobId?: ObjectId | null, jobExists: boolean, sheetId?: ObjectId | null, sheetName?: string | null, status?: string | null, timestamp?: Date | null, fileCount: number, totalSize: number, folders: Array<string>, lastModified: Date }> } };
+
+export type WorkerFileGroupFilesQueryVariables = Exact<{
+  kind: Scalars['String']['input'];
+  jobId?: InputMaybe<Scalars['ObjectId']['input']>;
+}>;
+
+
+export type WorkerFileGroupFilesQuery = { __typename?: 'Query', workerFileGroupFiles: Array<{ __typename?: 'WorkerFile', area: string, path: string, folder: string, size: number, modifiedAt: Date }> };
+
+export type DeleteWorkerFilesMutationVariables = Exact<{
+  files: Array<WorkerFileInput> | WorkerFileInput;
+}>;
+
+
+export type DeleteWorkerFilesMutation = { __typename?: 'Mutation', deleteWorkerFiles: { __typename?: 'WorkerFileDeletion', deleted: number, failed: Array<{ __typename?: 'WorkerFileFailure', area: string, path: string, reason: string }> } };
+
+export type DeleteWorkerFileGroupMutationVariables = Exact<{
+  kind: Scalars['String']['input'];
+  jobId?: InputMaybe<Scalars['ObjectId']['input']>;
+}>;
+
+
+export type DeleteWorkerFileGroupMutation = { __typename?: 'Mutation', deleteWorkerFileGroup: { __typename?: 'WorkerFileDeletion', deleted: number, failed: Array<{ __typename?: 'WorkerFileFailure', area: string, path: string, reason: string }> } };
 
 export type WorkbookUpdatedSubscriptionVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -3776,6 +3819,185 @@ export function useAddWorkbookMutation(baseOptions?: Apollo.MutationHookOptions<
 export type AddWorkbookMutationHookResult = ReturnType<typeof useAddWorkbookMutation>;
 export type AddWorkbookMutationResult = Apollo.MutationResult<AddWorkbookMutation>;
 export type AddWorkbookMutationOptions = Apollo.BaseMutationOptions<AddWorkbookMutation, AddWorkbookMutationVariables>;
+export const WorkerFilesDocument = gql`
+    query WorkerFiles {
+  workerFiles {
+    areas {
+      area
+      label
+      kind
+      available
+    }
+    groups {
+      kind
+      jobId
+      jobExists
+      sheetId
+      sheetName
+      status
+      timestamp
+      fileCount
+      totalSize
+      folders
+      lastModified
+    }
+  }
+}
+    `;
+
+/**
+ * __useWorkerFilesQuery__
+ *
+ * To run a query within a React component, call `useWorkerFilesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWorkerFilesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWorkerFilesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWorkerFilesQuery(baseOptions?: Apollo.QueryHookOptions<WorkerFilesQuery, WorkerFilesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<WorkerFilesQuery, WorkerFilesQueryVariables>(WorkerFilesDocument, options);
+      }
+export function useWorkerFilesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<WorkerFilesQuery, WorkerFilesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<WorkerFilesQuery, WorkerFilesQueryVariables>(WorkerFilesDocument, options);
+        }
+export function useWorkerFilesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<WorkerFilesQuery, WorkerFilesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<WorkerFilesQuery, WorkerFilesQueryVariables>(WorkerFilesDocument, options);
+        }
+export type WorkerFilesQueryHookResult = ReturnType<typeof useWorkerFilesQuery>;
+export type WorkerFilesLazyQueryHookResult = ReturnType<typeof useWorkerFilesLazyQuery>;
+export type WorkerFilesSuspenseQueryHookResult = ReturnType<typeof useWorkerFilesSuspenseQuery>;
+export type WorkerFilesQueryResult = Apollo.QueryResult<WorkerFilesQuery, WorkerFilesQueryVariables>;
+export const WorkerFileGroupFilesDocument = gql`
+    query WorkerFileGroupFiles($kind: String!, $jobId: ObjectId) {
+  workerFileGroupFiles(kind: $kind, jobId: $jobId) {
+    area
+    path
+    folder
+    size
+    modifiedAt
+  }
+}
+    `;
+
+/**
+ * __useWorkerFileGroupFilesQuery__
+ *
+ * To run a query within a React component, call `useWorkerFileGroupFilesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWorkerFileGroupFilesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWorkerFileGroupFilesQuery({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      jobId: // value for 'jobId'
+ *   },
+ * });
+ */
+export function useWorkerFileGroupFilesQuery(baseOptions: Apollo.QueryHookOptions<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables> & ({ variables: WorkerFileGroupFilesQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables>(WorkerFileGroupFilesDocument, options);
+      }
+export function useWorkerFileGroupFilesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables>(WorkerFileGroupFilesDocument, options);
+        }
+export function useWorkerFileGroupFilesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables>(WorkerFileGroupFilesDocument, options);
+        }
+export type WorkerFileGroupFilesQueryHookResult = ReturnType<typeof useWorkerFileGroupFilesQuery>;
+export type WorkerFileGroupFilesLazyQueryHookResult = ReturnType<typeof useWorkerFileGroupFilesLazyQuery>;
+export type WorkerFileGroupFilesSuspenseQueryHookResult = ReturnType<typeof useWorkerFileGroupFilesSuspenseQuery>;
+export type WorkerFileGroupFilesQueryResult = Apollo.QueryResult<WorkerFileGroupFilesQuery, WorkerFileGroupFilesQueryVariables>;
+export const DeleteWorkerFilesDocument = gql`
+    mutation DeleteWorkerFiles($files: [WorkerFileInput!]!) {
+  deleteWorkerFiles(files: $files) {
+    deleted
+    failed {
+      area
+      path
+      reason
+    }
+  }
+}
+    `;
+export type DeleteWorkerFilesMutationFn = Apollo.MutationFunction<DeleteWorkerFilesMutation, DeleteWorkerFilesMutationVariables>;
+
+/**
+ * __useDeleteWorkerFilesMutation__
+ *
+ * To run a mutation, you first call `useDeleteWorkerFilesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWorkerFilesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWorkerFilesMutation, { data, loading, error }] = useDeleteWorkerFilesMutation({
+ *   variables: {
+ *      files: // value for 'files'
+ *   },
+ * });
+ */
+export function useDeleteWorkerFilesMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWorkerFilesMutation, DeleteWorkerFilesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteWorkerFilesMutation, DeleteWorkerFilesMutationVariables>(DeleteWorkerFilesDocument, options);
+      }
+export type DeleteWorkerFilesMutationHookResult = ReturnType<typeof useDeleteWorkerFilesMutation>;
+export type DeleteWorkerFilesMutationResult = Apollo.MutationResult<DeleteWorkerFilesMutation>;
+export type DeleteWorkerFilesMutationOptions = Apollo.BaseMutationOptions<DeleteWorkerFilesMutation, DeleteWorkerFilesMutationVariables>;
+export const DeleteWorkerFileGroupDocument = gql`
+    mutation DeleteWorkerFileGroup($kind: String!, $jobId: ObjectId) {
+  deleteWorkerFileGroup(kind: $kind, jobId: $jobId) {
+    deleted
+    failed {
+      area
+      path
+      reason
+    }
+  }
+}
+    `;
+export type DeleteWorkerFileGroupMutationFn = Apollo.MutationFunction<DeleteWorkerFileGroupMutation, DeleteWorkerFileGroupMutationVariables>;
+
+/**
+ * __useDeleteWorkerFileGroupMutation__
+ *
+ * To run a mutation, you first call `useDeleteWorkerFileGroupMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWorkerFileGroupMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWorkerFileGroupMutation, { data, loading, error }] = useDeleteWorkerFileGroupMutation({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      jobId: // value for 'jobId'
+ *   },
+ * });
+ */
+export function useDeleteWorkerFileGroupMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWorkerFileGroupMutation, DeleteWorkerFileGroupMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteWorkerFileGroupMutation, DeleteWorkerFileGroupMutationVariables>(DeleteWorkerFileGroupDocument, options);
+      }
+export type DeleteWorkerFileGroupMutationHookResult = ReturnType<typeof useDeleteWorkerFileGroupMutation>;
+export type DeleteWorkerFileGroupMutationResult = Apollo.MutationResult<DeleteWorkerFileGroupMutation>;
+export type DeleteWorkerFileGroupMutationOptions = Apollo.BaseMutationOptions<DeleteWorkerFileGroupMutation, DeleteWorkerFileGroupMutationVariables>;
 export const WorkbookUpdatedDocument = gql`
     subscription WorkbookUpdated($workbookId: ObjectId!) {
   workbookUpdated(workbookId: $workbookId)
@@ -4251,6 +4473,8 @@ export type ResolversTypes = {
   Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
   WorkerFile: ResolverTypeWrapper<WorkerFile>;
   WorkerFileArea: ResolverTypeWrapper<WorkerFileArea>;
+  WorkerFileDeletion: ResolverTypeWrapper<WorkerFileDeletion>;
+  WorkerFileFailure: ResolverTypeWrapper<WorkerFileFailure>;
   WorkerFileGroup: ResolverTypeWrapper<Omit<WorkerFileGroup, 'jobId' | 'sheetId'> & { jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
   WorkerFileInput: WorkerFileInput;
   WorkerFiles: ResolverTypeWrapper<WorkerFiles>;
@@ -4312,6 +4536,8 @@ export type ResolversParentTypes = {
   Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
   WorkerFile: WorkerFile;
   WorkerFileArea: WorkerFileArea;
+  WorkerFileDeletion: WorkerFileDeletion;
+  WorkerFileFailure: WorkerFileFailure;
   WorkerFileGroup: Omit<WorkerFileGroup, 'jobId' | 'sheetId'> & { jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
   WorkerFileInput: WorkerFileInput;
   WorkerFiles: WorkerFiles;
@@ -4404,8 +4630,8 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
-  deleteWorkerFileGroup?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<MutationDeleteWorkerFileGroupArgs, 'kind'>>;
-  deleteWorkerFiles?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<MutationDeleteWorkerFilesArgs, 'files'>>;
+  deleteWorkerFileGroup?: Resolver<ResolversTypes['WorkerFileDeletion'], ParentType, ContextType, RequireFields<MutationDeleteWorkerFileGroupArgs, 'kind'>>;
+  deleteWorkerFiles?: Resolver<ResolversTypes['WorkerFileDeletion'], ParentType, ContextType, RequireFields<MutationDeleteWorkerFilesArgs, 'files'>>;
   lockSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationLockSheetArgs, '_id'>>;
   moveCursor?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationMoveCursorArgs, 'sheetId' | 'tabId'>>;
   olimanagerBulkUpdateResults?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, Partial<MutationOlimanagerBulkUpdateResultsArgs>>;
@@ -4782,6 +5008,19 @@ export type WorkerFileAreaResolvers<ContextType = any, ParentType extends Resolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type WorkerFileDeletionResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFileDeletion'] = ResolversParentTypes['WorkerFileDeletion']> = {
+  deleted?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  failed?: Resolver<Array<ResolversTypes['WorkerFileFailure']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type WorkerFileFailureResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFileFailure'] = ResolversParentTypes['WorkerFileFailure']> = {
+  area?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  path?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  reason?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type WorkerFileGroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkerFileGroup'] = ResolversParentTypes['WorkerFileGroup']> = {
   fileCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   folders?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
@@ -4850,6 +5089,8 @@ export type Resolvers<ContextType = any> = {
   Workbook?: WorkbookResolvers<ContextType>;
   WorkerFile?: WorkerFileResolvers<ContextType>;
   WorkerFileArea?: WorkerFileAreaResolvers<ContextType>;
+  WorkerFileDeletion?: WorkerFileDeletionResolvers<ContextType>;
+  WorkerFileFailure?: WorkerFileFailureResolvers<ContextType>;
   WorkerFileGroup?: WorkerFileGroupResolvers<ContextType>;
   WorkerFiles?: WorkerFilesResolvers<ContextType>;
 };

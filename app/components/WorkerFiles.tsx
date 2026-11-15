@@ -24,12 +24,12 @@ const GROUP_FILES = gql`
 `
 const DELETE_FILES = gql`
   mutation DeleteWorkerFiles($files: [WorkerFileInput!]!) {
-    deleteWorkerFiles(files: $files)
+    deleteWorkerFiles(files: $files) { deleted failed { area path reason } }
   }
 `
 const DELETE_GROUP = gql`
   mutation DeleteWorkerFileGroup($kind: String!, $jobId: ObjectId) {
-    deleteWorkerFileGroup(kind: $kind, jobId: $jobId)
+    deleteWorkerFileGroup(kind: $kind, jobId: $jobId) { deleted failed { area path reason } }
   }
 `
 
@@ -40,11 +40,17 @@ type Group = {
   folders: string[], lastModified: string,
 }
 type File = { area: string, path: string, folder: string, size: number, modifiedAt: string }
+type Deletion = { deleted: number, failed: { area: string, path: string, reason: string }[] }
 
 const KIND_LABELS: Record<string, string> = { scan: 'scansione', sheet: 'fogli generati' }
 const FOLDER_LABELS: Record<string, string> = {
   queued: 'in coda', staging: 'in scrittura', processing: 'in elaborazione', completed: 'completato',
   aborted: 'annullato', tmp: 'temporaneo', data: 'dati', other: 'altro',
+}
+const FAILURE_REASONS: Record<string, string> = {
+  permission: "permessi insufficienti: la cartella è stata creata dal worker e l'applicazione non può scriverci",
+  not_found: 'file non trovato o non più presente',
+  error: 'errore imprevisto',
 }
 const PROCESSING_WARNING = 'Attenzione: alcuni file sono in elaborazione. Se il worker li sta ancora usando, '
   + "l'elaborazione fallirà o resterà bloccata.\n\n"
@@ -65,6 +71,32 @@ function fileUrl(file: File, download: boolean) {
   return `/api/worker-files?${params}`
 }
 
+function DeletionReport({ report, areas, onClose }: { report: Deletion, areas: Area[], onClose: () => void }) {
+  const areaLabels = new Map(areas.map(area => [area.area, area.label]))
+  const reasons = [...new Set(report.failed.map(failure => failure.reason))]
+  return <div role="status" className={`my-2 p-2 border rounded ${report.failed.length ? 'border-red-600' : 'border-green-600'}`}>
+    <p>
+      {pluralize(report.deleted, 'file cancellato', 'file cancellati')}
+      {report.failed.length > 0 && <>; <b>{pluralize(report.failed.length, 'file non cancellato', 'file non cancellati')}</b></>}.
+      {} <button type="button" className="text-blue-600 underline" onClick={onClose}>chiudi</button>
+    </p>
+    {reasons.map(reason => <p key={reason}>{FAILURE_REASONS[reason] ?? reason}</p>)}
+    {report.failed.length > 0 && <>
+      {reasons.includes('permission') && <p>
+        Questi file vanno cancellati sul server; vedi «Permessi dei file» in <code>docs/omr.md</code>.
+      </p>}
+      <details>
+        <summary>elenco dei file non cancellati</summary>
+        <ul>
+          {report.failed.map(failure => <li key={`${failure.area}/${failure.path}`}>
+            {areaLabels.get(failure.area) ?? failure.area}: <code>{failure.path}</code>
+          </li>)}
+        </ul>
+      </details>
+    </>}
+  </div>
+}
+
 export default function WorkerFiles() {
   const profile = useProfile()
   const { data, error, loading, refetch } = useQuery<{ workerFiles: { areas: Area[], groups: Group[] } }>(WORKER_FILES, {
@@ -75,6 +107,7 @@ export default function WorkerFiles() {
   const [orphansOnly, setOrphansOnly] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
+  const [report, setReport] = useState<Deletion | null>(null)
 
   if (profile === undefined) return <Loading />
   if (!profile?.isAdmin) return <p>Pagina riservata agli amministratori.</p>
@@ -92,7 +125,18 @@ export default function WorkerFiles() {
     const warning = targets.some(group => group.folders.includes('processing')) ? PROCESSING_WARNING : ''
     if (!window.confirm(`${warning}Cancellare ${pluralize(files, 'file', 'file')} di `
       + `${pluralize(targets.length, 'lavoro', 'lavori')}? I lavori nel database non vengono modificati.`)) return
-    for (const group of targets) await deleteGroup({ variables: { kind: group.kind, jobId: group.jobId } })
+    const total: Deletion = { deleted: 0, failed: [] }
+    try {
+      for (const group of targets) {
+        const result = await deleteGroup({ variables: { kind: group.kind, jobId: group.jobId } })
+        const deletion: Deletion | undefined = result.data?.deleteWorkerFileGroup
+        if (!deletion) continue
+        total.deleted += deletion.deleted
+        total.failed.push(...deletion.failed)
+      }
+    } finally {
+      setReport(total)
+    }
     setSelected([])
     setExpanded(null)
     await refetch()
@@ -130,6 +174,7 @@ export default function WorkerFiles() {
       </Button>
     </div>
     {deleteGroupState.error && <ErrorElement error={deleteGroupState.error} />}
+    {report && <DeletionReport report={report} areas={areas} onClose={() => setReport(null)} />}
 
     <p className="my-2">
       {pluralize(groups.length, 'lavoro', 'lavori')}, {pluralize(fileCount, 'file', 'file')}, {formatSize(totalSize)}
@@ -183,7 +228,10 @@ export default function WorkerFiles() {
             </tr>
             {expanded === key && <tr>
               <td colSpan={10}>
-                <GroupFiles group={group} areas={areas} onDeleted={async () => { await refetch() }} />
+                <GroupFiles group={group} areas={areas} onDeleted={async deletion => {
+                  setReport(deletion)
+                  await refetch()
+                }} />
               </td>
             </tr>}
           </Fragment>
@@ -193,7 +241,9 @@ export default function WorkerFiles() {
   </div>
 }
 
-function GroupFiles({ group, areas, onDeleted }: { group: Group, areas: Area[], onDeleted: () => Promise<void> }) {
+function GroupFiles({ group, areas, onDeleted }: {
+  group: Group, areas: Area[], onDeleted: (deletion: Deletion) => Promise<void>,
+}) {
   const { data, error, loading, refetch } = useQuery<{ workerFileGroupFiles: File[] }>(GROUP_FILES, {
     variables: { kind: group.kind, jobId: group.jobId }, fetchPolicy: 'network-only',
   })
@@ -205,9 +255,9 @@ function GroupFiles({ group, areas, onDeleted }: { group: Group, areas: Area[], 
   async function remove(file: File) {
     const warning = file.folder === 'processing' ? PROCESSING_WARNING : ''
     if (!window.confirm(`${warning}Cancellare ${file.path}?`)) return
-    await deleteFiles({ variables: { files: [{ area: file.area, path: file.path }] } })
+    const result = await deleteFiles({ variables: { files: [{ area: file.area, path: file.path }] } })
     await refetch()
-    await onDeleted()
+    if (result.data) await onDeleted(result.data.deleteWorkerFiles)
   }
 
   return <>

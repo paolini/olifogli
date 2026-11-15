@@ -49,6 +49,19 @@ type WorkerFiles {
   groups: [WorkerFileGroup!]!
 }
 
+"""File che non è stato possibile cancellare."""
+type WorkerFileFailure {
+  area: String!
+  path: String!
+  """permission (cartella non scrivibile dall'applicazione), not_found oppure error"""
+  reason: String!
+}
+
+type WorkerFileDeletion {
+  deleted: Int!
+  failed: [WorkerFileFailure!]!
+}
+
 input WorkerFileInput {
   area: String!
   path: String!
@@ -420,10 +433,10 @@ type Mutation {
   requestOlimanagerResults(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
-  """Solo amministratori: cancella i file indicati; restituisce quanti sono stati cancellati."""
-  deleteWorkerFiles(files: [WorkerFileInput!]!): Int!
+  """Solo amministratori: cancella i file indicati."""
+  deleteWorkerFiles(files: [WorkerFileInput!]!): WorkerFileDeletion!
   """Solo amministratori: cancella tutti i file di un gruppo; non modifica il database."""
-  deleteWorkerFileGroup(kind: String!, jobId: ObjectId): Int!
+  deleteWorkerFileGroup(kind: String!, jobId: ObjectId): WorkerFileDeletion!
 
   updateUserRole(userId: ID!, isAdmin: Boolean!, isSupervisor: Boolean!): User
   addSheet(name: String!, schema: String!, workbookId: ObjectId!, permissions: [PermissionInput!]): ObjectId

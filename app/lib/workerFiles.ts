@@ -141,17 +141,24 @@ async function walk(area: WorkerFileArea, root: string, prefix: string, depth: n
 }
 
 /*
+ * Outcome of a deletion. `permission`: the application user cannot write the
+ * containing directory, typically one created by a worker running as root.
+ */
+export type WorkerFileDeletion = 'deleted' | 'not_found' | 'permission' | 'error'
+
+/*
  * Deletes one file and then the directories left empty below it, except the
  * area root and the standard spool folders that the workers expect.
- * Returns false when the path does not identify a deletable file.
  */
-export async function deleteWorkerFile(area: string, relativePath: string, env?: NodeJS.ProcessEnv): Promise<boolean> {
+export async function deleteWorkerFile(area: string, relativePath: string, env?: NodeJS.ProcessEnv): Promise<WorkerFileDeletion> {
     const filePath = await resolveWorkerFile(area, relativePath, env)
-    if (!filePath) return false
+    if (!filePath) return 'not_found'
     try {
         await unlink(/* turbopackIgnore: true */ filePath)
-    } catch {
-        return false
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code
+        if (code === 'EACCES' || code === 'EPERM') return 'permission'
+        return code === 'ENOENT' ? 'not_found' : 'error'
     }
     const segments = relativePath.split('/').slice(0, -1)
     const root = filePath.slice(0, filePath.length - relativePath.length - 1)
@@ -164,5 +171,5 @@ export async function deleteWorkerFile(area: string, relativePath: string, env?:
         }
         segments.pop()
     }
-    return true
+    return 'deleted'
 }

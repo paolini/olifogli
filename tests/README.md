@@ -191,7 +191,9 @@ aree non configurate o mancanti, rifiuto di traversal e link simbolici,
 cancellazione con rimozione delle sole cartelle dei lavori rimaste vuote. Esegue
 la route di download (solo amministratori, apertura o download) e i resolver con
 database simulato: unione con i lavori registrati e cancellazione di un gruppo
-senza toccare gli altri file.
+senza toccare gli altri file. Simula una cartella creata da un worker e non
+scrivibile dall'applicazione: il file resta e viene segnalato con il motivo
+`permission` (il test è saltato se eseguito come root).
 
 `spool-file.test.cjs` verifica che i file per i worker di archiomr restino con
 il suffisso `.part`, che i worker ignorano, finché non vengono pubblicati, e che
