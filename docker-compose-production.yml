@@ -103,9 +103,16 @@ services:
   olifogli-worker:
     image: paolini/olifogli:latest
     command: ["node", "olifogli-worker.js"]
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     environment:
       <<: *common-env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis

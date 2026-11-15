@@ -118,30 +118,68 @@ Riferimento: issue #49.
 
 ## Log applicativi e conservazione
 
+I log sono divisi in due canali, con lo stesso formato: una riga JSON con
+`timestamp` (UTC), `level` (`info`, `warn`, `error`), `source` (il processo:
+`app1`… da `APP_INSTANCE`, `ws-server`, `worker`) ed `event`, più i campi
+ammessi per quell'evento.
+
+| | Log del server | Log applicativi |
+|---|---|---|
+| A cosa servono | Stato dei processi: avvio e arresto, connessioni WebSocket, errori di MongoDB, Redis o Olimanager, diagnostica | Cosa è successo nell'applicazione: richieste GraphQL, upload, cancellazioni, lavori in background |
+| Dove vanno | stdout/stderr, raccolti da Docker | File `app-YYYY-MM-DD.log` in `LOG_DIR`, e in tempo reale su Redis per la pagina admin **logs** |
+| Codice | `serverLog`, `logDiagnostic`, `logWebSocketEvent`, `logOlimanagerEvent` in `app/lib/logging.ts` | `appLog` in `app/lib/appLog.ts`, solo lato server |
+| Conservazione | Limite di dimensione di Docker (vedi sotto) | 30 giorni con `logs:cleanup` |
+
+Senza `LOG_DIR` (tipicamente in sviluppo) anche i log applicativi vanno su
+stdout. Le richieste GraphQL non vengono più duplicate su stdout: sul log del
+server arriva solo `graphql.internal_error`, con l'identificativo della richiesta,
+quando una richiesta fallisce per un errore imprevisto.
+
 ### Cosa viene registrato
 
-I log GraphQL (`app/graphql/logger-plugin.ts`) registrano soltanto timestamp
-UTC, identificativo casuale della richiesta, tipo di operazione, nomi dei campi
-radice definiti nello schema, durata, esito e codici di errore ammessi. Non
-registrano nomi di operazione o alias scelti dal client, variabili, identità,
-payload, messaggi di errore liberi o stack trace.
+Le richieste GraphQL (`app/graphql/logger-plugin.ts`) registrano soltanto
+identificativo casuale della richiesta, tipo di operazione, nomi dei campi radice
+definiti nello schema, durata, esito e codici di errore ammessi. Non registrano
+nomi di operazione o alias scelti dal client, variabili, identità, payload,
+messaggi di errore liberi o stack trace.
+
+Gli eventi applicativi rilevanti registrano anche l'ID dell'utente che ha
+eseguito l'operazione (`userId`), mai email, nomi o dati delle righe:
+
+| Evento | Quando |
+|---|---|
+| `scan.uploaded`, `scan.deleted` | Caricamento o eliminazione di una scansione |
+| `scan_sheets.requested` | Richiesta di generazione dei fogli risposta |
+| `row.deleted`, `rows.deleted`, `rows.deleted_all` | Cancellazione di righe (con il numero di righe) |
+| `sheet.deleted`, `sheets.deleted`, `workbook.deleted` | Cancellazione di fogli o raccoglitori |
+| `worker_files.deleted` | Cancellazione dalla pagina **file** (numero di file cancellati e non cancellati) |
+| `olimanager_job.queued`, `olimanager_job.finished` | Lavori in background accodati e conclusi (per i conclusi, l'utente che li ha accodati) |
 
 I log WebSocket contengono il tipo di evento e i codici di errore, senza payload,
 `tabId` o identificativi delle operazioni forniti dal client. La diagnostica
-applicativa usa identificatori statici degli eventi e categorie di errore: i
-dettagli dei dati restano visibili nell'interfaccia autorizzata, non nei log.
-Nel codice non usare `console.log` su richieste, risposte, configurazioni o
-errori grezzi; per gli errori usare `logDiagnostic` con un evento statico.
+usa identificatori statici degli eventi e categorie di errore: i dettagli dei
+dati restano visibili nell'interfaccia autorizzata, non nei log.
+
+Nel codice non usare mai `console.log` su richieste, risposte, configurazioni o
+errori grezzi: usare le funzioni sopra, con un nome di evento statico. Un test
+(`tests/logging.test.cjs`) lo verifica su tutto `app/`.
 
 Il logging delle URL delle richieste in sviluppo Next.js è disabilitato per non
 registrare parametri OAuth.
 
 ### File di log
 
-Se `LOG_DIR` è impostata, i log GraphQL vengono scritti anche nei file
-`graphql-YYYY-MM-DD.log` e `graphql-errors-YYYY-MM-DD.log`, con rotazione
-giornaliera secondo UTC e permessi `0600`. La directory deve essere accessibile
-e scrivibile dall'utente del container.
+Se `LOG_DIR` è impostata, tutti i processi scrivono i log applicativi nello
+stesso file giornaliero `app-YYYY-MM-DD.log` (data UTC, permessi `0600`). Ogni
+riga è scritta con una sola operazione in modalità append, quindi le righe di
+processi diversi non si mescolano su un filesystem locale; non usare un
+filesystem di rete per `LOG_DIR`. La directory deve essere scrivibile
+dall'utente dei container: nel Compose di produzione `app1`…`app3` e
+`olifogli-worker` montano `./logs`.
+
+I file del formato precedente (`graphql-YYYY-MM-DD.log` e
+`graphql-errors-YYYY-MM-DD.log`) non vengono più prodotti, ma `logs:cleanup` li
+cancella alla scadenza come i nuovi.
 
 ### Pulizia
 
@@ -185,9 +223,9 @@ formato possono ancora contenere dati personali.
 
 ### Log dei container
 
-I Compose di produzione limitano i log console dei container applicativi e del
-`ws-server` a tre file da 10 MB con il driver Docker `local`. È un limite di
-dimensione, **non** una scadenza di 30 giorni, e si applica ai container ricreati
+I Compose di produzione limitano i log console dei container applicativi, del
+`ws-server` e di `olifogli-worker` a tre file da 10 MB con il driver Docker
+`local`. È un limite di dimensione, **non** una scadenza di 30 giorni, e si applica ai container ricreati
 con la nuova configurazione. I log di vecchi container, reverse proxy, servizi
 esterni e backup richiedono una politica separata sul sistema ospitante. Gli
 access log Nginx degli esempi contengono solo tempo, stato, durata e dimensione

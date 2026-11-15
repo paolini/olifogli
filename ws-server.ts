@@ -5,7 +5,8 @@
 */
 import 'dotenv/config';
 import http from 'http';
-import { logDiagnostic, logWebSocketEvent } from './app/lib/logging';
+import { logDiagnostic, logWebSocketEvent, serverLog, setLogSource } from './app/lib/logging';
+import { publishAppLogsToRedis } from './app/lib/appLogPublisher.js';
 import { WebSocketServer } from 'ws';
 import { useServer as createGraphQLWSServer } from 'graphql-ws/use/ws';
 import { ApolloServer } from '@apollo/server';
@@ -30,6 +31,9 @@ import { resolvers } from './app/graphql/resolvers.js';
 import { get_context } from './app/graphql/types.js';
 
 const PORT = process.env.WS_SERVER_PORT || 4001;
+
+setLogSource('ws-server');
+publishAppLogsToRedis();
 
 async function start() {
   if (!process.env.NEXTAUTH_SECRET) {
@@ -162,7 +166,7 @@ async function start() {
   }, wsServer);
 
   const serverInstance = httpServer.listen(PORT, () => {
-    console.log(`GraphQL HTTP+WS server listening on http://localhost:${PORT}/graphql`);
+    serverLog('info', 'ws.started', { url: `http://localhost:${PORT}/graphql` });
   });
 
   const scanJobsStream = watchScanJobs(await getDb(),
@@ -177,13 +181,13 @@ async function start() {
 
   // Gestione della chiusura pulita del server e delle connessioni Redis
   const shutDown = async () => {
-    console.log('\nSpegnimento del server in corso...');
+    serverLog('info', 'ws.stopping');
     await olimanagerJobsStream.close();
     await scanJobsStream.close();
     await serverCleanup.dispose();
     await server.stop();
     serverInstance.close(async () => {
-      console.log('Server e connessioni Redis chiuse correttamente.');
+      serverLog('info', 'ws.stopped');
       process.exit(0);
     });
   };

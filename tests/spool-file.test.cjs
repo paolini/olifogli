@@ -55,6 +55,7 @@ function uploadFixture(t, { failTransaction = false, failWrite = false } = {}) {
   const sheet = { _id: new ObjectId(), schema: 'archimede_biennio', name: 'Liceo' };
   const committed = { jobs: [], counter: 0 };
   const diagnostics = [];
+  const appLogs = [];
 
   function withTransaction(callback) {
     const pending = { jobs: [], counter: 0 };
@@ -84,10 +85,11 @@ function uploadFixture(t, { failTransaction = false, failWrite = false } = {}) {
     '@/app/graphql/resolvers/utils': { get_authenticated_user: async () => ({ _id: new ObjectId() }), check_user_can_edit_rows: () => {} },
     '@/app/lib/schema': { schemas: { archimede_biennio: { name: 'archimede_biennio' } } },
     '@/app/lib/spool': spool(),
+    '@/app/lib/appLog': { appLog: (event, fields, options) => appLogs.push({ event, fields, userId: options?.userId }) },
   });
   const file = { type: 'application/pdf', arrayBuffer: async () => new TextEncoder().encode('%PDF').buffer };
   const request = { formData: async () => new Map([['file', file], ['sheetId', sheet._id.toString()]]) };
-  return { post: () => route.POST(request), spoolDir, committed, diagnostics };
+  return { post: () => route.POST(request), spoolDir, committed, diagnostics, appLogs };
 }
 
 test('upload publishes the PDF under the id of the committed job', async t => {
@@ -100,6 +102,10 @@ test('upload publishes the PDF under the id of the committed job', async t => {
   const jobId = fixture.committed.jobs[0]._id.toString();
   assert.equal(response.body.jobId, jobId);
   assert.deepEqual(readdirSync(fixture.spoolDir), [`archimede_biennio-${jobId}.pdf`]);
+  assert.equal(fixture.appLogs.length, 1);
+  assert.equal(fixture.appLogs[0].event, 'scan.uploaded');
+  assert.equal(fixture.appLogs[0].fields.jobId, jobId);
+  assert.ok(fixture.appLogs[0].userId);
 });
 
 test('a failed transaction leaves no file for oliscan', async t => {
@@ -109,6 +115,7 @@ test('a failed transaction leaves no file for oliscan', async t => {
   assert.equal(response.status, 500);
   assert.deepEqual(fixture.committed, { jobs: [], counter: 0 });
   assert.deepEqual(readdirSync(fixture.spoolDir), []);
+  assert.deepEqual(fixture.appLogs, []);
 });
 
 test('a failed write creates no job and does not change the counter', async t => {

@@ -21,7 +21,7 @@ async function cleanupLogs({ directory, days = DEFAULT_RETENTION_DAYS, dryRun = 
   const cutoff = today - (days - 1) * 86400000;
   const expired = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const match = /^graphql-(?:errors-)?(\d{4}-\d{2}-\d{2})\.log$/.exec(entry.name);
+    const match = /^(?:app|graphql|graphql-errors)-(\d{4}-\d{2}-\d{2})\.log$/.exec(entry.name);
     if (!match || !entry.isFile() || entry.isSymbolicLink()) continue;
     const date = new Date(match[1] + 'T00:00:00.000Z');
     if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== match[1] || date.getTime() >= cutoff) continue;

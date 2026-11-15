@@ -18,7 +18,8 @@ function load(file, dependencies = {}) {
   } });
   return exports;
 }
-const core = load('app/lib/olimanagerJobs.ts');
+const appLogs = [];
+const core = load('app/lib/olimanagerJobs.ts', { './appLog': { appLog: (event, fields, options) => appLogs.push({ event, fields, options }) } });
 
 test('queue rejects non-admin users and empty selections before accessing MongoDB', async () => {
   const db = { collection() { assert.fail('Unexpected database access'); } };

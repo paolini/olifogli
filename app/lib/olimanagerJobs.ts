@@ -1,5 +1,6 @@
 import { ObjectId, type ClientSession, type Db, type Filter } from 'mongodb'
 import type { OlimanagerJob, OlimanagerJobItem, OlimanagerJobCredential, OlimanagerCheckResult, Row, Sheet, Workbook, User } from './models'
+import { appLog } from './appLog'
 
 export type Transaction = <T>(fn: (session: ClientSession) => Promise<T>) => Promise<T>
 const LEASE_MS = 60_000
@@ -43,7 +44,7 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
     }
     await ensureJobIndexes(db)
     const { jobs, rows, sheets, credentials } = jobCollections(db)
-    return transaction(async session => {
+    const queued = await transaction(async session => {
         const explicitRows = await rows.find({ _id: { $in: rowIds } }, { session, projection: { sheetId: 1 } }).toArray()
         if (explicitRows.length !== rowIds.length) throw new Error('Una delle righe selezionate non esiste più.')
         const affectedSheetIds = unique([...sheetIds, ...explicitRows.map(row => row.sheetId)])
@@ -67,6 +68,9 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
         await jobs.insertOne(job, { session })
         return job
     })
+    appLog('olimanager_job.queued', { jobId: queued._id.toString(), operation,
+        sheetCount: queued.affectedSheetIds.length, rowCount: rowIds.length }, { userId: user._id })
+    return queued
 }
 
 export const queueOlimanagerCheck = queueOlimanagerJob
@@ -144,6 +148,8 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
             await credentials.deleteOne({ _id: job!._id }, { session })
             await sheets.updateMany({ olimanagerJobId: job!._id }, { $unset: { olimanagerJobId: '' } }, { session })
         })
+        appLog('olimanager_job.finished', { jobId: job!._id.toString(), operation: job!.operation, status },
+            { level: status === 'failed' ? 'warn' : 'info', userId: job!.createdBy })
     }
     function checkStop() { if (options.shouldStop?.()) throw new WorkerStopped() }
     try {

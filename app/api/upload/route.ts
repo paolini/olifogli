@@ -7,6 +7,7 @@ import { getScanJobsCollection, getSheetsCollection, withTransaction } from '@/a
 import { check_user_can_edit_rows, get_authenticated_user } from '@/app/graphql/resolvers/utils'
 import { schemas } from '@/app/lib/schema'
 import { stageSpoolFile, type StagedSpoolFile } from '@/app/lib/spool'
+import { appLog } from '@/app/lib/appLog'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET
 
@@ -109,6 +110,7 @@ export async function POST(req: NextRequest) {
         }
 
         const job_id = jobId.toString()
+        appLog('scan.uploaded', { jobId: job_id, sheetId: sheetId.toString(), size: buffer.length }, { userId: user._id })
 
         return NextResponse.json({ 
             jobId: job_id

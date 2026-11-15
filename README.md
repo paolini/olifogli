@@ -120,9 +120,8 @@ serve solo per i lavori in background. `npm run dev` avvia soltanto Next.js.
 ### Problemi frequenti
 
 **`Socket closed` o avviso sugli aggiornamenti in tempo reale.** Controlla il
-terminale del server WebSocket: deve mostrare
-`GraphQL HTTP+WS server listening on http://localhost:4001/graphql` senza
-errori successivi di MongoDB o Redis. Verifica che il login sia valido e che
+terminale del server WebSocket: deve mostrare una riga con l'evento
+`ws.started` senza errori successivi di MongoDB o Redis. Verifica che il login sia valido e che
 Next.js e server WebSocket abbiano gli stessi `NEXTAUTH_SECRET` e `NEXTAUTH_URL`.
 
 **Errori di login OAuth.** Vedi [docs/olimanager.md](docs/olimanager.md#login-oauth).

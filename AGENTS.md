@@ -61,9 +61,15 @@ npm run codegen   # regenerate app/graphql/generated.ts
   the diff only contains real changes.
 - **Restart the ws-server** after changing `schema.gql` or subscription
   resolvers: it loads the schema at startup.
-- **Logging**: never `console.log` requests, responses, configuration, or raw
-  errors. Use `logDiagnostic` with a static event name. Logs must not contain
-  identities, variables, or payloads.
+- **Logging**: two channels with the same JSON format (`timestamp`, `level`,
+  `source`, `event`); see `docs/deploy.md`. Server logs (process health) go to
+  stdout via `serverLog`/`logDiagnostic` in `app/lib/logging.ts`. Application
+  logs (what happened: requests, uploads, deletions, jobs) go to
+  `LOG_DIR/app-YYYY-MM-DD.log` and Redis via `appLog` in `app/lib/appLog.ts`,
+  server side only. Event names are static string literals. Never log
+  requests, responses, configuration, raw errors, names, emails, or row data;
+  application events may carry the acting user's id (`userId`). Raw `console`
+  calls in `app/` fail a test.
 - **Denormalized counters** on `sheets` (`nRows`, `nValidRows`, `nSyncedRows`,
   `anomalies`, …) are updated in the same MongoDB transaction as the row change.
 - **Files for the archiomr workers**: never write them directly into a spool

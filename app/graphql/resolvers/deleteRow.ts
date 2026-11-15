@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { getSheetsCollection, getRowsCollection, getDb, withTransaction, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
@@ -54,6 +55,8 @@ export default async function deleteRow(_: unknown, {_id}: {
             _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
         })
     }
+
+    appLog('row.deleted', { rowId: _id.toString(), sheetId: row.sheetId.toString() }, { userId: user._id })
 
     return _id;
 }

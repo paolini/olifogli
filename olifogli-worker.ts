@@ -11,13 +11,15 @@ import { parseArgs } from 'node:util'
 import { setTimeout as delay } from 'node:timers/promises'
 import { ensureJobIndexes, runNextOlimanagerJob, type Transaction } from './app/lib/olimanagerJobs'
 import { validateOlimanagerJobRow } from './app/lib/olimanagerJobValidation'
-import { logDiagnostic } from './app/lib/logging'
+import { logDiagnostic, serverLog, setLogSource } from './app/lib/logging'
+import { publishAppLogsToRedis, stopPublishingAppLogs } from './app/lib/appLogPublisher'
 import { createSheetEncryptor, openSheetEncryptionKey, createSheetDecryptor, openSheetDecryptionPassword } from './app/lib/sheetEncryption'
 import { receiveSheetEncryptionKeys } from './app/lib/sheetEncryptionTransport'
 import { ObjectId } from 'mongodb'
 import { startWorkerHeartbeat } from './app/lib/workerHeartbeat'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
+setLogSource('worker')
 const { values } = parseArgs({ options: { once: { type: 'boolean', default: false }, help: { type: 'boolean', default: false } } })
 let stopping = false
 process.on('SIGINT', () => { stopping = true })
@@ -28,6 +30,7 @@ async function main() {
         console.log('Uso: npm run olifogli:worker -- [--once]\nVerifica collegamenti, crea/abbina partecipanti, invia risultati su Olimanager o cifra/decifra i fogli secondo il lavoro accodato. --once elabora al massimo un lavoro.')
         return
     }
+    publishAppLogsToRedis()
     const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017/olifogli')
     const encryptionKeys = new Map<string, ReturnType<typeof createSheetEncryptor> | ReturnType<typeof createSheetDecryptor>>()
     const disposeSecrets = new Map<string, () => void>()
@@ -79,7 +82,7 @@ async function main() {
         }, 10_000)
         const workerId = `${hostname()}:${process.pid}:${randomUUID()}`
         stopHeartbeat = await startWorkerHeartbeat(db, workerId, error => logDiagnostic('olifogli.worker.heartbeat_failed', error))
-        console.log('Worker Olifogli avviato: verifiche Olimanager, creazione/abbinamento partecipanti, invio risultati e crittografia/decrittazione fogli.')
+        serverLog('info', 'worker.started')
         do {
             const processed = await runNextOlimanagerJob(db, transaction, {
                 workerId, encryptionKeys, validate: validateOlimanagerJobRow, shouldStop: () => stopping,
@@ -100,7 +103,7 @@ async function main() {
                     encryptionKeys.delete(id)
                 }
             }
-            if (values.once) { console.log(processed ? 'Lavoro elaborato.' : 'Nessun lavoro in attesa.'); break }
+            if (values.once) { serverLog('info', processed ? 'worker.once_processed' : 'worker.once_idle'); break }
             if (!processed && !stopping) await delay(1000)
         } while (!stopping)
     } finally {
@@ -110,7 +113,11 @@ async function main() {
         encryptionKeys.clear()
         try { await stopHeartbeat?.() }
         catch (error) { logDiagnostic('olifogli.worker.heartbeat_stop_failed', error) }
-        finally { await client.close() }
+        finally {
+            await client.close()
+            await stopPublishingAppLogs().catch(error => logDiagnostic('olifogli.worker.redis_close_failed', error, 'warn'))
+            serverLog('info', 'worker.stopped')
+        }
     }
 }
 main().catch(error => { logDiagnostic('olifogli.worker.failed', error); process.exitCode = 1 })

@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { getSheetsCollection, getRowsCollection, getDb, withTransaction } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
@@ -43,5 +44,6 @@ export default async function deleteAllRows (_: unknown, { sheetId }: { sheetId:
         )
     })
     
+    appLog('rows.deleted_all', { count: rows.length, sheetId: sheetId.toString() }, { userId: user._id })
     return rows.length
 }

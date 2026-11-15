@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { getRowsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 
@@ -26,5 +27,6 @@ export default async function deleteSheets (_: unknown, { ids }: MutationDeleteS
     ]).toArray(); // Esegui l'aggregazione
     // Cancella i fogli
     await sheets.deleteMany({_id: {$in: ids}})
+    appLog('sheets.deleted', { count: ids.length, sheetIds: ids.map(id => id.toString()) }, { userId: user._id })
     return true
 }

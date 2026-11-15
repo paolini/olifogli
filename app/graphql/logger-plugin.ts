@@ -2,10 +2,9 @@ import type { ApolloServerPlugin } from '@apollo/server'
 import type { Context } from './types'
 import type { GraphQLRequestContext } from '@apollo/server'
 import type { SelectionSetNode } from 'graphql'
-import { appendFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { logDiagnostic, safeErrorCode } from '../lib/logging'
+import { safeErrorCode, serverLog } from '../lib/logging'
+import { appLog } from '../lib/appLog'
 
 // Only schema-defined root field names; never client operation names or aliases.
 function operationFields(context: GraphQLRequestContext<Context>): string[] {
@@ -41,30 +40,20 @@ export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
         return {
             async willSendResponse(context) {
                 const errors = context.errors ?? []
-                const timestamp = new Date().toISOString()
-                const entry = {
-                    timestamp,
-                    event: 'graphql.request',
+                const fields = operationFields(context)
+                const errorCodes = [...new Set(errors.map(safeErrorCode))]
+                appLog('graphql.request', {
                     requestId,
                     type: context.operation?.operation ?? 'unknown',
-                    fields: operationFields(context),
+                    fields,
                     durationMs: Math.max(0, Date.now() - start),
                     status: errors.length ? 'error' : 'success',
                     errorCount: errors.length,
-                    errorCodes: [...new Set(errors.map(safeErrorCode))],
-                }
-                const line = JSON.stringify(entry)
-                if (errors.length) console.error(line)
-                else console.log(line)
-                const directory = process.env.LOG_DIR
-                if (!directory) return
-                try {
-                    mkdirSync(directory, { recursive: true, mode: 0o700 })
-                    const day = timestamp.slice(0, 10)
-                    appendFileSync(join(directory, `graphql-${day}.log`), line + '\n', { mode: 0o600 })
-                    if (errors.length) appendFileSync(join(directory, `graphql-errors-${day}.log`), line + '\n', { mode: 0o600 })
-                } catch (error) {
-                    logDiagnostic('graphql.log_write_failed', error)
+                    errorCodes,
+                }, { level: errors.length ? 'warn' : 'info' })
+                // Unexpected failures also concern whoever runs the server.
+                if (errorCodes.includes('INTERNAL_SERVER_ERROR')) {
+                    serverLog('error', 'graphql.internal_error', { requestId, fields })
                 }
             },
         }

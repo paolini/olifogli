@@ -10,6 +10,7 @@ export const pubsub = new RedisPubSub({ publisher, subscriber })
 
 export const TOPICS = {
 	OLIMANAGER_JOBS_UPDATED: 'OLIMANAGER_JOBS_UPDATED',
+	APP_LOG: 'APP_LOG',
 	ROW_CHANGED: (sheetId: string) => `ROW_CHANGED.${sheetId}`,
 	ROWS_DELETED: (sheetId: string) => `ROWS_DELETED.${sheetId}`,
 	SHEET_UPDATED: (sheetId: string) => `SHEET_UPDATED.${sheetId}`,

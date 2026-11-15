@@ -26,28 +26,57 @@ export function safeErrorCode(error: unknown, depth = 0): string {
     return 'INTERNAL_SERVER_ERROR'
 }
 
+/*
+ * Two channels (docs/deploy.md, «Log applicativi e conservazione»):
+ * - server logs, here: one JSON line on stdout/stderr, collected by Docker;
+ *   they describe the health of the processes;
+ * - application logs, in app/lib/appLog.ts (server only): what happened in
+ *   the application, written to LOG_DIR and shown on the admin «logs» page.
+ * Both share the fields timestamp, level, source and event.
+ */
+export type LogLevel = 'info' | 'warn' | 'error'
+
+let sourceOverride: string | null = null
+
+// ws-server and the worker name themselves at startup; Next.js instances use
+// APP_INSTANCE (app1, app2, …).
+export function setLogSource(source: string): void {
+    sourceOverride = source
+}
+
+export function logSource(): string {
+    if (sourceOverride) return sourceOverride
+    if (typeof window !== 'undefined') return 'browser'
+    return process.env.APP_INSTANCE || 'app'
+}
+
+// event must be a static identifier; fields must not contain personal data.
+export function serverLog(level: LogLevel, event: string, fields: Record<string, unknown> = {}): void {
+    const line = JSON.stringify({ timestamp: new Date().toISOString(), level, source: logSource(), event, ...fields })
+    if (level === 'error') console.error(line)
+    else if (level === 'warn') console.warn(line)
+    else console.log(line)
+}
+
 // event must be a static identifier at the call site, never supplied by a user.
 export function logDiagnostic(event: string, error?: unknown, level: 'error' | 'warn' = 'error'): void {
     const code = safeErrorCode(error)
     if (code === 'WEBSOCKET_CONNECTION_ERROR') {
-        console.warn(JSON.stringify({ timestamp: new Date().toISOString(), event, code,
+        serverLog('warn', event, { code,
             message: 'Connessione WebSocket non disponibile: gli aggiornamenti in tempo reale sono interrotti. In locale, verifica che il server sia avviato con npm run ws-server:watch.',
-        }))
+        })
         return
     }
-    console[level](JSON.stringify({ timestamp: new Date().toISOString(), event, code }))
+    serverLog(level, event, { code })
 }
 
 export function logWebSocketEvent(
     event: 'connected' | 'disconnected' | 'subscribed' | 'next' | 'error' | 'complete' | 'rejected',
     errors: readonly unknown[] = [],
 ): void {
-    const line = JSON.stringify({
-        timestamp: new Date().toISOString(), event: `ws.${event}`,
+    serverLog(errors.length ? 'error' : 'info', `ws.${event}`, {
         errorCount: errors.length, errorCodes: [...new Set(errors.map(safeErrorCode))],
     })
-    if (errors.length) console.error(line)
-    else console.log(line)
 }
 
 // OAuth diagnostics accept only operational metadata, never tokens or response bodies.
@@ -95,5 +124,5 @@ export function logOlimanagerEvent(
             break
         default: return
     }
-    console.log(JSON.stringify({ timestamp: new Date().toISOString(), event: `olimanager.${event}`, ...fields }))
+    serverLog('info', `olimanager.${event}`, fields)
 }

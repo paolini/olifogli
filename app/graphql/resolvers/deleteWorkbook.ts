@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
 import { get_authenticated_user, check_admin } from './utils'
@@ -13,5 +14,6 @@ export default async function deleteWorkbook(_: unknown, { _id }: { _id: ObjectI
   const collection = await getWorkbooksCollection()
   const res = await collection.deleteOne({ _id })
   if (res.deletedCount !== 1) throw new Error('Workbook non trovato')
+  appLog('workbook.deleted', { workbookId: _id.toString() }, { userId: user._id })
   return _id
 }

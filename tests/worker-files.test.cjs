@@ -171,6 +171,7 @@ function resolvers(user, jobs) {
       getSheetsCollection: async () => collection(jobs.sheets),
     },
     '@/app/lib/workerFiles': lib(),
+    '@/app/lib/appLog': { appLog() {} },
     './utils': {
       get_authenticated_user: async () => user,
       check_admin: u => { if (!u?.isAdmin) throw new Error('non autorizzato'); },

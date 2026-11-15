@@ -102,6 +102,7 @@ test('deleting scans notifies other browsers only after a successful commit', as
   const remove = load('app/graphql/resolvers/deleteScan.ts', {
     '@/app/lib/mongodb': database,
     '@/app/lib/pubsub': { TOPICS: { SCAN_JOB_UPDATED: id => `scan.${id}` } },
+    '@/app/lib/appLog': { appLog: event => order.push(event) },
     './utils': { async get_authenticated_user() { return {}; }, check_user_can_delete_job() {} },
   }).default;
   const context = { pubsub: { async publish(topic, payload) {
@@ -110,7 +111,7 @@ test('deleting scans notifies other browsers only after a successful commit', as
     assert.equal(payload.scanJobUpdated, true);
   } } };
   assert.equal(await remove(null, { jobId }, context), true);
-  assert.deepEqual(order, ['delete-results', 'delete-job', 'update-sheet', 'commit', 'publish']);
+  assert.deepEqual(order, ['delete-results', 'delete-job', 'update-sheet', 'commit', 'publish', 'scan.deleted']);
   fail = true;
   order.length = 0;
   await assert.rejects(remove(null, { jobId }, context), /commit failed/);

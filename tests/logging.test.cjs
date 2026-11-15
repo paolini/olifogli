@@ -21,7 +21,8 @@ function loadLogging(env = {}) {
     vm.runInNewContext(source, {
       exports, URL, process: { env }, console: Object.fromEntries(['log', 'error', 'warn'].map(level => [level, line => lines.push(String(line))])),
       require(id) {
-        if (id === '../lib/logging') return load('app/lib/logging.ts');
+        if (id === '../lib/logging' || id === './logging') return load('app/lib/logging.ts');
+        if (id === '../lib/appLog') return load('app/lib/appLog.ts');
         if (['node:fs', 'node:path', 'node:crypto'].includes(id)) return require(id);
         throw new Error(`Unexpected logging dependency: ${id}`);
       },
@@ -29,10 +30,11 @@ function loadLogging(env = {}) {
     cache.set(file, exports);
     return exports;
   }
-  return { lines, helper: load('app/lib/logging.ts'), plugin: load('app/graphql/logger-plugin.ts').graphqlLoggerPlugin };
+  return { lines, helper: load('app/lib/logging.ts'), plugin: load('app/graphql/logger-plugin.ts').graphqlLoggerPlugin,
+    appLog: load('app/lib/appLog.ts') };
 }
 
-test('GraphQL console and daily files contain only operational metadata', async () => {
+test('GraphQL requests go to the daily application log with operational metadata only', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'olifogli-log-'));
   try {
     const { plugin, lines } = loadLogging({ LOG_DIR: directory });
@@ -47,21 +49,29 @@ test('GraphQL console and daily files contain only operational metadata', async 
     };
     const listener = await plugin.requestDidStart(context);
     await listener.willSendResponse(context);
-    const entry = JSON.parse(lines[0]);
-    assert.deepEqual(Object.keys(entry).sort(), ['timestamp','event','requestId','type','fields','durationMs','status','errorCount','errorCodes'].sort());
+    const files = await fs.readdir(directory);
+    assert.equal(files.length, 1);
+    assert.match(files[0], /^app-\d{4}-\d{2}-\d{2}\.log$/);
+    const content = await fs.readFile(path.join(directory, files[0]), 'utf8');
+    assert.equal(content.includes(secret), false);
+    const entry = JSON.parse(content);
+    assert.deepEqual(Object.keys(entry).sort(), ['timestamp','level','source','event','requestId','type','fields','durationMs','status','errorCount','errorCodes'].sort());
+    assert.equal(entry.event, 'graphql.request');
+    assert.equal(entry.level, 'warn');
+    assert.equal(entry.source, 'app');
     assert.deepEqual(entry.fields, ['sheet']);
     assert.equal(entry.status, 'error');
     assert.equal(entry.errorCount, 2);
     assert.deepEqual(entry.errorCodes, ['FORBIDDEN', 'INTERNAL_SERVER_ERROR']);
     assert.ok(entry.durationMs >= 0);
     assert.match(entry.requestId, /^[a-f0-9-]{36}$/);
-    const files = await fs.readdir(directory);
-    assert.equal(files.length, 2);
-    for (const file of files) {
-      const content = await fs.readFile(path.join(directory, file), 'utf8');
-      assert.equal(content, lines[0] + '\n');
-      assert.equal(content.includes(secret), false);
-    }
+    // Only the unexpected failure reaches the server log, without request details.
+    assert.equal(lines.length, 1);
+    const serverEntry = JSON.parse(lines[0]);
+    assert.deepEqual(Object.keys(serverEntry).sort(), ['timestamp','level','source','event','requestId','fields'].sort());
+    assert.equal(serverEntry.event, 'graphql.internal_error');
+    assert.equal(serverEntry.requestId, entry.requestId);
+    assert.equal(lines[0].includes(secret), false);
   } finally { await fs.rm(directory, { recursive: true, force: true }); }
 });
 
@@ -82,7 +92,9 @@ test('diagnostic and WebSocket logs discard error bodies, stacks and identifiers
   assert.equal(lines.join('').includes('PRIVATE'), false);
   assert.equal(JSON.parse(lines[0]).code, 'ECONNREFUSED');
   assert.deepEqual(JSON.parse(lines[1]).errorCodes, ['ECONNREFUSED', 'INTERNAL_SERVER_ERROR']);
-  assert.deepEqual(Object.keys(JSON.parse(lines[2])).sort(), ['timestamp','event','errorCount','errorCodes'].sort());
+  assert.deepEqual(Object.keys(JSON.parse(lines[2])).sort(), ['timestamp','level','source','event','errorCount','errorCodes'].sort());
+  assert.equal(JSON.parse(lines[0]).level, 'error');
+  assert.equal(JSON.parse(lines[2]).level, 'info');
 });
 
 test('subscription diagnostics recognize Apollo wrappers without logging raw errors', () => {
@@ -108,7 +120,7 @@ test('subscription diagnostics recognize Apollo wrappers without logging raw err
 test('cleanup removes only expired regular daily logs, including legacy files', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'olifogli-cleanup-'));
   try {
-    const expired = ['graphql-2026-09-16.log', 'graphql-errors-2026-08-01.log'];
+    const expired = ['graphql-2026-09-16.log', 'graphql-errors-2026-08-01.log', 'app-2026-09-01.log'];
     const retained = ['graphql-2026-09-17.log', 'graphql-2026-10-16.log', 'graphql-2027-01-01.log', 'graphql-2026-02-30.log', 'other.log', 'graphql-2026-01-01.log.bak'];
     for (const file of [...expired, ...retained]) await fs.writeFile(path.join(directory,file), 'legacy personal payload');
     await fs.mkdir(path.join(directory,'graphql-2026-01-02.log'));
@@ -161,7 +173,8 @@ test('OAuth serializer allowlists metadata and strips secrets from origins and u
 test('application log calls cannot bypass the centralized serializers', () => {
   const { readdirSync } = require('node:fs');
   const root = path.resolve(__dirname, '..');
-  const allowed = new Set(['app/lib/logging.ts', 'app/graphql/logger-plugin.ts']);
+  // The serializers themselves forward events received as parameters.
+  const allowed = new Set(['app/lib/logging.ts', 'app/lib/appLog.ts', 'app/graphql/logger-plugin.ts']);
   function inspect(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
@@ -174,7 +187,10 @@ test('application log calls cannot bypass the centralized serializers', () => {
         if (ts.isCallExpression(node)) {
           const callee = node.expression.getText(ast);
           assert.equal(/^(console\.(log|error|warn|info|debug)|process\.(stdout|stderr)\.write)$/.test(callee), false, `Raw logging in ${relative}`);
-          if (callee === 'logDiagnostic') assert.ok(ts.isStringLiteral(node.arguments[0]), `Non-static diagnostic event in ${relative}`);
+          if (['logDiagnostic', 'serverLog', 'appLog'].includes(callee)) {
+            const event = node.arguments[callee === 'serverLog' ? 1 : 0];
+            assert.ok(event && ts.isStringLiteral(event), `Non-static ${callee} event in ${relative}`);
+          }
         }
         ts.forEachChild(node, walk);
       }
@@ -182,4 +198,40 @@ test('application log calls cannot bypass the centralized serializers', () => {
     }
   }
   inspect(path.join(root, 'app'));
+});
+
+test('application events carry the user id, keep reserved fields and are published', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'olifogli-log-'));
+  try {
+    const { appLog, helper, lines } = loadLogging({ LOG_DIR: directory, APP_INSTANCE: 'app2' });
+    const published = [];
+    appLog.setAppLogPublisher(async entry => { published.push(entry); });
+    const entry = appLog.appLog('sheet.deleted', { sheetId: 'abc', event: 'forged', level: 'forged', userId: 'forged' },
+      { userId: { toString: () => 'user-1' }, level: 'warn' });
+    assert.deepEqual(JSON.parse(JSON.stringify({ ...entry, timestamp: 'T' })), { timestamp: 'T', level: 'warn', source: 'app2', event: 'sheet.deleted', userId: 'user-1', sheetId: 'abc' });
+    assert.equal(published.length, 1);
+    assert.equal(published[0], entry);
+    const [file] = await fs.readdir(directory);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(directory, file), 'utf8')), JSON.parse(JSON.stringify(entry)));
+    assert.equal(lines.length, 0);
+
+    helper.setLogSource('worker');
+    assert.equal(appLog.appLog('worker.event').source, 'worker');
+    appLog.setAppLogPublisher(null);
+  } finally { await fs.rm(directory, { recursive: true, force: true }); }
+});
+
+test('without LOG_DIR application events go to stdout; publish failures are reported once per minute', async () => {
+  const { appLog, lines } = loadLogging();
+  appLog.setAppLogPublisher(async () => { throw Object.assign(new Error('PRIVATE'), { code: 'ECONNREFUSED' }); });
+  appLog.appLog('scan.deleted', { jobId: 'j1' });
+  appLog.appLog('scan.deleted', { jobId: 'j2' });
+  await new Promise(resolve => setImmediate(resolve));
+  appLog.setAppLogPublisher(null);
+  const entries = lines.map(line => JSON.parse(line));
+  assert.deepEqual(entries.filter(entry => entry.event === 'scan.deleted').map(entry => entry.jobId), ['j1', 'j2']);
+  const failures = entries.filter(entry => entry.event === 'app_log.publish_failed');
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].code, 'ECONNREFUSED');
+  assert.equal(lines.join('').includes('PRIVATE'), false);
 });

@@ -31,7 +31,8 @@ async function loadWebSocketOptions(env = {}) {
   const httpServer = { listen() { return { close() {} }; } };
   const express = () => ({ use() {} });
   const stubs = {
-    './app/lib/logging': { logWebSocketEvent() {}, logDiagnostic(event) { fail(new Error(event)); } },
+    './app/lib/logging': { logWebSocketEvent() {}, serverLog() {}, setLogSource() {}, logDiagnostic(event) { fail(new Error(event)); } },
+    './app/lib/appLogPublisher.js': { publishAppLogsToRedis() {} },
     'dotenv/config': {}, // Keep tests isolated from local credentials.
     http: { createServer: () => httpServer },
     ws: { WebSocketServer: class {} },

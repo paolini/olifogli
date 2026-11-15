@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { getSheetsCollection, getRowsCollection, getDb, withTransaction, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { Context } from '../types'
@@ -88,6 +89,8 @@ export default async function deleteRows(_: unknown, {ids}: {
             _allowedEmails: (sheet.permissions ?? []).map((p: { email: string }) => p.email),
         })
     }
+
+    appLog('rows.deleted', { count: rows.length, sheetIds: [...sheetMap.keys()] }, { userId: user._id })
 
     return rows.length;
 }

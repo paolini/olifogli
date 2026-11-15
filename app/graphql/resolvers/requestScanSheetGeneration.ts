@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { getRowsCollection, getScanSheetJobsCollection, getSheetsCollection, withTransaction } from '@/app/lib/mongodb'
 import { Context } from '../types'
 import { get_authenticated_user, check_user_is_sheet_admin, check_user_can_update_sheet } from './utils'
@@ -88,6 +89,8 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
     })
     throw error
   }
+
+  appLog('scan_sheets.requested', { jobId: jobId.toString(), sheetId: sheet._id.toString(), rowCount: orderedRows.length }, { userId: user._id })
 
   return true
 }

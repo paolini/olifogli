@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { getScanJobsCollection, getScanSheetJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { deleteWorkerFile, listWorkerFiles, type WorkerFile, type WorkerFileKind } from '@/app/lib/workerFiles'
+import { appLog } from '@/app/lib/appLog'
 import { check_admin, get_authenticated_user } from './utils'
 import type { Context } from '../types'
 
@@ -98,11 +99,19 @@ async function deleteAll(files: { area: string, path: string }[]) {
 }
 
 export async function deleteWorkerFiles(_: unknown, { files }: { files: { area: string, path: string }[] }, context: Context) {
-    check_admin(await get_authenticated_user(context))
-    return deleteAll(files)
+    const user = await get_authenticated_user(context)
+    check_admin(user)
+    const result = await deleteAll(files)
+    appLog('worker_files.deleted', { deleted: result.deleted, failed: result.failed.length,
+        reasons: [...new Set(result.failed.map(failure => failure.reason))] }, { userId: user._id })
+    return result
 }
 
 export async function deleteWorkerFileGroup(_: unknown, { kind, jobId }: { kind: string, jobId?: ObjectId | null }, context: Context) {
-    check_admin(await get_authenticated_user(context))
-    return deleteAll(await groupFiles(kind, jobId))
+    const user = await get_authenticated_user(context)
+    check_admin(user)
+    const result = await deleteAll(await groupFiles(kind, jobId))
+    appLog('worker_files.deleted', { kind, jobId: jobId?.toString() ?? null, deleted: result.deleted, failed: result.failed.length,
+        reasons: [...new Set(result.failed.map(failure => failure.reason))] }, { userId: user._id })
+    return result
 }

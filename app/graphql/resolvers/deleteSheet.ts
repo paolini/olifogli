@@ -1,3 +1,4 @@
+import { appLog } from '@/app/lib/appLog'
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 
@@ -9,5 +10,6 @@ export default async function deleteSheet (_: unknown, { _id }: MutationDeleteSh
     check_admin(user)
     const sheets = await getSheetsCollection();
     await sheets.deleteOne({_id})
+    appLog('sheet.deleted', { sheetId: _id.toString() }, { userId: user._id })
     return true
 }

@@ -148,7 +148,12 @@ Non viene eseguito un collaudo automatico in Excel o LibreOffice.
 
 `logging.test.cjs` verifica il plugin GraphQL, i log WebSocket e la diagnostica
 con valori personali/segreti sintetici, nomi di operazione e alias ostili,
-errori e codici non riconosciuti. Controlla anche i file giornalieri prodotti.
+errori e codici non riconosciuti. Controlla il file applicativo giornaliero,
+che sul log del server arrivi solo l'errore imprevisto, i campi comuni
+(`level`, `source`), l'ID utente negli eventi applicativi, i campi riservati non
+sovrascrivibili, la pubblicazione in tempo reale e il limite alle segnalazioni
+quando Redis non risponde. Verifica inoltre che in `app/` non ci siano chiamate
+dirette a `console` e che i nomi degli eventi siano sempre statici.
 `apollo-subscription-errors.test.cjs` verifica che gli errori di trasporto delle
 subscription abbiano il codice `WEBSOCKET_CONNECTION_ERROR`, preservando i
 codici degli errori GraphQL del server. La diagnostica riconosce anche gli
