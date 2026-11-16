@@ -93,7 +93,9 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
         if (id === '../lib/useProfile') return { __esModule: true, default: () => ({ isAdmin: true }) };
         if (id === './Error' || id === './TableActions' || id === './TableHeader') return hidden;
         if (id === './Button') return { __esModule: true, default: props => React.createElement('button', props) };
-        if (id === '../lib/util') return { pluralize: (count, one, many) => `${count} ${count === 1 ? one : many}` };
+        if (id === '../lib/util') return { pluralize: (count, one, many) => `${count} ${count === 1 ? one : many}`,
+          myTimestamp: value => String(value) };
+        if (id === 'lucide-react') return new Proxy({}, { get: () => () => null });
         if (id === '@apollo/client') return { gql: () => ({}), useMutation: () => [async () => ({})],
           useApolloClient: () => ({ cache: { modify: options => cacheModifications.push(options) } }) };
         if (['react', 'react/jsx-runtime'].includes(id)) return require(id);

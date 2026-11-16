@@ -637,3 +637,29 @@ col.actions-cell {
 .sort-icon-button.sort-visible {
   opacity: 1;
 }
+
+td.row-status-cell {
+  white-space: nowrap;
+}
+
+.row-status-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.row-status-icon + .row-status-icon {
+  margin-left: 4px;
+}
+
+.row-status-ok {
+  color: #16a34a;
+}
+
+.row-status-error {
+  color: #dc2626;
+}
+
+.row-status-pending {
+  color: #9ca3af;
+}

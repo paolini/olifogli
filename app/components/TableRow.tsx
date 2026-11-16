@@ -5,6 +5,9 @@ import { Column } from "./Table"
 import { CheckboxCell, DataCell, InfoCell } from "./TableRowCell"
 import { Line } from "./Table"
 import { RowValidationContext } from "../lib/schema/Context"
+import { Check, Cloud, CloudAlert, X } from "lucide-react"
+import type { OlimanagerRowData } from "../graphql/generated"
+import { myTimestamp } from "../lib/util"
 
 export type RowSelectionState = {
     isSelected: boolean,
@@ -70,11 +73,10 @@ export default function TableRow({line, columns, selectionState, focusColumnName
             />
         : <InfoCell key={column.name} line={line} column={column}/>
         )}
-        { (line?.row?.error || line?.row?.olimanager?.error) 
-            ? <td className="alert hide-print">{line.row?.error || line.row?.olimanager?.error}</td>
-            : <td>✓</td>
-        }
-        { line.row && line?.row?.olimanager?.participantId && <td title={`Olimanager participant_id: ${line.row.olimanager.participantId}, results_updated_on: ${line.row.olimanager.resultsUpdatedOn}`} className="olimanager-participant-id hide-print">participantId={line.row.olimanager.participantId} contestId={line.row.olimanager.contestId} results={line.row.olimanager.resultsUpdatedOn?"1":"0"}</td>}
+        <td className="row-status-cell">
+            <RowValidationIcon error={line.row?.error} />
+            <RowSyncIcon olimanager={line.row?.olimanager} />
+        </td>
     </tr>
 
     function computeRecentFadeStyling() {
@@ -91,3 +93,32 @@ export default function TableRow({line, columns, selectionState, focusColumnName
     }
 }
 
+
+function RowValidationIcon({error}: {error?: string | null}) {
+    if (error) return <span className="row-status-icon row-status-error" title={error}>
+        <X size={16} aria-label={error} />
+    </span>
+    return <span className="row-status-icon row-status-ok" title="Riga valida">
+        <Check size={16} aria-label="Riga valida" />
+    </span>
+}
+
+function RowSyncIcon({olimanager}: {olimanager?: OlimanagerRowData | null}) {
+    if (!olimanager) return null
+    const {participantId, contestId, error, resultsUpdatedOn} = olimanager
+    if (!participantId && !error) return null
+    const info = [
+        participantId && `Olimanager participant_id: ${participantId}`,
+        contestId && `contest_id: ${contestId}`,
+        participantId && `risultati inviati: ${resultsUpdatedOn ? myTimestamp(resultsUpdatedOn) : 'mai'}`,
+    ].filter(Boolean).join('\n')
+    if (error) {
+        const title = info ? `${error}\n${info}` : error
+        return <span className="row-status-icon row-status-error hide-print" title={title}>
+            <CloudAlert size={16} aria-label={title} />
+        </span>
+    }
+    return <span className={`row-status-icon hide-print ${resultsUpdatedOn ? 'row-status-ok' : 'row-status-pending'}`} title={info}>
+        <Cloud size={16} aria-label={info} />
+    </span>
+}
