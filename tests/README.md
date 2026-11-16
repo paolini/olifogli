@@ -132,9 +132,14 @@ per gli export delle righe del foglio (anche selezionate o depermutate),
 dell'elenco dei fogli e della classifica. I valori testuali e le intestazioni
 che iniziano con `=`, `+`, `-`, `@`, tab o ritorni a capo ricevono un apostrofo
 tramite `escapeFormulae`; il controllo copre anche formule su più righe.
+Fa eccezione il solo `-` (risposta nulla), che non è una formula e viene
+esportato senza apostrofo.
 I test rileggono il CSV con Papa Parse per verificare separatori, virgolette,
 Unicode, celle vuote e numeri. L'apostrofo aggiunto ai testi sospetti è parte
 del CSV e può essere visibile quando il file viene letto da altri programmi.
+All'importazione `CsvImport` lo rimuove con `unescapeCsvValue`, così un CSV
+esportato e reimportato conserva i valori originali; viene rimosso anche da
+`'-`, prodotto dalle versioni precedenti per la risposta nulla.
 Non viene eseguito un collaudo automatico in Excel o LibreOffice.
 
 

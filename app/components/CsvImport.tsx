@@ -8,6 +8,7 @@ import { schemas } from "../lib/schema"
 import Error from './Error'
 import { Field } from "../lib/schema/fields";
 import Button from "./Button";
+import { unescapeCsvValue } from "../lib/csv";
 
 const ADD_ROWS = gql`
     mutation addRows(
@@ -300,7 +301,8 @@ export default function CsvImport({schemaName, sheetId, done}:{
     const variables = {
         sheetId,
         columns: columns.map(field => field.name),
-        rows
+        // Values exported by Olifogli may carry the formula-escaping apostrophe.
+        rows: rows.map(row => row.map(unescapeCsvValue))
     }
 
     try {

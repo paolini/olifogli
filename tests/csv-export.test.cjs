@@ -13,7 +13,7 @@ new Function('exports', 'require', ts.transpileModule(readFileSync(filename, 'ut
     assert.equal(id, 'papaparse');
     return Papa;
 });
-const { unparseCsv } = exported;
+const { unparseCsv, unescapeCsvValue } = exported;
 function parse(csv) {
   const result = Papa.parse(csv, { delimiter: ',' });
   assert.deepEqual(result.errors, []);
@@ -43,4 +43,19 @@ test('numeric scores stay numeric while negative text is escaped', () => {
 test('empty exports remain valid', () => {
   assert.equal(unparseCsv([]), '');
   assert.equal(unparseCsv({ fields: ['Nome'], data: [] }), 'Nome\r\n');
+});
+test('the empty answer "-" is exported unchanged', () => {
+  assert.deepEqual(parse(unparseCsv({ fields: ['r1', 'r2'], data: [['-', '--']] })), [['r1', 'r2'], ['-', "'--"]]);
+});
+test('export followed by import restores the original values', () => {
+  const values = [...formulas, '-', '--', 'A-B--', "'testo", "'", "''=1", 'a=b', ''];
+  const [header, row] = parse(unparseCsv({ fields: values, data: [values] }));
+  assert.deepEqual(header.map(unescapeCsvValue), values);
+  assert.deepEqual(row.map(unescapeCsvValue), values);
+});
+test('import keeps apostrophes that were not added by the export', () => {
+  for (const value of ["'testo", "'", "''", "''=1", "'A"]) assert.equal(unescapeCsvValue(value), value);
+});
+test('files exported by earlier versions import the empty answer as "-"', () => {
+  assert.equal(unescapeCsvValue("'-"), '-');
 });
