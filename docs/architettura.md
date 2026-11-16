@@ -328,7 +328,10 @@ i dati dei fogli accessibili:
 - **Risultati**: classifica per punteggio, separata per Archimede Biennio e
   Triennio;
 - **Distribuzione**: grafico della distribuzione dei punteggi;
-- **Configurazione**: campi `commonData` del raccoglitore ed eliminazione.
+- **Configurazione**: campi `commonData` del raccoglitore ed eliminazione. Sotto
+  l'editor, «Variabili riconosciute» descrive le variabili lette dal codice
+  (`app/components/WorkbookVariablesHelp.tsx`): aggiornare l'elenco quando se ne
+  aggiunge una.
 
 ## Autenticazione
 

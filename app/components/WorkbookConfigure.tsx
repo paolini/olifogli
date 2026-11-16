@@ -6,6 +6,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { useRouter } from 'next/navigation'
 import Button from './Button'
 import ErrorMessage from './Error'
+import WorkbookVariablesHelp from './WorkbookVariablesHelp'
 import { Workbook, User } from '@/app/graphql/generated'
 import { Data } from '../lib/models'
 
@@ -135,6 +136,7 @@ export default function WorkbookConfigure({workbook, profile, sheetsCount}: {
                     </Button>
                 </div>
             )}
+            <WorkbookVariablesHelp/>
         </div>
     )
 
