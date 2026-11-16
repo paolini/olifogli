@@ -1,11 +1,16 @@
 // Olimanager contest of a sheet, stored in the sheet's commonData.
 export const SHEET_CONTEST_KEY = 'olimanager_contest_id'
 
-// Schemas whose sheets can be created from Olimanager, with their label.
-// Each one is created from the schools validly subscribed to a SCHOOL contest.
+// Schemas whose sheets can be created from Olimanager, with the contest scope
+// they accept and where their venues come from:
+// - `schools`: one sheet per school validly subscribed to the edition
+//   (SCHOOL contests); the contact is manager, the district admins (RD) viewers.
+// - `venues`: one sheet per top-level venue of the contest (ZONE contests),
+//   named after its district; the venue admins are managers, the RD editors.
 export const VENUE_SHEET_SCHEMAS = {
-    archimede_biennio: 'Archimede Biennio',
-    archimede_triennio: 'Archimede Triennio',
+    archimede_biennio: { label: 'Archimede Biennio', scope: 'SCHOOL', source: 'schools' },
+    archimede_triennio: { label: 'Archimede Triennio', scope: 'SCHOOL', source: 'schools' },
+    gara_prime: { label: 'Gara delle prime', scope: 'ZONE', source: 'venues' },
 } as const
 export type VenueSheetSchema = keyof typeof VENUE_SHEET_SCHEMAS
 export function isVenueSheetSchema(schema: string): schema is VenueSheetSchema {

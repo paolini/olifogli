@@ -84,7 +84,12 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
   assert.equal(selects()[3].textContent.includes('Distrettuale'), false);
   const button = text => [...container.querySelectorAll('button')].find(b => b.textContent.includes(text));
   assert.equal(button('anteprima').disabled, true);
+  // Each schema offers only the contests of its scope.
+  const contestOptions = () => [...selects()[3].querySelectorAll('option')].map(o => o.value).filter(Boolean);
+  await choose(2, 'gara_prime');
+  assert.deepEqual(contestOptions(), ['33']);
   await choose(2, 'archimede_biennio');
+  assert.deepEqual(contestOptions(), ['31', '32']);
   // The contest already assigned to the schema's sheets is proposed.
   assert.equal(selects()[3].value, scenario === 'assign-contest' || scenario === 'other-contest' ? '' : '31');
   await choose(1, '');

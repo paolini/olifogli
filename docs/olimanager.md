@@ -124,22 +124,27 @@ Un raccoglitore può quindi contenere fogli di contest diversi, come Biennio e
 Triennio di Archimede.
 
 Ogni esecuzione della creazione riguarda un solo schema e un solo contest.
-Attualmente sono gestiti solo gli schemi `archimede_biennio` e
-`archimede_triennio` (`VENUE_SHEET_SCHEMAS`): le sedi corrispondono alle scuole
-con iscrizione valida a un contest scolastico e i responsabili della zone sono
-proposti come osservatori. Per Archimede la procedura si esegue due volte, una
-per categoria. Per le altre gare (gara delle prime, gara di febbraio, Senior,
-ecc.) andranno aggiunti gli schemi con il rispettivo modo di ricavare sedi e
-permessi; fino ad allora restano i metodi di importazione precedenti, che non
-assegnano il contest ai fogli: va impostato a mano nei dati del foglio.
+`VENUE_SHEET_SCHEMAS` indica per ogni schema gestito l'ambito del contest e da
+dove si ricavano le sedi:
+
+| Schema | Contest | Sedi | Nome del foglio |
+|---|---|---|---|
+| `archimede_biennio`, `archimede_triennio` | `SCHOOL` | scuole con iscrizione valida all'edizione | codice meccanografico |
+| `gara_prime` | `ZONE` | venue di primo livello del contest (le sottosedi sono ignorate) | nome del distretto |
+
+Per Archimede la procedura si esegue due volte, una per categoria. Per le altre
+gare (gara di febbraio, Senior, ecc.) andranno aggiunti gli schemi; fino ad
+allora restano i metodi di importazione precedenti, che non assegnano il
+contest ai fogli: va impostato a mano nei dati del foglio.
 
 ### Uso
 
 Nella linguetta **Fogli** di un raccoglitore, gli amministratori globali possono
 usare **Crea fogli da Olimanager**. Si selezionano olimpiade, edizione, schema e
-il contest scolastico da associare ai fogli; scegliendo lo schema viene
-proposto il contest già assegnato ai suoi fogli, se è uno solo. **Carica
-anteprima** legge tutte le scuole con iscrizione valida a quella edizione.
+il contest da associare ai fogli; sono proposti solo i contest dell'ambito
+dello schema e, scegliendo lo schema, il contest già assegnato ai suoi fogli, se
+è uno solo. **Carica anteprima** legge da Olimanager le sedi (scuole iscritte o
+venue del contest).
 Serve una sessione OAuth con scope `api` e permessi di lettura sulle iscrizioni
 dell'edizione e sui responsabili dei distretti. Non occorre importare il foglio
 «scuole e referenti».
@@ -156,13 +161,22 @@ rimuove quelle chiavi.
 
 ### Permessi proposti
 
-L'anteprima assegna al referente dell'iscrizione il ruolo di responsabile del
-foglio (`manager`) e a tutti i responsabili di distretto (RD) il ruolo di
-osservatore (`viewer`). L'associazione al distretto usa province ed eccezioni
-territoriali di Olimanager, anche per edizioni precedenti all'ultima. I fogli
-possono essere creati anche senza responsabili o osservatori. Referente senza
-email, distretto assente o ambiguo e RD mancanti producono avvisi; vengono
-assegnati solo i permessi ricavabili senza ambiguità.
+Per le scuole iscritte l'anteprima assegna al referente dell'iscrizione il ruolo
+di responsabile del foglio (`manager`) e a tutti i responsabili di distretto
+(RD) il ruolo di osservatore (`viewer`). L'associazione al distretto usa
+province ed eccezioni territoriali di Olimanager, anche per edizioni precedenti
+all'ultima.
+
+Per le venue l'anteprima assegna agli amministratori della venue il ruolo di
+responsabile (`manager`) e agli RD del suo distretto quello di aiutante
+(`editor`). Olimanager non registra il distretto di una venue: viene ricavato
+dal nome, che è quello del distretto eventualmente seguito da una parentesi
+(«Distretto di Pisa (Gara delle Prime)»).
+
+I fogli possono essere creati anche senza responsabili, aiutanti o osservatori.
+Referente o amministratore mancante, distretto assente o ambiguo e RD mancanti
+producono avvisi; vengono assegnati solo i permessi ricavabili senza
+ambiguità.
 
 ### Anteprima e applicazione
 

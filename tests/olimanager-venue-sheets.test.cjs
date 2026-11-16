@@ -132,10 +132,10 @@ test('reads all pages of the selected historical edition instead of latest zone 
   assert.equal(requests[1].variables.olympiad, 'math');
 });
 
-test('rejects invalid contests, contests of another edition or olympiad, non-school contests and unsupported schemas', async () => {
+test('rejects invalid contests, contests of another edition or olympiad, contests of the wrong scope and unsupported schemas', async () => {
   const lib = library(async () => ({ olympiads: { olympiads: choices } }));
   for (const [edition, schema, contest] of [['old', 'archimede_biennio', 0], ['old', 'archimede_biennio', 41], ['new', 'archimede_biennio', 42],
-    ['missing', 'archimede_biennio', 31], ['old', 'gara_prime', 31], ['old', 'constructor', 31]]) {
+    ['missing', 'archimede_biennio', 31], ['old', 'gara_prime', 31], ['new', 'gara_prime', 41], ['old', 'distrettuale', 31], ['old', 'constructor', 31]]) {
     await assert.rejects(lib.loadVenueSheets({}, 'math', edition, schema, contest));
   }
   await assert.rejects(lib.loadVenueSheets({}, 'other', 'old', 'archimede_biennio', 31));
@@ -148,6 +148,48 @@ test('detects broken pagination instead of repeating requests forever', async ()
     return { olympiads: { edition: { subscriptions: { edges: [], pageInfo: { hasNextPage: true, endCursor: 'same' } } } } };
   });
   await assert.rejects(lib.loadVenueSheets({}, 'math', 'old', 'archimede_biennio', 31), /Paginazione/);
+});
+
+const venue = (id, name, emails = [`admin${id}@example.org`], extra = {}) =>
+  ({ id, name, parentVenue: null, admins: emails.map(email => ({ user: email && { email } })), ...extra });
+
+test('zone contests: one sheet per top-level venue, named after its district; venue admins manage, RD edit', () => {
+  const rd = [{ user: { email: 'RD@example.org' } }, { user: { email: 'admin1@example.org' } }];
+  const districts = [{ ...zones[0], admins: rd }, { ...zones[0], id: 3, name: 'Distretto di Pisa Est', admins: [] }];
+  const result = plain(library().sheetsFromVenues([
+    venue(1, 'Distretto di Pisa (Gara delle Prime)'),
+    venue(2, 'Distretto di Pisa Est (Gara delle Prime)', []),
+    venue(3, 'Sottosede di Pisa', ['sub@example.org'], { parentVenue: { id: 1 } }),
+    venue(4, 'Distretto di Atlantide (Gara delle Prime)', [null]),
+  ], districts, 'gara_prime', 33));
+  assert.deepEqual(result.sheets.map(s => s.name), ['Pisa', 'Pisa Est', 'Atlantide']);
+  assert.deepEqual(result.sheets[0], { name: 'Pisa', schema: 'gara_prime', commonData: { Distretto: 'Pisa', olimanager_contest_id: '33' },
+    permissions: [{ email: 'admin1@example.org', role: 'manager' }, { email: 'rd@example.org', role: 'editor' }] });
+  assert.deepEqual(result.sheets[1].permissions, []);
+  assert.deepEqual(result.sheets[2].permissions, []);
+  assert.deepEqual(result.warnings, [
+    'Venue Distretto di Pisa Est (Gara delle Prime): nessun amministratore; nessun responsabile assegnato.',
+    'Pisa Est: distretto Distretto di Pisa Est senza responsabili di distretto (RD).',
+    'Venue Distretto di Atlantide (Gara delle Prime): non riconducibile ad alcun distretto.',
+    'Venue Distretto di Atlantide (Gara delle Prime): nessun amministratore; nessun responsabile assegnato.',
+  ]);
+  assert.throws(() => library().sheetsFromVenues([venue(1, 'Distretto di Pisa'), venue(2, 'Distretto di Pisa (bis)')], zones, 'gara_prime', 33), /Più venue/);
+});
+
+test('zone contests read the venues of the contest, not the school subscriptions', async () => {
+  const requests = [];
+  const zoneChoices = [{ id: 'math', name: 'Matematica', editions: [{ id: 'new', name: '2026', contests: [{ id: 42, name: 'Gara delle prime', scope: 'ZONE' }] }] }];
+  const lib = library(async (req, query, variables) => {
+    requests.push(variables);
+    if (query.includes('editions {')) return { olympiads: { olympiads: zoneChoices } };
+    if (query.includes('zones {')) return { zones: { zones } };
+    if (query.includes('venues {')) return { venues: { venues: [venue(1, 'Distretto di Pisa (Gara delle Prime)')] } };
+    throw new Error('Unexpected query');
+  });
+  const result = plain(await lib.loadVenueSheets({}, 'math', 'new', 'gara_prime', 42));
+  assert.deepEqual(result.sheets.map(s => [s.name, s.schema, s.commonData.olimanager_contest_id]), [['Pisa', 'gara_prime', '42']]);
+  assert.deepEqual(plain(requests[2]), { contest: 42 });
+  assert.equal(requests.length, 3);
 });
 
 function resolverFixture(remoteFailure = false) {

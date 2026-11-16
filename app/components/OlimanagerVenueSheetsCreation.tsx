@@ -49,11 +49,13 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
     const change = (fields: Partial<Selection>) => { setSelection(prev => ({ ...(prev || initialSelection), ...fields })); resetPreview() }
 
     const edition = olympiads?.find(o => o.id === olympiadId)?.editions.find(e => e.id === editionId)
-    const contests = edition?.contests.filter(c => c.scope === 'SCHOOL') || []
+    // Each schema accepts contests of one scope (SCHOOL or ZONE).
+    const contestsFor = (schema: string) => isVenueSheetSchema(schema) ? edition?.contests.filter(c => c.scope === VENUE_SHEET_SCHEMAS[schema].scope) || [] : []
+    const contests = contestsFor(schema)
     // Propose the contest already assigned to the sheets of the chosen schema, if it is unique.
     function contestOf(schema: string) {
         const used = new Set((existing.data?.sheets || []).filter(s => s.schema === schema).map(sheetContest).filter(Boolean))
-        return used.size === 1 && contests.some(c => String(c.id) === [...used][0]) ? [...used][0] : ''
+        return used.size === 1 && contestsFor(schema).some(c => String(c.id) === [...used][0]) ? [...used][0] : ''
     }
     const preview = previewReady ? preparation.data?.prepareOlimanagerVenueSheets : undefined
     const busy = preparation.loading || creation.loading || updating.loading || applying || loadingPreview
@@ -83,7 +85,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
     const appliedPermissionChanges = selectedPlan.filter(p => p.action === 'update').reduce((n, p) => n + checkedChanges(p).length, 0)
     const appliedContests = selectedPlan.filter(contestChecked).length
     return <div className="space-y-3">
-        <p>Creazione fogli per sede (venue) da Olimanager. Ogni foglio è associato a un contest: per Archimede si esegue una volta per il Biennio e una per il Triennio.</p>
+        <p>Creazione fogli per sede (venue) da Olimanager. Ogni foglio è associato a un contest: per Archimede si esegue una volta per il Biennio e una per il Triennio. Per le gare scolastiche c’è un foglio per ogni scuola iscritta, per quelle distrettuali (come la gara delle prime) uno per ogni venue del contest.</p>
         <Error error={error || failure} />
         <div className="flex flex-wrap gap-3">
             <label>Olimpiade <select disabled={busy} value={olympiadId} onChange={e => change({ olympiadId: e.target.value, editionId: '', contestId: '' })}>
@@ -96,9 +98,9 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
             </select></label>
             <label>Schema <select disabled={busy} value={schema} onChange={e => change({ schema: e.target.value, contestId: contestOf(e.target.value) })}>
                 <option value="">Seleziona schema</option>
-                {Object.entries(VENUE_SHEET_SCHEMAS).map(([name, label]) => <option key={name} value={name}>{label}</option>)}
+                {Object.entries(VENUE_SHEET_SCHEMAS).map(([name, { label }]) => <option key={name} value={name}>{label}</option>)}
             </select></label>
-            <label>Contest <select disabled={busy || !editionId} value={contestId} onChange={e => change({ contestId: e.target.value })}>
+            <label>Contest <select disabled={busy || !editionId || !schema} value={contestId} onChange={e => change({ contestId: e.target.value })}>
                 <option value="">Seleziona contest</option>
                 {contests.map(c => <option key={c.id} value={c.id}>{c.name} (#{c.id})</option>)}
             </select></label>
@@ -136,7 +138,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
                             const next = new Set(prev); if (e.target.checked) next.add(p.key); else next.delete(p.key); return next
                         })
                     }} /></td>
-                    <td>{s.name} — {s.commonData.Nome_scuola}</td><td>{s.commonData.Distretto}</td>
+                    <td>{s.name}{s.commonData.Nome_scuola ? ` — ${s.commonData.Nome_scuola}` : ''}</td><td>{s.commonData.Distretto}</td>
                     <td>{p.sheet?.permissions.map(p => `${p.email} (${roleLabel(p.role)})`).join(', ') || '—'}</td>
                     <td>{s.permissions.map(p => `${p.email} (${roleLabel(p.role)})`).join(', ') || '—'}</td>
                     <td>{p.action === 'create' ? 'Nuovi accessi indicati nella colonna Olimanager' : p.action === 'update' ? <ul>
