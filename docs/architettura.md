@@ -140,18 +140,38 @@ progetto **archiomr**.
 ### Ruoli sul foglio
 
 Ogni foglio ha un elenco `permissions` di coppie `{ email, role }`, con ruolo
-`owner`, `admin`, `editor` o `view`.
+`manager` (responsabile), `editor` (aiutante) o `viewer` (osservatore)
+(`SheetPermissionRole` in `app/lib/models.ts`). Gli amministratori globali
+hanno il ruolo `manager` su tutti i fogli, i supervisori globali il ruolo
+`viewer`. Fino alla versione 1.12 i ruoli si chiamavano `admin` e `view`
+(«supervisore»), nomi che si confondevano con i ruoli globali; la migrazione
+`20261117030000-rename-sheet-roles` li ha rinominati.
+
+Fogli e raccoglitori non hanno un proprietario: `createdBy` conserva l'email di
+chi li ha creati, solo a titolo informativo, e non dà alcun permesso. Un
+raccoglitore è visibile a chi ha accesso ad almeno uno dei suoi fogli e solo gli
+amministratori globali possono modificarlo. Fino alla versione 1.12 esistevano
+`ownerId` e il ruolo `owner`; le migrazioni
+`20261117000000-replace-sheet-owner-with-created-by` e
+`20261117010000-remove-workbook-owner` li hanno sostituiti con `createdBy` e con
+il ruolo di responsabile.
+
+Le scansioni seguono i permessi del foglio: chi vede il foglio vede i job e i
+loro risultati, chi può modificarne le righe le carica e le cancella. Anche qui
+`createdBy` (chi ha caricato il PDF) è solo informativo; la migrazione
+`20261117020000-replace-scan-job-owner-with-created-by` ha sostituito `ownerId`,
+che riservava risultati e cancellazione a chi aveva caricato il PDF.
 
 ### Stati del foglio
 
 | Stato | Righe | Metadati e permessi | Chi cambia stato |
 |---|---|---|---|
-| Aperto (`closed=false`, `locked=false`) | `editor` o superiore | `admin` del foglio o owner | l'admin del foglio può chiudere |
-| Chiuso (`closed=true`) | nessuno, nemmeno l'admin del foglio | `admin` del foglio | l'admin del foglio può riaprire; l'amministratore globale può bloccare |
+| Aperto (`closed=false`, `locked=false`) | `editor` o superiore | `manager` del foglio | il responsabile può chiudere |
+| Chiuso (`closed=true`) | nessuno, nemmeno il responsabile | `manager` del foglio | il responsabile può riaprire; l'amministratore globale può bloccare |
 | Bloccato/finalizzato (`locked=true`) | solo amministratori globali | solo amministratori globali | solo l'amministratore globale può sbloccare |
 
-Flusso tipico: il foglio è aperto durante la raccolta dei dati, l'admin del
-foglio lo chiude al termine, l'amministratore globale lo finalizza. Le operazioni
+Flusso tipico: il foglio è aperto durante la raccolta dei dati, il responsabile
+lo chiude al termine, l'amministratore globale lo finalizza. Le operazioni
 verso Olimanager richiedono fogli finalizzati. Un foglio riservato a un lavoro in
 background (`olimanagerJobId`) non può essere sbloccato o riaperto.
 
@@ -223,10 +243,9 @@ durante il controllo chiude la subscription.
 
 `workbookUpdated` è filtrata con `withFilter`. Il payload, costruito da
 `workbookUpdatedPayload` (`app/lib/pubsub.ts`), contiene le email con accesso al
-foglio (`_allowedEmails`) e il proprietario (`_ownerId`). Amministratori e
-supervisori ricevono sempre l'evento, gli altri utenti solo se sono il
-proprietario o se la loro email è nell'elenco; un payload senza elenco non
-viene consegnato.
+foglio (`_allowedEmails`). Amministratori e supervisori ricevono sempre
+l'evento, gli altri utenti solo se la loro email è nell'elenco; un payload senza
+elenco non viene consegnato.
 
 ### Cursori condivisi
 

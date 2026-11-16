@@ -106,7 +106,7 @@ test('deleting scans notifies other browsers only after a successful commit', as
     '@/app/lib/mongodb': database,
     '@/app/lib/pubsub': { TOPICS: { SCAN_JOB_UPDATED: id => `scan.${id}` } },
     '@/app/lib/appLog': { appLog: event => order.push(event) },
-    './utils': { async get_authenticated_user() { return {}; }, check_user_can_delete_job() {}, check_user_can_edit_rows() {} },
+    './utils': { async get_authenticated_user() { return {}; }, check_job_exists() {}, check_user_can_edit_rows() {} },
   }).default;
   const context = { pubsub: { async publish(topic, payload) {
     order.push('publish');

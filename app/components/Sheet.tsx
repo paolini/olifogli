@@ -36,7 +36,6 @@ const _ = gql`
                 commonData
             }
             commonData
-            ownerId
             nRows
             nValidRows
             anomalies
@@ -179,7 +178,7 @@ function SheetBody({sheet,profile}: {
     }
     const initialTab: TabType = isTabType(tabParam) ? tabParam : 'info';
     const [tab, setTabState] = useState<TabType>(initialTab);
-    const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'admin')) || false;
+    const canEdit: boolean = profile && sheet.permissions?.some(p => p.email === profile.email && (p.role === 'editor' || p.role === 'manager')) || false;
     const { loading, error, data, subscribeToMore, refetch } = useQuery<{rows:Row[]}>(GET_ROWS, {
         variables: {sheetId: sheet._id},
     });

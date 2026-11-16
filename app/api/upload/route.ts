@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
                         status: 'uploading',
                         message: 'caricamento PDF',
                         timestamp: now}],
-                    ownerId: user._id,
+                    createdBy: user.email,
                 }, { session })
                 await sheetsCollection.updateOne(
                     { _id: sheetId },

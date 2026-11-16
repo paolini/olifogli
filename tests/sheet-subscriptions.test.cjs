@@ -17,7 +17,7 @@ function fixture() {
   const otherId = new ObjectId();
   const state = {
     user: { _id: userId, email: 'reader@example.org' },
-    sheet: { _id: sheetId, ownerId: new ObjectId(), permissions: [{ email: 'reader@example.org', role: 'view' }] },
+    sheet: { _id: sheetId, permissions: [{ email: 'reader@example.org', role: 'viewer' }] },
     sources: [], userReads: 0, sheetReads: 0, failRead: false, now: Date.now(),
   };
   // Controlled clock for the periodic permission check.
@@ -125,13 +125,10 @@ for (const name of Object.keys(topics)) {
   });
 }
 
-for (const role of ['view', 'editor', 'admin', 'owner', 'global-admin', 'supervisor']) {
+for (const role of ['viewer', 'editor', 'manager', 'global-admin', 'supervisor']) {
   test(`sheet subscription respects existing read permissions for ${role}`, async () => {
     const f = fixture();
-    if (role === 'owner') {
-      f.state.sheet.permissions = [];
-      f.state.sheet.ownerId = f.userId;
-    } else if (role === 'global-admin' || role === 'supervisor') {
+    if (role === 'global-admin' || role === 'supervisor') {
       f.state.sheet.permissions = [];
       f.state.user.isAdmin = role === 'global-admin';
       f.state.user.isSupervisor = role === 'supervisor';
@@ -232,13 +229,14 @@ for (const name of ['scanJobUpdated', 'scanSheetJobUpdated']) {
   });
 }
 
-test('workbookUpdated delivers only to permitted emails, the owner, admins and supervisors', async () => {
+test('workbookUpdated delivers only to permitted emails, admins and supervisors', async () => {
   const workbookId = new ObjectId();
-  const ownerId = new ObjectId();
+  const creatorId = new ObjectId();
   const cases = [
-    [{ user_id: new ObjectId(), email: 'teacher@example.org' }, { _allowedEmails: ['teacher@example.org'], _ownerId: null }, true],
-    [{ user_id: new ObjectId(), email: 'other@example.org' }, { _allowedEmails: ['teacher@example.org'], _ownerId: null }, false],
-    [{ user_id: ownerId, email: 'owner@example.org' }, { _allowedEmails: [], _ownerId: ownerId.toString() }, true],
+    [{ user_id: new ObjectId(), email: 'teacher@example.org' }, { _allowedEmails: ['teacher@example.org'] }, true],
+    [{ user_id: new ObjectId(), email: 'other@example.org' }, { _allowedEmails: ['teacher@example.org'] }, false],
+    // A former owner without permissions is no longer notified.
+    [{ user_id: creatorId, email: 'owner@example.org' }, { _allowedEmails: [], _ownerId: creatorId.toString() }, false],
     [{ user_id: new ObjectId(), email: 'other@example.org' }, {}, false],
     [{ user_id: new ObjectId(), email: 'admin@example.org', isAdmin: true }, {}, true],
     [{ user_id: new ObjectId(), email: 'sup@example.org', isSupervisor: true }, {}, true],

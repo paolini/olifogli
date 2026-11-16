@@ -115,49 +115,69 @@ scuola per le gare scolastiche e una sede distrettuale per le fasi locali. Una
 nome `VenueSheets`, con le operazioni GraphQL `olimanagerVenueSheetChoices` e
 `prepareOlimanagerVenueSheets`.
 
-Attualmente è gestito solo Archimede: le sedi corrispondono alle scuole iscritte
-e ciascuna scuola ha un foglio Biennio e uno Triennio. I responsabili della zone
-sono proposti come supervisori. L'associazione sede–scuola e la suddivisione
-Biennio/Triennio sono specifiche di Archimede: per le altre gare (gara delle
-prime, gara di febbraio, Senior, ecc.) l'anteprima andrà adattata ai rispettivi
-contest, venue e permessi quando servirà.
+Ogni foglio è associato a un contest Olimanager tramite
+`olimanager_contest_id` nel `commonData` del foglio. Da questo valore
+(`context.contest_id` di `Schema.validationContext`) dipendono abbinamento e
+creazione dei partecipanti, verifica, trasferimento dei risultati e
+aggiornamento delle taglie; un foglio senza contest non può essere sincronizzato.
+Un raccoglitore può quindi contenere fogli di contest diversi, come Biennio e
+Triennio di Archimede.
+
+Ogni esecuzione della creazione riguarda un solo schema e un solo contest.
+Attualmente sono gestiti solo gli schemi `archimede_biennio` e
+`archimede_triennio` (`VENUE_SHEET_SCHEMAS`): le sedi corrispondono alle scuole
+con iscrizione valida a un contest scolastico e i responsabili della zone sono
+proposti come osservatori. Per Archimede la procedura si esegue due volte, una
+per categoria. Per le altre gare (gara delle prime, gara di febbraio, Senior,
+ecc.) andranno aggiunti gli schemi con il rispettivo modo di ricavare sedi e
+permessi; fino ad allora restano i metodi di importazione precedenti, che non
+assegnano il contest ai fogli: va impostato a mano nei dati del foglio.
 
 ### Uso
 
 Nella linguetta **Fogli** di un raccoglitore, gli amministratori globali possono
-usare **Crea fogli da Olimanager**. Si selezionano olimpiade, edizione e i due
-contest scolastici da associare a Biennio e Triennio; **Salva configurazione e
-carica anteprima** legge tutte le scuole con iscrizione valida a quella edizione.
+usare **Crea fogli da Olimanager**. Si selezionano olimpiade, edizione, schema e
+il contest scolastico da associare ai fogli; scegliendo lo schema viene
+proposto il contest già assegnato ai suoi fogli, se è uno solo. **Carica
+anteprima** legge tutte le scuole con iscrizione valida a quella edizione.
 Serve una sessione OAuth con scope `api` e permessi di lettura sulle iscrizioni
 dell'edizione e sui responsabili dei distretti. Non occorre importare il foglio
 «scuole e referenti».
 
-La configurazione viene salvata in `commonData` del workbook, conservando gli
-altri campi:
+Olimpiade ed edizione vengono salvate in `commonData` del workbook
+(`olimanager_olympiad_id`, `olimanager_edition_id`), conservando gli altri
+campi, e sono riproposte alla riapertura. Il contest viene salvato solo nei
+fogli.
 
-- `olimanager_olympiad_id`
-- `olimanager_edition_id`
-- `olimanager_archimede_biennio_contest_id`
-- `olimanager_archimede_triennio_contest_id`
-
-Le selezioni sono riproposte alla riapertura; per i workbook precedenti vengono
-ricavate dai codici dei contest già configurati.
+Fino alla versione 1.12 il contest era nel workbook
+(`olimanager_<schema>_contest_id` e `olimanager_contest_id`): la migrazione
+`20261116000000-move-contest-id-to-sheets` lo copia nei fogli esistenti e
+rimuove quelle chiavi.
 
 ### Permessi proposti
 
-L'anteprima assegna al referente dell'iscrizione il ruolo di amministratore e a
-tutti i responsabili del distretto il ruolo di supervisore. L'associazione al
-distretto usa province ed eccezioni territoriali di Olimanager, anche per
-edizioni precedenti all'ultima. I fogli possono essere creati anche senza
-amministratori o supervisori. Referente senza email, distretto assente o ambiguo
-e responsabili mancanti producono avvisi; vengono assegnati solo i permessi
-ricavabili senza ambiguità.
+L'anteprima assegna al referente dell'iscrizione il ruolo di responsabile del
+foglio (`manager`) e a tutti i responsabili di distretto (RD) il ruolo di
+osservatore (`viewer`). L'associazione al distretto usa province ed eccezioni
+territoriali di Olimanager, anche per edizioni precedenti all'ultima. I fogli
+possono essere creati anche senza responsabili o osservatori. Referente senza
+email, distretto assente o ambiguo e RD mancanti producono avvisi; vengono
+assegnati solo i permessi ricavabili senza ambiguità.
 
 ### Anteprima e applicazione
 
-L'anteprima distingue nuovi fogli, fogli invariati e permessi da aggiornare; i
-fogli esistenti sono riconosciuti da schema e nome/codice meccanografico.
+L'anteprima distingue nuovi fogli, fogli invariati, fogli da aggiornare e
+conflitti. I fogli esistenti sono cercati per schema e nome/codice
+meccanografico (`venueSheetPlan`):
+
+- un foglio dello stesso contest è il foglio della sede;
+- in sua assenza, un foglio senza contest viene proposto per l'associazione al
+  contest scelto («associa al contest», da selezionare come i permessi);
+- un foglio associato a un altro contest è un conflitto e non viene creato un
+  duplicato.
+
 Mostra permessi attuali e proposti, accessi aggiunti e rimossi e cambi di ruolo.
+L'anteprima non propone cancellazioni di fogli.
 
 Solo i nuovi fogli sono preselezionati: per i fogli esistenti ciascuna aggiunta,
 rimozione e modifica di ruolo ha una propria casella, inizialmente
@@ -169,8 +189,8 @@ seleziona tutte le creazioni e tutte le modifiche, comprese le rimozioni. Una
 selezione parziale è indicata sulla casella del foglio.
 
 Righe e altri metadati dei fogli esistenti restano invariati. Prima delle
-scritture i fogli vengono riletti: se i permessi sono cambiati dopo l'anteprima
-occorre ricaricarla. I fogli con corrispondenze duplicate sono segnalati e non
+scritture i fogli vengono riletti: se permessi o contest sono cambiati dopo
+l'anteprima occorre ricaricarla. I fogli con corrispondenze duplicate sono segnalati e non
 selezionabili.
 
 ## Dati di prova su staging
@@ -230,8 +250,10 @@ l'applicazione OAuth (vedi [Applicazione OAuth](#applicazione-oauth)).
 ### Manifest
 
 Il manifest JSON non contiene secret. Contiene `contests.biennio`,
-`contests.triennio`, `workbookCommonData`, `sheetCommonData` e le righe di
-prova, con `olifogliData` pronto per i campi delle righe di Olifogli.
+`contests.triennio`, `workbookCommonData`, `sheetCommonData.biennio` e
+`sheetCommonData.triennio` (con il codice meccanografico e
+`olimanager_contest_id` del foglio) e le righe di prova, con `olifogliData`
+pronto per i campi delle righe di Olifogli.
 
 La configurazione usa le permutazioni Archimede 2025 conservate in
 `scripts/fixtures/archimede.json`: codice iniziale `2` per il biennio, `3` per il

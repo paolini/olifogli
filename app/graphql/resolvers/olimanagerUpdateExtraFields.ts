@@ -142,12 +142,12 @@ async function syncDataWithOlimanager(
     rawResult?: unknown 
 }> {
       const taglia_field_id = workbook.commonData["olimanager_taglia_field_id"]
-      const contest_id = workbook.commonData["olimanager_contest_id"]
+      const contest_id = schema.validationContext(sheet.commonData, workbook.commonData).contest_id
       if (!taglia_field_id) {
         return {success: false, skipped: true, error: `"taglia_field_id" non specificato nel workbook`}
       }
-      if (!contest_id) {
-        return {success: false, skipped: true, error: `"olimanager_contest_id" non specificato nel workbook`}
+      if (isNaN(contest_id)) {
+        return {success: false, skipped: true, error: `"olimanager_contest_id" non specificato nel foglio`}
       }
 
       const shirt_size = row.data["shirt_size"]

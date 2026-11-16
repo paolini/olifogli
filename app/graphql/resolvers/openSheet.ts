@@ -11,8 +11,8 @@ export default async function openSheet(_: unknown, args: { _id: ObjectId }, con
   if (!sheet) throw new Error('Sheet not found')
   
   if (sheet.locked) {
-    if (!user.isAdmin && sheet.ownerId?.toString() !== user._id?.toString()) {
-      throw new Error('Only the sheet owner or system admins can open the sheet')
+    if (!user.isAdmin) {
+      throw new Error('Only system admins can open a locked sheet')
     }
   } else {
       // Only sheet admins can open a sheet

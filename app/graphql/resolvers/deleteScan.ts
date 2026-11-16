@@ -3,7 +3,7 @@ import { getScanJobsCollection, getScanResultsCollection, getSheetsCollection, w
 import { ObjectId } from 'mongodb'
 import { TOPICS } from '@/app/lib/pubsub'
 import { Context } from '../types'
-import { get_authenticated_user, check_user_can_delete_job, check_user_can_edit_rows } from './utils'
+import { get_authenticated_user, check_job_exists, check_user_can_edit_rows } from './utils'
 
 export default async function deleteScan(_: unknown, { jobId }: { 
     jobId: ObjectId 
@@ -11,8 +11,8 @@ export default async function deleteScan(_: unknown, { jobId }: {
     const user = await get_authenticated_user(context)
     const jobs = await getScanJobsCollection()
     const job = await jobs.findOne({ _id: jobId })
-    check_user_can_delete_job(user, job)
-    // Deleting requires current edit rights: not on closed or finalized sheets.
+    check_job_exists(job)
+    // Deleting requires edit rights on the sheet: not on closed or finalized sheets.
     const sheets = await getSheetsCollection()
     check_user_can_edit_rows(user, await sheets.findOne({ _id: job.sheetId }))
 

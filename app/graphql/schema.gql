@@ -178,7 +178,7 @@ type Setting {
 type Workbook {
   _id: ObjectId
   name: String
-  ownerId: ObjectId
+  createdBy: String
   commonData: Data
   sheetsCount: Int
 }
@@ -198,7 +198,7 @@ type Sheet {
   name: String!
   schema: String!
   permissions: [Permission!]!
-  ownerId: ObjectId!
+  createdBy: String
   workbook: Workbook!
   commonData: Data!
   nRows: Int!
@@ -275,7 +275,7 @@ type ScanMessage {
 type ScanJob {
   _id: ObjectId!
   sheetId: ObjectId!
-  ownerId: ObjectId!
+  createdBy: String
   timestamp: Timestamp!
   messages: [ScanMessage!]!
 }
@@ -479,7 +479,7 @@ type OlimanagerUpdateExtraFieldsResult {
 }
 
 type Mutation {
-  prepareOlimanagerVenueSheets(workbookId: ObjectId!, olympiadId: String!, biennioContestId: Int!, triennioContestId: Int!): OlimanagerVenueSheetsPreview!
+  prepareOlimanagerVenueSheets(workbookId: ObjectId!, olympiadId: String!, editionId: String!, schema: String!, contestId: Int!): OlimanagerVenueSheetsPreview!
   resumeOlimanagerCheck(jobId: ObjectId!): OlimanagerJob!
   requestOlimanagerResults(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!

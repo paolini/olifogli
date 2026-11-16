@@ -2,7 +2,7 @@ import { getSheetsCollection } from '@/app/lib/mongodb'
 import { ObjectId } from 'bson'
 
 import { Context } from '../types'
-import { get_authenticated_user, check_admin } from './utils'
+import { get_authenticated_user, check_admin, parse_sheet_permissions } from './utils'
 import { MutationAddSheetArgs } from '../generated'
 
 export default async function addSheet (_: unknown, args:MutationAddSheetArgs, context: Context): Promise<ObjectId> {
@@ -14,17 +14,13 @@ export default async function addSheet (_: unknown, args:MutationAddSheetArgs, c
     const workbookId = args.workbookId
     const now = new Date()
     
-    // Converti PermissionInput a Permission
-    const permissions = (args.permissions || []).map(p => ({
-        email: p.email,
-        role: p.role as 'admin' | 'editor' | 'view'
-    }))
+    const permissions = parse_sheet_permissions(args.permissions)
     
     const result = await collection.insertOne({ 
         name, 
         schema,
         workbookId,
-        ownerId: user._id, 
+        createdBy: user.email,
         createdAt: now,
         updatedAt: now,
         permissions,

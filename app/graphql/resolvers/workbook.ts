@@ -20,7 +20,7 @@ export default async function workbook(_: unknown, { workbookId }: QueryWorkbook
     const sheets = await getSheetsCollection()
     const visibleSheet = await sheets.findOne({
         workbookId: workbook._id,
-        $or: [{ ownerId: user._id }, { 'permissions.email': user.email }],
+        'permissions.email': user.email,
     }, { projection: { _id: 1 } })
     if (!visibleSheet) return null;
     // Gli altri utenti ricevono i metadati pubblici; il resolver del campo

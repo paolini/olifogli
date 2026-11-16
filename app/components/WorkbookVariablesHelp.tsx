@@ -19,14 +19,6 @@ const SECTIONS: { title: string, variables: Variable[] }[] = [
         title: 'Olimanager',
         variables: [
             {
-                name: 'olimanager_contest_id',
-                description: <>Codice del contest Olimanager usato da tutti gli schemi che non hanno una variabile specifica: trasferimento dei risultati, importazione dei partecipanti, aggiornamento delle taglie.</>,
-            },
-            {
-                name: 'olimanager_<schema>_contest_id',
-                description: <>Codice del contest per un singolo schema; ha la precedenza su <code>olimanager_contest_id</code>. Ad esempio <code>olimanager_archimede_biennio_contest_id</code> e <code>olimanager_archimede_triennio_contest_id</code>, salvati da «Crea fogli da Olimanager».</>,
-            },
-            {
                 name: 'olimanager_olympiad_id, olimanager_edition_id',
                 description: <>Olimpiade ed edizione selezionate in «Crea fogli da Olimanager»; vengono riproposte alla riapertura.</>,
             },

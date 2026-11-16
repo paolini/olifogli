@@ -1,13 +1,10 @@
 import { UserInputError, ForbiddenError } from 'apollo-server-errors'
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { schemas } from '@/app/lib/schema'
-import type { SheetPermissionRole } from '@/app/lib/models'
 import { Context } from '../types'
-import { get_authenticated_user, check_admin, check_user_can_update_sheet } from './utils'
+import { get_authenticated_user, check_admin, check_user_can_update_sheet, parse_sheet_permissions } from './utils'
 import { MutationUpdateSheetArgs } from '../generated'
 import { TOPICS, workbookUpdatedPayload } from '@/app/lib/pubsub'
-
-const PERMISSION_ROLES: SheetPermissionRole[] = ['owner', 'admin', 'editor', 'view']
 
 export default async function updateSheet(_: unknown, args: MutationUpdateSheetArgs, context: Context): Promise<boolean> {
   const user = await get_authenticated_user(context)
@@ -30,16 +27,7 @@ export default async function updateSheet(_: unknown, args: MutationUpdateSheetA
   }
 
   if (args.permissions && Array.isArray(args.permissions)) {
-    update.permissions = args.permissions.map(p => {
-      const role = p.role as SheetPermissionRole
-      if (!PERMISSION_ROLES.includes(role)) throw new UserInputError('ruolo non valido')
-      // Only system admins grant 'owner'; existing owner entries may be kept unchanged.
-      if (role === 'owner' && !user.isAdmin
-        && !sheet.permissions?.some(q => q.email === p.email && q.role === 'owner')) {
-        throw new ForbiddenError('solo un amministratore può assegnare il ruolo owner')
-      }
-      return { email: p.email, role }
-    })
+    update.permissions = parse_sheet_permissions(args.permissions)
   }
   if (args.commonData && typeof args.commonData === 'object') {
     check_admin(user)

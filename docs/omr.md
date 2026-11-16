@@ -106,7 +106,7 @@ da `/scan/{jobId}/pdf`, che lo cerca in `completed/`, `processing/` e `aborted/`
 
 ### Generazione dei fogli
 
-La mutation `requestScanSheetGeneration` (riservata agli admin del foglio) scrive
+La mutation `requestScanSheetGeneration` (riservata ai responsabili del foglio, ruolo `manager`) scrive
 le righe selezionate, o tutte, in un file JSONL per `olisheet`, una riga JSON per
 studente con `sheet_name` e i dati della riga. Il PDF generato si scarica da
 `/scansheet/{jobId}/pdf`.

@@ -57,16 +57,10 @@ async function main() {
   const sheetsCol = db.collection('sheets');
   const rowsCol = db.collection('rows');
   
-  // Ottieni ownerId dal workbook
   const workbooksCol = db.collection('workbooks');
   const workbook = await workbooksCol.findOne({ _id: new ObjectId(workbookId) });
   if (!workbook) {
     console.error('Workbook not found');
-    process.exit(1);
-  }
-  const ownerId = workbook.ownerId;
-  if (!ownerId) {
-    console.error('Workbook has no ownerId');
     process.exit(1);
   }
 
@@ -121,7 +115,7 @@ async function main() {
       const sheetDoc = {
         name: schoolId,
         workbookId: new ObjectId(workbookId),
-        ownerId: ownerId,
+        createdBy: 'script',
         schema: schema,
         commonData: {
           "Nome_scuola": schoolId,

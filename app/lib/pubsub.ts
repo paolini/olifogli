@@ -23,11 +23,10 @@ export const TOPICS = {
 export default pubsub
 
 // Payload for TOPICS.WORKBOOK_UPDATED: a signal plus the recipients allowed by the
-// subscription filter in app/graphql/resolvers.ts (sheet permissions and owner).
-export function workbookUpdatedPayload(sheet: { permissions?: { email: string }[] | null, ownerId?: { toString(): string } | null }) {
+// subscription filter in app/graphql/resolvers.ts (sheet permissions).
+export function workbookUpdatedPayload(sheet: { permissions?: { email: string }[] | null }) {
 	return {
 		workbookUpdated: true,
 		_allowedEmails: (sheet.permissions ?? []).map(p => p.email),
-		_ownerId: sheet.ownerId?.toString() ?? null,
 	}
 }

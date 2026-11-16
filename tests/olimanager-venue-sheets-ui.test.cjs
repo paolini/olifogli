@@ -8,8 +8,19 @@ const React = require('react');
 const { act } = React;
 const { JSDOM } = require('jsdom');
 
-for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'keep-helper', 'addition-only', 'no-permissions']) test(`venue sheet preview: ${scenario}`, async t => {
-  const unchanged = ['unchanged', 'no-permissions'].includes(scenario);
+function transpile(relative, dependencies = {}) {
+  const exports = {};
+  const source = ts.transpileModule(readFileSync(path.join(__dirname, relative), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+  vm.runInNewContext(source, { exports, require(name) {
+    if (name in dependencies) return dependencies[name];
+    throw new Error(`Unexpected import ${name}`);
+  } });
+  return exports;
+}
+const config = transpile('../app/lib/olimanagerVenueSheetConfig.ts');
+
+for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'keep-helper', 'addition-only', 'no-permissions', 'assign-contest', 'other-contest']) test(`venue sheet preview: ${scenario}`, async t => {
+  const unchanged = ['unchanged', 'no-permissions', 'assign-contest', 'other-contest'].includes(scenario);
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
   const previous = new Map();
   for (const [key, value] of Object.entries({ window: dom.window, document: dom.window.document, navigator: dom.window.navigator, IS_REACT_ACT_ENVIRONMENT: true })) {
@@ -27,16 +38,17 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
   const calls = [], created = [], updated = [];
   let refreshes = 0;
   let completed = false;
-  const data = { workbook: { commonData: { olimanager_archimede_biennio_contest_id: '31', olimanager_archimede_triennio_contest_id: '32' } } };
+  const data = { workbook: { commonData: { olimanager_olympiad_id: 'math', olimanager_edition_id: '2025' } } };
+  const sheetContest = { 'assign-contest': {}, 'other-contest': { olimanager_contest_id: '99' } }[scenario] || { olimanager_contest_id: '31' };
   const choices = { olimanagerVenueSheetChoices: [{ id: 'math', name: 'Matematica', editions: [{ id: '2025', name: 'Archimede', year: 2025,
     contests: [{ id: 31, name: 'Biennio', scope: 'SCHOOL' }, { id: 32, name: 'Triennio', scope: 'SCHOOL' }, { id: 33, name: 'Distrettuale', scope: 'ZONE' }],
   }] }] };
-  const existing = [{ _id: 'existing-sheet', name: 'CODE', schema: 'archimede_biennio', commonData: {}, permissions: scenario === 'no-permissions' ? [] : unchanged
-    ? [{ email: 'ref@example.org', role: 'admin' }]
-    : [{ email: 'old@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'editor' }, { email: 'helper@example.org', role: 'editor' }] }];
-  const preview = { sheets: ['archimede_biennio', 'archimede_triennio'].map(schema => ({ name: 'CODE', schema, commonData: { Nome_scuola: 'Test', Distretto: 'Pisa' }, permissions: [{ email: 'ref@example.org', role: 'admin', __typename: 'Permission' }] })), warnings: [] };
+  const existing = [{ _id: 'existing-sheet', name: 'CODE', schema: 'archimede_biennio', commonData: { Nome_scuola: 'Manuale', ...sheetContest }, permissions: scenario === 'no-permissions' ? [] : unchanged
+    ? [{ email: 'ref@example.org', role: 'manager' }]
+    : [{ email: 'old@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'editor' }, { email: 'helper@example.org', role: 'editor' }] }];
+  const preview = { sheets: ['CODE', 'CODE2'].map(name => ({ name, schema: 'archimede_biennio', commonData: { Nome_scuola: 'Test', Distretto: 'Pisa', olimanager_contest_id: '31' }, permissions: [{ email: 'ref@example.org', role: 'manager', __typename: 'Permission' }] })), warnings: [] };
   if (scenario === 'no-permissions') preview.sheets.forEach(s => { s.permissions = []; });
-  else if (!unchanged) preview.sheets.forEach(s => s.permissions.push({ email: 'coord@example.org', role: 'view', __typename: 'Permission' }));
+  else if (!unchanged) preview.sheets.forEach(s => s.permissions.push({ email: 'coord@example.org', role: 'viewer', __typename: 'Permission' }));
   const hooks = {
     useGetWorkbookQuery: () => ({ data }),
     useGetSheetsQuery: () => ({ data: { sheets: existing }, refetch: async () => {
@@ -58,39 +70,47 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
     if (name === 'react' || name === 'react/jsx-runtime') return require(name);
     if (name === '@apollo/client') return { gql: () => ({}) };
     if (name === '../graphql/generated') return hooks;
-    if (name === '../lib/olimanagerVenueSheetConfig') return { ARCHIMEDE_CONTEST_KEYS: { biennio: 'olimanager_archimede_biennio_contest_id', triennio: 'olimanager_archimede_triennio_contest_id' } };
-    if (name === '../lib/olimanagerVenueSheetPlan') {
-      const exports = {};
-      const helper = ts.transpileModule(readFileSync(path.join(__dirname, '../app/lib/olimanagerVenueSheetPlan.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
-      vm.runInNewContext(helper, { exports });
-      return exports;
-    }
+    if (name === '../lib/olimanagerVenueSheetConfig') return config;
+    if (name === '../lib/olimanagerVenueSheetPlan') return transpile('../app/lib/olimanagerVenueSheetPlan.ts', { './olimanagerVenueSheetConfig': config });
     if (name === './Button') return { default: props => React.createElement('button', props) };
     if (name === './Error') return { default: props => React.createElement('div', {}, props.error ? String(props.error) : '') };
     if (name === './Loading') return { default: () => null };
     throw new Error(`Unexpected import ${name}`);
   } });
   await act(async () => root.render(React.createElement(exports.default, { workbookId: 'workbook', done: () => { completed = true; } })));
-  assert.deepEqual([...container.querySelectorAll('select')].map(s => s.value), ['math', '2025', '31', '32']);
-  assert.equal(container.querySelectorAll('select')[2].textContent.includes('Distrettuale'), false);
+  const selects = () => [...container.querySelectorAll('select')];
+  const choose = async (index, value) => act(async () => { const select = selects()[index]; select.value = value; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+  assert.deepEqual(selects().map(s => s.value), ['math', '2025', '', '']);
+  assert.equal(selects()[3].textContent.includes('Distrettuale'), false);
   const button = text => [...container.querySelectorAll('button')].find(b => b.textContent.includes(text));
-  assert.equal(button('anteprima').textContent, 'Carica anteprima');
-  const biennio = container.querySelectorAll('select')[2];
-  await act(async () => { biennio.value = '32'; biennio.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+  assert.equal(button('anteprima').disabled, true);
+  await choose(2, 'archimede_biennio');
+  // The contest already assigned to the schema's sheets is proposed.
+  assert.equal(selects()[3].value, scenario === 'assign-contest' || scenario === 'other-contest' ? '' : '31');
+  await choose(1, '');
   assert.equal(button('anteprima').textContent, 'Salva configurazione e carica anteprima');
-  await act(async () => { biennio.value = '31'; biennio.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+  await choose(1, '2025');
+  await choose(3, '31');
   assert.equal(button('anteprima').textContent, 'Carica anteprima');
   await act(async () => button('anteprima').click());
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].variables)), { workbookId: 'workbook', olympiadId: 'math', biennioContestId: 31, triennioContestId: 32 });
-  assert.match(container.textContent, unchanged ? /1 fogli da creare; 0 da aggiornare; 1 invariati/ : /1 fogli da creare; 1 da aggiornare; 0 invariati/);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].variables)), { workbookId: 'workbook', olympiadId: 'math', editionId: '2025', schema: 'archimede_biennio', contestId: 31 });
+  const counts = { 'assign-contest': '1 fogli da creare; 1 da aggiornare; 0 invariati; 0 in conflitto', 'other-contest': '1 fogli da creare; 0 da aggiornare; 0 invariati; 1 in conflitto' }[scenario]
+    || (unchanged ? '1 fogli da creare; 0 da aggiornare; 1 invariati; 0 in conflitto' : '1 fogli da creare; 1 da aggiornare; 0 invariati; 0 in conflitto');
+  assert.match(container.textContent, new RegExp(counts));
   const rows = container.querySelectorAll('tbody tr');
-  assert.equal(rows[0].querySelector('input').disabled, unchanged);
+  assert.equal(rows[0].querySelector('input').disabled, ['unchanged', 'no-permissions', 'other-contest'].includes(scenario));
+  if (scenario === 'other-contest') assert.match(rows[0].textContent, /associato al contest #99/);
   assert.equal(rows[0].querySelector('input').checked, false);
   assert.equal(rows[1].querySelector('input').checked, true);
+  if (scenario === 'assign-contest') {
+    assert.match(rows[0].textContent, /associa al contest #31/);
+    await act(async () => rows[0].querySelector('input').click());
+    assert.equal(rows[0].querySelector('li input').checked, true);
+  }
   if (!unchanged) {
-    assert.match(rows[0].textContent, /old@example.org: rimuovi \(amministratore\)/);
-    assert.match(rows[0].textContent, /ref@example.org: aggiungi \(amministratore\)/);
-    assert.match(rows[0].textContent, /coord@example.org: editor → supervisore/);
+    assert.match(rows[0].textContent, /old@example.org: rimuovi \(responsabile\)/);
+    assert.match(rows[0].textContent, /ref@example.org: aggiungi \(responsabile\)/);
+    assert.match(rows[0].textContent, /coord@example.org: aiutante → osservatore/);
     const modification = email => [...rows[0].querySelectorAll('li label')].find(label => label.textContent.includes(email)).querySelector('input');
     assert.equal([...rows[0].querySelectorAll('li input')].every(input => !input.checked), true);
     if (scenario === 'addition-only') {
@@ -113,10 +133,12 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
     assert.match(container.textContent, /è cambiato dopo l’anteprima/);
     return;
   }
-  assert.equal(updated.length, ['permissions', 'keep-helper', 'addition-only'].includes(scenario) ? 1 : 0);
-  if (updated.length) {
+  assert.equal(updated.length, ['permissions', 'keep-helper', 'addition-only', 'assign-contest'].includes(scenario) ? 1 : 0);
+  if (scenario === 'assign-contest') {
+    assert.deepEqual(JSON.parse(JSON.stringify(updated[0].variables)), { _id: 'existing-sheet', commonData: { Nome_scuola: 'Manuale', olimanager_contest_id: '31' } });
+  } else if (updated.length) {
     assert.equal(updated[0].variables._id, 'existing-sheet');
-    const desired = [{ email: 'ref@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'view' }];
+    const desired = [{ email: 'ref@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'viewer' }];
     const expected = scenario === 'permissions' ? desired
       : scenario === 'keep-helper' ? [{ email: 'helper@example.org', role: 'editor' }, ...desired]
       : [...existing[0].permissions, desired[0]];
@@ -124,7 +146,7 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
     assert.deepEqual(Object.keys(updated[0].variables).sort(), ['_id', 'permissions']);
   }
   assert.equal(created[0].variables.sheets.length, 1);
-  assert.equal(created[0].variables.sheets[0].schema, 'archimede_triennio');
+  assert.deepEqual([created[0].variables.sheets[0].name, created[0].variables.sheets[0].schema, created[0].variables.sheets[0].commonData.olimanager_contest_id], ['CODE2', 'archimede_biennio', '31']);
   if (scenario === 'no-permissions') assert.equal(created[0].variables.sheets[0].permissions.length, 0);
   else assert.equal('__typename' in created[0].variables.sheets[0].permissions[0], false);
   assert.equal(completed, true);

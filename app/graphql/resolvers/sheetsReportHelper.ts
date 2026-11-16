@@ -18,10 +18,7 @@ export default async function sheetsReportHelper(
     const sheetFilter: Document = { _id: { $in: sheetIds} }
     
     if (!(user.isAdmin || user.isSupervisor)) {
-        sheetFilter.$or = [
-            { ownerId: user._id },
-            { 'permissions.email': user.email },
-        ]
+        sheetFilter['permissions.email'] = user.email
     }
 
     const allSheets = await sheetsCollection.find(sheetFilter).toArray()
@@ -58,10 +55,7 @@ export async function getAllSheets(
     const conditions: Document[] = []
     if (state === 'closed_or_locked') conditions.push({ $or: [ { closed: true }, { locked: true } ] })
     if (!(user.isAdmin || user.isSupervisor)) {
-        conditions.push({ $or: [
-            { ownerId: user._id },
-            { 'permissions.email': user.email },
-        ] })
+        conditions.push({ 'permissions.email': user.email })
     }
     if (conditions.length > 0) sheetFilter.$and = conditions
 

@@ -1,10 +1,11 @@
 import type { NextRequest } from 'next/server'
 import { queryOlimanager } from './olimanager'
 import type { Data, Permission } from './models'
+import { SHEET_CONTEST_KEY, isVenueSheetSchema, type VenueSheetSchema } from './olimanagerVenueSheetConfig'
 
 export type VenueSheet = {
     name: string
-    schema: 'archimede_biennio' | 'archimede_triennio'
+    schema: VenueSheetSchema
     commonData: Data
     permissions: Permission[]
 }
@@ -25,7 +26,7 @@ export async function venueSheetChoices(req: NextRequest): Promise<OlympiadChoic
     return result.olympiads.olympiads
 }
 
-export function sheetsFromSubscriptions(subscriptions: Subscription[], zones: Zone[]) {
+export function sheetsFromSubscriptions(subscriptions: Subscription[], zones: Zone[], schema: VenueSheetSchema, contestId: number) {
     const sheets: VenueSheet[] = []
     const warnings: string[] = []
     const seen = new Set<string>()
@@ -37,34 +38,40 @@ export function sheetsFromSubscriptions(subscriptions: Subscription[], zones: Zo
         if (seen.has(code)) throw new Error(`Codice meccanografico duplicato: ${code}.`)
         seen.add(code)
         const email = subscription.contact.user?.email?.trim().toLowerCase()
-        if (!email) warnings.push(`${code}: referente senza account/email; nessun amministratore assegnato.`)
+        if (!email) warnings.push(`${code}: referente senza account/email; nessun responsabile assegnato.`)
         // Extra schools override province membership, as in Olimanager's Zone.schools.
         const extra = zones.filter(zone => zone.extraSchools.some(s => s.pk === school.pk))
         const matches = extra.length ? extra : zones.filter(zone => zone.provinces.some(p => p.id === school.location?.city?.province?.id))
         if (matches.length !== 1) {
-            warnings.push(`${code}: ${matches.length ? 'distretto ambiguo' : 'distretto assente'}; nessun supervisore assegnato.`)
+            const province = school.location?.city?.province?.id || '?'
+            warnings.push(matches.length
+                ? `${code}: scuola riconducibile a più distretti (${matches.map(z => z.name).join(', ')}).`
+                : `${code}: scuola (provincia ${province}) non riconducibile ad alcun distretto.`)
         }
         const zone = matches.length === 1 ? matches[0] : undefined
         const emails = [...new Set((zone?.admins || []).map(a => a.user.email.trim().toLowerCase()).filter(Boolean))]
-        if (zone && !emails.length) warnings.push(`${code}: distretto ${zone.name} senza supervisori.`)
-        const permissions: Permission[] = email ? [{ email, role: 'admin' }] : []
-        permissions.push(...emails.filter(e => e !== email).map(email => ({ email, role: 'view' as const })))
-        for (const schema of ['archimede_biennio', 'archimede_triennio'] as const) sheets.push({
+        if (zone && !emails.length) warnings.push(`${code}: distretto ${zone.name} senza responsabili di distretto (RD).`)
+        const permissions: Permission[] = email ? [{ email, role: 'manager' }] : []
+        permissions.push(...emails.filter(e => e !== email).map(email => ({ email, role: 'viewer' as const })))
+        sheets.push({
             name: code, schema, permissions,
-            commonData: { Codice_meccanografico: code, Nome_scuola: school.name, 'Città_scuola': school.location?.city?.name || '', Distretto: zone?.name.replace(/^Distretto di /, '') || '' },
+            commonData: {
+                Codice_meccanografico: code, Nome_scuola: school.name, 'Città_scuola': school.location?.city?.name || '',
+                Distretto: zone?.name.replace(/^Distretto di /, '') || '', [SHEET_CONTEST_KEY]: String(contestId),
+            },
         })
     }
     return { sheets, warnings }
 }
 
-export async function loadVenueSheets(req: NextRequest, olympiadId: string, biennio: number, triennio: number) {
-    if (![biennio, triennio].every(n => Number.isInteger(n) && n > 0 && n <= 2147483647) || biennio === triennio) {
-        throw new Error('Seleziona due contest distinti per Biennio e Triennio.')
-    }
+export async function loadVenueSheets(req: NextRequest, olympiadId: string, editionId: string, schema: string, contestId: number) {
+    if (!isVenueSheetSchema(schema)) throw new Error('Schema non gestito dalla creazione da Olimanager.')
+    if (!Number.isInteger(contestId) || contestId <= 0 || contestId > 2147483647) throw new Error('Seleziona un contest.')
     const choices = await venueSheetChoices(req)
-    const olympiad = choices.find(o => o.id === olympiadId)
-    const edition = olympiad?.editions.find(e => [biennio, triennio].every(id => e.contests.some(c => c.id === id && c.scope === 'SCHOOL')))
-    if (!edition) throw new Error('I contest devono essere scolastici e appartenere alla stessa edizione dell’olimpiade scelta.')
+    const edition = choices.find(o => o.id === olympiadId)?.editions.find(e => e.id === editionId)
+    if (!edition?.contests.some(c => c.id === contestId && c.scope === 'SCHOOL')) {
+        throw new Error('Il contest deve essere scolastico e appartenere all’edizione dell’olimpiade scelta.')
+    }
     const { zones: { zones } } = await queryOlimanager<{ zones: { zones: Zone[] } }>(req, `query($olympiad: String!) {
         zones { zones(filters: {olympiad: {id: {exact: $olympiad}}}) {
             id name provinces { id } extraSchools { pk } admins { user { email } }
@@ -88,5 +95,5 @@ export async function loadVenueSheets(req: NextRequest, olympiadId: string, bien
         if (!cursor || cursors.has(cursor)) throw new Error('Paginazione delle scuole Olimanager non valida.')
         cursors.add(cursor)
     }
-    return { ...sheetsFromSubscriptions(subscriptions, zones), editionId: edition.id }
+    return sheetsFromSubscriptions(subscriptions, zones, schema, contestId)
 }

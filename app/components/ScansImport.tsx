@@ -71,7 +71,7 @@ const SCAN_JOBS_QUERY = gql`
             _id
             timestamp
             sheetId
-            ownerId
+            createdBy
             messages {
                 status
                 message

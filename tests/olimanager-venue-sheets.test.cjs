@@ -20,10 +20,10 @@ function load(relative, dependencies) {
 }
 const plain = value => JSON.parse(JSON.stringify(value));
 const config = load('app/lib/olimanagerVenueSheetConfig.ts', {});
-const { venueSheetPlan, samePermissions, permissionChanges, applyPermissionChanges } = load('app/lib/olimanagerVenueSheetPlan.ts', {});
+const { venueSheetPlan, samePermissions, permissionChanges, applyPermissionChanges } = load('app/lib/olimanagerVenueSheetPlan.ts', { './olimanagerVenueSheetConfig': config });
 test('applies only selected permission additions, removals and roles, preserving manual helpers', () => {
-  const current = [{ email: 'old@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'editor' }, { email: 'helper@example.org', role: 'editor' }];
-  const desired = [{ email: 'new@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'view' }];
+  const current = [{ email: 'old@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'editor' }, { email: 'helper@example.org', role: 'editor' }];
+  const desired = [{ email: 'new@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'viewer' }];
   assert.deepEqual(plain(applyPermissionChanges(current, desired, [])), current);
   assert.deepEqual(plain(applyPermissionChanges(current, desired, ['new@example.org'])), [...current, desired[0]]);
   assert.deepEqual(plain(applyPermissionChanges(current, desired, ['old@example.org'])), current.slice(1));
@@ -32,21 +32,38 @@ test('applies only selected permission additions, removals and roles, preserving
   assert.equal(current.length, 3);
 });
 test('permission plan distinguishes additions, removals, role changes, unchanged sheets and ambiguous matches', () => {
-  const current = [{ email: 'old@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'editor' }];
-  const desired = [{ email: 'new@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'view' }];
+  const current = [{ email: 'old@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'editor' }];
+  const desired = [{ email: 'new@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'viewer' }];
   assert.equal(samePermissions(current, [...current].reverse()), true);
   assert.equal(samePermissions(current, desired), false);
   assert.deepEqual(plain(permissionChanges(current, desired)), [
-    { email: 'coord@example.org', previousRole: 'editor', role: 'view' },
-    { email: 'new@example.org', role: 'admin' },
-    { email: 'old@example.org', previousRole: 'admin' },
+    { email: 'coord@example.org', previousRole: 'editor', role: 'viewer' },
+    { email: 'new@example.org', role: 'manager' },
+    { email: 'old@example.org', previousRole: 'manager' },
   ]);
-  const candidate = { name: 'CODE', schema: 'archimede_biennio', permissions: desired, commonData: {} };
-  const existing = { _id: 'id', name: 'Legacy name', schema: candidate.schema, permissions: current, commonData: { Codice_meccanografico: 'CODE' } };
+  const candidate = { name: 'CODE', schema: 'archimede_biennio', permissions: desired, commonData: { olimanager_contest_id: '31' } };
+  const existing = { _id: 'id', name: 'Legacy name', schema: candidate.schema, permissions: current, commonData: { Codice_meccanografico: 'CODE', olimanager_contest_id: '31' } };
   assert.equal(venueSheetPlan([candidate], [existing])[0].action, 'update');
+  assert.equal(venueSheetPlan([candidate], [existing])[0].assignContest, false);
   assert.equal(venueSheetPlan([candidate], [{ ...existing, permissions: desired }])[0].action, 'unchanged');
   assert.equal(venueSheetPlan([candidate], [existing, { ...existing, _id: 'duplicate' }])[0].action, 'conflict');
   assert.equal(venueSheetPlan([candidate], [])[0].action, 'create');
+  assert.equal(venueSheetPlan([candidate], [{ ...existing, schema: 'archimede_triennio' }])[0].action, 'create');
+});
+test('contest of existing sheets: same contest first, assignment of sheets without contest, conflict with another contest', () => {
+  const permissions = [{ email: 'ref@example.org', role: 'manager' }];
+  const candidate = { name: 'CODE', schema: 'archimede_biennio', permissions, commonData: { olimanager_contest_id: '31' } };
+  const sheet = (id, contest) => ({ _id: id, name: 'CODE', schema: candidate.schema, permissions, commonData: contest === undefined ? {} : { olimanager_contest_id: contest } });
+  const unassigned = venueSheetPlan([candidate], [sheet('a'), sheet('b', ' ')])[0];
+  assert.equal(unassigned.action, 'conflict');
+  const assign = venueSheetPlan([candidate], [sheet('a')])[0];
+  assert.deepEqual([assign.action, assign.assignContest, assign.sheet._id, assign.changes.length], ['update', true, 'a', 0]);
+  const same = venueSheetPlan([candidate], [sheet('a'), sheet('b', '31'), sheet('c', '99')])[0];
+  assert.deepEqual([same.action, same.sheet._id], ['unchanged', 'b']);
+  const other = venueSheetPlan([candidate], [sheet('c', '99')])[0];
+  assert.equal(other.action, 'conflict');
+  assert.match(other.reason, /#99/);
+  assert.equal(venueSheetPlan([candidate], [sheet('a'), sheet('c', '99')])[0].action, 'conflict');
 });
 const choices = [{ id: 'math', name: 'Matematica', editions: [
   { id: 'old', name: '2025', contests: [{ id: 31, name: 'Biennio', scope: 'SCHOOL' }, { id: 32, name: 'Triennio', scope: 'SCHOOL' }] },
@@ -61,37 +78,39 @@ const zones = [
   { id: 2, name: 'Lucca', provinces: [{ id: 'LU' }], extraSchools: [{ pk: 2 }], admins: [{ user: { email: 'lucca@example.org' } }] },
 ];
 function library(queryOlimanager = () => { throw new Error('Unexpected request'); }) {
-  return load('app/lib/olimanagerVenueSheets.ts', { './olimanager': { queryOlimanager } });
+  return load('app/lib/olimanagerVenueSheets.ts', { './olimanager': { queryOlimanager }, './olimanagerVenueSheetConfig': config });
 }
+const fromSubscriptions = (subscriptions, availableZones = zones) => library().sheetsFromSubscriptions(subscriptions, availableZones, 'archimede_biennio', 31);
 
-test('two Archimede sheets per valid school, admin contact and district supervisors; exceptions override province', () => {
-  const result = plain(library().sheetsFromSubscriptions([subscription(), subscription(2)], zones));
-  assert.equal(result.sheets.length, 4);
-  assert.deepEqual(result.sheets.slice(0, 2).map(s => s.schema), ['archimede_biennio', 'archimede_triennio']);
-  assert.deepEqual(result.sheets[0].permissions, [{ email: 'referente@example.org', role: 'admin' }, { email: 'coord@example.org', role: 'view' }]);
+test('one sheet of the chosen schema and contest per valid school, admin contact and district supervisors; exceptions override province', () => {
+  const result = plain(fromSubscriptions([subscription(), subscription(2)]));
+  assert.equal(result.sheets.length, 2);
+  assert.deepEqual(result.sheets.map(s => [s.schema, s.commonData.olimanager_contest_id]), [['archimede_biennio', '31'], ['archimede_biennio', '31']]);
+  assert.deepEqual(result.sheets[0].permissions, [{ email: 'referente@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'viewer' }]);
   assert.equal(result.sheets[0].commonData.Distretto, 'Pisa');
-  assert.equal(result.sheets[2].commonData.Distretto, 'Lucca');
-  assert.equal(result.sheets[2].permissions[1].email, 'lucca@example.org');
+  assert.equal(result.sheets[1].commonData.Distretto, 'Lucca');
+  assert.equal(result.sheets[1].permissions[1].email, 'lucca@example.org');
 });
 
 test('invalid subscriptions excluded; missing contact or district does not prevent creation', () => {
-  const result = library().sheetsFromSubscriptions([
+  const result = fromSubscriptions([
     subscription(1, 'PI', { isValid: false }), subscription(2, 'LU', { contact: { user: null } }), subscription(3, 'XX'),
-  ], zones);
-  assert.equal(result.sheets.length, 4);
-  assert.deepEqual(plain(result.sheets[0].permissions), [{ email: 'lucca@example.org', role: 'view' }]);
-  assert.deepEqual(plain(result.sheets[2].permissions), [{ email: 'referente@example.org', role: 'admin' }]);
-  assert.equal(result.sheets[2].commonData.Distretto, '');
+  ]);
+  assert.equal(result.sheets.length, 2);
+  assert.deepEqual(plain(result.sheets[0].permissions), [{ email: 'lucca@example.org', role: 'viewer' }]);
+  assert.deepEqual(plain(result.sheets[1].permissions), [{ email: 'referente@example.org', role: 'manager' }]);
+  assert.equal(result.sheets[1].commonData.Distretto, '');
   assert.equal(result.warnings.length, 2);
-  assert.throws(() => library().sheetsFromSubscriptions([subscription(), subscription()], zones), /duplicato/);
+  assert.match(result.warnings[1], /CODE3: scuola \(provincia XX\) non riconducibile ad alcun distretto\.$/);
+  assert.throws(() => fromSubscriptions([subscription(), subscription()]), /duplicato/);
 });
 
-test('creates both sheets with no admins or supervisors, including absent or ambiguous districts', () => {
+test('creates the sheet with no admins or supervisors, including absent or ambiguous districts', () => {
   const noContact = { contact: { user: null } };
   for (const availableZones of [[], [{ ...zones[0], admins: [] }], [zones[0], { ...zones[0], id: 3 }]]) {
-    const result = library().sheetsFromSubscriptions([subscription(1, 'PI', noContact)], availableZones);
-    assert.equal(result.sheets.length, 2);
-    assert.deepEqual(plain(result.sheets.map(s => s.permissions)), [[], []]);
+    const result = fromSubscriptions([subscription(1, 'PI', noContact)], availableZones);
+    assert.equal(result.sheets.length, 1);
+    assert.deepEqual(plain(result.sheets.map(s => s.permissions)), [[]]);
     assert.equal(result.warnings.length, 2);
     assert.equal(result.warnings.some(w => w.includes('esclus')), false);
   }
@@ -107,19 +126,19 @@ test('reads all pages of the selected historical edition instead of latest zone 
     assert.equal(variables.edition, 'old');
     return { olympiads: { edition: { subscriptions: { edges: [{ node: subscription(second ? 2 : 1) }], pageInfo: { hasNextPage: !second, endCursor: second ? null : 'page2' } } } } };
   });
-  const result = await lib.loadVenueSheets({}, 'math', 31, 32);
-  assert.equal(result.editionId, 'old');
-  assert.equal(result.sheets.length, 4);
+  const result = await lib.loadVenueSheets({}, 'math', 'old', 'archimede_triennio', 32);
+  assert.deepEqual(plain(result.sheets.map(s => [s.schema, s.commonData.olimanager_contest_id])), [['archimede_triennio', '32'], ['archimede_triennio', '32']]);
   assert.equal(requests.length, 4);
   assert.equal(requests[1].variables.olympiad, 'math');
 });
 
-test('rejects same contest, mismatched editions, wrong olympiad and non-school contests', async () => {
+test('rejects invalid contests, contests of another edition or olympiad, non-school contests and unsupported schemas', async () => {
   const lib = library(async () => ({ olympiads: { olympiads: choices } }));
-  for (const ids of [[31, 31], [0, 32], [31, 41], [41, 42]]) {
-    await assert.rejects(lib.loadVenueSheets({}, 'math', ...ids));
+  for (const [edition, schema, contest] of [['old', 'archimede_biennio', 0], ['old', 'archimede_biennio', 41], ['new', 'archimede_biennio', 42],
+    ['missing', 'archimede_biennio', 31], ['old', 'gara_prime', 31], ['old', 'constructor', 31]]) {
+    await assert.rejects(lib.loadVenueSheets({}, 'math', edition, schema, contest));
   }
-  await assert.rejects(lib.loadVenueSheets({}, 'other', 31, 32));
+  await assert.rejects(lib.loadVenueSheets({}, 'other', 'old', 'archimede_biennio', 31));
 });
 
 test('detects broken pagination instead of repeating requests forever', async () => {
@@ -128,31 +147,29 @@ test('detects broken pagination instead of repeating requests forever', async ()
     if (query.includes('zones {')) return { zones: { zones } };
     return { olympiads: { edition: { subscriptions: { edges: [], pageInfo: { hasNextPage: true, endCursor: 'same' } } } } };
   });
-  await assert.rejects(lib.loadVenueSheets({}, 'math', 31, 32), /Paginazione/);
+  await assert.rejects(lib.loadVenueSheets({}, 'math', 'old', 'archimede_biennio', 31), /Paginazione/);
 });
 
 function resolverFixture(remoteFailure = false) {
   const writes = [], remote = [];
   const module = load('app/graphql/resolvers/olimanagerVenueSheets.ts', {
     '@/app/lib/mongodb': { getWorkbooksCollection: async () => ({ findOne: async () => ({}), updateOne: async (...args) => { writes.push(args); return { acknowledged: true, matchedCount: 1 }; } }) },
-    '@/app/lib/olimanagerVenueSheets': { venueSheetChoices: async () => choices, loadVenueSheets: async (...args) => { remote.push(args); if (remoteFailure) throw new Error('OAuth failure'); return { sheets: [], warnings: [], editionId: 'old' }; } },
-    '@/app/lib/olimanagerVenueSheetConfig': config,
+    '@/app/lib/olimanagerVenueSheets': { venueSheetChoices: async () => choices, loadVenueSheets: async (...args) => { remote.push(args); if (remoteFailure) throw new Error('OAuth failure'); return { sheets: [], warnings: [] }; } },
     './utils': { get_authenticated_user: async ctx => { if (!ctx.user) throw new Error('Authentication required'); return ctx.user; }, check_admin: user => { if (!user.isAdmin) throw new Error('Forbidden'); } },
   });
   return { ...module, writes, remote };
 }
-const args = { workbookId: new ObjectId(), olympiadId: 'math', biennioContestId: 31, triennioContestId: 32 };
+const args = { workbookId: new ObjectId(), olympiadId: 'math', editionId: 'old', schema: 'archimede_biennio', contestId: 31 };
 const context = { user: { isAdmin: true, email: 'admin@example.org' }, req: {} };
-test('persists olympiad, edition and legacy contest keys with dotted updates, preserving other workbook settings', async () => {
+test('persists only olympiad and edition with dotted updates, preserving other workbook settings', async () => {
   const f = resolverFixture();
   await f.prepareOlimanagerVenueSheets(null, args, context);
   const update = f.writes[0][1].$set;
   assert.equal(update['commonData.olimanager_olympiad_id'], 'math');
   assert.equal(update['commonData.olimanager_edition_id'], 'old');
-  assert.equal(update['commonData.olimanager_archimede_biennio_contest_id'], '31');
-  assert.equal(update['commonData.olimanager_archimede_triennio_contest_id'], '32');
+  assert.equal(Object.keys(update).some(key => key.includes('contest')), false);
   assert.equal('commonData' in update, false);
-  assert.equal(f.remote[0][0], context.req);
+  assert.deepEqual(f.remote[0], [context.req, 'math', 'old', 'archimede_biennio', 31]);
 });
 test('no configuration writes on remote failure and no remote reads for unauthorized users', async () => {
   const f = resolverFixture(true);

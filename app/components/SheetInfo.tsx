@@ -9,6 +9,7 @@ import {Row, Sheet, User, useDeleteSheetMutation } from '@/app/graphql/generated
 import { Data } from '../lib/models'
 import { myTimestamp, pluralize } from '../lib/util'
 import { schemas } from '../lib/schema'
+import { SHEET_CONTEST_KEY } from '../lib/olimanagerVenueSheetConfig'
 import GlobalMessage from './GlobalMessage'
 
 const DELETE_SHEET = gql`
@@ -103,11 +104,11 @@ function SheetInfoPanel({sheet,profile}:{
 }) {
     const [edit,setEdit] = useState(false)
     const schema = schemas[sheet.schema]
-    const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
+    const canModifySensibleData = !!profile?.isAdmin
 
     if (!edit) {
         return <>
-            <PanelDisplay sheet={sheet} />
+            <PanelDisplay sheet={sheet} isAdmin={!!profile?.isAdmin} />
             {canModifySensibleData && 
             <Button className="mb-4" onClick={() => setEdit(true)}>⚙ modifica</Button>}
         </>
@@ -118,19 +119,22 @@ function SheetInfoPanel({sheet,profile}:{
     }
 }
 
-function PanelDisplay({sheet}: {
+function PanelDisplay({sheet, isAdmin}: {
     sheet: Sheet
+    isAdmin: boolean
 }) {
     const schema = schemas[sheet.schema]
+    // The Olimanager contest is configuration for administrators only.
+    const commonData = isAdmin ? sheet.commonData : Object.fromEntries(Object.entries(sheet.commonData || {}).filter(([key]) => key !== SHEET_CONTEST_KEY))
 
-    const { tabular, cards } = schema.customized_common_data(sheet.commonData)
+    const { tabular, cards } = schema.customized_common_data(commonData)
 
     return <>
         <table className="commondata">
             <tbody>
                 { tabular.map(([Key,value]) => 
                     <tr key={Key}>
-                        <th>{Key}</th>
+                        <th>{Key === SHEET_CONTEST_KEY ? '⚙ Contest id Olimanager' : Key}</th>
                         <td>{value}</td>
                     </tr>
                 )}
@@ -156,7 +160,7 @@ function PanelEdit({sheet,profile,onClose}: {
     const [commonData, setCommonData] = useState<Data>(sheet.commonData || {})
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
-    const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
+    const canModifySensibleData = !!profile?.isAdmin
 
 
     return <>
@@ -302,7 +306,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const [deleteSheet, {loading: deleting, error: deleteError, reset: deleteReset}] = useDeleteSheetMutation()
     const [permissions, setPermissions] = useState(sheet.permissions || [])
     const [newEmail, setNewEmail] = useState('')
-    const [newRole, setNewRole] = useState<'admin' | 'editor' | 'view'>('editor')
+    const [newRole, setNewRole] = useState<'manager' | 'editor' | 'viewer'>('editor')
     const [updateSheet, {loading: updating, error: updateError, reset: updateReset}] = useMutation(UPDATE_SHEET)
     const [deleteAllRows, {loading: clearingSheet, error: clearError, reset: clearReset}] = useMutation(DELETE_ALL_ROWS)
     const [closeSheet, {loading: closing, error: closeError, reset: closeReset}] = useMutation(CLOSE_SHEET)
@@ -311,13 +315,13 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     const [unlockSheet, {loading: unlocking, error: unlockError, reset: unlockReset}] = useMutation(UNLOCK_SHEET)
     // questi utenti possono modificare i commondata del foglio oltre 
     // che tutto il resto
-    const canModifySensibleData = profile?.isAdmin || profile?._id.toString() === sheet.ownerId?.toString()
+    const canModifySensibleData = !!profile?.isAdmin
     // questi utenti possono aprire/chiudere ma non finalizzare.
     // possono anche gestire i permessi di acceso al foglio (altri utenti)
-    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.email && p.email === profile.email) && p.role === 'admin'))
+    const canConfigureSheet = profile?.isAdmin || (profile && sheet.permissions.some(p => (p.email && p.email === profile.email) && p.role === 'manager'))
 
     const schema = schemas[sheet.schema]
-    const countSheetAdmins = sheet.permissions.filter(p => p.role === 'admin').length
+    const countSheetAdmins = sheet.permissions.filter(p => p.role === 'manager').length
     const myEmail = profile?.email || ''
 
     if (deleteError) return <Error error={deleteError} dismiss={deleteReset }/>
@@ -329,9 +333,9 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
     if (unlockError) return <Error error={unlockError} dismiss={unlockReset }/>
 
     const ROLE_LABELS: Record<string, string> = {
-        'admin': 'responsabile',
+        'manager': 'responsabile',
         'editor': 'aiutante',
-        'view': 'supervisore'
+        'viewer': 'osservatore'
     }
 
     const locked = sheet.locked
@@ -424,7 +428,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
               onChange={e => setNewEmail(e.target.value)}
               />
             </td><td>
-              {} <select value={newRole} onChange={e => setNewRole(e.target.value as 'admin' | 'editor' | 'view')}>
+              {} <select value={newRole} onChange={e => setNewRole(e.target.value as 'manager' | 'editor' | 'viewer')}>
                 {Object.entries(ROLE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
@@ -445,7 +449,7 @@ function SheetConfigure({sheet, profile, sheetContainsErrors}: {
             <ul className="list-disc list-inside">
                 <li><b>responsabile</b>: può dare/togliere i permessi di accesso e chiudere il foglio</li>
                 <li><b>aiutante</b>: può aggiungere/modificare/rimuovere righe nel foglio</li>
-                <li><b>supervisore</b>: può solo visualizzare le righe del foglio</li>
+                <li><b>osservatore</b>: può solo visualizzare le righe del foglio</li>
             </ul>
         </div>
         <div>

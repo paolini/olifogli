@@ -309,9 +309,10 @@ export type MutationPatchRowArgs = {
 
 
 export type MutationPrepareOlimanagerVenueSheetsArgs = {
-  biennioContestId: Scalars['Int']['input'];
+  contestId: Scalars['Int']['input'];
+  editionId: Scalars['String']['input'];
   olympiadId: Scalars['String']['input'];
-  triennioContestId: Scalars['Int']['input'];
+  schema: Scalars['String']['input'];
   workbookId: Scalars['ObjectId']['input'];
 };
 
@@ -745,8 +746,8 @@ export type Row = {
 export type ScanJob = {
   __typename?: 'ScanJob';
   _id: Scalars['ObjectId']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
   messages: Array<ScanMessage>;
-  ownerId: Scalars['ObjectId']['output'];
   sheetId: Scalars['ObjectId']['output'];
   timestamp: Scalars['Timestamp']['output'];
 };
@@ -800,6 +801,7 @@ export type Sheet = {
   closedBy?: Maybe<Scalars['String']['output']>;
   closedOn?: Maybe<Scalars['Timestamp']['output']>;
   commonData: Scalars['Data']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
   locked?: Maybe<Scalars['Boolean']['output']>;
   lockedBy?: Maybe<Scalars['String']['output']>;
   lockedOn?: Maybe<Scalars['Timestamp']['output']>;
@@ -809,7 +811,6 @@ export type Sheet = {
   nSyncedRows: Scalars['Int']['output'];
   nValidRows: Scalars['Int']['output'];
   name: Scalars['String']['output'];
-  ownerId: Scalars['ObjectId']['output'];
   permissions: Array<Permission>;
   schema: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['Timestamp']['output']>;
@@ -926,8 +927,8 @@ export type Workbook = {
   __typename?: 'Workbook';
   _id?: Maybe<Scalars['ObjectId']['output']>;
   commonData?: Maybe<Scalars['Data']['output']>;
+  createdBy?: Maybe<Scalars['String']['output']>;
   name?: Maybe<Scalars['String']['output']>;
-  ownerId?: Maybe<Scalars['ObjectId']['output']>;
   sheetsCount?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -1064,8 +1065,9 @@ export type OlimanagerVenueSheetChoicesQuery = { __typename?: 'Query', olimanage
 export type PrepareOlimanagerVenueSheetsMutationVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
   olympiadId: Scalars['String']['input'];
-  biennioContestId: Scalars['Int']['input'];
-  triennioContestId: Scalars['Int']['input'];
+  editionId: Scalars['String']['input'];
+  schema: Scalars['String']['input'];
+  contestId: Scalars['Int']['input'];
 }>;
 
 
@@ -1081,7 +1083,7 @@ export type ScanJobsQueryVariables = Exact<{
 }>;
 
 
-export type ScanJobsQuery = { __typename?: 'Query', scanJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, timestamp: Date, sheetId: ObjectId, ownerId: ObjectId, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
+export type ScanJobsQuery = { __typename?: 'Query', scanJobs: Array<{ __typename?: 'ScanJob', _id: ObjectId, timestamp: Date, sheetId: ObjectId, createdBy?: string | null, messages: Array<{ __typename?: 'ScanMessage', status: string, message: string, timestamp: Date }> }> };
 
 export type OnScanJobUpdatedSubscriptionVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1123,7 +1125,7 @@ export type GetSheetQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, ownerId: ObjectId, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email: string, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
+export type GetSheetQuery = { __typename?: 'Query', sheet?: { __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, nRows: number, nValidRows: number, anomalies: number, nSyncedRows: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, closedBy?: string | null, closedOn?: Date | null, locked?: boolean | null, lockedBy?: string | null, lockedOn?: Date | null, permissions: Array<{ __typename?: 'Permission', email: string, role: string }>, workbook: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null } } | null };
 
 export type GetRowsQueryVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -1370,7 +1372,7 @@ export type GetWorkbookQueryVariables = Exact<{
 }>;
 
 
-export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, ownerId?: ObjectId | null, commonData?: any | null, sheetsCount?: number | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }>, me?: { __typename?: 'User', _id: ObjectId, email: string, name?: string | null, isAdmin?: boolean | null } | null };
+export type GetWorkbookQuery = { __typename?: 'Query', workbook?: { __typename?: 'Workbook', _id?: ObjectId | null, name?: string | null, commonData?: any | null, sheetsCount?: number | null } | null, sheets: Array<{ __typename?: 'Sheet', _id: ObjectId }>, me?: { __typename?: 'User', _id: ObjectId, email: string, name?: string | null, isAdmin?: boolean | null } | null };
 
 export type GetWorkbookAgeDistributionReportQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -1428,7 +1430,7 @@ export type GetSheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, locked?: boolean | null, ownerId: ObjectId, permissions: Array<{ __typename?: 'Permission', email: string, role: string }> }> };
+export type GetSheetsQuery = { __typename?: 'Query', sheets: Array<{ __typename?: 'Sheet', _id: ObjectId, name: string, schema: string, commonData: any, updatedAt?: Date | null, nRows: number, nValidRows: number, nSyncedRows: number, anomalies: number, nScanJobs: number, nScanSheetJobs: number, closed?: boolean | null, locked?: boolean | null, permissions: Array<{ __typename?: 'Permission', email: string, role: string }> }> };
 
 export type GetWorkbookTimeDistributionReportQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -1963,12 +1965,13 @@ export type OlimanagerVenueSheetChoicesLazyQueryHookResult = ReturnType<typeof u
 export type OlimanagerVenueSheetChoicesSuspenseQueryHookResult = ReturnType<typeof useOlimanagerVenueSheetChoicesSuspenseQuery>;
 export type OlimanagerVenueSheetChoicesQueryResult = Apollo.QueryResult<OlimanagerVenueSheetChoicesQuery, OlimanagerVenueSheetChoicesQueryVariables>;
 export const PrepareOlimanagerVenueSheetsDocument = gql`
-    mutation PrepareOlimanagerVenueSheets($workbookId: ObjectId!, $olympiadId: String!, $biennioContestId: Int!, $triennioContestId: Int!) {
+    mutation PrepareOlimanagerVenueSheets($workbookId: ObjectId!, $olympiadId: String!, $editionId: String!, $schema: String!, $contestId: Int!) {
   prepareOlimanagerVenueSheets(
     workbookId: $workbookId
     olympiadId: $olympiadId
-    biennioContestId: $biennioContestId
-    triennioContestId: $triennioContestId
+    editionId: $editionId
+    schema: $schema
+    contestId: $contestId
   ) {
     sheets {
       name
@@ -2000,8 +2003,9 @@ export type PrepareOlimanagerVenueSheetsMutationFn = Apollo.MutationFunction<Pre
  *   variables: {
  *      workbookId: // value for 'workbookId'
  *      olympiadId: // value for 'olympiadId'
- *      biennioContestId: // value for 'biennioContestId'
- *      triennioContestId: // value for 'triennioContestId'
+ *      editionId: // value for 'editionId'
+ *      schema: // value for 'schema'
+ *      contestId: // value for 'contestId'
  *   },
  * });
  */
@@ -2067,7 +2071,7 @@ export const ScanJobsDocument = gql`
     _id
     timestamp
     sheetId
-    ownerId
+    createdBy
     messages {
       status
       message
@@ -2300,7 +2304,6 @@ export const GetSheetDocument = gql`
       commonData
     }
     commonData
-    ownerId
     nRows
     nValidRows
     anomalies
@@ -3480,7 +3483,6 @@ export const GetWorkbookDocument = gql`
   workbook(workbookId: $workbookId) {
     _id
     name
-    ownerId
     commonData
     sheetsCount
   }
@@ -3829,7 +3831,6 @@ export const GetSheetsDocument = gql`
     nScanSheetJobs
     closed
     locked
-    ownerId
   }
 }
     `;
@@ -4597,13 +4598,13 @@ export type ResolversTypes = {
   ReportEntry: ResolverTypeWrapper<Omit<ReportEntry, 'rowId' | 'sheetId'> & { rowId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ReportEntrySheet: ResolverTypeWrapper<ReportEntrySheet>;
   Row: ResolverTypeWrapper<Omit<Row, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
-  ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
+  ScanJob: ResolverTypeWrapper<Omit<ScanJob, '_id' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScanMessage: ResolverTypeWrapper<ScanMessage>;
   ScanResults: ResolverTypeWrapper<Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversTypes['ObjectId'], jobId: ResolversTypes['ObjectId'] }>;
   ScanSheetJob: ResolverTypeWrapper<Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversTypes['ObjectId'], sheetId: ResolversTypes['ObjectId'] }>;
   ScoreDistributionItem: ResolverTypeWrapper<ScoreDistributionItem>;
   Setting: ResolverTypeWrapper<Omit<Setting, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
-  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversTypes['ObjectId'], ownerId: ResolversTypes['ObjectId'] }>;
+  Sheet: ResolverTypeWrapper<Omit<Sheet, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   SheetInput: SheetInput;
   SheetState: SheetState;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -4614,7 +4615,7 @@ export type ResolversTypes = {
   UpdateSheetInput: UpdateSheetInput;
   User: ResolverTypeWrapper<Omit<User, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   UserCursor: ResolverTypeWrapper<UserCursor>;
-  Workbook: ResolverTypeWrapper<Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversTypes['ObjectId']>, ownerId?: Maybe<ResolversTypes['ObjectId']> }>;
+  Workbook: ResolverTypeWrapper<Omit<Workbook, '_id'> & { _id?: Maybe<ResolversTypes['ObjectId']> }>;
   WorkerFile: ResolverTypeWrapper<WorkerFile>;
   WorkerFileArea: ResolverTypeWrapper<WorkerFileArea>;
   WorkerFileDeletion: ResolverTypeWrapper<WorkerFileDeletion>;
@@ -4665,13 +4666,13 @@ export type ResolversParentTypes = {
   ReportEntry: Omit<ReportEntry, 'rowId' | 'sheetId'> & { rowId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ReportEntrySheet: ReportEntrySheet;
   Row: Omit<Row, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
-  ScanJob: Omit<ScanJob, '_id' | 'ownerId' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
+  ScanJob: Omit<ScanJob, '_id' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScanMessage: ScanMessage;
   ScanResults: Omit<ScanResults, '_id' | 'jobId'> & { _id: ResolversParentTypes['ObjectId'], jobId: ResolversParentTypes['ObjectId'] };
   ScanSheetJob: Omit<ScanSheetJob, '_id' | 'sheetId'> & { _id: ResolversParentTypes['ObjectId'], sheetId: ResolversParentTypes['ObjectId'] };
   ScoreDistributionItem: ScoreDistributionItem;
   Setting: Omit<Setting, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
-  Sheet: Omit<Sheet, '_id' | 'ownerId'> & { _id: ResolversParentTypes['ObjectId'], ownerId: ResolversParentTypes['ObjectId'] };
+  Sheet: Omit<Sheet, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   SheetInput: SheetInput;
   String: Scalars['String']['output'];
   Subscription: {};
@@ -4681,7 +4682,7 @@ export type ResolversParentTypes = {
   UpdateSheetInput: UpdateSheetInput;
   User: Omit<User, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   UserCursor: UserCursor;
-  Workbook: Omit<Workbook, '_id' | 'ownerId'> & { _id?: Maybe<ResolversParentTypes['ObjectId']>, ownerId?: Maybe<ResolversParentTypes['ObjectId']> };
+  Workbook: Omit<Workbook, '_id'> & { _id?: Maybe<ResolversParentTypes['ObjectId']> };
   WorkerFile: WorkerFile;
   WorkerFileArea: WorkerFileArea;
   WorkerFileDeletion: WorkerFileDeletion;
@@ -4807,7 +4808,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   olimanagerUpdateExtraFields?: Resolver<Array<ResolversTypes['OlimanagerUpdateExtraFieldsResult']>, ParentType, ContextType, Partial<MutationOlimanagerUpdateExtraFieldsArgs>>;
   openSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationOpenSheetArgs, '_id'>>;
   patchRow?: Resolver<Maybe<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<MutationPatchRowArgs, '_id' | 'data' | 'updatedOn'>>;
-  prepareOlimanagerVenueSheets?: Resolver<ResolversTypes['OlimanagerVenueSheetsPreview'], ParentType, ContextType, RequireFields<MutationPrepareOlimanagerVenueSheetsArgs, 'biennioContestId' | 'olympiadId' | 'triennioContestId' | 'workbookId'>>;
+  prepareOlimanagerVenueSheets?: Resolver<ResolversTypes['OlimanagerVenueSheetsPreview'], ParentType, ContextType, RequireFields<MutationPrepareOlimanagerVenueSheetsArgs, 'contestId' | 'editionId' | 'olympiadId' | 'schema' | 'workbookId'>>;
   recountSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationRecountSheetArgs, '_id'>>;
   requestOlimanagerCheck?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerCheckArgs>>;
   requestOlimanagerMatch?: Resolver<ResolversTypes['OlimanagerJob'], ParentType, ContextType, Partial<MutationRequestOlimanagerMatchArgs>>;
@@ -5050,8 +5051,8 @@ export type RowResolvers<ContextType = any, ParentType extends ResolversParentTy
 
 export type ScanJobResolvers<ContextType = any, ParentType extends ResolversParentTypes['ScanJob'] = ResolversParentTypes['ScanJob']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   messages?: Resolver<Array<ResolversTypes['ScanMessage']>, ParentType, ContextType>;
-  ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5105,6 +5106,7 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   closedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   closedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   commonData?: Resolver<ResolversTypes['Data'], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   locked?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   lockedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lockedOn?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
@@ -5114,7 +5116,6 @@ export type SheetResolvers<ContextType = any, ParentType extends ResolversParent
   nSyncedRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   nValidRows?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  ownerId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;
   schema?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
@@ -5176,8 +5177,8 @@ export type UserCursorResolvers<ContextType = any, ParentType extends ResolversP
 export type WorkbookResolvers<ContextType = any, ParentType extends ResolversParentTypes['Workbook'] = ResolversParentTypes['Workbook']> = {
   _id?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   commonData?: Resolver<Maybe<ResolversTypes['Data']>, ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  ownerId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
   sheetsCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

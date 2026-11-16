@@ -11,9 +11,9 @@ export default async function unlockSheet(_: unknown, args: { _id: ObjectId }, c
   
   if (!sheet) throw new Error('Sheet not found')
 
-  // Only the sheet owner or system admins can unlock a sheet
-  if (!user.isAdmin && sheet.ownerId?.toString() !== user._id?.toString()) {
-    throw new Error('Only the sheet owner or system admins can unlock the sheet')
+  // Only system admins can unlock a sheet
+  if (!user.isAdmin) {
+    throw new Error('Only system admins can unlock the sheet')
   }
 
   if (sheet.olimanagerJobId) throw new Error('Un lavoro Olimanager è attivo su questo foglio: attendere il completamento prima di sbloccarlo.')

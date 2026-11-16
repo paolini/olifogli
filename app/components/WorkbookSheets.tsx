@@ -30,7 +30,6 @@ const _ = gql`query GetSheets($workbookId: ObjectId) {
             nScanSheetJobs
             closed
             locked
-            ownerId
         }
     }
 `

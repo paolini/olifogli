@@ -54,7 +54,7 @@ test('sheet panel edits stay local until save, preserve a failed draft, and can 
       else delete globalThis[key];
     }
   });
-  const sheet = { _id: 'sheet', ownerId: 'owner', commonData: { name: 'Old', remove: 'value', zero: 0 } };
+  const sheet = { _id: 'sheet', commonData: { name: 'Old', remove: 'value', zero: 0 } };
   await act(async () => root.render(React.createElement(exports.PanelEdit, { sheet, profile: { isAdmin: true }, onClose: () => closed++ })));
   const input = key => [...container.querySelectorAll('tr')].find(row => row.querySelector('th')?.textContent === key)?.querySelector('input');
   const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set;

@@ -14,8 +14,8 @@ function fixture({ user, existing = false, permissions = [{ email: 'teacher@exam
   const targetId = new ObjectId();
   const calls = { users: 0, domain: 0, converted: 0, sheets: [], rows: [], updates: [] };
   const original = {
-    _id: targetId, workbookId, schema: 'target', name: 'Imported', ownerId: new ObjectId(),
-    permissions: [{ email: 'existing@example.org', role: 'view' }], commonData: {},
+    _id: targetId, workbookId, schema: 'target', name: 'Imported', createdBy: 'creator@example.org',
+    permissions: [{ email: 'existing@example.org', role: 'viewer' }], commonData: {},
     nRows: 0, nValidRows: 0, anomalies: 0,
   };
   const database = {
@@ -35,7 +35,7 @@ function fixture({ user, existing = false, permissions = [{ email: 'teacher@exam
     },
     async getWorkbooksCollection() {
       calls.domain++;
-      return { async findOne() { return { _id: workbookId, commonData: { olimanager_contest_id: '2026' } }; } };
+      return { async findOne() { return { _id: workbookId, commonData: {} }; } };
     },
     async getRowsCollection() {
       calls.domain++;
@@ -55,7 +55,8 @@ function fixture({ user, existing = false, permissions = [{ email: 'teacher@exam
       };
     } },
     target: {
-      validationContext() { return {}; },
+      // The contest comes from the target sheet, not the workbook.
+      validationContext() { return { contest_id: 2026 }; },
       async computeDerivedData(data) { return { data, error: '', anomalies: 0 }; },
     },
   };
@@ -90,7 +91,7 @@ test('createSheets rejects anonymous requests before any database access, includ
   }
 });
 
-for (const role of ['view', 'editor', 'admin', 'owner', 'supervisor']) {
+for (const role of ['viewer', 'editor', 'manager', 'supervisor']) {
   test(`createSheets rejects ${role} without global admin privileges before reading import data`, async () => {
     const f = fixture({ user: { isAdmin: false, isSupervisor: role === 'supervisor', role } });
     // A context flag cannot override the persisted global role.
@@ -121,9 +122,10 @@ for (const existing of [false, true]) {
     const sheet = existing ? updated : f.calls.sheets[0];
     assert.ok(sheet.permissions.some(p => p.email === 'teacher@example.org' && p.role === 'editor'));
     if (existing) {
-      assert.ok(sheet.permissions.some(p => p.email === 'existing@example.org' && p.role === 'view'));
+      assert.ok(sheet.permissions.some(p => p.email === 'existing@example.org' && p.role === 'viewer'));
     } else {
-      assert.equal(String(sheet.ownerId), String(f.userId));
+      assert.equal(sheet.createdBy, 'admin@example.org');
+      assert.equal('ownerId' in sheet, false);
     }
   });
 }
@@ -136,7 +138,7 @@ test('administrative dry-run reports the import without writing', async () => {
   assert.equal(f.calls.sheets.length + f.calls.rows.length + f.calls.updates.length, 0);
 });
 
-for (const permissions of [null, {}, [null], [{ email: '', role: 'admin' }],
+for (const permissions of [null, {}, [null], [{ email: '', role: 'manager' }],
   [{ email: 'not-an-email', role: 'editor' }], [{ email: 'user@example.org', role: 'isAdmin' }]]) {
   test(`invalid imported permissions are rejected before writes: ${JSON.stringify(permissions)}`, async () => {
     for (const existing of [false, true]) {

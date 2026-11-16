@@ -408,7 +408,7 @@ export class Distretti extends Schema {
                 name: sheet_name,
                 permissions: [{
                     email: row.data['email'],
-                    role: isPrimary ? 'admin' : 'editor',
+                    role: isPrimary ? 'manager' : 'editor',
                 }],
                 data: {
                     _id_distretto: row.data['id_distretto'],

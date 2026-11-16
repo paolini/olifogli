@@ -120,3 +120,9 @@ test('regression #66: an unknown answers code is reported as an invalid task cod
   const result = score(archimede(), { ...student, classYear: '1', variant: '291', ...answers(archimedeKeys.permutations_correct_2) }, sheetData, workbook());
   assert.equal(result.error, 'codice compito non valido');
 });
+
+test('the Olimanager contest is read from the sheet, never from the workbook', () => {
+  const workbookData = { contest_year: '2026', ...archimedeKeys, olimanager_contest_id: '7', olimanager_archimede_biennio_contest_id: '8' };
+  assert.equal(archimede().validationContext({ ...sheetData, olimanager_contest_id: '31' }, workbookData).contest_id, 31);
+  assert.ok(Number.isNaN(archimede().validationContext(sheetData, workbookData).contest_id));
+});

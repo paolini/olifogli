@@ -131,10 +131,10 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                 const rawCoordinatori = row.data?.Email_coordinatori || '';
                 coordinatori = rawCoordinatori.split(',').filter(Boolean).map((c: string) => c.trim().toLowerCase());
                 const permissions: Permission[] = [];
-                if (email) permissions.push({ email, role: 'admin' });
+                if (email) permissions.push({ email, role: 'manager' });
                 for (const coord of coordinatori) {
                     if (coord && coord !== email) {
-                        permissions.push({ email: coord, role: 'view' });
+                        permissions.push({ email: coord, role: 'viewer' });
                     }
                 }
                 for (const schema of ['archimede_biennio', 'archimede_triennio'] as const) {
@@ -160,7 +160,7 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                 const emailCoordinatori = (row.data?.Email_coordinatori || '').toLowerCase().split(',').map((e: string) => e.trim()).filter((e: string) => e)
                 const permissions: Permission[] = []
                 emailCoordinatori.forEach((email: string, i: number) => {
-                    permissions.push({ email: email, role: i===0 ? 'admin' : 'editor' })
+                    permissions.push({ email: email, role: i===0 ? 'manager' : 'editor' })
                 })
                 if (!distretti.has(nomeDistretto)) {
                     distretti.set(nomeDistretto, { name: nomeDistretto, permissions, rowId: row._id })
@@ -186,7 +186,7 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
                 const emailReferente = (row.data?.Email_referente || '').toLowerCase().trim()
                 const permissions: Permission[] = [{
                     email: emailReferente,
-                    role: 'admin',
+                    role: 'manager',
                 }]
                 if (!distretti.has(nomeDistretto)) {
                     distretti.set(nomeDistretto, { name: nomeDistretto, codice: codiceDistretto, permissions, rowId: row._id })

@@ -56,7 +56,7 @@ export default function WorkbookConfigure({workbook, profile, sheetsCount}: {
     const [format, setFormat] = useState<DataFormat>('yaml')
     const [dataValue, setDataValue] = useState(() => formatData(workbook.commonData || {}, 'yaml'))
     const [validationError, setValidationError] = useState<string | null>(null)
-    const canModify = profile?.isAdmin || profile?._id.toString() === workbook.ownerId?.toString()
+    const canModify = !!profile?.isAdmin
     const busy = updating || deleting
 
     return (

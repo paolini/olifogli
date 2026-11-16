@@ -390,7 +390,8 @@ test('two contests, 32 canonical problems, teacher names, participants and workb
     const problems = api.creations.filter(([model, values]) => model === 'contests/contestproblem' && values.contest === id).map(([, values]) => values);
     assert.deepEqual(problems.map((item) => item.index), Array.from({ length: 16 }, (_, i) => i + 1));
     assert.ok(problems.every((item) => item.min_score === 0 && item.max_score === 5));
-    assert.equal(first.workbookCommonData[`olimanager_archimede_${category}_contest_id`], id);
+    assert.equal(first.sheetCommonData[category].olimanager_contest_id, id);
+    assert.equal(Object.keys(first.workbookCommonData).some(key => key.includes('contest_id')), false);
   }
   const admins = api.creations.filter(([model]) => model === 'venues/venueadmin');
   assert.equal(admins.length, 2);

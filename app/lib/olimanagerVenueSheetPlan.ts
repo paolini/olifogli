@@ -1,3 +1,5 @@
+import { SHEET_CONTEST_KEY } from './olimanagerVenueSheetConfig'
+
 type Permission = { email: string, role: string }
 type Candidate = { name: string, schema: string, permissions: Permission[], commonData: Record<string, string> }
 type Existing = { _id: { toString(): string }, name: string, schema: string, permissions: Permission[], commonData: Record<string, string> }
@@ -32,12 +34,29 @@ export function applyPermissionChanges(current: Permission[], proposed: Permissi
     ]
 }
 
+export function sheetContest(sheet: { commonData?: Record<string, string> | null }) {
+    return String(sheet.commonData?.[SHEET_CONTEST_KEY] ?? '').trim()
+}
+
+// A candidate matches the sheets with the same schema and school code. Among
+// them, a sheet of the candidate's contest is the same sheet; a sheet without
+// contest is proposed for assignment; a sheet of another contest is a conflict.
 export function venueSheetPlan<T extends Candidate, S extends Existing>(candidates: T[], existing: S[]) {
     return candidates.map(candidate => {
+        const contest = sheetContest(candidate)
         const matches = existing.filter(s => s.schema === candidate.schema && (s.name === candidate.name || s.commonData?.Codice_meccanografico === candidate.name))
-        const sheet = matches.length === 1 ? matches[0] : undefined
+        const same = matches.filter(s => sheetContest(s) === contest)
+        const unassigned = matches.filter(s => !sheetContest(s))
+        const others = matches.filter(s => sheetContest(s) && sheetContest(s) !== contest)
+        const key = `${candidate.schema}:${candidate.name}`
+        const conflict = (reason: string) => ({ key, candidate, sheet: undefined, action: 'conflict' as const, changes: [], assignContest: false, reason })
+        if (same.length > 1) return conflict('più fogli corrispondenti: risolvere i duplicati')
+        if (!same.length && others.length) return conflict(`foglio esistente associato al contest #${sheetContest(others[0])}`)
+        if (!same.length && unassigned.length > 1) return conflict('più fogli corrispondenti senza contest: risolvere i duplicati')
+        const sheet = same[0] || unassigned[0]
+        const assignContest = !!sheet && !same.length
         const changes = sheet ? permissionChanges(sheet.permissions, candidate.permissions) : []
-        const action = matches.length > 1 ? 'conflict' : !sheet ? 'create' : changes.length ? 'update' : 'unchanged'
-        return { key: `${candidate.schema}:${candidate.name}`, candidate, sheet, action, changes }
+        const action = !sheet ? 'create' as const : changes.length || assignContest ? 'update' as const : 'unchanged' as const
+        return { key, candidate, sheet, action, changes, assignContest, reason: '' }
     })
 }

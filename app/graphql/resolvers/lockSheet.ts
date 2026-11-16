@@ -12,9 +12,9 @@ export default async function lockSheet(_: unknown, args: { _id: ObjectId }, con
   
   if (!sheet) throw new Error('Sheet not found')
 
-  // Only the sheet owner or system admins can lock a sheet
-  if (!user.isAdmin && sheet.ownerId?.toString() !== user._id?.toString()) {
-    throw new Error('Only the sheet owner or system admins can lock the sheet')
+  // Only system admins can lock a sheet
+  if (!user.isAdmin) {
+    throw new Error('Only system admins can lock the sheet')
   }
 
   const res = await sheets.updateOne(

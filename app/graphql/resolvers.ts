@@ -119,13 +119,10 @@ export const resolvers: Resolvers = {
         // Admin can see all sheets
         return await collection.countDocuments({ workbookId: parent._id })
       } else {
-        // Regular user can only see sheets they own or have permissions for
+        // Regular user can only see sheets they have permissions for
         return await collection.countDocuments({
           workbookId: parent._id,
-          $or: [
-            { ownerId: user._id },
-            { 'permissions.email': user.email },
-          ]
+          'permissions.email': user.email,
         })
       }
     }
@@ -201,7 +198,6 @@ export const resolvers: Resolvers = {
           if (!context) return false
           if (context.isAdmin || context.isSupervisor) return true
           // Payloads come from workbookUpdatedPayload; anything else is denied.
-          if (context.user_id && payload._ownerId === context.user_id.toString()) return true
           const allowedEmails = payload._allowedEmails as string[] | undefined
           return !!context.email && Array.isArray(allowedEmails) && allowedEmails.includes(context.email)
         }

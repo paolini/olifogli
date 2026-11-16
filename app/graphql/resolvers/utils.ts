@@ -1,4 +1,4 @@
-import type { SheetPermissionRole } from '@/app/lib/models'
+import type { Permission, SheetPermissionRole } from '@/app/lib/models'
 
 import { getUsersCollection } from '@/app/lib/mongodb'
 import { ApolloError, UserInputError, AuthenticationError, ForbiddenError } from 'apollo-server-errors'
@@ -12,6 +12,17 @@ export function check_authenticated({user_id}: Context): ObjectId {
     return user_id
   }
   
+// Every sheet role, checked against SheetPermissionRole by the compiler.
+const SHEET_PERMISSION_ROLES: Record<SheetPermissionRole, true> = { manager: true, editor: true, viewer: true }
+
+// Validates sheet permissions received from clients.
+export function parse_sheet_permissions(permissions: { email: string, role: string }[] | null | undefined): Permission[] {
+  return (permissions || []).map(p => {
+    if (!Object.hasOwn(SHEET_PERMISSION_ROLES, p.role)) throw new UserInputError('ruolo non valido')
+    return { email: p.email, role: p.role as SheetPermissionRole }
+  })
+}
+
 export function check_admin(user: User) {
   if (!user?.isAdmin) throw new ForbiddenError('non autorizzato')
 }
@@ -34,11 +45,8 @@ export async function get_authenticated_user(context: Context) {
 export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): SheetPermissionRole | null {
   if (!sheet) return null
   
-  // L'amministratore globale ha sempre accesso completo
-  if (user?.isAdmin) return 'owner'
-
-  // Il proprietario ha sempre controllo completo
-  if (sheet?.ownerId && sheet.ownerId.equals(user._id)) return 'owner'
+  // L'amministratore globale è responsabile di tutti i fogli
+  if (user?.isAdmin) return 'manager'
 
   // Controlla i permessi strutturati
   if (sheet.permissions && Array.isArray(sheet.permissions)) {
@@ -56,14 +64,14 @@ export function getUserPermissionOnSheet(user: User, sheet: Partial<Sheet>): She
   }
 
   // Il supervisore globale ha sempre accesso di sola lettura
-  if (user?.isSupervisor) return 'view'
+  if (user?.isSupervisor) return 'viewer'
   
   return null
 }
 
 /**
  * Controlla se l'utente può visualizzare un foglio
- * Anche gli utenti con permesso 'view' possono visualizzare
+ * Anche gli utenti con permesso 'viewer' possono visualizzare
  */
 export function check_user_can_view_sheet(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
   if (!sheet) throw new UserInputError('foglio inesistente')
@@ -84,7 +92,7 @@ export function check_user_can_edit_rows(user: User, sheet: Partial<Sheet>|null)
   if (user?.isAdmin) return // gli admin di sistema possono sempre modificare
 
   const permission = getUserPermissionOnSheet(user, sheet)
-  if (!permission || permission === 'view') {
+  if (!permission || permission === 'viewer') {
     throw new ForbiddenError('non autorizzato')
   }
   
@@ -110,13 +118,13 @@ export function check_user_can_update_sheet(user: User, sheet: Partial<Sheet>|nu
   const keys = Object.keys(args).filter(key => key !== '_id')
   if (keys.length === 0) return // non sta modificando niente
 
-  // Owner e admin possono modificare tutto
-  if (permission === 'owner' || permission === 'admin') {
+  // I responsabili possono modificare tutto
+  if (permission === 'manager') {
     return
   }
 
   // View: nessuna modifica permessa
-  if (permission === 'view') {
+  if (permission === 'viewer') {
     throw new ForbiddenError('permesso di sola lettura')
   }
 
@@ -133,22 +141,18 @@ export function check_user_can_update_sheet(user: User, sheet: Partial<Sheet>|nu
   throw new ForbiddenError('non autorizzato')
 }
 
-export function check_user_can_view_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
-    if (!job) throw new UserInputError('job inesistente')
-    if (user?.isAdmin || user?.isSupervisor) return
-    if (job.ownerId?.equals(user._id)) return
-    throw new ForbiddenError('non autorizzato')
-}
-
-export function check_user_can_delete_job(user: User, job: ScanJob|null): asserts job is NonNullable<ScanJob> {
-  return check_user_can_view_job(user, job)
+// Scan jobs follow the permissions of their sheet: whoever can view the sheet
+// sees the results, whoever can edit its rows deletes them. The uploader
+// (`createdBy`) has no special rights.
+export function check_job_exists(job: ScanJob|null): asserts job is NonNullable<ScanJob> {
+  if (!job) throw new UserInputError('job inesistente')
 }
 
 export function check_user_is_sheet_admin(user: User, sheet: Partial<Sheet>|null): asserts sheet is NonNullable<Sheet> {
   if (!sheet) throw new UserInputError('foglio inesistente')
   
   const permission = getUserPermissionOnSheet(user, sheet)
-  if (permission !== 'owner' && permission !== 'admin') {
+  if (permission !== 'manager') {
     throw new ForbiddenError('è richiesto il permesso di amministratore sul foglio')
   }
 }

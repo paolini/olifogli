@@ -418,11 +418,11 @@ async function setup(api, args, adminId, oauth = null, log = console.log) {
       row.participantId = String(match.participant.id);
     }
   }
-  const workbookCommonData = { ...require('./fixtures/archimede.json'), contest_year: String(args.year),
-    olimanager_archimede_biennio_contest_id: contests.biennio.contestId, olimanager_archimede_triennio_contest_id: contests.triennio.contestId,
-    olimanager_contest_id: contests.triennio.contestId };
+  const workbookCommonData = { ...require('./fixtures/archimede.json'), contest_year: String(args.year) };
+  const sheetCommonData = Object.fromEntries(Object.entries(contests).map(([category, contest]) =>
+    [category, { Codice_meccanografico: schoolCode, olimanager_contest_id: contest.contestId }]));
   const manifest = { origin: api.origin, applied: args.apply, editionId, contests, schoolId, schoolExternalId: schoolCode,
-    teacherEmail: args.teacher, studentEmail: args.student, workbookCommonData, sheetCommonData: { Codice_meccanografico: schoolCode }, rows };
+    teacherEmail: args.teacher, studentEmail: args.student, workbookCommonData, sheetCommonData, rows };
   if (oauth !== null) manifest.oauth = oauth;
   if (args.output) { fs.writeFileSync(args.output, JSON.stringify(manifest, null, 2) + '\n'); log(`Manifest salvato in ${args.output}`); }
   log(JSON.stringify(manifest, null, 2));

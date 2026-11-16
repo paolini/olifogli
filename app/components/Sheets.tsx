@@ -443,7 +443,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         refetch()
     }
 
-    async function applyBulkPermission(email: string, role: 'admin' | 'editor' | 'view') {
+    async function applyBulkPermission(email: string, role: 'manager' | 'editor' | 'viewer') {
         if (!profile?.isAdmin) return
         const emailTrimmed = (email || '').trim()
         if (!emailTrimmed || !emailTrimmed.includes('@')) return
@@ -451,11 +451,11 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         // Aggiorna i permessi su ciascun foglio: sostituisce eventuale entry per la stessa email
         await Promise.all(selectedSheets.map(async (sheet) => {
             const existing = (sheet.permissions || [])
-            type PermInput = { email: string; role: 'admin'|'editor'|'view' }
+            type PermInput = { email: string; role: 'manager'|'editor'|'viewer' }
             // Rimuovi l'eventuale permesso per la stessa email e pulisci i campi per l'input GraphQL (niente __typename)
             const kept: PermInput[] = existing
                 .filter(p => p.email !== emailTrimmed)
-                .map(p => ({ email: p.email, role: p.role as 'admin'|'editor'|'view' }))
+                .map(p => ({ email: p.email, role: p.role as 'manager'|'editor'|'viewer' }))
             const nextPermissions: PermInput[] = [
                 ...kept,
                 { email: emailTrimmed, role }
@@ -630,16 +630,16 @@ function BulkCommonDataSetter({sheets, onApply}:{
 
 function BulkPermissionSetter({sheets, onApply}:{
     sheets: Partial<Sheet>[],
-    onApply: (email: string, role: 'admin'|'editor'|'view') => Promise<void>
+    onApply: (email: string, role: 'manager'|'editor'|'viewer') => Promise<void>
 }) {
     const [email, setEmail] = useState('')
-    const [role, setRole] = useState<'admin'|'editor'|'view'>('editor')
+    const [role, setRole] = useState<'manager'|'editor'|'viewer'>('editor')
     const [loading, setLoading] = useState(false)
 
-    const ROLE_LABELS: Record<'admin'|'editor'|'view', string> = {
-        admin: 'responsabile',
+    const ROLE_LABELS: Record<'manager'|'editor'|'viewer', string> = {
+        manager: 'responsabile',
         editor: 'aiutante',
-        view: 'supervisore'
+        viewer: 'osservatore'
     }
 
     const handleApply = async () => {
@@ -671,8 +671,8 @@ function BulkPermissionSetter({sheets, onApply}:{
                     />
                 </th>
                 <td>
-                    <select className="p-1" value={role} onChange={e => setRole(e.target.value as 'admin'|'editor'|'view')}>
-                        {(['admin','editor','view'] as const).map(r => (
+                    <select className="p-1" value={role} onChange={e => setRole(e.target.value as 'manager'|'editor'|'viewer')}>
+                        {(['manager','editor','viewer'] as const).map(r => (
                             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                         ))}
                     </select>

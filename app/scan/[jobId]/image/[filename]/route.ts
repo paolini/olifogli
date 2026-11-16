@@ -4,8 +4,8 @@ import { constants } from 'fs'
 import { join } from 'path'
 import { ObjectId } from 'mongodb'
 
-import { check_user_can_view_job, get_authenticated_user } from '@/app/graphql/resolvers/utils'
-import { getScanJobsCollection } from '@/app/lib/mongodb'
+import { check_job_exists, check_user_can_view_sheet, get_authenticated_user } from '@/app/graphql/resolvers/utils'
+import { getScanJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
 import { get_context } from '@/app/graphql/types'
 
 const SCANS_DATA_DIR = process.env.SCANS_DATA_DIR || '';
@@ -30,7 +30,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     const job = await jobs.findOne({ _id: new ObjectId(jobId) })
 
     try {
-        check_user_can_view_job(user,job)
+        check_job_exists(job)
+        const sheets = await getSheetsCollection()
+        check_user_can_view_sheet(user, await sheets.findOne({ _id: job.sheetId }))
     } catch (error) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }

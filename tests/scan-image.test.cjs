@@ -24,9 +24,15 @@ async function fixture(t, configured = true) {
   await fs.writeFile(path.join(root, otherId, 'private.png'), 'OTHER_JOB_SECRET');
   const outside = path.join(directory, 'outside.png');
   await fs.writeFile(outside, 'OUTSIDE_SECRET');
-  const state = { user: { _id: userId }, job: { _id: new ObjectId(jobId), ownerId: userId }, jobReads: 0, fileReads: 0, handles: [] };
+  const sheetId = new ObjectId();
+  // The image follows the permissions of the job's sheet, not who uploaded it.
+  const state = { user: { _id: userId, email: 'reader@example.org' }, job: { _id: new ObjectId(jobId), sheetId, createdBy: 'uploader@example.org' },
+    sheet: { _id: sheetId, permissions: [{ email: 'reader@example.org', role: 'viewer' }] }, jobReads: 0, fileReads: 0, handles: [] };
   const database = {
     async getUsersCollection() { return { async findOne() { return state.user; } }; },
+    async getSheetsCollection() {
+      return { async findOne(query) { assert.equal(String(query._id), String(state.job.sheetId)); return state.sheet; } };
+    },
     async getScanJobsCollection() {
       return { async findOne(query) {
         state.jobReads++;
@@ -69,7 +75,7 @@ async function fixture(t, configured = true) {
   };
 }
 
-test('authorized job owner receives the image and the file handle is closed', async t => {
+test('a user who can view the sheet receives the image and the file handle is closed', async t => {
   const f = await fixture(t);
   const response = await f.request();
   assert.equal(response.status, 200);
@@ -116,7 +122,10 @@ test('anonymous and unauthorized users cannot reach the filesystem', async t => 
   const f = await fixture(t);
   f.state.user = null;
   await assert.rejects(f.request(), e => e.extensions.code === 'UNAUTHENTICATED');
-  f.state.user = { _id: new ObjectId() };
+  f.state.user = { _id: new ObjectId(), email: 'other@example.org' };
+  assert.equal((await f.request()).status, 403);
+  // Having uploaded the scan gives no access once the sheet permission is gone.
+  f.state.user = { _id: new ObjectId(), email: 'uploader@example.org' };
   assert.equal((await f.request()).status, 403);
   assert.equal(f.state.fileReads, 0);
 });
@@ -124,7 +133,7 @@ test('anonymous and unauthorized users cannot reach the filesystem', async t => 
 for (const role of ['admin', 'supervisor']) {
   test(`${role} retains access to scan images`, async t => {
     const f = await fixture(t);
-    f.state.user = { _id: new ObjectId(), isAdmin: role === 'admin', isSupervisor: role === 'supervisor' };
+    f.state.user = { _id: new ObjectId(), email: `${role}@example.org`, isAdmin: role === 'admin', isSupervisor: role === 'supervisor' };
     assert.equal((await f.request()).status, 200);
   });
 }
@@ -133,7 +142,7 @@ test('missing jobs, files and configuration do not expose filesystem details', a
   const f = await fixture(t);
   f.state.job = null;
   assert.equal((await f.request()).status, 403);
-  f.state.job = { _id: new ObjectId(f.jobId), ownerId: f.state.user._id };
+  f.state.job = { _id: new ObjectId(f.jobId), sheetId: f.state.sheet._id, createdBy: 'uploader@example.org' };
   assert.equal((await f.request('missing.png')).status, 404);
   const disabled = await fixture(t, false);
   assert.equal((await disabled.request()).status, 404);

@@ -20,7 +20,6 @@ const GET_WORKBOOK = gql`
         workbook(workbookId: $workbookId) {
             _id
             name
-            ownerId
             commonData
             sheetsCount
         }

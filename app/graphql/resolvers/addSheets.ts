@@ -1,7 +1,7 @@
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { Context } from '../types'
 
-import { get_authenticated_user, check_admin } from './utils'
+import { get_authenticated_user, check_admin, parse_sheet_permissions } from './utils'
 import { MutationAddSheetsArgs } from '../generated'
 
 export default async function addSheets (_: unknown, { sheets }: MutationAddSheetsArgs, context: Context) {
@@ -10,11 +10,7 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
     const collection = await getSheetsCollection()
     const now = new Date()
     const result = await collection.insertMany(sheets.map(sheet => {
-        // Converti PermissionInput a Permission
-        const permissions = (sheet.permissions || []).map(p => ({
-            email: p.email,
-            role: p.role as 'admin' | 'editor' | 'view'
-        }))
+        const permissions = parse_sheet_permissions(sheet.permissions)
         
         return {
             commonData: {},
@@ -25,7 +21,7 @@ export default async function addSheets (_: unknown, { sheets }: MutationAddShee
             nScanJobs: 0,
             nScanSheetJobs: 0,
             ...sheet,
-            ownerId: user._id,
+            createdBy: user.email,
             permissions,
             createdAt: now,
             updatedAt: now,

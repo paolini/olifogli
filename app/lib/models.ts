@@ -23,14 +23,15 @@ export type User = {
 }
 
 /**
- * owner: può fare tutto (i superutenti sono considerati owner di tutti i fogli)
- * admin: può fare tutto sui fogli dove ha questo permesso
- *        in particolare può dare permessi admin/editor/view a chi vuole
- * editor: può modificare i dati, ma non i metadati (nome, schema, permessi)
- * view: può solo vedere i dati, non può modificarli
+ * manager (responsabile): può fare tutto sui fogli dove ha questo permesso
+ *        in particolare può dare permessi manager/editor/viewer a chi vuole
+ *        (gli amministratori globali hanno questo ruolo su tutti i fogli)
+ * editor (aiutante): può modificare i dati, ma non i metadati (nome, schema, permessi)
+ * viewer (osservatore): può solo vedere i dati, non può modificarli
+ *        (i supervisori globali hanno questo ruolo su tutti i fogli)
  */
 
-export type SheetPermissionRole = 'owner' | 'admin' | 'editor' | 'view';
+export type SheetPermissionRole = 'manager' | 'editor' | 'viewer';
 
 export type Permission = {
     email: string
@@ -41,7 +42,7 @@ export type Sheet = {
     _id: ObjectId
     name: string
     schema: string
-    ownerId: ObjectId
+    createdBy?: string // email di chi ha creato il foglio; solo informativo
     permissions: Permission[]
     workbookId: ObjectId
     commonData: Record<string, string>
@@ -95,11 +96,10 @@ export type Row = {
 export type Workbook = {
     _id: ObjectId
     name: string
-    ownerId: ObjectId
     commonData: Record<string, string>
     createdOn: Date
     updatedOn: Date
-    createdBy: string
+    createdBy: string // email di chi ha creato il raccoglitore; solo informativo
     updatedBy: string
 }
 
@@ -113,7 +113,7 @@ export type ScanJob = {
     _id: ObjectId
     sheetId: ObjectId
     timestamp: Date
-    ownerId: ObjectId
+    createdBy: string // email di chi ha caricato il PDF; solo informativo
     messages: ScanMessage[]
 }
 

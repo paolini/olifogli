@@ -8,16 +8,17 @@ const { ObjectId } = require('mongodb');
 
 // Run the real resolvers and authorization helpers against in-memory collections.
 const root = path.resolve(__dirname, '..');
-function fixture({ role = 'view', isAdmin = false, sheet: sheetFields = {} } = {}) {
+function fixture({ role = 'viewer', isAdmin = false, sheet: sheetFields = {} } = {}) {
   const userId = new ObjectId();
   const sheetId = new ObjectId();
   const state = {
     user: { _id: userId, email: 'teacher@example.org', isAdmin },
     sheet: {
-      _id: sheetId, workbookId: new ObjectId(), ownerId: new ObjectId(), schema: 'known', name: 'Foglio',
+      _id: sheetId, workbookId: new ObjectId(), createdBy: 'creator@example.org', schema: 'known', name: 'Foglio',
       permissions: role ? [{ email: 'teacher@example.org', role }] : [], ...sheetFields,
     },
-    job: { _id: new ObjectId(), sheetId, ownerId: userId },
+    // Uploaded by someone else: scan permissions come only from the sheet.
+    job: { _id: new ObjectId(), sheetId, createdBy: 'uploader@example.org' },
     redis: [], published: [], sheetUpdates: [], deleted: [],
   };
   const sheets = {
@@ -92,7 +93,7 @@ test('cursors and moveCursor require authentication and read access to the sheet
 });
 
 test('moveCursor stores the cursor under the user and tab; viewers may read cursors', async () => {
-  const f = fixture({ role: 'view' });
+  const f = fixture({ role: 'viewer' });
   assert.equal((await f.call('cursors', { sheetId: f.sheetId })).length, 1);
   await f.call('moveCursor', { sheetId: f.sheetId, tabId: 'tab', lineKey: 'r', fieldName: 'f' });
   await f.call('moveCursor', { sheetId: f.sheetId, tabId: 'tab' });
@@ -101,34 +102,38 @@ test('moveCursor stores the cursor under the user and tab; viewers may read curs
 });
 
 test('updateSheet no longer accepts counters', async () => {
-  const f = fixture({ role: 'admin' });
+  const f = fixture({ role: 'manager' });
   await f.call('updateSheet', { _id: f.sheetId, nValidRows: 100, anomalies: 0 });
   assert.deepEqual(f.state.sheetUpdates, []);
 });
 
-test('updateSheet rejects unknown schemas and roles, and owner grants by sheet admins', async () => {
-  const f = fixture({ role: 'admin' });
+test('updateSheet rejects unknown schemas and roles, including the removed owner role', async () => {
+  const f = fixture({ role: 'manager' });
   await assert.rejects(f.call('updateSheet', { _id: f.sheetId, schema: 'missing' }), code('BAD_USER_INPUT'));
   await assert.rejects(f.call('updateSheet', { _id: f.sheetId, schema: '__proto__' }), code('BAD_USER_INPUT'));
   await assert.rejects(f.call('updateSheet', { _id: f.sheetId, permissions: [{ email: 'x@example.org', role: 'Editor' }] }), code('BAD_USER_INPUT'));
-  await assert.rejects(f.call('updateSheet', { _id: f.sheetId, permissions: [{ email: 'x@example.org', role: 'owner' }] }), code('FORBIDDEN'));
+  for (const role of ['owner', 'admin', 'view']) {
+    // Removed and renamed roles are rejected.
+    await assert.rejects(f.call('updateSheet', { _id: f.sheetId, permissions: [{ email: 'x@example.org', role }] }), code('BAD_USER_INPUT'));
+  }
   assert.deepEqual(f.state.sheetUpdates, []);
-  await f.call('updateSheet', { _id: f.sheetId, schema: 'known', permissions: [{ email: 'teacher@example.org', role: 'admin' }, { email: 'x@example.org', role: 'view' }] });
+  await f.call('updateSheet', { _id: f.sheetId, schema: 'known', permissions: [{ email: 'teacher@example.org', role: 'manager' }, { email: 'x@example.org', role: 'viewer' }] });
   assert.equal(f.state.sheetUpdates.length, 1);
 });
 
-test('existing owner entries can be kept by sheet admins; system admins may grant owner', async () => {
-  const kept = fixture({ role: 'admin' });
-  kept.state.sheet.permissions.push({ email: 'boss@example.org', role: 'owner' });
-  await kept.call('updateSheet', { _id: kept.sheetId, permissions: kept.state.sheet.permissions });
+test('the sheet creator has no special rights and nobody may grant the owner role', async () => {
+  const creator = fixture({ role: null });
+  creator.state.sheet.createdBy = creator.state.user.email;
+  creator.state.sheet.ownerId = creator.state.user._id;
+  await assert.rejects(creator.call('updateSheet', { _id: creator.sheetId, name: 'Nuovo' }), code('FORBIDDEN'));
   const admin = fixture({ role: null, isAdmin: true });
-  await admin.call('updateSheet', { _id: admin.sheetId, permissions: [{ email: 'boss@example.org', role: 'owner' }] });
-  assert.equal(kept.state.sheetUpdates.length + admin.state.sheetUpdates.length, 2);
+  await assert.rejects(admin.call('updateSheet', { _id: admin.sheetId, permissions: [{ email: 'boss@example.org', role: 'owner' }] }), code('BAD_USER_INPUT'));
+  assert.equal(creator.state.sheetUpdates.length + admin.state.sheetUpdates.length, 0);
 });
 
 for (const status of ['locked', 'closed']) {
   test(`name and schema of a ${status} sheet can be changed only by system admins`, async () => {
-    const f = fixture({ role: 'admin', sheet: { [status]: true } });
+    const f = fixture({ role: 'manager', sheet: { [status]: true } });
     await assert.rejects(f.call('updateSheet', { _id: f.sheetId, name: 'Altro' }), code('FORBIDDEN'));
     await assert.rejects(f.call('updateSheet', { _id: f.sheetId, schema: 'known' }), code('FORBIDDEN'));
     const admin = fixture({ role: null, isAdmin: true, sheet: { [status]: true } });
@@ -138,7 +143,7 @@ for (const status of ['locked', 'closed']) {
 }
 
 test('recountSheet is admin only and stores the counters computed from the rows', async () => {
-  const f = fixture({ role: 'admin' });
+  const f = fixture({ role: 'manager' });
   await assert.rejects(f.call('recountSheet', { _id: f.sheetId }), code('FORBIDDEN'));
   const admin = fixture({ role: null, isAdmin: true });
   await admin.call('recountSheet', { _id: admin.sheetId });
@@ -146,22 +151,25 @@ test('recountSheet is admin only and stores the counters computed from the rows'
   assert.deepEqual([$set.nRows, $set.nValidRows, $set.nSyncedRows, $set.anomalies], [2, 1, 0, 3]);
 });
 
-test('scan results require current access to the sheet, even for the job owner', async () => {
+test('scan results are visible to whoever can view the sheet, and only to them', async () => {
   const f = fixture({ role: null });
   await assert.rejects(f.call('scanResults', { jobId: f.state.job._id }), code('FORBIDDEN'));
-  f.state.sheet.permissions = [{ email: 'teacher@example.org', role: 'view' }];
+  f.state.user.email = 'uploader@example.org';
+  await assert.rejects(f.call('scanResults', { jobId: f.state.job._id }), code('FORBIDDEN'));
+  f.state.user.email = 'teacher@example.org';
+  f.state.sheet.permissions = [{ email: 'teacher@example.org', role: 'viewer' }];
   assert.equal((await f.call('scanResults', { jobId: f.state.job._id })).length, 1);
 });
 
-for (const status of ['locked', 'closed', 'view-only']) {
-  test(`the job owner cannot delete a scan on a ${status} sheet`, async () => {
-    const f = status === 'view-only' ? fixture({ role: 'view' }) : fixture({ role: 'editor', sheet: { [status]: true } });
+for (const status of ['locked', 'closed', 'viewer-only']) {
+  test(`a scan cannot be deleted on a ${status} sheet`, async () => {
+    const f = status === 'viewer-only' ? fixture({ role: 'viewer' }) : fixture({ role: 'editor', sheet: { [status]: true } });
     await assert.rejects(f.call('deleteScan', { jobId: f.state.job._id }), code('FORBIDDEN'));
     assert.deepEqual(f.state.deleted, []);
   });
 }
 
-test('the job owner with edit rights can delete a scan', async () => {
+test('whoever can edit the rows deletes a scan uploaded by someone else', async () => {
   const f = fixture({ role: 'editor' });
   assert.equal(await f.call('deleteScan', { jobId: f.state.job._id }), true);
   assert.deepEqual(f.state.deleted, ['results', 'job']);

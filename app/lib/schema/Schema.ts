@@ -3,6 +3,7 @@ import { ReportEntry, Row, ScanResults } from "@/app/graphql/generated"
 import { Data, Sheet, Row as RowModel, Permission as PermissionModel } from '@/app/lib/models'
 import { Field } from './fields'
 import { ValidationContext } from "./Context"
+import { SHEET_CONTEST_KEY } from "../olimanagerVenueSheetConfig"
 
 export type DerivedData = {
     error: string,
@@ -101,9 +102,7 @@ export default class Schema {
 
     validationContext(sheetCommonData: Data, workbookCommonData: Data): ValidationContext {
         const context = this.displayValidationContext(workbookCommonData)
-        const primary_contest_field_name = `olimanager_${this.name}_contest_id`
-        const secondary_contest_field_name = `olimanager_contest_id`
-        context.contest_id = parseInt(workbookCommonData[primary_contest_field_name] || workbookCommonData[secondary_contest_field_name] || '', 10)
+        context.contest_id = parseInt(sheetCommonData[SHEET_CONTEST_KEY] || '', 10)
         return context
     }
 

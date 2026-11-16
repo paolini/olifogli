@@ -44,8 +44,6 @@ export default async function createSheets(
     const workbook = await workbooksCollection.findOne({_id: importSheet.workbookId});
     if (!workbook) throw new Error('Workbook not found');
 
-    const contest_id = workbook.commonData['olimanager_contest_id'] || '';
-
     const rowsCollection = await getRowsCollection();
 
     const query: {
@@ -78,7 +76,7 @@ export default async function createSheets(
         if (permissions !== undefined && (!Array.isArray(permissions) || permissions.some(permission =>
             !permission || typeof permission.email !== 'string' ||
             !/^[^\s@]+@[^\s@]+$/.test(permission.email) ||
-            !['owner', 'admin', 'editor', 'view'].includes(permission.role)
+            !['manager', 'editor', 'viewer'].includes(permission.role)
         ))) {
             throw new UserInputError('permessi importati non validi');
         }
@@ -118,7 +116,7 @@ export default async function createSheets(
                 const payload: WithoutId<Sheet> = {
                     workbookId: importSheet!.workbookId,
                     name: name,
-                    ownerId: user._id,
+                    createdBy: user.email,
                     schema: data.sheet.schema,
                     permissions: data.sheet.permissions || [],
                     commonData: data.sheet.data || {},
@@ -247,8 +245,8 @@ export default async function createSheets(
             };
             if (data.row.olimanager.contestId) {
                 row.olimanager.contestId = data.row.olimanager.contestId;
-            } else if (contest_id) {
-                row.olimanager.contestId = contest_id;
+            } else if (!isNaN(validationContext.contest_id)) {
+                row.olimanager.contestId = String(validationContext.contest_id);
             }
         }
 

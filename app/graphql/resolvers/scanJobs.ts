@@ -5,8 +5,7 @@ import { get_authenticated_user, check_user_can_view_sheet } from './utils'
 import { ScanJob } from '@/app/lib/models'
 import { QueryScanJobsArgs } from '../generated'
 
-// Every user who can view the sheet sees all its jobs; opening results
-// (scanResults) is limited to the job owner, admins and supervisors.
+// Every user who can view the sheet sees all its jobs and their results.
 export default async function scans (_: unknown, { sheetId }: QueryScanJobsArgs, context: Context) {
     const user = await get_authenticated_user(context)
     const sheets = await getSheetsCollection()

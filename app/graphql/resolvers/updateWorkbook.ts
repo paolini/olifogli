@@ -5,16 +5,10 @@ import { MutationUpdateWorkbookArgs } from '../generated'
 
 export default async function updateWorkbook(_: unknown, args: MutationUpdateWorkbookArgs, context: Context): Promise<boolean> {
   const user = await get_authenticated_user(context)
+  check_admin(user)
   const workbooks = await getWorkbooksCollection()
   const workbook = await workbooks.findOne({ _id: args._id })
-  
   if (!workbook) throw new Error('Workbook not found')
-  
-  // Check if user is admin or owner
-  const isOwner = workbook.ownerId?.toString() === user._id.toString()
-  if (!user.isAdmin && !isOwner) {
-    throw new Error('Only workbook owner or system administrators can update workbook')
-  }
 
   const update: Record<string, unknown> = {}
   if (typeof args.name === 'string') update.name = args.name

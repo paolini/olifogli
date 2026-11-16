@@ -69,7 +69,7 @@ const source = `query($id: ObjectId!) {
   sheets(workbookId: $id) { commonData ... on Sheet { workbook { ...Fields } } }
 }
 fragment Fields on Workbook { exposed: commonData }`;
-for (const role of ['view', 'editor', 'owner', 'admin', 'supervisor']) {
+for (const role of ['view', 'editor', 'admin', 'supervisor']) {
   test(`Workbook.commonData is protected on all query paths for ${role}`, async () => {
     const result = await graphql({ schema, source, variableValues: { id: workbookId.toString() }, contextValue: { user: { role, isAdmin: role === 'admin', isSupervisor: role === 'supervisor' } } });
     assert.equal(result.errors, undefined);

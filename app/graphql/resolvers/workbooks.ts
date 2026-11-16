@@ -15,10 +15,7 @@ export default async function workbooks(_: unknown, __: unknown, context: Contex
     } else {
         // considero tutti i workbooks degli sheets a cui l'utente ha accesso.
         const pipeline = [
-            { $match: { $or: [
-                { ownerId: user._id },
-                { 'permissions.email': user.email },
-            ] } },
+            { $match: { 'permissions.email': user.email } },
             { $group: { _id: "$workbookId" } },
             {
                 $lookup: {
