@@ -30,6 +30,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    environment: docker-publish
     needs: test
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     # A newer push to the same branch supersedes an image still being built.

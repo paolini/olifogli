@@ -110,6 +110,14 @@ non produce immagini (vedi [README](../README.md#rami-ci-e-staging)). I worker
 `oliscan` e `olisheet` di archiomr seguono le stesse convenzioni: in produzione
 `:main`, sullo staging `:staging` (vedi [omr.md](omr.md)).
 
+Il job `build` usa l'environment GitHub `docker-publish`, configurato in
+`Settings → Environments` con accesso consentito soltanto ai branch `main` e
+`staging` (nessun tag). Il secret `DOCKERHUB_TOKEN` va salvato in questo
+environment e rimosso dai repository secrets: lasciarlo anche a livello di
+repository lo rende accessibile ai workflow degli altri branch. Il nome utente
+`DOCKERHUB_USERNAME` può restare nei repository secrets. Entrambi i branch
+autorizzati vanno protetti per controllare chi può pubblicare immagini.
+
 Dopo la pubblicazione occorre aggiornare **tutti** i servizi che usano
 l'immagine (app, `ws-server` e `olifogli-worker`, più `oliscan` e `olisheet` se
 è uscita una nuova versione di archiomr) e verificare le versioni effettive nei
