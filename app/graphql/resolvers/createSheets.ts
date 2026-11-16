@@ -8,6 +8,10 @@ import { RowToSheetsResult } from "@/app/lib/schema/Schema";
 import { check_admin, get_authenticated_user } from "./utils";
 import { UserInputError } from "apollo-server-errors";
 
+// Obsolete: creates sheets and rows from the rows of an import sheet
+// (Distrettuale.row_to_sheet). Replaced by the Olimanager sheet creation
+// (OlimanagerVenueSheetsCreation), to be removed once it supports all
+// contests. Do not extend. Sheets created here have no Olimanager contest.
 export default async function createSheets(
   _: unknown,
   args: MutationCreateSheetsArgs,

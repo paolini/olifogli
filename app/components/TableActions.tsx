@@ -203,6 +203,7 @@ const actions: Record<string, Action> = {
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleAnonymizeNames
   },
+  // Obsolete: see the createSheets mutation.
   'create_sheets': {
     hidden: ctx => !ctx.schema.row_to_sheet,
     label: 'Genera fogli',

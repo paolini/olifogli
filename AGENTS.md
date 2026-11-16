@@ -78,6 +78,12 @@ npm run codegen   # regenerate app/graphql/generated.ts
   top-level file with their extension (`.pdf`, `.jsonl`).
 - **Real-time updates**: most subscriptions carry only a signal; clients refetch
   over HTTP. Follow the same pattern for new ones.
+- **Obsolete sheet creation**: the `createSheets` mutation (with
+  `Schema.row_to_sheet`, `Distrettuale` and the «Genera fogli» table action)
+  and `app/components/SheetsCreation.tsx` (from a `scuole` sheet) are kept only
+  until the Olimanager sheet creation (`OlimanagerVenueSheetsCreation`,
+  `prepareOlimanagerVenueSheets`) supports all contests. Do not extend them;
+  add new contests to the Olimanager creation instead (`VENUE_SHEET_SCHEMAS`).
 - **Documentation**: keep it in Italian and update the relevant file in `docs/`
   when behavior changes. Refer to code names in backticks so they can be
   grepped.

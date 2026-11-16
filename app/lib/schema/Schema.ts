@@ -56,6 +56,7 @@ export default class Schema {
     fields_to_be_ignored_on_inport: string[] = [] // non si tenta di associare questi nomi a campi esistenti
     fields_sensitive_names: string[] = [] // nomi dei campi contenenti dati sensibili da crittografare
     fields_sensitive_dates: string[] = [] // nomi dei campi contenenti date sensibili da crittografare
+    // Obsolete: used only by the createSheets mutation, to be removed with it.
     row_to_sheet: undefined | ((row: RowModel) => RowToSheetsResult|string) = undefined
     extract_olimanager_results: undefined | ((row: RowModel, context: ValidationContext) => OlimanagerProblemResult[]) = undefined
     extract_ranking: undefined | ((row: RowModel, sheet: Sheet) => ReportEntry | undefined) = undefined

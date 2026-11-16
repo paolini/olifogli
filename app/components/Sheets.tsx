@@ -558,6 +558,7 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
                     : <><Unlock size={16} className="text-green-600" />&nbsp;aperto</>}
             </span>
         </td>
+        {/* Obsolete: entry point of SheetsCreation. */}
         { sheet.schema === 'scuole' && profile?.isAdmin && selected &&
             <td>
                 <Button disabled={creationDisabled} onClick={() => startCreation(sheet._id)}>

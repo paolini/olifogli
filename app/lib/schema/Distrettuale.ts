@@ -347,7 +347,8 @@ export class ImportazionePartecipantiDistrettuale extends Schema {
 
     // estrae da una riga di questo schema i dati 
     // da usare per popolare la riga di un nuovo foglio
-    // di uno schema diverso
+    // di uno schema diverso.
+    // Obsolete: used only by the createSheets mutation, to be removed with it.
     row_to_sheet = (row: Row): RowToSheetsResult | string => {
         const TargetSchema = this.TargetSchema
         const sheet_name = row.data['distretto'].replace('Distretto di ','').trim()
@@ -396,6 +397,7 @@ export class Distretti extends Schema {
         ])
     }
 
+    // Obsolete: used only by the createSheets mutation, to be removed with it.
     row_to_sheet = (row: Row): RowToSheetsResult|string => {
         const TargetSchema = this.TargetSchema
         const sheet_name = row.data['distretto'].replace('Distretto di ','').trim()

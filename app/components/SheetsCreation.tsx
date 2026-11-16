@@ -27,6 +27,10 @@ type Job = {
  * stesse. Usa le colonne per dare i permessi agli utenti.
  */
 
+// Obsolete: creates sheets from the rows of a «scuole e referenti» sheet
+// (schema `scuole`). Replaced by the Olimanager sheet creation
+// (OlimanagerVenueSheetsCreation), to be removed once it supports all
+// contests. Do not extend. Sheets created here have no Olimanager contest.
 export default function SheetsCreation({ sheetId, workbookId, done }: {
     sheetId: ObjectId,
     workbookId: ObjectId,
