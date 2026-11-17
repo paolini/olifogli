@@ -1,6 +1,6 @@
 {
   "name": "olifogli",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "private": true,
   "engines": {
     "node": ">=24"
@@ -12,6 +12,7 @@
     "olimanager:setup": "node scripts/setup-olimanager.cjs",
     "test:olimanager": "node --test tests/olimanager-setup.test.cjs",
     "dev": "next dev",
+    "dev:all": "bash scripts/dev.sh",
     "build": "next build",
     "start": "next start",
     "lint": "eslint app ws-server.ts olifogli-worker.ts instrumentation.ts next.config.ts",

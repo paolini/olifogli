@@ -55,7 +55,8 @@ delle variabili è in [docs/deploy.md](docs/deploy.md#variabili-dambiente).
 
 Servono quattro processi: MongoDB (porta 27017), Redis (porta 6379),
 Next.js (porta 3000) e il server WebSocket (porta 4001). Un quinto, il worker,
-serve solo per i lavori in background. `npm run dev` avvia soltanto Next.js.
+serve solo per i lavori in background. `npm run dev:all` avvia Next.js, server
+WebSocket e worker insieme; `npm run dev` avvia soltanto Next.js.
 
 1. Con Docker e Docker Compose installati, avvia MongoDB e Redis dalla radice
    del repository usando il file `docker-compose.yml` di esempio:
@@ -79,7 +80,18 @@ serve solo per i lavori in background. `npm run dev` avvia soltanto Next.js.
    npm ci
    ```
 
-3. Avvia Next.js in un terminale:
+3. Avvia Next.js, server WebSocket e worker in un solo terminale:
+
+   ```bash
+   npm run dev:all              # oppure: npm run dev:all -- --no-worker
+   ```
+
+   Lo script `scripts/dev.sh` antepone a ogni riga il nome del processo
+   (`[next]`, `[ws]`, `[worker]`) e, con Ctrl-C o se uno dei processi termina,
+   li ferma tutti. In alternativa si possono avviare separatamente, come nei
+   passi seguenti.
+
+   Per avviare solo Next.js:
 
    ```bash
    npm run dev
