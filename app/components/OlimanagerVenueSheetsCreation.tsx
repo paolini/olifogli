@@ -25,6 +25,9 @@ const PREPARE = gql`
 // Selection key of a sheet's contest assignment; never a valid email.
 const CONTEST_CHANGE = '#contest'
 
+// Background of the status cell and of the summary entries; unchanged sheets stay white.
+const ACTION_COLORS: Record<string, string> = { create: 'bg-green-100', update: 'bg-yellow-100', conflict: 'bg-red-100', unchanged: '' }
+
 export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { workbookId: ObjectId, done: () => void }) {
     const workbook = useGetWorkbookQuery({ variables: { workbookId } })
     const existing = useGetSheetsQuery({ variables: { workbookId } })
@@ -124,7 +127,12 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
         <Button disabled={busy} onClick={done}>Annulla</Button>
         {preview && <>
             {preview.warnings.length > 0 && <ul>{preview.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul>}
-            <p>{newCount} fogli da creare; {updateCount} da aggiornare; {plan.filter(p => p.action === 'unchanged').length} invariati; {plan.filter(p => p.action === 'conflict').length} in conflitto.</p>
+            <p>
+                <span className={`${ACTION_COLORS.create} px-1`}>{newCount} fogli da creare</span>;{' '}
+                <span className={`${ACTION_COLORS.update} px-1`}>{updateCount} da aggiornare</span>;{' '}
+                {plan.filter(p => p.action === 'unchanged').length} invariati;{' '}
+                <span className={`${ACTION_COLORS.conflict} px-1`}>{plan.filter(p => p.action === 'conflict').length} in conflitto</span>.
+            </p>
             {updateCount > 0 && <p>Seleziona le singole modifiche da applicare. Gli accessi non selezionati vengono conservati, inclusi quelli degli aiutanti aggiunti a mano. La casella del foglio seleziona tutte le sue modifiche, comprese le rimozioni.</p>}
             <label><input type="checkbox" disabled={busy || !actionable.length} checked={actionable.length > 0 && actionable.every(isChecked)} onChange={e => {
                 setSelected(new Set(e.target.checked ? actionable.filter(p => p.action === 'create').map(p => p.key) : []))
@@ -151,7 +159,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
                             {c.email}: {c.previousRole && c.role ? `${roleLabel(c.previousRole)} → ${roleLabel(c.role)}` : c.role ? `aggiungi (${roleLabel(c.role)})` : `rimuovi (${roleLabel(c.previousRole!)})`}
                         </label></li>)}
                     </ul> : '—'}</td>
-                    <td>{p.action === 'conflict' ? p.reason : { create: 'nuovo', update: 'aggiorna', unchanged: 'invariato' }[p.action]}</td>
+                    <td className={ACTION_COLORS[p.action]}>{p.action === 'conflict' ? p.reason : { create: 'nuovo', update: 'aggiorna', unchanged: 'invariato' }[p.action]}</td>
                 </tr>})}
             </tbody></table>
             <Button disabled={busy || !selectedPlan.length} onClick={async () => {

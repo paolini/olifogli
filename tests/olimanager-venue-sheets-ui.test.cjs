@@ -105,6 +105,12 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
   const rows = container.querySelectorAll('tbody tr');
   assert.equal(rows[0].querySelector('input').disabled, ['unchanged', 'no-permissions', 'other-contest'].includes(scenario));
   if (scenario === 'other-contest') assert.match(rows[0].textContent, /associato al contest #99/);
+  // The status cell is colored by action; unchanged sheets stay white.
+  const statusColor = row => row.querySelector('td:last-child').className;
+  const expectedColor = { 'other-contest': 'bg-red-100', 'assign-contest': 'bg-yellow-100' }[scenario] || (unchanged ? '' : 'bg-yellow-100');
+  assert.equal(statusColor(rows[0]), expectedColor);
+  assert.equal(statusColor(rows[1]), 'bg-green-100');
+  assert.equal(rows[0].className, '');
   assert.equal(rows[0].querySelector('input').checked, false);
   assert.equal(rows[1].querySelector('input').checked, true);
   if (scenario === 'assign-contest') {
