@@ -16,6 +16,7 @@ raccoglitori (workbook), fogli e righe, con permessi assegnati per foglio.
 | [docs/olimanager.md](docs/olimanager.md) | Login OAuth, creazione dei fogli Archimede, dati di prova su staging |
 | [docs/worker.md](docs/worker.md) | Worker dei lavori in background: verifiche, trasferimenti, crittografia |
 | [docs/omr.md](docs/omr.md) | Scansioni OMR e generazione dei fogli con i worker di archiomr |
+| [docs/piano-gara-distrettuale.md](docs/piano-gara-distrettuale.md) | Piano da implementare: fogli e partecipanti della gara distrettuale da Olimanager |
 | [docs/deploy.md](docs/deploy.md) | Produzione: Compose, variabili d'ambiente, aggiornamenti, log |
 | [tests/README.md](tests/README.md) | Test automatici |
 | [AGENTS.md](AGENTS.md) | Indicazioni sintetiche per gli agenti AI (in inglese) |

@@ -84,6 +84,8 @@ npm run codegen   # regenerate app/graphql/generated.ts
   until the Olimanager sheet creation (`OlimanagerVenueSheetsCreation`,
   `prepareOlimanagerVenueSheets`) supports all contests. Do not extend them;
   add new contests to the Olimanager creation instead (`VENUE_SHEET_SCHEMAS`).
+  The analysis and the agreed design for the district contest (sheets and
+  participant rows from Olimanager) are in `docs/piano-gara-distrettuale.md`.
 - **Documentation**: keep it in Italian and update the relevant file in `docs/`
   when behavior changes. Refer to code names in backticks so they can be
   grepped.
