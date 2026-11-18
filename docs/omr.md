@@ -142,7 +142,9 @@ e, per ogni istanza attiva, versione, stato e lavoro in corso.
 
 Il componente `OmrWorkerStatus` mostra lo stato, aggiornato ogni 10 secondi, in
 cima alla sezione **Caricamento scansioni** (`oliscan`) e alla sezione **PDF
-fogli generati** (`olisheet`) della linguetta **Scansioni** del foglio. Se il
+fogli generati** (`olisheet`) della linguetta **Scansioni** del foglio. Accanto
+allo stato attivo mostra la versione riportata nello heartbeat; se le istanze
+attive hanno versioni diverse, le elenca tutte senza duplicati. Se il
 worker non è attivo avvisa che i file resteranno in coda. Se un'istanza è
 `busy` da più di 30 minuti (`OMR_WORKER_STUCK_MS`) mostra un avviso: il segnale
 dice che il processo è vivo, non che il lavoro stia procedendo, e un OMRChecker
