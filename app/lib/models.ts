@@ -145,7 +145,7 @@ export type Setting = {
 // Legacy check jobs without checkMode keep their local-only behavior.
 export type OlimanagerJob = {
     _id: ObjectId
-    operation: 'check_participants' | 'match_or_create_participants' | 'update_results' | 'crypt_sheets' | 'decrypt_sheets'
+    operation: 'check_participants' | 'match_or_create_participants' | 'update_results' | 'crypt_sheets' | 'decrypt_sheets' | 'import_participants'
     checkMode?: 'local' | 'remote'
     rowIds: ObjectId[]
     sheetIds: ObjectId[]
@@ -153,7 +153,8 @@ export type OlimanagerJob = {
     endpoint: string
     createdBy: ObjectId
     createdAt: Date
-    status: 'queued' | 'preparing' | 'running' | 'completed' | 'completed_with_errors' | 'failed' | 'needs_login'
+    // awaiting_confirmation and cancelled are used only by import_participants.
+    status: 'queued' | 'preparing' | 'running' | 'completed' | 'completed_with_errors' | 'failed' | 'needs_login' | 'awaiting_confirmation' | 'cancelled'
     totalRows: number
     succeededRows: number
     failedRows: number
@@ -165,6 +166,14 @@ export type OlimanagerJob = {
     error?: string
     leaseOwner?: string
     leaseExpiresAt?: Date
+    // import_participants: target of the import and outcome of the preview.
+    workbookId?: ObjectId
+    importSchema?: string
+    importContestId?: number
+    warnings?: string[]
+    alreadyPresentRows?: number // participants already linked to a row, not part of totalRows
+    confirmedAt?: Date
+    confirmedBy?: ObjectId
 }
 
 export type OlimanagerJobItem = {
@@ -181,6 +190,8 @@ export type OlimanagerJobItem = {
     competitorCreated?: boolean
     participantCreated?: boolean
     multipleCompetitorsMatched?: boolean
+    // import_participants: data of the row to create (rowId is preallocated); removed when the job ends.
+    importData?: Data
     attempts: number
     error?: string
     finishedAt?: Date
@@ -197,7 +208,7 @@ export type OlimanagerResultsSnapshot = {
 export type OlimanagerResultDifference = { field: string, localValue: string, remoteValue: string }
 
 export type OlimanagerCheckResult = {
-    result: 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login' | 'created' | 'linked' | 'already_linked' | 'absent' | 'results_updated' | 'results_unchanged' | 'results_conflict'
+    result: 'imported' | 'already_present' | 'matched' | 'unmatched' | 'different' | 'not_found' | 'wrong_contest' | 'wrong_school' | 'unverifiable' | 'needs_login' | 'created' | 'linked' | 'already_linked' | 'absent' | 'results_updated' | 'results_unchanged' | 'results_conflict'
     remoteResults?: OlimanagerResultsSnapshot
     resultsSnapshot?: OlimanagerResultsSnapshot
     resultDifferences?: OlimanagerResultDifference[]

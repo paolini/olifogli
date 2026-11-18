@@ -2,7 +2,8 @@
 import { unprotectJobAccess } from './app/lib/olimanagerJobCredentials'
 import { createResultsSender } from './app/lib/olimanagerResultsTransfer'
 import { createParticipantMatcher } from './app/lib/olimanagerParticipantMatch'
-import { createRemoteInspector } from './app/lib/olimanagerRemoteCheck'
+import { createOlimanagerRequester, createRemoteInspector } from './app/lib/olimanagerRemoteCheck'
+import { createParticipantImportRunner, fetchContestParticipants } from './app/lib/olimanagerParticipantImport'
 import { loadEnvConfig } from '@next/env'
 import { MongoClient } from 'mongodb'
 import { randomUUID } from 'node:crypto'
@@ -29,7 +30,7 @@ process.on('SIGTERM', () => { stopping = true })
 
 async function main() {
     if (values.help) {
-        console.log('Uso: npm run olifogli:worker -- [--once]\nVerifica collegamenti, crea/abbina partecipanti, invia risultati su Olimanager o cifra/decifra i fogli secondo il lavoro accodato. --once elabora al massimo un lavoro.')
+        console.log('Uso: npm run olifogli:worker -- [--once]\nVerifica collegamenti, crea/abbina partecipanti, importa partecipanti, invia risultati su Olimanager o cifra/decifra i fogli secondo il lavoro accodato. --once elabora al massimo un lavoro.')
         return
     }
     checkSessionSecret()
@@ -89,11 +90,17 @@ async function main() {
         const processed = await runWorkerLoop({ once: values.once, shouldStop: () => stopping, delay,
             onError: (error, failures) => logDiagnostic('olifogli.worker.iteration_failed', error, failures > 1 ? 'warn' : 'error'),
             iteration: async () => {
+                const delegatedAccess = async (job: import('./app/lib/models').OlimanagerJob) => {
+                    const credential = await db.collection<import('./app/lib/models').OlimanagerJobCredential>('olimanager_job_credentials').findOne({ _id: job._id })
+                    return credential ? unprotectJobAccess(job, credential) : null
+                }
                 const processed = await runNextOlimanagerJob(db, transaction, {
                     workerId, encryptionKeys, validate: validateOlimanagerJobRow, shouldStop: () => stopping,
+                    // The preview reads Olimanager with the delegated token; creating rows does not.
+                    runImport: async context => createParticipantImportRunner(async job =>
+                        fetchContestParticipants(createOlimanagerRequester(job, await delegatedAccess(job)), job.importContestId!))(context),
                     createInspector: async job => {
-                        const credential = await db.collection<import('./app/lib/models').OlimanagerJobCredential>('olimanager_job_credentials').findOne({ _id: job._id })
-                        const access = credential ? unprotectJobAccess(job, credential) : null
+                        const access = await delegatedAccess(job)
                         if (job.operation === 'update_results') return createResultsSender(job, access)
                         return job.operation === 'match_or_create_participants' ? createParticipantMatcher(job, access) : createRemoteInspector(job, access)
                     },

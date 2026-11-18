@@ -8,6 +8,7 @@ dall'interfaccia:
 | `check_participants` | **Verifica Olimanager in background** | sì |
 | `match_or_create_participants` | **Crea/abbina partecipanti in background (Olimanager)** | sì |
 | `update_results` | **Invia risultati in background (Olimanager)** | sì |
+| `import_participants` | **Importa partecipanti da Olimanager** (linguetta Fogli) | sì, solo per l'anteprima |
 | `crypt_sheets` | **Cripta in background** | no |
 | `decrypt_sheets` | **Decripta in background** | no |
 
@@ -203,6 +204,32 @@ Il confronto non è un controllo di versione atomico sul provider: una modifica
 remota tra la lettura e la mutation può ancora essere sovrascritta. Per eliminare
 questa finestra servirebbe un supporto compare-and-set nell'API Olimanager. Non
 vengono eseguite letture aggiuntive dopo l'invio.
+
+## Importazione dei partecipanti
+
+Il lavoro `import_participants` riguarda i fogli di un raccoglitore con lo
+stesso schema e contest (`workbookId`, `importSchema`, `importContestId`) e non
+richiede che siano finalizzati. Il codice è in
+`app/lib/olimanagerParticipantImport.ts`; `runNextOlimanagerJob` gli passa il
+lavoro tramite l'opzione `runImport`.
+
+1. **Preparazione**: legge il contest da Olimanager, scrive un item per ogni riga
+   da creare (con `rowId` già assegnato e i dati in `importData`) e le
+   segnalazioni in `warnings`, poi passa a `awaiting_confirmation` eliminando la
+   delega OAuth e liberando i fogli. Se il token scade il lavoro va in
+   `needs_login`; la ripresa rifà la lettura da capo. Se non c'è nulla da
+   aggiungere il lavoro è subito `completed`.
+2. **Conferma** (`confirmOlimanagerImport`): riserva di nuovo i fogli e rimette
+   il lavoro in `queued`. In alternativa **Annulla** porta il lavoro a
+   `cancelled` e cancella gli item con i dati personali.
+3. **Creazione**: a blocchi di 100, ogni riga viene inserita con l'`_id`
+   preassegnato insieme a esito dell'item e contatori del foglio. Un
+   partecipante già collegato a una riga dei fogli è saltato (`already_present`),
+   quindi una ripresa non crea duplicati. Al termine `importData` viene rimosso
+   dagli item.
+
+Gli stati `awaiting_confirmation` e `cancelled` esistono solo per questo lavoro
+e non sono contati tra i lavori attivi.
 
 ## Crittografia e decrittazione dei fogli
 

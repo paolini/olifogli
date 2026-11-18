@@ -33,7 +33,7 @@ export default function BackgroundOperations() {
       if (refreshTimer.current === null) refreshTimer.current = setTimeout(() => {
         refreshTimer.current = null
         const include = [...client.getObservableQueries('active').values()]
-          .filter(query => query.queryName && ['BackgroundJobsStatus', 'OlimanagerJobs', 'OlimanagerJobItems', 'GetRows', 'GetSheets', 'getSheet'].includes(query.queryName))
+          .filter(query => query.queryName && ['BackgroundJobsStatus', 'OlimanagerJobs', 'OlimanagerJobItems', 'GetRows', 'GetSheets', 'getSheet', 'OlimanagerImport'].includes(query.queryName))
           .map(query => query.options.query)
         void client.refetchQueries({ include }).catch(() => {
           // Query components display their own errors and offer manual refresh.

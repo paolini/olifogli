@@ -4,6 +4,7 @@ import { workerFiles, workerFileGroupFiles, deleteWorkerFiles, deleteWorkerFileG
 import { appLogs, appLogAddedSubscription } from './resolvers/appLogs'
 import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
+import { olimanagerImport, requestOlimanagerImport, confirmOlimanagerImport, cancelOlimanagerImport } from './resolvers/olimanagerImport'
 import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerActiveJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
 import { Context } from './types'
 import { ObjectId } from 'bson'
@@ -79,6 +80,7 @@ export const resolvers: Resolvers = {
     workerFileGroupFiles,
     appLogs,
     olimanagerJobItems,
+    olimanagerImport,
     hello: () => 'Hello, world!',
 
     config: async () => ({ OLIMANAGER_URL: process.env.OLIMANAGER_URL }),
@@ -136,6 +138,9 @@ export const resolvers: Resolvers = {
     requestOlimanagerMatch,
     requestOlimanagerResults,
     resumeOlimanagerCheck,
+    requestOlimanagerImport,
+    confirmOlimanagerImport,
+    cancelOlimanagerImport,
     addSheet,
     deleteSheet,
     deleteSheets,

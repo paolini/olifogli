@@ -40,6 +40,8 @@ const statusLabels: Record<string, string> = {
   unverifiable: 'Operazione non riuscita', created: 'Partecipante creato', linked: 'Partecipante trovato e collegato',
   results_updated: 'Risultati inviati', results_unchanged: 'Risultati già corrispondenti', results_conflict: 'Disallineamento nei risultati da risolvere',
   already_linked: 'Collegamento già presente e verificato', absent: 'Assente: operazione saltata',
+  awaiting_confirmation: 'Anteprima in attesa di conferma', cancelled: 'Annullato',
+  imported: 'Riga creata', already_present: 'Partecipante già presente: riga non creata',
 }
 type Job = { _id: string, operation: string, checkMode?: string | null, skippedRows?: number | null, status: string, totalRows: number, succeededRows: number, failedRows: number, createdAt: string, error?: string }
 type Item = { _id: string, resultDifferences?: { field: string, localValue: string, remoteValue: string }[] | null, competitorCreated?: boolean, multipleCompetitorsMatched?: boolean, checkResult?: string | null, differences?: string[], participantId?: string, competitorId?: string, rowId: string, rowSurname?: string | null, sheetId?: string, sheetName?: string | null, status: string, attempts: number, error?: string }
@@ -82,7 +84,7 @@ export default function OlimanagerJobStatus({ sheetIds }: { sheetIds?: ObjectId[
     {error && <ErrorElement error={error} />}
     {!loading && data?.olimanagerJobs.length === 0 && <p>Nessun lavoro accodato.</p>}
     <ul>{data?.olimanagerJobs.map(job => <li key={job._id} className="my-2">
-      {job.operation === 'decrypt_sheets' ? 'Decrittazione fogli' : job.operation === 'crypt_sheets' ? 'Crittografia fogli' : job.operation === 'update_results' ? 'Invio risultati' : job.operation === 'match_or_create_participants' ? 'Crea/abbina partecipanti' : job.checkMode === 'remote' ? 'Verifica collegamenti' : 'Verifica locale'} — {new Date(job.createdAt).toLocaleString('it-IT')}: {statusLabels[job.status] || job.status}
+      {job.operation === 'import_participants' ? 'Importazione partecipanti' : job.operation === 'decrypt_sheets' ? 'Decrittazione fogli' : job.operation === 'crypt_sheets' ? 'Crittografia fogli' : job.operation === 'update_results' ? 'Invio risultati' : job.operation === 'match_or_create_participants' ? 'Crea/abbina partecipanti' : job.checkMode === 'remote' ? 'Verifica collegamenti' : 'Verifica locale'} — {new Date(job.createdAt).toLocaleString('it-IT')}: {statusLabels[job.status] || job.status}
       {' — '}{job.succeededRows + job.failedRows + (job.skippedRows || 0)}/{job.totalRows} righe, {job.failedRows} errori, {job.skippedRows || 0} {job.operation === 'check_participants' ? 'non abbinate' : 'saltate'}.
       <Button className="ml-2" onClick={() => setSelected(selected === job._id ? null : job._id)}>Dettagli righe</Button>
       {job.status === 'needs_login' && <Button className="ml-2" disabled={resumeState.loading} onClick={async () => {

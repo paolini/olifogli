@@ -55,7 +55,8 @@ export async function olimanagerJobItems(_: unknown, { jobId, after, failedOnly,
     const rows = entries.length ? await (await getRowsCollection()).find({ _id: { $in: entries.map(item => item.rowId) } }, { projection: { 'data.surname': 1 } }).toArray() : []
     const surnames = new Map(rows.map(row => [row._id.toString(), row.data?.surname]))
     return entries.map(item => ({ ...item, sheetName: item.sheetId ? names.get(item.sheetId.toString()) : undefined,
-        rowSurname: surnames.get(item.rowId.toString()),
+        // Rows of an import exist only after confirmation.
+        rowSurname: surnames.get(item.rowId.toString()) ?? item.importData?.surname,
     }))
 }
 

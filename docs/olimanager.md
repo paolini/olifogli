@@ -130,10 +130,12 @@ dove si ricavano le sedi:
 | Schema | Contest | Sedi | Nome del foglio |
 |---|---|---|---|
 | `archimede_biennio`, `archimede_triennio` | `SCHOOL` | scuole con iscrizione valida all'edizione | codice meccanografico |
-| `gara_prime` | `ZONE` | venue di primo livello del contest (le sottosedi sono ignorate) | nome del distretto |
+| `gara_prime`, `distrettuale` | `ZONE` | venue di primo livello del contest (le sottosedi sono ignorate) | nome del distretto |
 
-Per Archimede la procedura si esegue due volte, una per categoria. Per le altre
-gare (gara di febbraio, Senior, ecc.) andranno aggiunti gli schemi; fino ad
+Per Archimede la procedura si esegue due volte, una per categoria. Per i fogli
+creati dalle venue le righe si importano poi con **Importa partecipanti da
+Olimanager** (vedi [Importazione dei partecipanti](#importazione-dei-partecipanti)).
+Per le altre gare (Senior, ecc.) andranno aggiunti gli schemi; fino ad
 allora restano i metodi di importazione precedenti, che non assegnano il
 contest ai fogli: va impostato a mano nei dati del foglio.
 
@@ -206,6 +208,58 @@ Righe e altri metadati dei fogli esistenti restano invariati. Prima delle
 scritture i fogli vengono riletti: se permessi o contest sono cambiati dopo
 l'anteprima occorre ricaricarla. I fogli con corrispondenze duplicate sono segnalati e non
 selezionabili.
+
+## Importazione dei partecipanti
+
+Per i fogli creati dalle venue di un contest `ZONE` (schemi `distrettuale` e
+`gara_prime`, `isParticipantImportSchema`) le righe si creano dai partecipanti
+del contest. È il passo successivo allo script dello staff che crea i
+partecipanti della gara distrettuale (vedi
+[piano-gara-distrettuale.md](piano-gara-distrettuale.md)).
+
+Nella linguetta **Fogli** gli amministratori usano **Importa partecipanti da
+Olimanager**, scelgono schema e contest tra quelli dei fogli del raccoglitore e
+premono **Leggi i partecipanti da Olimanager**. L'operazione è un lavoro del
+worker (`import_participants`, vedi [worker.md](worker.md)) in due fasi:
+
+1. **Anteprima.** Con il token OAuth delegato il worker legge contest, distretti,
+   venue e tutti i partecipanti (pagine da 100, `fetchContestParticipants`).
+   Richiede che l'account sia staff o amministratore dell'olimpiade, perché un
+   elenco parziale sembrerebbe completo. Ogni partecipante va nel foglio con il
+   nome del distretto della sua sede ufficiale, ricavato come nella creazione
+   dei fogli (`venueSheetNames`, le sottosedi seguono la venue principale). Le
+   righe da creare sono salvate negli item del lavoro e il lavoro passa a
+   `awaiting_confirmation`: il token viene eliminato e i fogli non restano
+   riservati. La pagina mostra per foglio righe presenti, righe nuove e l'elenco
+   dei nuovi partecipanti, più le segnalazioni.
+2. **Creazione.** **Importa N righe** (`confirmOlimanagerImport`) riserva di
+   nuovo i fogli e accoda la creazione, che non contatta Olimanager. Ogni riga
+   è validata con lo schema del foglio e inserita con `olimanager.participantId`
+   e `olimanager.contestId`, insieme ai contatori del foglio, nella stessa
+   transazione. **Annulla l'importazione** (`cancelOlimanagerImport`) scarta
+   l'anteprima.
+
+Dati della riga (`participantRowData`), come la vecchia
+`ImportazionePartecipantiDistrettuale`: cognome, nome, data di nascita,
+codice meccanografico, nome e città della scuola, anno di corso (`classYear`
+9–13 diventa 1–5), sezione e taglia (campo aggiuntivo il cui nome contiene
+«taglia»). I campi che lo schema non ha sono scartati (la gara delle prime non
+ha anno di corso né taglia).
+
+L'importazione **non modifica né cancella** righe esistenti:
+
+- un partecipante già collegato a una riga dei fogli del contest non viene
+  aggiunto; se la riga è in un foglio di un altro distretto viene segnalato;
+- i partecipanti di distretti senza foglio, di sedi non riconducibili a un
+  distretto o con più componenti vengono segnalati e non importati;
+- sono segnalate le righe collegate a partecipanti non più presenti nel contest
+  e quelle senza collegamento (aggiunte a mano);
+- alla creazione si saltano i partecipanti collegati a una riga dopo
+  l'anteprima, e si rifiutano i fogli chiusi, finalizzati o il cui schema o
+  contest è cambiato.
+
+Rilanciando l'importazione si aggiungono solo i partecipanti nuovi; se non ce ne
+sono il lavoro si conclude senza chiedere conferma.
 
 ## Dati di prova su staging
 

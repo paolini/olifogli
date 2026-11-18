@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { queryOlimanager } from './olimanager'
 import type { Data, Permission } from './models'
 import { SHEET_CONTEST_KEY, VENUE_SHEET_SCHEMAS, isVenueSheetSchema, type VenueSheetSchema } from './olimanagerVenueSheetConfig'
+import { districtName, venueSheetName, zonesOfVenue } from './olimanagerVenueNames'
 
 export type VenueSheet = {
     name: string
@@ -20,7 +21,6 @@ type Zone = { id: number, name: string, provinces: { id: string }[], extraSchool
 type Page = { edges: { node: Subscription }[], pageInfo: { hasNextPage: boolean, endCursor: string | null } }
 type Venue = { id: number, name: string, parentVenue: { id: number } | null, admins: { user: { email: string } | null }[] }
 
-const districtName = (zone: Zone) => zone.name.replace(/^Distretto di /, '')
 const emailsOf = (admins: { user: { email: string } | null }[]) =>
     [...new Set(admins.map(a => a.user?.email?.trim().toLowerCase() || '').filter(Boolean))]
 
@@ -69,26 +69,20 @@ export function sheetsFromSubscriptions(subscriptions: Subscription[], zones: Zo
     return { sheets, warnings }
 }
 
-// Olimanager does not record which zone a venue belongs to: venues of zone
-// contests are named after it, e.g. «Distretto di Pisa (Gara delle Prime)».
-function zoneOfVenue(venue: Venue, zones: Zone[]) {
-    return zones.filter(zone => venue.name === zone.name || venue.name.startsWith(`${zone.name} (`))
-}
-
 export function sheetsFromVenues(venues: Venue[], zones: Zone[], schema: VenueSheetSchema, contestId: number) {
     const sheets: VenueSheet[] = []
     const warnings: string[] = []
     const seen = new Set<string>()
     // Subvenues belong to their parent's sheet.
     for (const venue of venues.filter(v => !v.parentVenue)) {
-        const matches = zoneOfVenue(venue, zones)
+        const matches = zonesOfVenue(venue, zones)
         if (matches.length !== 1) {
             warnings.push(matches.length
                 ? `Venue ${venue.name}: riconducibile a più distretti (${matches.map(z => z.name).join(', ')}).`
                 : `Venue ${venue.name}: non riconducibile ad alcun distretto.`)
         }
         const zone = matches.length === 1 ? matches[0] : undefined
-        const name = zone ? districtName(zone) : venue.name.replace(/ \(.*\)$/, '').replace(/^Distretto di /, '')
+        const name = venueSheetName(venue, zones)
         if (seen.has(name)) throw new Error(`Più venue per lo stesso distretto: ${name}.`)
         seen.add(name)
         const managers = emailsOf(venue.admins)

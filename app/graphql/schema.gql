@@ -421,6 +421,25 @@ type OlimanagerVenueSheet {
   permissions: [Permission!]!
 }
 
+type OlimanagerImportSheet {
+  sheetId: ObjectId!
+  sheetName: String!
+  existingRows: Int!
+  newRows: Int!
+  """Partecipanti da aggiungere (cognome, nome, scuola), solo finché l'importazione non è conclusa."""
+  participants: [String!]!
+}
+
+type OlimanagerImport {
+  job: OlimanagerJob!
+  schema: String!
+  contestId: Int!
+  warnings: [String!]!
+  """Partecipanti già collegati a una riga dei fogli, non conteggiati in totalRows."""
+  alreadyPresentRows: Int!
+  sheets: [OlimanagerImportSheet!]!
+}
+
 type OlimanagerVenueSheetsPreview {
   sheets: [OlimanagerVenueSheet!]!
   warnings: [String!]!
@@ -441,6 +460,8 @@ type Query {
   """Solo amministratori: file di un gruppo restituito da workerFiles."""
   workerFileGroupFiles(kind: String!, jobId: ObjectId): [WorkerFile!]!
   olimanagerJobItems(jobId: ObjectId!, after: ObjectId, failedOnly: Boolean, limit: Int): [OlimanagerJobItem!]!
+  """Solo amministratori: ultima importazione dei partecipanti nel raccoglitore, con l'anteprima."""
+  olimanagerImport(workbookId: ObjectId!): OlimanagerImport
 
   hello: String
   me: User
@@ -484,6 +505,12 @@ type Mutation {
   requestOlimanagerResults(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerMatch(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
   requestOlimanagerCheck(rowIds: [ObjectId!], sheetIds: [ObjectId!]): OlimanagerJob!
+  """Solo amministratori: accoda la lettura dei partecipanti del contest per i fogli del raccoglitore con lo schema indicato."""
+  requestOlimanagerImport(workbookId: ObjectId!, schema: String!, contestId: Int!): OlimanagerJob!
+  """Solo amministratori: conferma l'anteprima e accoda la creazione delle righe."""
+  confirmOlimanagerImport(jobId: ObjectId!): OlimanagerJob!
+  """Solo amministratori: annulla un'importazione in attesa di conferma o di login."""
+  cancelOlimanagerImport(jobId: ObjectId!): OlimanagerJob!
   """Solo amministratori: cancella i file indicati."""
   deleteWorkerFiles(files: [WorkerFileInput!]!): WorkerFileDeletion!
   """Solo amministratori: cancella tutti i file di un gruppo; non modifica il database."""

@@ -20,6 +20,7 @@ function load(relative, dependencies) {
 }
 const plain = value => JSON.parse(JSON.stringify(value));
 const config = load('app/lib/olimanagerVenueSheetConfig.ts', {});
+const venueNames = load('app/lib/olimanagerVenueNames.ts', {});
 const { venueSheetPlan, samePermissions, permissionChanges, applyPermissionChanges } = load('app/lib/olimanagerVenueSheetPlan.ts', { './olimanagerVenueSheetConfig': config });
 test('applies only selected permission additions, removals and roles, preserving manual helpers', () => {
   const current = [{ email: 'old@example.org', role: 'manager' }, { email: 'coord@example.org', role: 'editor' }, { email: 'helper@example.org', role: 'editor' }];
@@ -78,7 +79,7 @@ const zones = [
   { id: 2, name: 'Lucca', provinces: [{ id: 'LU' }], extraSchools: [{ pk: 2 }], admins: [{ user: { email: 'lucca@example.org' } }] },
 ];
 function library(queryOlimanager = () => { throw new Error('Unexpected request'); }) {
-  return load('app/lib/olimanagerVenueSheets.ts', { './olimanager': { queryOlimanager }, './olimanagerVenueSheetConfig': config });
+  return load('app/lib/olimanagerVenueSheets.ts', { './olimanager': { queryOlimanager }, './olimanagerVenueSheetConfig': config, './olimanagerVenueNames': venueNames });
 }
 const fromSubscriptions = (subscriptions, availableZones = zones) => library().sheetsFromSubscriptions(subscriptions, availableZones, 'archimede_biennio', 31);
 

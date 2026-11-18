@@ -1,8 +1,10 @@
 # Piano: fogli e partecipanti della gara distrettuale
 
-Stato: **da implementare** (analisi di novembre 2026). Questo documento
-raccoglie quanto verificato sul funzionamento di Olimanager e sui suoi dati, in
-modo da riprendere il lavoro senza ripetere le ricerche.
+Stato: **implementato** (novembre 2026), da provare sulla gara distrettuale
+2027 prima di eliminare i metodi obsoleti (punto 4 della soluzione). Questo
+documento raccoglie quanto verificato sul funzionamento di Olimanager e sui suoi
+dati, in modo da non ripetere le ricerche. L'uso è descritto in
+[olimanager.md](olimanager.md#importazione-dei-partecipanti).
 
 Obiettivo: sostituire i metodi obsoleti (`createSheets` con
 `ImportazionePartecipantiDistrettuale` e `Distretti`, vedi
@@ -133,6 +135,16 @@ futuro i partecipanti verranno creati in Olimanager prima della gara.
   CSV del 2025 veniva probabilmente dall'export dell'interfaccia di Olimanager.
 
 ## Soluzione decisa
+
+I punti 1–3 sono implementati come descritto; differenze e scelte di dettaglio:
+
+- l'anteprima è calcolata dal worker e salvata negli item del lavoro
+  `import_participants`, che resta in `awaiting_confirmation`; la creazione
+  delle righe, dopo la conferma, non rilegge Olimanager;
+- un partecipante già collegato a una riga di un altro foglio dello stesso
+  contest non viene aggiunto, ma segnalato (cambio di distretto);
+- vengono segnalate anche le righe senza collegamento a Olimanager;
+- la lettura richiede che l'account sia staff o amministratore dell'olimpiade.
 
 1. **Fogli**: aggiungere `distrettuale` a `VENUE_SHEET_SCHEMAS`
    (`app/lib/olimanagerVenueSheetConfig.ts`) con `scope: 'ZONE'` e

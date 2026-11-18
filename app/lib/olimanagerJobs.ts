@@ -45,13 +45,16 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
     targets: { rowIds?: ObjectId[] | null, sheetIds?: ObjectId[] | null }, endpoint: string,
     protect?: (job: OlimanagerJob) => OlimanagerJobCredential,
     operation: OlimanagerJob['operation'] = 'check_participants',
+    details: Pick<OlimanagerJob, 'workbookId' | 'importSchema' | 'importContestId'> = {},
 ): Promise<OlimanagerJob> {
     if (!user.isAdmin) throw new Error('non autorizzato')
-    if (!['check_participants', 'match_or_create_participants', 'update_results', 'crypt_sheets', 'decrypt_sheets'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
+    if (!['check_participants', 'match_or_create_participants', 'update_results', 'crypt_sheets', 'decrypt_sheets', 'import_participants'].includes(operation)) throw new Error('Operazione Olimanager non supportata.')
     if (operation !== 'check_participants' && operation !== 'crypt_sheets' && operation !== 'decrypt_sheets' && !protect) throw new Error('Il trasferimento richiede una delega OAuth.')
     const rowIds = unique(targets.rowIds || []), sheetIds = unique(targets.sheetIds || [])
     if (!rowIds.length && !sheetIds.length) throw new Error('Selezionare almeno una riga o un foglio.')
     const crypt = operation === 'crypt_sheets' || operation === 'decrypt_sheets'
+    // Participants are imported before the contest, into sheets still open.
+    const requiresLock = !crypt && operation !== 'import_participants'
     const url = crypt ? null : new URL(endpoint)
     if (url && (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash)) {
         throw new Error('OLIMANAGER_GRAPHQL_ENDPOINT non valido.')
@@ -65,16 +68,16 @@ export async function queueOlimanagerJob(db: Db, transaction: Transaction, user:
         const selectedSheets = await sheets.find({ _id: { $in: affectedSheetIds } }, { session }).toArray()
         if (selectedSheets.length !== affectedSheetIds.length) throw new Error('Uno dei fogli selezionati non esiste più.')
         for (const sheet of selectedSheets) {
-            if (!crypt && !sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del lavoro Olimanager.`)
+            if (requiresLock && !sheet.locked) throw new Error(`Finalizzare il foglio «${sheet.name}» prima del lavoro Olimanager.`)
             if (sheet.olimanagerJobId) throw new Error(`Il foglio «${sheet.name}» ha già un lavoro Olimanager attivo.`)
         }
         const job: OlimanagerJob = {
             _id: new ObjectId(), operation, checkMode: protect ? 'remote' : 'local', rowIds, sheetIds, affectedSheetIds,
             endpoint: url?.href || '', createdBy: user._id, createdAt: new Date(), status: 'queued',
-            totalRows: 0, succeededRows: 0, failedRows: 0, skippedRows: 0,
+            totalRows: 0, succeededRows: 0, failedRows: 0, skippedRows: 0, ...details,
         }
         // Lock sheets and enqueue atomically, also serializing concurrent queue/reopen requests.
-        const locked = await sheets.updateMany({ _id: { $in: affectedSheetIds }, ...(crypt ? {} : { locked: true }),
+        const locked = await sheets.updateMany({ _id: { $in: affectedSheetIds }, ...(requiresLock ? { locked: true } : {}),
             olimanagerJobId: { $exists: false } }, { $set: { olimanagerJobId: job._id } }, { session })
         if (locked.matchedCount !== affectedSheetIds.length) throw new Error('La selezione è cambiata: riprovare.')
         if (crypt) job.cryptKeyExpiresAt = new Date(Date.now() + LEASE_MS)
@@ -107,14 +110,73 @@ export async function resumeOlimanagerCheck(db: Db, transaction: Transaction, us
     })
 }
 
+// The preview of an import waits for an administrator: confirming queues the
+// creation of the rows, which needs no OAuth delegation.
+export async function confirmParticipantImport(db: Db, transaction: Transaction, user: User, jobId: ObjectId): Promise<OlimanagerJob> {
+    if (!user.isAdmin) throw new Error('non autorizzato')
+    const { jobs, sheets } = jobCollections(db)
+    const confirmed = await transaction(async session => {
+        const job = await jobs.findOne({ _id: jobId }, { session })
+        if (!job || job.operation !== 'import_participants' || job.status !== 'awaiting_confirmation') throw new Error('L’importazione non è in attesa di conferma.')
+        const existing = await sheets.find({ _id: { $in: job.affectedSheetIds } }, { session, projection: { _id: 1, name: 1, olimanagerJobId: 1 } }).toArray()
+        const busy = existing.find(sheet => sheet.olimanagerJobId)
+        if (busy) throw new Error(`Il foglio «${busy.name}» ha già un lavoro Olimanager attivo.`)
+        const reserved = await sheets.updateMany({ _id: { $in: existing.map(sheet => sheet._id) }, olimanagerJobId: { $exists: false } },
+            { $set: { olimanagerJobId: job._id } }, { session })
+        if (reserved.matchedCount !== existing.length) throw new Error('La selezione è cambiata: riprovare.')
+        const update = { status: 'queued' as const, confirmedAt: new Date(), confirmedBy: user._id }
+        const result = await jobs.updateOne({ _id: job._id, status: 'awaiting_confirmation' }, { $set: update }, { session })
+        if (!result.matchedCount) throw new Error('L’importazione non è in attesa di conferma.')
+        return { ...job, ...update }
+    })
+    appLog('olimanager_job.import_confirmed', { jobId: confirmed._id.toString(), rowCount: confirmed.totalRows }, { userId: user._id })
+    return confirmed
+}
+
+export async function cancelParticipantImport(db: Db, transaction: Transaction, user: User, jobId: ObjectId): Promise<OlimanagerJob> {
+    if (!user.isAdmin) throw new Error('non autorizzato')
+    const { jobs, items, sheets, credentials } = jobCollections(db)
+    const cancelled = await transaction(async session => {
+        const job = await jobs.findOne({ _id: jobId }, { session })
+        if (!job || job.operation !== 'import_participants' || !['awaiting_confirmation', 'needs_login'].includes(job.status)) {
+            throw new Error('Si può annullare solo un’importazione in attesa di conferma o di un nuovo login.')
+        }
+        const update = { status: 'cancelled' as const, finishedAt: new Date() }
+        const result = await jobs.updateOne({ _id: job._id, status: job.status }, { $set: update }, { session })
+        if (!result.matchedCount) throw new Error('Lo stato dell’importazione è cambiato: riprovare.')
+        // The preview holds personal data that is no longer needed.
+        await items.deleteMany({ jobId: job._id }, { session })
+        await credentials.deleteOne({ _id: job._id }, { session })
+        await sheets.updateMany({ olimanagerJobId: job._id }, { $unset: { olimanagerJobId: '' } }, { session })
+        return { ...job, ...update }
+    })
+    appLog('olimanager_job.import_cancelled', { jobId: cancelled._id.toString() }, { userId: user._id })
+    return cancelled
+}
+
 class LeaseLost extends Error {}
 class WorkerStopped extends Error {}
+
+// What runNextOlimanagerJob hands to the participant import, which has its own phases.
+export type ImportJobContext = {
+    job: OlimanagerJob
+    user: User
+    owner: string
+    collections: ReturnType<typeof jobCollections>
+    transaction: Transaction
+    now: () => Date
+    checkpoint: (session: ClientSession, update?: Partial<OlimanagerJob>) => Promise<void>
+    finish: (status: OlimanagerJob['status'], error?: string) => Promise<void>
+    pauseForLogin: (error: string) => Promise<void>
+    checkStop: () => void
+}
 
 type WorkerOptions = {
     workerId: string
     validate: (row: Row, sheet: Sheet, workbook: Workbook) => void
     createInspector?: (job: OlimanagerJob) => Promise<(row: Row, sheet: Sheet, workbook: Workbook) => Promise<OlimanagerCheckResult>>
     encryptionKeys?: ReadonlyMap<string, (row: Row, sheet: Sheet) => Record<string, string> | Promise<Record<string, string>>>
+    runImport?: (context: ImportJobContext) => Promise<void>
     now?: () => Date
     shouldStop?: () => boolean
 }
@@ -135,7 +197,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
         })
     }
     const job = await jobs.findOneAndUpdate({ $and: [ { $or: [
-        { operation: { $in: ['check_participants', 'match_or_create_participants', 'update_results'] } },
+        { operation: { $in: ['check_participants', 'match_or_create_participants', 'update_results', 'import_participants'] } },
         { operation: { $in: ['crypt_sheets', 'decrypt_sheets'] }, _id: { $in: [...(options.encryptionKeys?.keys() || [])].map(id => new ObjectId(id)) }, cryptKeyExpiresAt: { $gt: now() } },
     ] }, { $or: [
         { status: 'queued' },
@@ -166,10 +228,25 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
             { level: status === 'failed' ? 'warn' : 'info', userId: job!.createdBy })
     }
     function checkStop() { if (options.shouldStop?.()) throw new WorkerStopped() }
+    async function pauseForLogin(error: string) {
+        await transaction(async session => {
+            await checkpoint(session)
+            await jobs.updateOne({ _id: job!._id, leaseOwner: owner }, {
+                $set: { status: 'needs_login', error }, $unset: { leaseOwner: '', leaseExpiresAt: '' },
+            }, { session })
+            await credentials.deleteOne({ _id: job!._id }, { session })
+        })
+    }
     try {
         const user = await users.findOne({ _id: job.createdBy })
         if (!user?.isAdmin) {
             await finish('failed', 'L’utente che ha richiesto il lavoro non è più amministratore.')
+            return true
+        }
+        if (job.operation === 'import_participants') {
+            if (!options.runImport) throw new Error('Importazione non supportata da questa versione del worker.')
+            await options.runImport({ job, user, owner, collections: jobCollections(db), transaction, now,
+                checkpoint, finish, pauseForLogin, checkStop })
             return true
         }
         const inspect = job.checkMode === 'remote' ? await options.createInspector?.(job) : null
@@ -228,13 +305,7 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
                         await transaction(session => checkpoint(session))
                         const check = await inspect(row, sheet, workbook)
                         if (check.result === 'needs_login') {
-                            await transaction(async session => {
-                                await checkpoint(session)
-                                await jobs.updateOne({ _id: job._id, leaseOwner: owner }, {
-                                    $set: { status: 'needs_login', error: check.error }, $unset: { leaseOwner: '', leaseExpiresAt: '' },
-                                }, { session })
-                                await credentials.deleteOne({ _id: job._id }, { session })
-                            })
+                            await pauseForLogin(check.error || '')
                             return true
                         }
                         outcomes.push({ item, sheetId: row.sheetId, check,
@@ -341,6 +412,8 @@ export async function runNextOlimanagerJob(db: Db, transaction: Transaction, opt
             ? 'Crittografia interrotta. Avviare nuovamente Cripta: le righe già cifrate verranno saltate.'
             : job.operation === 'check_participants'
             ? 'Errore interno durante la verifica; il lavoro non ha trasferito dati a Olimanager.'
+            : job.operation === 'import_participants'
+            ? 'Importazione interrotta: le righe già importate restano nei fogli. Rilanciare l’importazione per aggiungere le altre.'
             : 'Lavoro interrotto: alcune operazioni potrebbero essere già state eseguite su Olimanager. Controllare gli esiti prima di riprovare.')
         throw error
     }
