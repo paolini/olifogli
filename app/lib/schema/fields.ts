@@ -35,6 +35,9 @@ export class Field {
     // Editing may allow incomplete rows; subclasses opt into cell-level checks.
     editingError(value: string, context: RowValidationContext): string { return '' }
 
+    // Non-blocking: shown under the cell and in its title, the value is still accepted.
+    editingWarning(value: string, context: RowValidationContext): string { return '' }
+
     // Undefined lets the text input handle the key natively.
     editKey(key: string, value: string, start: number, end: number): EditingKeyResult | undefined {
         return undefined
@@ -401,16 +404,25 @@ export class DateField extends Field {
         const cleaned = this.clean(value)
         const error = this.checkValid(cleaned, context)
         if (!cleaned || error) return error || 'Inserire una data valida nel formato gg/mm/aaaa'
+        return ''
+    }
+
+    // An unusual age can be real (a repeated or skipped year): it is flagged, not blocked.
+    editingWarning(value: string, context: RowValidationContext): string {
+        // Wait for a four-digit year: while it is being typed, "12/05/2" would
+        // read as 2002 and the warning would flicker.
+        if (!/(^\d{4}-|\d{4}$)/.test(value.trim())) return ''
+        const cleaned = this.clean(value)
         if (!this.anomalous(cleaned, context)) return ''
         const year = context.context.contest_year
         const first = year - this.expectedMaxAge
         const last = year - this.expectedMinAge
         if (Number.isFinite(first) && Number.isFinite(last)) {
-            return `Inserire una data compresa tra 01/01/${first} e 31/12/${last}`
+            return `Età inconsueta: data attesa tra 01/01/${first} e 31/12/${last}`
         }
         return Number.isFinite(first)
-            ? `Inserire una data dal 01/01/${first}`
-            : `Inserire una data entro il 31/12/${last}`
+            ? `Età inconsueta: data attesa dal 01/01/${first}`
+            : `Età inconsueta: data attesa entro il 31/12/${last}`
     }
 
     editKey(key: string, value: string, start: number, end: number): EditingKeyResult | undefined {

@@ -194,6 +194,7 @@ async function mountTable(t, { edit = true, standardAnswers = false, synced = fa
     lineCount: () => container.querySelectorAll('tbody > tr:not(.error):not(.hide-print)').length,
     rowError: () => [...container.querySelectorAll('tbody > tr.error')].map(row => row.textContent).join('\n'),
     error: () => container.querySelector('[role="alert"]')?.textContent ?? '',
+    warning: () => container.querySelector('[role="status"].cell-warning')?.textContent ?? '',
     newRow: () => click(container.querySelector('tbody button')),
     active: () => dom.window.document.activeElement,
     input: () => container.querySelector('td.focus input'),

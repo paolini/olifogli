@@ -307,9 +307,12 @@ implementano le proprie conversioni. `Table` esegue gli spostamenti e
 La conferma della bozza passa da `useCellEditor.commit`, che verifica
 `Field.editingError` e normalizza il valore prima di aggiornare la riga. Una
 conferma rifiutata mantiene la bozza e restituisce un esito esplicito che blocca
-il cambio di cella o il salvataggio. `DateField` controlla calendario e limiti di
-età rispetto all'anno della gara; il valore vuoto è consentito durante la
-compilazione, anche se la validazione della riga richiede poi una data.
+il cambio di cella o il salvataggio. `DateField` blocca solo le date malformate o
+inesistenti; il valore vuoto è consentito durante la compilazione, anche se la
+validazione della riga richiede poi una data. Un'età fuori dai limiti attesi
+rispetto all'anno della gara non blocca: `Field.editingWarning` restituisce un
+avviso, mostrato sotto la cella durante la modifica (solo con l'anno a quattro
+cifre) e poi nel `title` della cella evidenziata come `anomalous`.
 
 Negli schemi di gara, `affectsScore` identifica risposte, codice compito e
 assenza. Una modifica confermata a questi campi avvia subito il salvataggio; le

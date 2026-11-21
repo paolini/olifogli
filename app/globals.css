@@ -469,6 +469,13 @@ input.table-row[aria-invalid="true"] {
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
+/* Avviso non bloccante (per esempio età inconsueta): il valore viene accettato. */
+.cell-warning {
+  color: #9a3412;
+  border-color: #c2410c;
+  background: #fff7ed;
+}
+
 td.workbook-data-value {
   min-width: 50ex;
 }

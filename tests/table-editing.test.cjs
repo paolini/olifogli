@@ -560,18 +560,34 @@ test('an invalid date blocks cell clicks, a new row, blur and autosave', async t
   assertElement(f.focusCell(), f.cell('birthDate', 1));
 });
 
-test('age range errors describe the configured bounds and block autosave', async t => {
+for (const value of ['31/12/2009', '01/01/2017']) {
+  test(`an unusual age is a warning that does not block leaving the cell: ${value}`, async t => {
+    const f = await mountTable(t);
+    await f.click(f.cell('birthDate'));
+    await f.key('F2');
+    await f.change(value);
+    assert.equal(f.error(), '');
+    assert.match(f.warning(), /Età inconsueta.*01\/01\/2010.*31\/12\/2016/);
+    await f.key('Tab');
+    assertElement(f.focusCell(), f.cell('r01'));
+    assert.equal(f.warning(), '');
+    assert.match(f.cell('birthDate').className, /\banomalous\b/);
+    assert.match(f.cell('birthDate').title, /Età inconsueta/);
+    await f.key('Enter');
+    assert.equal(f.patches[0].data.birthDate, value);
+  });
+}
+
+test('the age warning waits for a four-digit year', async t => {
   const f = await mountTable(t);
   await f.click(f.cell('birthDate'));
   await f.key('F2');
-  for (const value of ['31/12/2009', '01/01/2017']) {
-    await f.change(value);
-    await f.autosave();
-    assert.match(f.error(), /01\/01\/2010.*31\/12\/2016/);
-    assert.equal(f.patches.length, 0);
-    await f.key('Tab');
-    assertElement(f.focusCell(), f.cell('birthDate'));
-  }
+  await f.change('12/05/2');
+  assert.equal(f.warning(), '');
+  await f.change('12/05/2000');
+  assert.match(f.warning(), /Età inconsueta/);
+  await f.change('12/05/2012');
+  assert.equal(f.warning(), '');
 });
 
 for (const value of ['01/01/2010', '31/12/2016', '2012-02-29', '1.2.12', '', '/', '//', '   ']) {
@@ -606,9 +622,9 @@ test('a configured zero age is a real limit rather than an unbounded range', asy
   await f.click(f.cell('birthDate'));
   await f.key('F2');
   await f.change('01/01/2025');
-  await f.key('Tab');
-  assert.match(f.error(), /01\/01\/2026.*31\/12\/2026/);
+  assert.match(f.warning(), /01\/01\/2026.*31\/12\/2026/);
   await f.change('01/01/2026');
+  assert.equal(f.warning(), '');
   await f.key('Tab');
   assert.equal(f.error(), '');
   assertElement(f.focusCell(), f.cell('r01'));

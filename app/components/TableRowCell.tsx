@@ -63,18 +63,20 @@ export function DataCell({hasFocus, field, oldValue, newValue, editor, onEditorC
     : field.css_style;
 
   const anomalous = field.anomalous(value, validationContext);
+  const warning = field.editingWarning(editor?.value ?? value, validationContext);
 
   const className = `${field.css_class}${extra_css?` ${extra_css}` : ''}${hasFocus ? ' focus' : ''}${editor && hasFocus ? ' input-focus' : ''}${changed ? ' modified' : ''}${anomalous ? ' anomalous' : ''}`;
 
-  return <td className={className} tabIndex={1} title={title} onClick={onClick} style={cursorColor ? {...style, boxShadow: `inset 0 0 0 2px ${cursorColor}`} : style} ref={tdRef}>
+  return <td className={className} tabIndex={1} title={[title, warning].filter(Boolean).join('\n') || undefined} onClick={onClick} style={cursorColor ? {...style, boxShadow: `inset 0 0 0 2px ${cursorColor}`} : style} ref={tdRef}>
       {editor
-        ? <TableCellInput editor={editor} onChange={onEditorChange} onBlur={onEditorBlur} />
+        ? <TableCellInput editor={editor} warning={warning} onChange={onEditorChange} onBlur={onEditorBlur} />
         : value}
   </td>
 }
 
-export default function TableCellInput({editor, onChange, onBlur}: {
+export default function TableCellInput({editor, warning = '', onChange, onBlur}: {
     editor: Extract<CellEditorState, { mode: 'editing' }>,
+    warning?: string,
     onChange: (value: string) => void,
     onBlur: () => void,
 }) {
@@ -92,8 +94,10 @@ export default function TableCellInput({editor, onChange, onBlur}: {
     return <>
         <input className="table-row" ref={inputRef} value={editor.value}
             placeholder={editor.suggestion || undefined}
-            aria-invalid={!!editor.error} aria-describedby={editor.error ? errorId : undefined}
+            aria-invalid={!!editor.error} aria-describedby={editor.error || warning ? errorId : undefined}
             onChange={event => onChange(event.currentTarget.value)} onBlur={onBlur} />
-        {editor.error && <span id={errorId} role="alert" className="cell-error">{editor.error}</span>}
+        {editor.error
+            ? <span id={errorId} role="alert" className="cell-error">{editor.error}</span>
+            : warning && <span id={errorId} role="status" className="cell-error cell-warning">{warning}</span>}
     </>
 }
