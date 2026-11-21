@@ -7,8 +7,8 @@ const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const { ObjectId } = require('bson');
 
-function page(file) {
-  const sheet = { _id: new ObjectId(), schema: 'example' };
+function page(file, { profile = null } = {}) {
+  const sheet = { _id: new ObjectId(), schema: 'example', permissions: [{ email: 'manager@example.com', role: 'manager' }] };
   const job = { _id: new ObjectId(), sheetId: sheet._id,
     timestamp: new Date(), messages: [{ status: 'completed', message: 'done', timestamp: new Date() }] };
   const subscriptions = [], queries = [], refreshed = [];
@@ -29,10 +29,12 @@ function page(file) {
     './Loading': { __esModule: true, default: () => 'loading' },
     './OmrWorkerStatus': { __esModule: true, default: ({ type }) => 'worker:' + type },
     '../lib/util': { myTimestamp: () => 'date', pluralize: () => '' },
+    '../lib/useProfile': { __esModule: true, default: () => profile },
     '../lib/schema': { schemas: { example: { scans_to_data_dict: () => ({}) } } },
   };
   const generated = {
     useAddRowMutation: () => [() => {}, {}], usePatchRowMutation: () => [() => {}, {}],
+    useDeleteScanSheetJobMutation: () => [() => {}, {}],
     useScanJobsQuery(options) {
       queries.push({ document: 'jobs', options });
       return { data: { scanJobs: [job] }, refetch: () => { refreshed.push('jobs'); } };
@@ -86,4 +88,14 @@ test('generated PDFs refresh after worker events and reconnect invalidations', (
   options.onData({ data: { data: { scanSheetJobUpdated: true } } });
   assert.deepEqual(f.refreshed, ['pdf', 'pdf']);
   assert.equal(f.queries[0].options.fetchPolicy, 'cache-and-network');
+});
+
+test('generated PDFs can be deleted only by sheet managers and admins', () => {
+  assert.ok(!page('app/components/ScansSheetExport.tsx').html.includes('elimina'));
+  assert.ok(!page('app/components/ScansSheetExport.tsx',
+    { profile: { email: 'other@example.com', isAdmin: false } }).html.includes('elimina'));
+  assert.ok(page('app/components/ScansSheetExport.tsx',
+    { profile: { email: 'manager@example.com', isAdmin: false } }).html.includes('elimina'));
+  assert.ok(page('app/components/ScansSheetExport.tsx',
+    { profile: { email: 'other@example.com', isAdmin: true } }).html.includes('elimina'));
 });

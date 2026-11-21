@@ -111,6 +111,14 @@ le righe selezionate, o tutte, in un file JSONL per `olisheet`, una riga JSON pe
 studente con `sheet_name` e i dati della riga. Il PDF generato si scarica da
 `/scansheet/{jobId}/pdf`.
 
+Dalla tabella dei PDF generati i responsabili del foglio (e gli amministratori)
+possono eliminare una generazione con la mutation `deleteScanSheetJob`: cancella
+prima tutti i file del lavoro (il PDF in `SHEETGENDATA_DIR` ed eventuali file
+rimasti nello spool), poi il documento in `scan_sheet_jobs`, aggiornando
+`nScanSheetJobs`. Se un file non si può cancellare (vedi «Permessi dei file») il
+lavoro resta nel database. Non si può eliminare un lavoro in elaborazione
+(`processing`).
+
 ## Segnale di vita dei worker
 
 Dalla `v0.7.0` i worker scrivono un segnale di vita nella collezione

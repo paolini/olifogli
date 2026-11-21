@@ -533,6 +533,8 @@ type Mutation {
   
   deleteScan(jobId: ObjectId!): Boolean
   requestScanSheetGeneration(sheetId: ObjectId!, selectedRowIds: [ObjectId!]): Boolean
+  """Responsabili del foglio: cancella una generazione di fogli risposte e i suoi file PDF."""
+  deleteScanSheetJob(jobId: ObjectId!): Boolean
 
   # New mutation to create a workbook
   addWorkbook(name: String!): Workbook

@@ -46,6 +46,7 @@ import deleteRows from './resolvers/deleteRows'
 import deleteAllRows from './resolvers/deleteAllRows'
 import addRows from './resolvers/addRows'
 import deleteScan from './resolvers/deleteScan'
+import deleteScanSheetJob from './resolvers/deleteScanSheetJob'
 import requestScanSheetGeneration from './resolvers/requestScanSheetGeneration'
 import addWorkbook from './resolvers/addWorkbook'
 import deleteWorkbook from './resolvers/deleteWorkbook'
@@ -154,6 +155,7 @@ export const resolvers: Resolvers = {
     deleteAllRows,
     addRows,
     deleteScan,
+    deleteScanSheetJob,
     requestScanSheetGeneration,
     addWorkbook,
     deleteWorkbook,

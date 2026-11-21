@@ -1,11 +1,12 @@
 import { gql } from "@apollo/client";
 import { useSubscription } from "@apollo/client";
-import { Sheet, useScanSheetJobsQuery } from "../graphql/generated"
+import { Sheet, useDeleteScanSheetJobMutation, useScanSheetJobsQuery } from "../graphql/generated"
 import Error from "./Error"
 import { ObjectId } from "bson"
 import Loading from "./Loading"
 import OmrWorkerStatus from "./OmrWorkerStatus"
 import { myTimestamp } from "../lib/util";
+import useProfile from "../lib/useProfile";
 
 const _ = gql`
     query scanSheetJobs($sheetId: ObjectId!) {
@@ -17,6 +18,12 @@ const _ = gql`
             status
             message
         }
+    }
+`;
+
+const __ = gql`
+    mutation deleteScanSheetJob($jobId: ObjectId!) {
+        deleteScanSheetJob(jobId: $jobId)
     }
 `;
 
@@ -37,6 +44,16 @@ export default function ScansPdfExport({sheet}:{
         variables: { sheetId: new ObjectId(sheet._id) },
         onData: () => { refetchJobs() },
     });
+    const profile = useProfile()
+    const canDelete = !!profile && (profile.isAdmin
+        || sheet.permissions.some(p => p.email && p.email === profile.email && p.role === 'manager'))
+    const [deleteJob, { loading: deleteLoading, error: deleteError }] = useDeleteScanSheetJobMutation()
+
+    async function handleDelete(jobId: ObjectId) {
+        if (!window.confirm('Eliminare il PDF dei fogli risposte?')) return
+        await deleteJob({ variables: { jobId } })
+        await refetchJobs()
+    }
 
     return <div>
         <h2>PDF fogli generati</h2>
@@ -45,6 +62,7 @@ export default function ScansPdfExport({sheet}:{
         {jobsLoading && <Loading />}
         <Error error={jobsError} />
         <Error error={subscriptionError} />
+        <Error error={deleteError} />
         {jobsData?.scanSheetJobs && jobsData.scanSheetJobs.length > 0 ? (
             <table className="border-collapse border border-gray-300 w-auto">
                 <thead>
@@ -52,6 +70,7 @@ export default function ScansPdfExport({sheet}:{
                         <th className="border border-gray-300 px-4 py-2 text-left">Data</th>
                         <th className="border border-gray-300 px-4 py-2 text-left">Stato</th>
                         <th className="border border-gray-300 px-4 py-2 text-left">File</th>
+                        {canDelete && <th className="border border-gray-300 px-4 py-2"></th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -84,6 +103,13 @@ export default function ScansPdfExport({sheet}:{
                                         : (job.message || '???')
                                     }
                                 </td>
+                                {canDelete && <td className="border border-gray-300 px-4 py-2">
+                                    {job.status !== 'processing' &&
+                                        <button type="button" className="text-red-600 hover:text-red-800 underline"
+                                            disabled={deleteLoading} onClick={() => handleDelete(job._id)}>
+                                            elimina
+                                        </button>}
+                                </td>}
                             </tr>
                         )
                     })}

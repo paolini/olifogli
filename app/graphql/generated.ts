@@ -134,6 +134,8 @@ export type Mutation = {
   deleteRow?: Maybe<Scalars['ObjectId']['output']>;
   deleteRows?: Maybe<Scalars['Int']['output']>;
   deleteScan?: Maybe<Scalars['Boolean']['output']>;
+  /** Responsabili del foglio: cancella una generazione di fogli risposte e i suoi file PDF. */
+  deleteScanSheetJob?: Maybe<Scalars['Boolean']['output']>;
   deleteSheet?: Maybe<Scalars['Boolean']['output']>;
   deleteSheets?: Maybe<Scalars['Boolean']['output']>;
   deleteWorkbook?: Maybe<Scalars['ObjectId']['output']>;
@@ -250,6 +252,11 @@ export type MutationDeleteRowsArgs = {
 
 
 export type MutationDeleteScanArgs = {
+  jobId: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationDeleteScanSheetJobArgs = {
   jobId: Scalars['ObjectId']['input'];
 };
 
@@ -1200,6 +1207,13 @@ export type ScanSheetJobsQueryVariables = Exact<{
 
 
 export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string }> };
+
+export type DeleteScanSheetJobMutationVariables = Exact<{
+  jobId: Scalars['ObjectId']['input'];
+}>;
+
+
+export type DeleteScanSheetJobMutation = { __typename?: 'Mutation', deleteScanSheetJob?: boolean | null };
 
 export type OnScanSheetJobUpdatedSubscriptionVariables = Exact<{
   sheetId: Scalars['ObjectId']['input'];
@@ -2551,6 +2565,37 @@ export type ScanSheetJobsQueryHookResult = ReturnType<typeof useScanSheetJobsQue
 export type ScanSheetJobsLazyQueryHookResult = ReturnType<typeof useScanSheetJobsLazyQuery>;
 export type ScanSheetJobsSuspenseQueryHookResult = ReturnType<typeof useScanSheetJobsSuspenseQuery>;
 export type ScanSheetJobsQueryResult = Apollo.QueryResult<ScanSheetJobsQuery, ScanSheetJobsQueryVariables>;
+export const DeleteScanSheetJobDocument = gql`
+    mutation deleteScanSheetJob($jobId: ObjectId!) {
+  deleteScanSheetJob(jobId: $jobId)
+}
+    `;
+export type DeleteScanSheetJobMutationFn = Apollo.MutationFunction<DeleteScanSheetJobMutation, DeleteScanSheetJobMutationVariables>;
+
+/**
+ * __useDeleteScanSheetJobMutation__
+ *
+ * To run a mutation, you first call `useDeleteScanSheetJobMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteScanSheetJobMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteScanSheetJobMutation, { data, loading, error }] = useDeleteScanSheetJobMutation({
+ *   variables: {
+ *      jobId: // value for 'jobId'
+ *   },
+ * });
+ */
+export function useDeleteScanSheetJobMutation(baseOptions?: Apollo.MutationHookOptions<DeleteScanSheetJobMutation, DeleteScanSheetJobMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteScanSheetJobMutation, DeleteScanSheetJobMutationVariables>(DeleteScanSheetJobDocument, options);
+      }
+export type DeleteScanSheetJobMutationHookResult = ReturnType<typeof useDeleteScanSheetJobMutation>;
+export type DeleteScanSheetJobMutationResult = Apollo.MutationResult<DeleteScanSheetJobMutation>;
+export type DeleteScanSheetJobMutationOptions = Apollo.BaseMutationOptions<DeleteScanSheetJobMutation, DeleteScanSheetJobMutationVariables>;
 export const OnScanSheetJobUpdatedDocument = gql`
     subscription OnScanSheetJobUpdated($sheetId: ObjectId!) {
   scanSheetJobUpdated(sheetId: $sheetId)
@@ -5093,6 +5138,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteRow?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteRowArgs, '_id'>>;
   deleteRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType, RequireFields<MutationDeleteRowsArgs, 'ids'>>;
   deleteScan?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanArgs, 'jobId'>>;
+  deleteScanSheetJob?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteScanSheetJobArgs, 'jobId'>>;
   deleteSheet?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetArgs, '_id'>>;
   deleteSheets?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSheetsArgs, 'ids'>>;
   deleteWorkbook?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType, RequireFields<MutationDeleteWorkbookArgs, '_id'>>;
