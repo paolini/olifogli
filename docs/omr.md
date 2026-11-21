@@ -176,18 +176,23 @@ risultano sempre non attivi.
 
 La voce **file** del menu che si apre cliccando l'email in alto a destra apre
 la pagina `/files` (`app/components/WorkerFiles.tsx`), visibile solo agli amministratori.
-Elenca i file delle quattro directory condivise, raggruppati per lavoro:
+Mostra i file delle quattro directory condivise come un browser a cartelle, con
+il percorso in alto:
 
-- ogni gruppo mostra tipo (scansione o fogli generati), ID del lavoro, foglio
-  collegato, stato, cartelle in cui si trovano i file (in coda, in scrittura, in
-  elaborazione, completato, annullato, temporaneo, dati), numero e dimensione;
-- i file senza un ID di lavoro nel nome finiscono in un gruppo «senza lavoro»;
-- si può filtrare per tipo e mostrare solo i lavori non più presenti nel
-  database, cioè i file rimasti dopo l'eliminazione della scansione.
+- al primo livello ci sono **Scansioni**, **Fogli generati** e **Orfani**;
+- scansioni e fogli generati sono divisi per raccoglitore, poi per foglio
+  (ordinati per spazio occupato), poi per lavoro, indicato con data e stato;
+- **Orfani** raccoglie i file di lavori non più presenti nel database (rimasti
+  dopo l'eliminazione della scansione) e quelli senza un ID di lavoro nel nome;
+- dentro un lavoro si vedono i singoli file, con la fase del worker (in coda,
+  in scrittura, in elaborazione, completato, annullato, temporaneo, dati), e si
+  possono aprire (PDF e immagini, con anteprime facoltative), scaricare o
+  cancellare.
 
-Da **mostra** si vedono i singoli file, che si possono aprire (PDF e immagini),
-scaricare o cancellare. Si possono cancellare anche tutti i file di un lavoro o
-di più lavori selezionati.
+La posizione è nei parametri dell'URL (`kind`, `workbook`, `sheet`, `job`),
+quindi il tasto Indietro funziona e il link a una cartella si può condividere.
+A ogni livello si possono selezionare e cancellare più voci: si cancellano tutti
+i file dei lavori che contengono.
 
 La cancellazione riguarda **solo i file**: i lavori e i risultati in MongoDB non
 cambiano, ma immagini e PDF cancellati non saranno più visibili dal foglio.

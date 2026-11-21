@@ -169,6 +169,7 @@ function resolvers(user, jobs) {
       getScanJobsCollection: async () => collection(jobs.scan),
       getScanSheetJobsCollection: async () => collection(jobs.sheet),
       getSheetsCollection: async () => collection(jobs.sheets),
+      getWorkbooksCollection: async () => collection(jobs.workbooks ?? []),
     },
     '@/app/lib/workerFiles': lib(),
     '@/app/lib/appLog': { appLog() {} },
@@ -183,11 +184,12 @@ test('groups join the database jobs and group deletion leaves other jobs alone',
   const { base, env } = areas(t);
   Object.assign(process.env, env);
   t.after(() => { for (const key of Object.keys(env)) delete process.env[key]; });
-  const sheetId = new ObjectId();
+  const sheetId = new ObjectId(), workbookId = new ObjectId();
   const jobs = {
     scan: [{ _id: new ObjectId(scanJob), sheetId, timestamp: new Date(), messages: [{ status: 'completed' }] }],
     sheet: [],
-    sheets: [{ _id: sheetId, name: 'Liceo Galilei' }],
+    sheets: [{ _id: sheetId, name: 'Liceo Galilei', workbookId }],
+    workbooks: [{ _id: workbookId, name: 'Archimede 2026' }],
   };
 
   await assert.rejects(resolvers({ isAdmin: false }, jobs).workerFiles(null, {}, {}), /non autorizzato/);
@@ -198,11 +200,14 @@ test('groups join the database jobs and group deletion leaves other jobs alone',
   const scan = groups.find(group => group.kind === 'scan' && group.jobId?.toString() === scanJob);
   assert.equal(scan.jobExists, true);
   assert.equal(scan.sheetName, 'Liceo Galilei');
+  assert.equal(scan.workbookId.toString(), workbookId.toString());
+  assert.equal(scan.workbookName, 'Archimede 2026');
   assert.equal(scan.status, 'completed');
   assert.equal(scan.fileCount, 4);
   assert.deepEqual(plain(scan.folders).sort(), ['data', 'queued', 'staging', 'tmp']);
   const sheet = groups.find(group => group.kind === 'sheet');
   assert.equal(sheet.jobExists, false);
+  assert.equal(sheet.workbookId, null);
   assert.equal(groups.find(group => group.kind === 'scan' && group.jobId === null).fileCount, 1);
 
   assert.deepEqual(plain(await admin.deleteWorkerFileGroup(null, { kind: 'scan', jobId: new ObjectId(scanJob) }, {})),

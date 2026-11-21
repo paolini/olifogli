@@ -1044,6 +1044,9 @@ export type WorkerFileGroup = {
   status?: Maybe<Scalars['String']['output']>;
   timestamp?: Maybe<Scalars['Timestamp']['output']>;
   totalSize: Scalars['Float']['output'];
+  /** Raccoglitore del foglio (null se il foglio non esiste più) */
+  workbookId?: Maybe<Scalars['ObjectId']['output']>;
+  workbookName?: Maybe<Scalars['String']['output']>;
 };
 
 export type WorkerFileInput = {
@@ -1563,7 +1566,7 @@ export type AddWorkbookMutation = { __typename?: 'Mutation', addWorkbook?: { __t
 export type WorkerFilesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WorkerFilesQuery = { __typename?: 'Query', workerFiles: { __typename?: 'WorkerFiles', areas: Array<{ __typename?: 'WorkerFileArea', area: string, label: string, kind: string, available: boolean }>, groups: Array<{ __typename?: 'WorkerFileGroup', kind: string, jobId?: ObjectId | null, jobExists: boolean, sheetId?: ObjectId | null, sheetName?: string | null, status?: string | null, timestamp?: Date | null, fileCount: number, totalSize: number, folders: Array<string>, lastModified: Date }> } };
+export type WorkerFilesQuery = { __typename?: 'Query', workerFiles: { __typename?: 'WorkerFiles', areas: Array<{ __typename?: 'WorkerFileArea', area: string, label: string, kind: string, available: boolean }>, groups: Array<{ __typename?: 'WorkerFileGroup', kind: string, jobId?: ObjectId | null, jobExists: boolean, sheetId?: ObjectId | null, sheetName?: string | null, workbookId?: ObjectId | null, workbookName?: string | null, status?: string | null, timestamp?: Date | null, fileCount: number, totalSize: number, folders: Array<string>, lastModified: Date }> } };
 
 export type WorkerFileGroupFilesQueryVariables = Exact<{
   kind: Scalars['String']['input'];
@@ -4356,6 +4359,8 @@ export const WorkerFilesDocument = gql`
       jobExists
       sheetId
       sheetName
+      workbookId
+      workbookName
       status
       timestamp
       fileCount
@@ -4964,7 +4969,7 @@ export type ResolversTypes = {
   WorkerFileArea: ResolverTypeWrapper<WorkerFileArea>;
   WorkerFileDeletion: ResolverTypeWrapper<WorkerFileDeletion>;
   WorkerFileFailure: ResolverTypeWrapper<WorkerFileFailure>;
-  WorkerFileGroup: ResolverTypeWrapper<Omit<WorkerFileGroup, 'jobId' | 'sheetId'> & { jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']> }>;
+  WorkerFileGroup: ResolverTypeWrapper<Omit<WorkerFileGroup, 'jobId' | 'sheetId' | 'workbookId'> & { jobId?: Maybe<ResolversTypes['ObjectId']>, sheetId?: Maybe<ResolversTypes['ObjectId']>, workbookId?: Maybe<ResolversTypes['ObjectId']> }>;
   WorkerFileInput: WorkerFileInput;
   WorkerFiles: ResolverTypeWrapper<WorkerFiles>;
 };
@@ -5033,7 +5038,7 @@ export type ResolversParentTypes = {
   WorkerFileArea: WorkerFileArea;
   WorkerFileDeletion: WorkerFileDeletion;
   WorkerFileFailure: WorkerFileFailure;
-  WorkerFileGroup: Omit<WorkerFileGroup, 'jobId' | 'sheetId'> & { jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']> };
+  WorkerFileGroup: Omit<WorkerFileGroup, 'jobId' | 'sheetId' | 'workbookId'> & { jobId?: Maybe<ResolversParentTypes['ObjectId']>, sheetId?: Maybe<ResolversParentTypes['ObjectId']>, workbookId?: Maybe<ResolversParentTypes['ObjectId']> };
   WorkerFileInput: WorkerFileInput;
   WorkerFiles: WorkerFiles;
 };
@@ -5597,6 +5602,8 @@ export type WorkerFileGroupResolvers<ContextType = any, ParentType extends Resol
   status?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   timestamp?: Resolver<Maybe<ResolversTypes['Timestamp']>, ParentType, ContextType>;
   totalSize?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  workbookId?: Resolver<Maybe<ResolversTypes['ObjectId']>, ParentType, ContextType>;
+  workbookName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

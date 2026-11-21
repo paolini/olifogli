@@ -62,6 +62,9 @@ type WorkerFileGroup {
   jobExists: Boolean!
   sheetId: ObjectId
   sheetName: String
+  """Raccoglitore del foglio (null se il foglio non esiste più)"""
+  workbookId: ObjectId
+  workbookName: String
   status: String
   timestamp: Timestamp
   fileCount: Int!

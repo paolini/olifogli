@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { getScanJobsCollection, getScanSheetJobsCollection, getSheetsCollection } from '@/app/lib/mongodb'
+import { getScanJobsCollection, getScanSheetJobsCollection, getSheetsCollection, getWorkbooksCollection } from '@/app/lib/mongodb'
 import { deleteWorkerFile, listWorkerFiles, type WorkerFile, type WorkerFileKind } from '@/app/lib/workerFiles'
 import { appLog } from '@/app/lib/appLog'
 import { check_admin, get_authenticated_user } from './utils'
@@ -49,20 +49,30 @@ export async function workerFiles(_: unknown, _args: unknown, context: Context) 
 
     const sheetIds = [...new Map([...jobs.values()].map(job => [job.sheetId.toString(), job.sheetId])).values()]
     const sheets = sheetIds.length
-        ? await (await getSheetsCollection()).find({ _id: { $in: sheetIds } }, { projection: { name: 1 } }).toArray()
+        ? await (await getSheetsCollection()).find({ _id: { $in: sheetIds } }, { projection: { name: 1, workbookId: 1 } }).toArray()
         : []
-    const sheetNames = new Map(sheets.map(sheet => [sheet._id.toString(), sheet.name]))
+    const sheetById = new Map(sheets.map(sheet => [sheet._id.toString(), sheet]))
+    const workbookIds = [...new Map(sheets.filter(sheet => sheet.workbookId)
+        .map(sheet => [sheet.workbookId.toString(), sheet.workbookId])).values()]
+    const workbooks = workbookIds.length
+        ? await (await getWorkbooksCollection()).find({ _id: { $in: workbookIds } }, { projection: { name: 1 } }).toArray()
+        : []
+    const workbookNames = new Map(workbooks.map(workbook => [workbook._id.toString(), workbook.name]))
 
     return {
         areas: areas.map(({ area, label, kind, available }) => ({ area, label, kind, available })),
         groups: [...groups.entries()].map(([key, group]) => {
             const job = jobs.get(key)
+            const sheet = job ? sheetById.get(job.sheetId.toString()) : undefined
+            const workbookId = sheet?.workbookId ?? null
             return {
                 kind: group.kind,
                 jobId: group.jobId ? new ObjectId(group.jobId) : null,
                 jobExists: !!job,
                 sheetId: job?.sheetId ?? null,
-                sheetName: job ? sheetNames.get(job.sheetId.toString()) ?? null : null,
+                sheetName: sheet?.name ?? null,
+                workbookId,
+                workbookName: workbookId ? workbookNames.get(workbookId.toString()) ?? null : null,
                 status: job?.status ?? null,
                 timestamp: job?.timestamp ?? null,
                 fileCount: group.files.length,
