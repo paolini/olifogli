@@ -368,7 +368,13 @@ i dati dei fogli accessibili:
 
 - Provider: Olimanager, OAuth2/OIDC con authorization code e PKCE, tramite
   NextAuth. Configurazione in [olimanager.md](olimanager.md#login-oauth).
-- Sessione: JWT firmato con `NEXTAUTH_SECRET`, in cookie HttpOnly.
+- Sessione: JWT firmato con `NEXTAUTH_SECRET`, in cookie HttpOnly. Il client
+  non rilegge la sessione quando la scheda torna in primo piano
+  (`refetchOnWindowFocus={false}` in `SessionProviderWrapper.tsx`): con la rete
+  ancora assente, ad esempio al risveglio del computer, next-auth 4 trasforma la
+  richiesta fallita in una sessione nulla e la pagina sembrerebbe disconnessa
+  fino al ricaricamento. I server verificano comunque la sessione a ogni
+  richiesta e il logout si propaga tra le schede.
 - Scope: `openid email profile`; lo scope `api` si richiede solo per trasferire
   dati verso Olimanager.
 

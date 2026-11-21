@@ -219,3 +219,26 @@ test('a socket error event (e.g. after sleep) is retried instead of stopping the
   assert.deepEqual(fatal, []);
   assert.equal(sockets.length, 2);
 });
+
+test('the session is not refetched on focus, so a failed request offline does not log the page out', () => {
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const wrapper = ts.transpileModule(readFileSync(path.join(__dirname, '../app/components/SessionProviderWrapper.tsx'), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  const exports = {};
+  let providerProps;
+  vm.runInNewContext(wrapper, {
+    exports,
+    require(name) {
+      if (name === 'react') return React;
+      if (name === 'react/jsx-runtime') return require(name);
+      if (name === 'next-auth/react') return { SessionProvider: props => { providerProps = props; return props.children; } };
+      if (name === './WebSocketStatus') return { default: () => null };
+      throw new Error(`Unexpected import: ${name}`);
+    },
+  });
+  renderToStaticMarkup(React.createElement(exports.default, null, 'page'));
+  assert.equal(providerProps.refetchOnWindowFocus, false);
+});
+
