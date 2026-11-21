@@ -18,7 +18,6 @@ import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery';
 import { unparseCsv } from '../lib/csv'
-import SheetFormNew from './SheetFormNew';
 
 const DELETE_WORKBOOK = gql`
     mutation DeleteWorkbook($_id: ObjectId!) {
@@ -56,11 +55,12 @@ const DECRYPT_SHEETS = gql`
     }
 `
 
-export default function Sheets({ sheets, profile, workbookId, refetch }: { 
+export default function Sheets({ sheets, profile, workbookId, refetch, adminActions }: { 
     sheets: GetSheetsQuery['sheets'], 
     profile?: { isAdmin?: boolean|null, email?: string } | null,
     workbookId: ObjectId,
-    refetch: () => void
+    refetch: () => void,
+    adminActions?: React.ReactNode
 }) {
     const [creationId, setCreationId] = useState<ObjectId|null>(null)
     const router = useRouter()
@@ -177,6 +177,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         link.click();
     }
 
+    const selectedSheets = filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
+
     const selectedSheetsActions: { key: string, label: string, disabled: boolean, run: () => void }[] = [
         { key: 'delete', label: 'Elimina', disabled: deletingSheets, run: deleteSelectedSheets },
         { key: 'validate', label: 'Rivalida', disabled: validatingRows, run: validateSelectedSheets },
@@ -262,44 +264,40 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={matchOlimanagerError} />
 
         <Error error={resultsError} />
-        { profile?.isAdmin && 
-            <div className="flex items-center gap-3 my-2">
-                <select
-                    className="p-1 border"
-                    value=""
-                    disabled={selectedIds.length === 0}
-                    onChange={e => {
-                        const action = selectedSheetsActions.find(a => a.key === e.target.value)
-                        if (action && !action.disabled) action.run()
-                    }}
-                >
-                    <option value="" disabled>
-                        {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
-                    </option>
-                    {selectedSheetsActions.map(action =>
-                        <option key={action.key} value={action.key} disabled={action.disabled}>
-                            {action.label}
+        { profile?.isAdmin &&
+            <fieldset className="my-2 p-2 border bg-gray-100">
+                <legend className="px-1 font-bold">⚙ admin</legend>
+                <div className="flex items-center gap-3">
+                    <select
+                        className="p-1 border"
+                        value=""
+                        disabled={selectedIds.length === 0}
+                        onChange={e => {
+                            const action = selectedSheetsActions.find(a => a.key === e.target.value)
+                            if (action && !action.disabled) action.run()
+                        }}
+                    >
+                        <option value="" disabled>
+                            {pluralize(selectedIds.length, 'agisci su un foglio selezionato', 'agisci su % fogli selezionati')}
                         </option>
-                    )}
-                </select>
-                <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
-                    ⚙ Elimina raccolta
-                </Button>
-            </div>
+                        {selectedSheetsActions.map(action =>
+                            <option key={action.key} value={action.key} disabled={action.disabled}>
+                                {action.label}
+                            </option>
+                        )}
+                    </select>
+                    <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
+                        ⚙ Elimina raccolta
+                    </Button>
+                </div>
+                <Error error={updateSheetsError} />
+                { selectedIds.length > 0 && <>
+                    <BulkCommonDataSetter sheets={selectedSheets} onApply={applyBulkCommonData} />
+                    <BulkPermissionSetter sheets={selectedSheets} onApply={applyBulkPermission} />
+                </>}
+                { adminActions && <div className="mt-2 flex flex-wrap items-start gap-2">{adminActions}</div> }
+            </fieldset>
         }
-        <Error error={updateSheetsError} />
-        { 
-            selectedIds.length > 0 && profile?.isAdmin &&
-            <BulkCommonDataSetter sheets={filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))} onApply={applyBulkCommonData} />
-        }
-        { 
-            selectedIds.length > 0 && profile?.isAdmin &&
-            <BulkPermissionSetter 
-                sheets={filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))}
-                onApply={applyBulkPermission}
-            />
-        }
-        {workbookId && profile?.isAdmin && <SheetFormNew workbookId={workbookId} />}
     </>
 
     function clearFilter(field: string) {
@@ -440,7 +438,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
 
     async function applyBulkCommonData(field: string, value: string) {
         if (!profile?.isAdmin) return
-        const selectedSheets = filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
         const updates = selectedSheets.map(sheet => ({
             _id: sheet._id,
             commonData: { ...sheet.commonData, [field]: value }
@@ -453,7 +450,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         if (!profile?.isAdmin) return
         const emailTrimmed = (email || '').trim()
         if (!emailTrimmed || !emailTrimmed.includes('@')) return
-        const selectedSheets = filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
         // Aggiorna i permessi su ciascun foglio: sostituisce eventuale entry per la stessa email
         await Promise.all(selectedSheets.map(async (sheet) => {
             const existing = (sheet.permissions || [])

@@ -11,6 +11,7 @@ import { useState } from 'react'
 import Button from './Button'
 import OlimanagerVenueSheetsCreation from './OlimanagerVenueSheetsCreation'
 import OlimanagerParticipantImport from './OlimanagerParticipantImport'
+import SheetFormNew from './SheetFormNew'
 
 const _ = gql`query GetSheets($workbookId: ObjectId) {
         sheets(workbookId: $workbookId) {
@@ -54,9 +55,11 @@ export default function WorkbookSheets({ workbookId, profile }: {
     if (importing && profile?.isAdmin) return <OlimanagerParticipantImport workbookId={workbookId} done={() => { setImporting(false); refetch() }} />
 
     return <div className="p-4">
-        <Sheets sheets={data.sheets} profile={profile} workbookId={workbookId} refetch={refetch} />
-        {profile?.isAdmin && <Button className="mt-4" onClick={() => setCreating(true)}>⚙ Crea fogli da Olimanager</Button>}
-        {profile?.isAdmin && <Button className="mt-4 ml-2" onClick={() => setImporting(true)}>⇩ Importa partecipanti da Olimanager</Button>}
+        <Sheets sheets={data.sheets} profile={profile} workbookId={workbookId} refetch={refetch} adminActions={<>
+            <SheetFormNew workbookId={workbookId} />
+            <Button onClick={() => setCreating(true)}>⚙ Crea fogli da Olimanager</Button>
+            <Button onClick={() => setImporting(true)}>⇩ Importa partecipanti da Olimanager</Button>
+        </>} />
     </div>
 }
 

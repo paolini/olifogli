@@ -23,12 +23,10 @@ export default function SheetFormNew({ workbookId }: { workbookId: ObjectId }) {
 
     const canCreate = !loading && schema !== '' && name.trim() !== ''
 
-    if (!open) return <div className="my-2">
-        <Button onClick={() => setOpen(true)}>+ Nuovo foglio</Button>
-    </div>
+    if (!open) return <Button onClick={() => setOpen(true)}>+ Nuovo foglio</Button>
 
     return <form
-        className="my-2 p-2 border inline-grid grid-cols-[auto_1fr] gap-2 items-center"
+        className="p-2 border inline-grid grid-cols-[auto_1fr] gap-2 items-center"
         onSubmit={e => { e.preventDefault(); if (canCreate) create() }}
     >
         <div className="col-span-2 font-bold">Nuovo foglio</div>

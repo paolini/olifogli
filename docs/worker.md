@@ -16,7 +16,8 @@ L'aggiornamento degli extra fields resta sincrono. I vecchi resolver sincroni di
 creazione e invio risultati sono ancora disponibili per compatibilità, ma i
 pulsanti dell'interfaccia accodano lavori. Le azioni sui fogli (tutte tranne
 **Importa partecipanti da Olimanager**) si scelgono, per i fogli selezionati,
-dal menu a tendina «N fogli selezionati» in fondo all'elenco dei fogli.
+dal menu a tendina «agisci su N fogli selezionati» nel riquadro «⚙ admin» in
+fondo all'elenco dei fogli.
 
 Il codice è in `app/lib/olimanagerJobs.ts` (coda, lease, ciclo di esecuzione) e
 nei moduli `app/lib/olimanager*.ts`; i resolver GraphQL sono in
