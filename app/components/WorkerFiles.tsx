@@ -78,7 +78,7 @@ function DeletionReport({ report, areas, onClose }: { report: Deletion, areas: A
     <p>
       {pluralize(report.deleted, 'file cancellato', 'file cancellati')}
       {report.failed.length > 0 && <>; <b>{pluralize(report.failed.length, 'file non cancellato', 'file non cancellati')}</b></>}.
-      {} <button type="button" className="text-blue-600 underline" onClick={onClose}>chiudi</button>
+      {} <Button onClick={onClose}>chiudi</Button>
     </p>
     {reasons.map(reason => <p key={reason}>{FAILURE_REASONS[reason] ?? reason}</p>)}
     {report.failed.length > 0 && <>
@@ -215,15 +215,15 @@ export default function WorkerFiles() {
               <td className="text-right">{formatSize(group.totalSize)}</td>
               <td>{myTimestamp(group.lastModified)}</td>
               <td className="whitespace-nowrap">
-                <button type="button" className="text-blue-600 underline mr-2"
+                <Button className="mr-2"
                   aria-expanded={expanded === key}
                   onClick={() => setExpanded(expanded === key ? null : key)}>
                   {expanded === key ? 'nascondi' : 'mostra'}
-                </button>
-                <button type="button" className="text-red-600 underline" disabled={deleteGroupState.loading}
+                </Button>
+                <Button variant="danger" disabled={deleteGroupState.loading}
                   onClick={() => removeGroups([group])}>
                   elimina
-                </button>
+                </Button>
               </td>
             </tr>
             {expanded === key && <tr>
@@ -278,10 +278,10 @@ function GroupFiles({ group, areas, onDeleted }: {
             <td className="whitespace-nowrap">
               <a href={fileUrl(file, false)} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline mr-2">apri</a>
               <a href={fileUrl(file, true)} className="text-blue-600 underline mr-2">scarica</a>
-              <button type="button" className="text-red-600 underline" disabled={deleteState.loading}
+              <Button variant="danger" disabled={deleteState.loading}
                 onClick={() => remove(file)}>
                 elimina
-              </button>
+              </Button>
             </td>
           </tr>)}
         </tbody>
