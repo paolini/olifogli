@@ -12,7 +12,7 @@ import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SheetsCreation';
 import { useRouter } from 'next/navigation';
-import { Lock, Archive, Unlock } from 'lucide-react';
+import { Lock, Archive, Unlock, X } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
@@ -80,8 +80,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [lastClickedId, setLastClickedId] = useState<string|null>(null)
     const [displayLimit, setDisplayLimit] = useState(20)
-    const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring();
+    // Filtro aperto con un clic e ancora vuoto; i filtri non vuoti restano sempre aperti.
+    const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
 
     type Sheet = GetSheetsQuery['sheets'][number]
 
@@ -298,6 +299,11 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         {workbookId && profile?.isAdmin && <SheetFormNew workbookId={workbookId} />}
     </>
 
+    function clearFilter(field: string) {
+        setColumnFilters(f => ({ ...f, [field]: '' }))
+        if (filterMenuOpen === field) setFilterMenuOpen(null)
+    }
+
     // Chiamata come funzione e non come componente: un componente definito qui
     // dentro verrebbe rimontato a ogni render, ricreando il campo del filtro.
     function renderTh(field: string, header: string) {
@@ -320,27 +326,22 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                     </span>
                 </span>
             </span>
-            {filterMenuOpen === field && (
-                <div> 
-                {/*style={{ position: 'absolute', top: '100%', left: 0, background: 'white', border: '1px solid #ccc', padding: 8, zIndex: 10, minWidth: 120 }}>*/}
+            {(isFiltered || filterMenuOpen === field) && (
+                <div className="flex items-center gap-1">
                     <input
                         type="text"
                         value={columnFilters[field] || ''}
                         onChange={e => setColumnFilters(f => ({ ...f, [field]: e.target.value }))}
                         onKeyDown={e => {
-                            if (e.key === 'Escape') {
-                                setColumnFilters(f => ({ ...f, [field]: '' }))
-                                setFilterMenuOpen(null)
-                            }
+                            if (e.key === 'Escape') clearFilter(field)
                         }}
                         placeholder={`Filtra ${header}`}
-                        className="border rounded px-2 py-1 w-full"
-                        autoFocus
+                        className="border rounded px-2 py-1 w-full min-w-0"
+                        autoFocus={filterMenuOpen === field}
                     />
-                    <div className="flex gap-2 mt-2">
-                        <button className="text-xs px-2 py-1 border rounded" onClick={() => setColumnFilters(f => ({ ...f, [field]: '' }))}>Reset</button>
-                        <button className="text-xs px-2 py-1 border rounded" onClick={() => setFilterMenuOpen(null)}>Chiudi</button>
-                    </div>
+                    <button className="p-1 border rounded" title="Togli il filtro" onClick={() => clearFilter(field)}>
+                        <X size={14} />
+                    </button>
                 </div>
             )}
         </th>
