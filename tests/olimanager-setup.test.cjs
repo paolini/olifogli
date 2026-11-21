@@ -406,8 +406,8 @@ test('two contests, 32 canonical problems, teacher names, participants and workb
   assert.ok(api.calls.filter(([query]) => query.includes('matchOrCreateParticipant')).every(([, value]) => value.surname.includes('SenzaAccount')));
   const workbook = first.workbookCommonData;
   assert.equal(workbook.contest_year, '2026');
-  assert.equal(workbook.permutations_correct_2, 'EBDACADEEBCDAEBC');
-  assert.equal(workbook.permutations_correct_3, 'CBAEAECBDCBEEDAB');
+  assert.equal(workbook.permutations_correct_2, 'DEACBEBBCBBDDCEA');
+  assert.equal(workbook.permutations_correct_3, 'CBDBDBCDEBCCBADD');
   for (let i = 1; i <= 8; i++) assert.deepEqual(JSON.parse(workbook[`permutations_questions_${i}`]).sort((a, b) => a - b), Array.from({ length: 16 }, (_, i) => i + 1));
 });
 

@@ -14,23 +14,15 @@ export type PermutationsObject = {
     points: Points  
 };
 /*******
- * esempio: !!! QUESTI NON SONO I DATI REALI, SONO SOLO DI ESEMPIO
- * 
- * permutations_correct_2:	BDBBABCBDBEDDBAC
- * permutations_correct_3:	CDBBDBABDEBDEDBA
- * permutations_questions_1:	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
- * permutations_questions_2:	[3, 4, 1, 2, 8, 7, 6, 5, 10, 11, 12, 9, 13, 16, 14, 15]
- * permutations_questions_3:	[2, 1, 4, 3, 6, 7, 8, 5, 11, 12, 9, 10, 16, 15, 14, 13]
- * permutations_questions_4:	[3, 2, 4, 1, 6, 8, 5, 7, 12, 10, 11, 9, 13, 14, 16, 15]
- * permutations_questions_5:	[4, 1, 2, 3, 8, 5, 7, 6, 11, 10, 12, 9, 13, 15, 14, 16]
- * permutations_questions_6:	[1, 3, 4, 2, 7, 6, 8, 5, 10, 12, 9, 11, 16, 13, 15, 14]
- * permutations_questions_7:	[4, 2, 3, 1, 7, 8, 5, 6, 12, 9, 10, 11, 15, 13, 16, 14]
- * permutations_questions_8:	[2, 3, 1, 4, 5, 7, 6, 8, 9, 11, 10, 12, 14, 16, 13, 15]
- * permutations_answers_1:	ABCDE
- * permutations_answers_2:	EDBCA
- * permutations_answers_3:	DCEAB
- * permutations_answers_4:	CEABD
- * permutations_answers_5:	BADEC
+ * Formato delle impostazioni del workbook (valori stringa):
+ *
+ * permutations_questions_<c>:  "[3, 1, 4, 2, ...]"  permutazione delle domande 1..n
+ * permutations_answers_<c>:    "EADCB"              permutazione di ABCDE
+ * permutations_correct_<anno>: "DEAC..."            n risposte tra A-E, X e -
+ * permutations_points_correct, _wrong, _empty, _invalid: numeri
+ *
+ * Un esempio completo, con dati sintetici e non reali, è in
+ * scripts/fixtures/archimede.json.
  ******/
 
 /**

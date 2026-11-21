@@ -323,8 +323,9 @@ Il manifest JSON non contiene secret. Contiene `contests.biennio`,
 `olimanager_contest_id` del foglio) e le righe di prova, con `olifogliData`
 pronto per i campi delle righe di Olifogli.
 
-La configurazione usa le permutazioni Archimede 2025 conservate in
-`scripts/fixtures/archimede.json`: codice iniziale `2` per il biennio, `3` per il
-triennio; risposta corretta 5, vuota 1, errata o non valida 0. L'anno e gli ID
+La configurazione usa permutazioni e chiavi di correzione sintetiche, non
+corrispondenti a nessuna edizione reale, in `scripts/fixtures/archimede.json`
+(la chiave `_comment` lo ricorda anche nel manifest): codice iniziale `2` per il
+biennio, `3` per il triennio; risposta corretta 5, vuota 1, errata o non valida 0. L'anno e gli ID
 vengono impostati durante il setup. `participantId` nel manifest identifica le
 partecipazioni già predisposte; non viene importato automaticamente in Olifogli.
