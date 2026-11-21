@@ -58,7 +58,7 @@ export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
                     status: errors.length ? 'error' : 'success',
                     errorCount: errors.length,
                     errorCodes,
-                }, { level: errors.length ? 'warn' : 'info' })
+                }, { level: errors.length ? 'warn' : 'info', userId: context.contextValue?.user_id })
                 // Unexpected failures also concern whoever runs the server.
                 if (errorCodes.includes('INTERNAL_SERVER_ERROR')) {
                     serverLog('error', 'graphql.internal_error', { requestId, fields })

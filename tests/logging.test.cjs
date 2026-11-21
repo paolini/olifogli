@@ -43,7 +43,7 @@ test('GraphQL requests go to the daily application log with operational metadata
     const context = {
       schema: buildSchema('type Query { sheet: String }'), document, operation: document.definitions[0],
       request: { operationName: secret, variables: { nested: { password: secret, name: secret } }, query: secret },
-      contextValue: { email: secret, user_id: secret },
+      contextValue: { email: secret, user_id: '64b0000000000000000000a1' },
       errors: [{ message: secret, stack: secret, extensions: { code: 'FORBIDDEN', private: secret } }, { message: secret, extensions: { code: secret } }],
       response: { body: { singleResult: { data: { sheet: secret } } } },
     };
@@ -55,8 +55,9 @@ test('GraphQL requests go to the daily application log with operational metadata
     const content = await fs.readFile(path.join(directory, files[0]), 'utf8');
     assert.equal(content.includes(secret), false);
     const entry = JSON.parse(content);
-    assert.deepEqual(Object.keys(entry).sort(), ['timestamp','level','source','event','requestId','type','fields','durationMs','status','errorCount','errorCodes'].sort());
+    assert.deepEqual(Object.keys(entry).sort(), ['timestamp','level','source','event','userId','requestId','type','fields','durationMs','status','errorCount','errorCodes'].sort());
     assert.equal(entry.event, 'graphql.request');
+    assert.equal(entry.userId, '64b0000000000000000000a1');
     assert.equal(entry.level, 'warn');
     assert.equal(entry.source, 'app');
     assert.deepEqual(entry.fields, ['sheet']);
