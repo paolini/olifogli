@@ -30,7 +30,7 @@ async function fixture(t, query = '') {
     const source = ts.transpileModule(readFileSync(path.join(__dirname, '..', file), 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
-    vm.runInNewContext(source, { exports, URLSearchParams, require(name) {
+    vm.runInNewContext(source, { exports, URLSearchParams, setTimeout, clearTimeout, require(name) {
       if (name === 'react' || name === 'react/jsx-runtime') return require(name);
       if (name === 'next/navigation') return { useRouter: () => router, useSearchParams: () => params, usePathname: () => pathname };
       if (name === '@apollo/client') return { gql: () => ({}) };
@@ -85,6 +85,7 @@ async function fixture(t, query = '') {
     },
     async navigate(query) { params = new URLSearchParams(query); await render(); await flush(); },
     async change(run) { await act(async () => run(controls)); await flush(); },
+    async settle() { await act(async () => new Promise(resolve => setTimeout(resolve, 400))); await flush(); },
     controls: () => controls,
   };
 }
@@ -107,7 +108,14 @@ test('filters, column filters and sorting preserve the selected tab and reset co
   assert.equal(f.replacements.length, 0);
   await f.change(({ filterState }) => filterState.setDistrettoFilter('Pisa'));
   await f.change(({ filterState }) => filterState.setStatoFilter('locked'));
-  await f.change(({ setColumnFilters }) => setColumnFilters(previous => ({ ...previous, name: 'Test' })));
+  // Keystrokes update the filter immediately; the URL follows after a debounce.
+  const before = f.replacements.length;
+  for (const char of 'Test') await f.change(({ setColumnFilters }) => setColumnFilters(previous => ({ ...previous, name: (previous.name ?? '') + char })));
+  assert.equal(f.controls().columnFilters.name, 'Test');
+  assert.equal(f.replacements.length, before);
+  await f.settle();
+  assert.equal(f.replacements.length, before + 1);
+  assert.equal(f.controls().columnFilters.name, 'Test');
   await f.change(({ setSort }) => setSort(() => ({ field: 'name', direction: -1 })));
   assert.equal(f.params().get('tab'), 'età');
   assert.equal(f.params().get('schemaFilter'), 'archimede_biennio');

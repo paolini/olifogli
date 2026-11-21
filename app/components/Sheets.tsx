@@ -193,18 +193,18 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         <th>
                             <input type="checkbox" checked={allSelected} onChange={toggleAll} />
                         </th>
-                        <Th field="__name" header="Nome" />
-                        <Th field="__schema" header="Schema" />
+                        {renderTh("__name", "Nome")}
+                        {renderTh("__schema", "Schema")}
                         {columns.map(header => 
-                            <Th key={header} field={header} header={header} />
+                            renderTh(header, header)
                         )}
-                        <Th field="##nRows" header="righe" />
-                        <Th field="##nValidRows" header="valide" />
-                        <Th field="##anomalies" header="anomalie" />
-                        <Th field="##nScanJobs" header="scansioni" />
-                        <Th field="##nScanSheetJobs" header="scan sheets" />
-                        { profile?.isAdmin && <Th field="##nSyncedRows" header="sincronizzate" /> }
-                        <Th field="__updatedAt" header="aggiornato" />
+                        {renderTh("##nRows", "righe")}
+                        {renderTh("##nValidRows", "valide")}
+                        {renderTh("##anomalies", "anomalie")}
+                        {renderTh("##nScanJobs", "scansioni")}
+                        {renderTh("##nScanSheetJobs", "scan sheets")}
+                        { profile?.isAdmin && renderTh("##nSyncedRows", "sincronizzate") }
+                        {renderTh("__updatedAt", "aggiornato")}
                         <th>stato</th>
                     </tr>
                 </thead>
@@ -298,7 +298,9 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         {workbookId && profile?.isAdmin && <SheetFormNew workbookId={workbookId} />}
     </>
 
-    function Th({field,header}:{field:string,header:string}) {
+    // Chiamata come funzione e non come componente: un componente definito qui
+    // dentro verrebbe rimontato a ogni render, ricreando il campo del filtro.
+    function renderTh(field: string, header: string) {
         const isFiltered = !!columnFilters[field]
         return <th key={field} style={{ position: 'relative' }}>
             <span className="flex items-center justify-between gap-2">
