@@ -30,7 +30,7 @@ type Entry = {
 
 const PAGE = 500
 const MAX_LIVE = 2000
-const LEVEL_CLASSES: Record<string, string> = { error: 'text-red-700 font-semibold', warn: 'text-yellow-700' }
+const LEVEL_CLASSES: Record<string, string> = { error: 'bg-red-200', warn: 'bg-yellow-100' }
 
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ')
@@ -168,15 +168,14 @@ export default function AppLogs() {
 
     {visible.length > 0 && <table className="w-full">
       <thead>
-        <tr><th>ora</th><th>livello</th><th>processo</th><th>evento</th><th>utente</th><th>dettagli</th></tr>
+        <tr><th>ora</th><th>utente</th><th>evento</th><th>dettagli</th></tr>
       </thead>
       <tbody>
-        {visible.map((entry, index) => <tr key={`${entry.timestamp}-${entry.event}-${index}`}>
+        {visible.map((entry, index) => <tr key={`${entry.timestamp}-${entry.event}-${index}`}
+          className={LEVEL_CLASSES[entry.level] ?? ''} title={`${entry.level} · ${entry.source}`}>
           <td className="whitespace-nowrap">{formatTime(entry.timestamp)}</td>
-          <td className={LEVEL_CLASSES[entry.level] ?? ''}>{entry.level}</td>
-          <td>{entry.source}</td>
-          <td><code>{entry.event}</code></td>
           <td>{entry.userEmail ?? (entry.userId ? <code title="utente non più presente">{entry.userId}</code> : '')}</td>
+          <td><code>{entry.event}</code></td>
           <td className="text-sm">
             {Object.entries(entry.data ?? {}).map(([key, value]) => <span key={key} className="mr-3">
               <span className="text-gray-500">{key}</span>={formatValue(value)}

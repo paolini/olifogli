@@ -222,6 +222,8 @@ i log applicativi, non quelli del server:
   amministratori). Con **pausa** i nuovi eventi vengono contati e mostrati alla
   ripresa;
 - per gli eventi con `userId` mostra l'email dell'utente, se esiste ancora;
+- il livello non ha una colonna: le righe `warn` hanno lo sfondo giallo, quelle
+  `error` rosso; livello e processo compaiono al passaggio del mouse sulla riga;
 - si può filtrare per livello, processo, nome dell'evento o email, e nascondere
   le richieste GraphQL.
 
