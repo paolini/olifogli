@@ -97,6 +97,12 @@ body {
   margin: 0px;
 }
 
+/* L'intestazione della tabella non scorre: le istruzioni lunghe scorrono al loro interno */
+.table-header .message .prose {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
 .sheet-wrapper {
   display: flex;
   flex-direction: column;
