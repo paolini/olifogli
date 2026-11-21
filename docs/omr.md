@@ -111,6 +111,17 @@ le righe selezionate, o tutte, in un file JSONL per `olisheet`, una riga JSON pe
 studente con `sheet_name` e i dati della riga. Il PDF generato si scarica da
 `/scansheet/{jobId}/pdf`.
 
+`olisheet` produce una pagina per record. In fondo al file JSONL Olifogli
+aggiunge sempre un record senza dati personali, con il solo `sheet_name`: è il
+foglio bianco da fotocopiare per i partecipanti non registrati. Con
+`selectedRowIds: []` il file contiene solo questo record e il PDF solo il foglio
+bianco: è quello che fa il pulsante **Genera foglio bianco** della linguetta
+**Scansioni**. Le versioni di `olisheet` precedenti all'accordo aggiungevano da
+sé un'ulteriore pagina completamente vuota. Il lavoro in `scan_sheet_jobs` registra
+`nRows` (pagine con gli studenti) e `nBlankSheets` (pagine bianche, per ora
+sempre 1); la tabella dei PDF generati li mostra nella colonna «Contenuto». I
+lavori creati prima che questi campi esistessero non li hanno.
+
 Dalla tabella dei PDF generati i responsabili del foglio (e gli amministratori)
 possono eliminare una generazione con la mutation `deleteScanSheetJob`: cancella
 prima tutti i file del lavoro (il PDF in `SHEETGENDATA_DIR` ed eventuali file

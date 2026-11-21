@@ -36,10 +36,15 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
     ? rowIds.map(rid => rowMap.get(rid.toString())!).filter(r => r)
     : rows
 
-  const payload = orderedRows.map(row => JSON.stringify({
-    sheet_name: sheet.name,
-    ...row.data
-  })).join('\n')
+  // In fondo al PDF va un foglio bianco da fotocopiare per i partecipanti non
+  // registrati: un record senza dati personali, con il solo nome del foglio
+  // come negli altri. olisheet non lo aggiunge più da sé.
+  const nBlankSheets = 1
+  const records = [
+    ...orderedRows.map(row => ({ sheet_name: sheet.name, ...row.data })),
+    ...Array.from({ length: nBlankSheets }, () => ({ sheet_name: sheet.name })),
+  ]
+  const payload = records.map(record => JSON.stringify(record)).join('\n')
 
   const SPOOL_DIR = process.env["SHEETGENSPOOL_DIR"] || '/app/sheetgenspool';
 
@@ -62,7 +67,9 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
           timestamp: now,
           status: 'pending',
           message: 'submitting job',
-          createdBy: user.email
+          createdBy: user.email,
+          nRows: orderedRows.length,
+          nBlankSheets,
       }, { session })
       await sheetsCollection.updateOne(
           { _id: sheet._id },
@@ -90,7 +97,7 @@ export default async function requestScanSheetGeneration(_: unknown, args: Mutat
     throw error
   }
 
-  appLog('scan_sheets.requested', { jobId: jobId.toString(), sheetId: sheet._id.toString(), rowCount: orderedRows.length }, { userId: user._id })
+  appLog('scan_sheets.requested', { jobId: jobId.toString(), sheetId: sheet._id.toString(), rowCount: orderedRows.length, nBlankSheets }, { userId: user._id })
 
   return true
 }

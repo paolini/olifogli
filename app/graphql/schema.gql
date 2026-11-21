@@ -295,6 +295,10 @@ type ScanSheetJob {
   status: String!
   message: String!
   createdBy: String!
+  """Pagine con i dati degli studenti (null per i lavori creati prima che venisse registrato)"""
+  nRows: Int
+  """Pagine bianche (senza dati personali) in fondo al PDF (per ora sempre 1)"""
+  nBlankSheets: Int
 }
 
 type ReportEntrySheet {

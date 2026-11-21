@@ -831,6 +831,10 @@ export type ScanSheetJob = {
   createdBy: Scalars['String']['output'];
   filename?: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
+  /** Pagine bianche (senza dati personali) in fondo al PDF (per ora sempre 1) */
+  nBlankSheets?: Maybe<Scalars['Int']['output']>;
+  /** Pagine con i dati degli studenti (null per i lavori creati prima che venisse registrato) */
+  nRows?: Maybe<Scalars['Int']['output']>;
   sheetId: Scalars['ObjectId']['output'];
   status: Scalars['String']['output'];
   timestamp: Scalars['Timestamp']['output'];
@@ -1206,7 +1210,7 @@ export type ScanSheetJobsQueryVariables = Exact<{
 }>;
 
 
-export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string }> };
+export type ScanSheetJobsQuery = { __typename?: 'Query', scanSheetJobs: Array<{ __typename?: 'ScanSheetJob', _id: ObjectId, sheetId: ObjectId, createdBy: string, timestamp: Date, status: string, message: string, nRows?: number | null, nBlankSheets?: number | null }> };
 
 export type DeleteScanSheetJobMutationVariables = Exact<{
   jobId: Scalars['ObjectId']['input'];
@@ -2529,6 +2533,8 @@ export const ScanSheetJobsDocument = gql`
     timestamp
     status
     message
+    nRows
+    nBlankSheets
   }
 }
     `;
@@ -5442,6 +5448,8 @@ export type ScanSheetJobResolvers<ContextType = any, ParentType extends Resolver
   createdBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   filename?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nBlankSheets?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  nRows?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   sheetId?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   timestamp?: Resolver<ResolversTypes['Timestamp'], ParentType, ContextType>;

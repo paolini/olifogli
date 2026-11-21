@@ -7,7 +7,7 @@ const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const { ObjectId } = require('bson');
 
-function page(file, { profile = null } = {}) {
+function page(file, { profile = null, pdfJobs = null } = {}) {
   const sheet = { _id: new ObjectId(), schema: 'example', permissions: [{ email: 'manager@example.com', role: 'manager' }] };
   const job = { _id: new ObjectId(), sheetId: sheet._id,
     timestamp: new Date(), messages: [{ status: 'completed', message: 'done', timestamp: new Date() }] };
@@ -35,13 +35,14 @@ function page(file, { profile = null } = {}) {
   const generated = {
     useAddRowMutation: () => [() => {}, {}], usePatchRowMutation: () => [() => {}, {}],
     useDeleteScanSheetJobMutation: () => [() => {}, {}],
+    useRequestScanSheetGenerationMutation: () => [() => {}, {}],
     useScanJobsQuery(options) {
       queries.push({ document: 'jobs', options });
       return { data: { scanJobs: [job] }, refetch: () => { refreshed.push('jobs'); } };
     },
     useScanSheetJobsQuery(options) {
       queries.push({ document: 'pdf', options });
-      return { data: { scanSheetJobs: [{ ...job, status: 'completed' }] },
+      return { data: { scanSheetJobs: pdfJobs || [{ ...job, status: 'completed' }] },
         refetch: () => { refreshed.push('pdf'); } };
     },
   };
@@ -98,4 +99,26 @@ test('generated PDFs can be deleted only by sheet managers and admins', () => {
     { profile: { email: 'manager@example.com', isAdmin: false } }).html.includes('elimina'));
   assert.ok(page('app/components/ScansSheetExport.tsx',
     { profile: { email: 'other@example.com', isAdmin: true } }).html.includes('elimina'));
+});
+
+test('only sheet managers and admins can request a blank sheet', () => {
+  const file = 'app/components/ScansSheetExport.tsx';
+  assert.ok(!page(file).html.includes('Genera foglio bianco'));
+  assert.ok(!page(file, { profile: { email: 'other@example.com', isAdmin: false } }).html.includes('Genera foglio bianco'));
+  assert.ok(page(file, { profile: { email: 'manager@example.com', isAdmin: false } }).html.includes('Genera foglio bianco'));
+  assert.ok(page(file, { profile: { email: 'other@example.com', isAdmin: true } }).html.includes('Genera foglio bianco'));
+});
+
+test('generated PDFs show how many student and blank pages they contain', () => {
+  const job = { _id: new ObjectId(), timestamp: new Date(), status: 'completed', message: '' };
+  const { html } = page('app/components/ScansSheetExport.tsx', { pdfJobs: [
+    { ...job, _id: new ObjectId(), nRows: 32, nBlankSheets: 1 },
+    { ...job, _id: new ObjectId(), nRows: 1, nBlankSheets: 1 },
+    { ...job, _id: new ObjectId(), nRows: 0, nBlankSheets: 1 },
+    { ...job, _id: new ObjectId() },
+  ] });
+  assert.ok(html.includes('32 studenti + 1 foglio bianco'));
+  assert.ok(html.includes('1 studente + 1 foglio bianco'));
+  assert.ok(html.includes('Solo foglio bianco'));
+  assert.ok(html.includes('—'));
 });

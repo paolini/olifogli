@@ -132,6 +132,8 @@ export type ScanSheetJob = {
     status: 'pending' | 'completed' | 'error' | 'processing'
     message: string
     createdBy: string
+    nRows?: number // pagine con i dati degli studenti (assente nei lavori più vecchi)
+    nBlankSheets?: number // pagine bianche, senza dati personali, in fondo al PDF (per ora sempre 1)
 }
 
 export type Setting = {
