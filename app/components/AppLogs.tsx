@@ -159,9 +159,9 @@ export default function AppLogs() {
           ? <span className="text-red-700">Aggiornamento in tempo reale non disponibile.</span>
           : paused
             ? <>In pausa{pendingCount > 0 ? `: ${pendingCount} nuovi eventi` : ''}. {}
-              <button type="button" className="text-blue-600 underline" onClick={resume}>riprendi</button></>
+              <Button onClick={resume}>riprendi</Button></>
             : <>In tempo reale. {}
-              <button type="button" className="text-blue-600 underline" onClick={() => setPaused(true)}>pausa</button></>
+              <Button onClick={() => setPaused(true)}>pausa</Button></>
         : 'Giorno passato: nessun aggiornamento in tempo reale.'}
       {' '}{visible.length} di {entries.length} eventi mostrati.
     </p>

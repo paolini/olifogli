@@ -5,6 +5,7 @@ import Error from "./Error"
 import { ObjectId } from "bson"
 import Loading from "./Loading"
 import OmrWorkerStatus from "./OmrWorkerStatus"
+import Button from "./Button"
 import { myTimestamp } from "../lib/util";
 import useProfile from "../lib/useProfile";
 
@@ -105,10 +106,9 @@ export default function ScansPdfExport({sheet}:{
                                 </td>
                                 {canDelete && <td className="border border-gray-300 px-4 py-2">
                                     {job.status !== 'processing' &&
-                                        <button type="button" className="text-red-600 hover:text-red-800 underline"
-                                            disabled={deleteLoading} onClick={() => handleDelete(job._id)}>
+                                        <Button variant="danger" disabled={deleteLoading} onClick={() => handleDelete(job._id)}>
                                             elimina
-                                        </button>}
+                                        </Button>}
                                 </td>}
                             </tr>
                         )
