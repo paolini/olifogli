@@ -153,7 +153,8 @@ quando Redis non risponde. Verifica inoltre che in `app/` non ci siano chiamate
 dirette a `console` e che i nomi degli eventi siano sempre statici.
 `apollo-subscription-errors.test.cjs` verifica che gli errori di trasporto delle
 subscription abbiano il codice `WEBSOCKET_CONNECTION_ERROR`, preservando i
-codici degli errori GraphQL del server. La diagnostica riconosce anche gli
+codici degli errori GraphQL del server, e che una riconnessione WebSocket
+ricarichi le query attive. La diagnostica riconosce anche gli
 errori incapsulati da Apollo e stampa solo un messaggio statico, senza dettagli
 grezzi. `sheet-cursors.test.cjs` verifica che tutte le subscription del foglio
 abbiano un callback di errore esplicito.

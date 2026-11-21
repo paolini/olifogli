@@ -232,8 +232,13 @@ invece di una chiusura, come al risveglio del computer prima che torni la rete
 (`shouldRetry` in `app/lib/webSocketConnection.ts`); si smette solo con i codici
 di chiusura che graphql-ws considera definitivi.
 
-Ogni nuova iscrizione, anche dopo una riconnessione, provoca una rilettura dei
-dati via HTTP per recuperare gli aggiornamenti persi.
+Gli eventi pubblicati mentre il socket è disconnesso vanno persi: graphql-ws
+ripristina le subscription, ma non li recupera. Per questo, quando la
+connessione torna dopo essere stata segnalata come non disponibile,
+`webSocketConnection.ts` avvisa chi si è registrato con
+`subscribeWebSocketReconnect` e `apolloClient.ts` rilegge via HTTP tutte le query
+attive (`refetchQueries({ include: 'active' })`). Le subscription degli scan e
+dei lavori Olimanager inviano inoltre un primo segnale a ogni nuova iscrizione.
 
 ### Permessi sulle subscription
 

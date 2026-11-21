@@ -12,20 +12,25 @@ function fixture(error) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText;
   let unsubscribed = false;
+  const reconnectListeners = [];
   vm.runInNewContext(source, {
     exports, window: { location: { origin: 'http://localhost:3000' } },
     require(name) {
-      if (name === './webSocketConnection') return { getWebSocketClient: () => ({
+      if (name === './webSocketConnection') return {
+        subscribeWebSocketReconnect: listener => { reconnectListeners.push(listener); },
+        getWebSocketClient: () => ({
         subscribe(_, sink) {
           queueMicrotask(() => sink.error(error));
           return () => { unsubscribed = true; };
         },
       }) };
+      if (name === './logging') return { logDiagnostic() {} };
       return require(name);
     },
   });
   return {
     client: exports.apolloClient,
+    reconnect: () => reconnectListeners.forEach(listener => listener()),
     unsubscribed: () => unsubscribed,
     receiveError() {
       return new Promise((resolve, reject) => exports.apolloClient.subscribe({ query: gql`subscription { cursorChanged { tabId } }` }).subscribe({
@@ -56,3 +61,13 @@ test('server GraphQL errors keep their codes instead of being labeled as connect
     f.client.stop();
   }
 });
+
+test('a WebSocket reconnection reloads the active queries', async () => {
+  const f = fixture(new Error('unused'));
+  const calls = [];
+  f.client.refetchQueries = options => { calls.push(options); return Promise.resolve([]); };
+  f.reconnect();
+  assert.equal(JSON.stringify(calls), JSON.stringify([{ include: 'active' }]));
+  f.client.stop();
+});
+

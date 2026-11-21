@@ -8,11 +8,18 @@ let generation = 0
 let connectionTimer: ReturnType<typeof setTimeout> | undefined
 let pongTimer: ReturnType<typeof setTimeout> | undefined
 const listeners = new Set<() => void>()
+const reconnectListeners = new Set<() => void>()
 
 function update(next: ConnectionState) {
     if (state === next) return
+    const previous = state
     state = next
     for (const listener of listeners) listener()
+    // graphql-ws resubscribes on its own, but events published while the
+    // socket was down are lost: listeners reload the data over HTTP.
+    if (previous === 'unavailable' && next === 'connected') {
+        for (const listener of reconnectListeners) listener()
+    }
 }
 
 function clearTimers() {
@@ -23,6 +30,11 @@ function clearTimers() {
 export function subscribeWebSocketState(listener: () => void) {
     listeners.add(listener)
     return () => { listeners.delete(listener) }
+}
+
+export function subscribeWebSocketReconnect(listener: () => void) {
+    reconnectListeners.add(listener)
+    return () => { reconnectListeners.delete(listener) }
 }
 
 export const getWebSocketState = () => state

@@ -1,7 +1,8 @@
 import { ApolloClient, ApolloError, ApolloLink, InMemoryCache, HttpLink, Observable, split } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
-import { getWebSocketClient } from './webSocketConnection';
+import { getWebSocketClient, subscribeWebSocketReconnect } from './webSocketConnection';
+import { logDiagnostic } from './logging';
 
 const createApolloClient = () => {
   const httpLink = new HttpLink({
@@ -51,3 +52,12 @@ const createApolloClient = () => {
 };
 
 export const apolloClient = createApolloClient();
+
+// After a reconnection the active queries are reloaded, so that changes made
+// while the socket was down appear without reloading the page.
+if (typeof window !== 'undefined') {
+  subscribeWebSocketReconnect(() => {
+    apolloClient.refetchQueries({ include: 'active' })
+      .catch(error => logDiagnostic('app/lib/apolloClient.reconnect_refetch_error', error, 'warn'));
+  });
+}

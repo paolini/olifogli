@@ -116,6 +116,25 @@ test('logout disposes the connection and ignores stale callbacks after a new log
   assert.equal(f.getWebSocketState(), 'unavailable');
 });
 
+test('reconnect listeners run only when a lost connection comes back', () => {
+  const f = fixture();
+  let reconnects = 0;
+  const unsubscribe = f.subscribeWebSocketReconnect(() => { reconnects++; });
+  const client = f.getWebSocketClient();
+  client.options.on.connected(); // First connection: data were just loaded.
+  assert.equal(reconnects, 0);
+  client.options.on.closed();
+  client.options.on.connecting();
+  client.options.on.connected();
+  assert.equal(reconnects, 1);
+  client.options.on.connected(); // Already connected: nothing to reload.
+  assert.equal(reconnects, 1);
+  unsubscribe();
+  client.options.on.closed();
+  client.options.on.connected();
+  assert.equal(reconnects, 1);
+});
+
 test('remote connections use the existing secure same-origin WebSocket route', () => {
   const f = fixture('example.invalid');
   assert.equal(f.getWebSocketClient().options.url, 'wss://example.invalid/ws/graphql');
