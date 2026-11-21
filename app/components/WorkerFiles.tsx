@@ -138,7 +138,7 @@ function DeletionReport({ report, areas, onClose }: { report: Deletion, areas: A
     <p>
       {pluralize(report.deleted, 'file cancellato', 'file cancellati')}
       {report.failed.length > 0 && <>; <b>{pluralize(report.failed.length, 'file non cancellato', 'file non cancellati')}</b></>}.
-      {} <Button onClick={onClose}>chiudi</Button>
+      {} <Button variant="secondary" onClick={onClose}>chiudi</Button>
     </p>
     {reasons.map(reason => <p key={reason}>{FAILURE_REASONS[reason] ?? reason}</p>)}
     {report.failed.length > 0 && <>

@@ -87,7 +87,7 @@ export default function OlimanagerParticipantImport({ workbookId, done }: { work
                 (vedi l’ingranaggio in alto).{job.status === 'running' && ` Righe elaborate: ${job.succeededRows + job.failedRows + (job.skippedRows || 0)}/${job.totalRows}.`}</p>}
             {job.status === 'needs_login' && <p>
                 <Button disabled={busy} onClick={() => run(() => resume({ variables: { jobId: job._id } }))}>Riprendi con la sessione attuale</Button>
-                <Button className="ml-2" disabled={busy} onClick={() => run(() => cancel({ variables: { jobId: job._id } }))}>Annulla l’importazione</Button>
+                <Button variant="secondary" className="ml-2" disabled={busy} onClick={() => run(() => cancel({ variables: { jobId: job._id } }))}>Annulla l’importazione</Button>
             </p>}
             {(job.status === 'awaiting_confirmation' || FINAL.includes(job.status)) && job.status !== 'failed' && job.status !== 'cancelled' && <>
                 {job.status === 'awaiting_confirmation'
@@ -110,7 +110,7 @@ export default function OlimanagerParticipantImport({ workbookId, done }: { work
                     </tbody></table>
                     <p>
                         <Button disabled={busy || !newRows} onClick={() => run(() => confirm({ variables: { jobId: job._id } }))}>Importa {newRows} righe</Button>
-                        <Button className="ml-2" disabled={busy} onClick={() => run(() => cancel({ variables: { jobId: job._id } }))}>Annulla l’importazione</Button>
+                        <Button variant="secondary" className="ml-2" disabled={busy} onClick={() => run(() => cancel({ variables: { jobId: job._id } }))}>Annulla l’importazione</Button>
                     </p>
                 </>}
             </>}
@@ -129,6 +129,6 @@ export default function OlimanagerParticipantImport({ workbookId, done }: { work
                     </Button>
                 </>}
         </section>}
-        <Button disabled={busy} onClick={done}>Chiudi</Button>
+        <Button variant="secondary" disabled={busy} onClick={done}>Chiudi</Button>
     </div>
 }

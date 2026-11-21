@@ -115,7 +115,7 @@ export default function WorkbookConfigure({workbook, profile, sheetsCount}: {
             {edit && canModify && (
                 <div className="mt-2 flex flex-wrap gap-2">
                     <Button onClick={save} disabled={busy}>Salva</Button>
-                    <Button disabled={busy} onClick={() => {
+                    <Button variant="secondary" disabled={busy} onClick={() => {
                         setDataValue(formatData(commonData, format))
                         setValidationError(null)
                         updateReset()

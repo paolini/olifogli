@@ -124,7 +124,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
             } catch { /* Error displayed above. */ }
             finally { setLoadingPreview(false) }
         }}>{configurationChanged ? 'Salva configurazione e carica anteprima' : 'Carica anteprima'}</Button>
-        <Button disabled={busy} onClick={done}>Annulla</Button>
+        <Button variant="secondary" disabled={busy} onClick={done}>Annulla</Button>
         {preview && <>
             {preview.warnings.length > 0 && <ul>{preview.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul>}
             <p>

@@ -92,7 +92,7 @@ export default function CsvImport({schemaName, sheetId, done}:{
           Incolla da clipboard
         </Button>
       { data.length === 0 && 
-        <Button variant="alert" onClick={() => done()}>
+        <Button variant="secondary" onClick={() => done()}>
           annulla importazione
         </Button> }
       <br />

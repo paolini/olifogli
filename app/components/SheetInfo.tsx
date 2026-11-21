@@ -240,7 +240,7 @@ function PanelEdit({sheet,profile,onClose}: {
         <Error error={updateError} dismiss={updateReset}/>
         <div className="mb-4 flex gap-2">
             {canModifySensibleData && <Button disabled={updating} onClick={save}>Salva</Button>}
-            <Button disabled={updating} onClick={onClose}>Annulla</Button>
+            <Button variant="secondary" disabled={updating} onClick={onClose}>Annulla</Button>
         </div>
     </>
 

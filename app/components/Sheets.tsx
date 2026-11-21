@@ -246,10 +246,10 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         {hasMore && (
             <div className="my-2">
                 {displayLimit} / {filteredSheets.length} fogli mostrati
-                <Button className="ml-2" onClick={() => setDisplayLimit(limit => limit*10)}>
+                <Button variant="secondary" className="ml-2" onClick={() => setDisplayLimit(limit => limit*10)}>
                     Mostra più
                 </Button>
-                <Button className="ml-2" onClick={() => setDisplayLimit(20)}>
+                <Button variant="secondary" className="ml-2" onClick={() => setDisplayLimit(20)}>
                     Mostra meno
                 </Button>
             </div>

@@ -222,14 +222,14 @@ export default function SheetsCreation({ sheetId, workbookId, done }: {
 
         </select>
         <br />
-        <Button onClick={() => done()}>Annulla creazione fogli</Button>
+        <Button variant="secondary" onClick={() => done()}>Annulla creazione fogli</Button>
     </>
 
     return <div className="space-y-2">
         { rowsLoading && <div>caricamento righe...</div> }
         <Error error={rowsError} />
         { rows && <div>numero righe: {rows.length}</div>}
-        <Button onClick={done}>annulla</Button>
+        <Button variant="secondary" onClick={done}>annulla</Button>
         { sheetsLoading && <div>caricamento fogli...</div> }
         <Error error={sheetsError} />
         { sheets && rows && 

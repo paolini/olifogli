@@ -106,7 +106,7 @@ export default function GlobalMessage({name, title, description, collapsed, clas
                         <Button onClick={saveEdit} disabled={updating}>
                             {updating ? 'Salvataggio...' : 'Salva'}
                         </Button>
-                        <Button onClick={cancelEdit} disabled={updating}>
+                        <Button variant="secondary" onClick={cancelEdit} disabled={updating}>
                             Annulla
                         </Button>
                     </div>
