@@ -158,9 +158,22 @@ const actions: Record<string, Action> = {
     disabled: ctx => false, //ctx => !ctx.checkboxesState.showHiddenColumns,
     handler: handleDeleteStudentIds,
   },
+  // Obsolete: see the createSheets mutation.
+  'create_sheets': {
+    hidden: ctx => !ctx.schema.row_to_sheet,
+    label: 'Genera fogli',
+    disabled: ctx => !ctx.profile?.isAdmin,
+    handler: handleCreateSheets
+  },
+  'csv_download': {
+    hidden: ctx => false,
+    label: 'Scarica CSV righe selezionate',
+    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
+    handler: handleCsvDownload
+  },
   'check_olimanager': {
     hidden: ctx => !ctx.profile?.isAdmin,
-    label: '⚙ Verifica collegamenti in background (Olimanager)',
+    label: '⚙ Verifica collegamenti olimanager',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || ctx.mutations.loading,
     handler: async ctx => {
       const lines = ctx.tableState.lines.filter(line => ctx.tableState.selectedLineKeys.has(line.key))
@@ -175,40 +188,27 @@ const actions: Record<string, Action> = {
   },
   'olimanager': {
     hidden: ctx => !ctx.profile?.isAdmin,
-    label: '⚙ Crea/abbina partecipanti in background (Olimanager)',
+    label: '⚙ Crea/abbina partecipanti su olimanager',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || ctx.mutations.loading,
     handler: handleOlimanagerCreateParticipants
   },
   'update_scores': {
     hidden: ctx => !ctx.profile?.isAdmin,
-    label: '⚙ Invia risultati in background (Olimanager)',
+    label: '⚙ Invia risultati su olimanager',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || ctx.mutations.loading,
     handler: handleOlimanagerUpdateScores
   },
   'udpate_extra_fields': {
     hidden: ctx => !ctx.profile?.isAdmin,
-    label: '⚙ Aggiorna extra fields (Olimanager)',
+    label: '⚙ Aggiorna extra fields su olimanager',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleOlimanagerUpdateExtraFields,
   },
-  'csv_download': {
-    hidden: ctx => false,
-    label: 'scarica CSV righe selezionate',
-    disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
-    handler: handleCsvDownload
-  },
   'anonymize': {
     hidden: ctx => !ctx.edit || !ctx.profile?.isAdmin,
-    label: 'Anonimizza nomi',
+    label: '⚙ Anonimizza nomi',
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0,
     handler: handleAnonymizeNames
-  },
-  // Obsolete: see the createSheets mutation.
-  'create_sheets': {
-    hidden: ctx => !ctx.schema.row_to_sheet,
-    label: 'Genera fogli',
-    disabled: ctx => !ctx.profile?.isAdmin,
-    handler: handleCreateSheets
   },
 }
 

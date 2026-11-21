@@ -264,19 +264,19 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
                         await requestOlimanagerCheck({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
                     } catch { /* Apollo exposes the error above. */ }
                 }}>
-                    ⚙ Verifica collegamenti in background (Olimanager)
+                    ⚙ Verifica collegamenti olimanager
                 </Button>
                 <Button disabled={selectedIds.length === 0 || matchingOlimanager} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
-                    ⚙ Crea/abbina partecipanti in background (Olimanager)
+                    ⚙ Crea/abbina partecipanti su olimanager
                 </Button>
                 <Button disabled={selectedIds.length === 0 || resultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
-                    ⚙ Invia risultati in background (Olimanager)
+                    ⚙ Invia risultati su olimanager
                 </Button>
                 <Button disabled={selectedIds.length === 0 || cryptSheetsLoading} onClick={() => cryptSelectedSheets()}>
-                    ⚙ Cripta in background
+                    ⚙ Cripta
                 </Button>
                 <Button disabled={selectedIds.length === 0 || decryptSheetsLoading} onClick={() => decryptSelectedSheets()}>
-                    ⚙ Decripta in background
+                    ⚙ Decripta
                 </Button>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta

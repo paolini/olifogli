@@ -112,10 +112,6 @@ export default function AppLogs() {
 
   return <div className="mx-2">
     <h1>log applicativi</h1>
-    <p className="my-2">
-      Cosa è successo nell&apos;applicazione: richieste GraphQL, upload, cancellazioni e lavori in background,
-      da tutti i processi. I log del server (avvio, connessioni, errori di sistema) sono nei log di Docker.
-    </p>
 
     {!logs.available && <p className="my-2 text-yellow-700">
       <code>LOG_DIR</code> non è configurata: la storia non è disponibile, ma i nuovi eventi compaiono qui sotto.

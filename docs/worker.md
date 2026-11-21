@@ -5,12 +5,12 @@ dall'interfaccia:
 
 | Lavoro (`operation`) | Pulsante | Richiede OAuth |
 |---|---|---|
-| `check_participants` | **Verifica Olimanager in background** | sì |
-| `match_or_create_participants` | **Crea/abbina partecipanti in background (Olimanager)** | sì |
-| `update_results` | **Invia risultati in background (Olimanager)** | sì |
+| `check_participants` | **Verifica Olimanager** | sì |
+| `match_or_create_participants` | **Crea/abbina partecipanti su olimanager** | sì |
+| `update_results` | **Invia risultati su olimanager** | sì |
 | `import_participants` | **Importa partecipanti da Olimanager** (linguetta Fogli) | sì, solo per l'anteprima |
-| `crypt_sheets` | **Cripta in background** | no |
-| `decrypt_sheets` | **Decripta in background** | no |
+| `crypt_sheets` | **Cripta** | no |
+| `decrypt_sheets` | **Decripta** | no |
 
 L'aggiornamento degli extra fields resta sincrono. I vecchi resolver sincroni di
 creazione e invio risultati sono ancora disponibili per compatibilità, ma i
@@ -274,14 +274,14 @@ password: le righe già elaborate vengono saltate.
 ### Creazione di un partecipante
 
 Accedere con scope `api`, finalizzare il foglio, selezionare una riga valida non
-collegata e usare **Crea/abbina partecipanti in background**. Il pannello mostra
+collegata e usare **Crea/abbina partecipanti su olimanager**. Il pannello mostra
 il nuovo `participantId`; le righe aperte si aggiornano insieme alle notifiche
 dei lavori. Si può poi lanciare una verifica sul collegamento appena creato.
 
 ### Invio dei risultati
 
 Accedere con scope `api` e scegliere una riga valida, finalizzata e già
-collegata. Usare **Invia risultati in background (Olimanager)** e controllare
+collegata. Usare **Invia risultati su olimanager** e controllare
 **Risultati inviati** nel pannello. Confrontare il totale del partecipante su
 staging e la data di sincronizzazione locale. Un token scaduto segue lo stesso
 percorso `needs_login` delle altre operazioni.
