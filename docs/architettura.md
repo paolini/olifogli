@@ -226,7 +226,11 @@ anche prima di aprire un foglio. Se il servizio non risponde compare un avviso;
 su `localhost` l'avviso indica anche il comando di avvio. Il client ritenta e
 nasconde l'avviso quando il server conferma la connessione. Un ping ogni
 15 secondi verifica che il servizio resti raggiungibile: senza pong entro
-5 secondi la connessione viene chiusa e ritentata.
+5 secondi la connessione viene chiusa e ritentata. Si ritenta ogni 3 secondi
+anche quando il socket non riesce ad aprirsi e il browser segnala un errore
+invece di una chiusura, come al risveglio del computer prima che torni la rete
+(`shouldRetry` in `app/lib/webSocketConnection.ts`); si smette solo con i codici
+di chiusura che graphql-ws considera definitivi.
 
 Ogni nuova iscrizione, anche dopo una riconnessione, provoca una rilettura dei
 dati via HTTP per recuperare gli aggiornamenti persi.

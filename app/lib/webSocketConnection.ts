@@ -44,6 +44,11 @@ export function getWebSocketClient(): Client {
         keepAlive: 15000,
         retryAttempts: Infinity,
         retryWait: () => new Promise(resolve => setTimeout(resolve, 3000)),
+        // The default retries only close events. A socket that fails to open
+        // (e.g. after the computer wakes, before the network is back) emits a
+        // plain error event first: without this the client stops for good.
+        // Fatal close codes are still rejected by graphql-ws before this check.
+        shouldRetry: () => true,
         onNonLazyError: () => { if (active()) update('unavailable') },
         on: {
             connecting: () => {

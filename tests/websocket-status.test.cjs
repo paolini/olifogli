@@ -150,3 +150,53 @@ test('the warning is limited to authenticated failures, with startup instruction
   assert.match(remote, /role="alert"/);
   assert.doesNotMatch(remote, /npm run/);
 });
+
+test('a socket error event (e.g. after sleep) is retried instead of stopping the client', async () => {
+  const { createClient } = require('graphql-ws');
+  const f = fixture('example.invalid');
+  const { options } = f.getWebSocketClient();
+  const sockets = [];
+  class FakeWebSocket {
+    static CONNECTING = 0; static OPEN = 1; static CLOSING = 2; static CLOSED = 3;
+    constructor() {
+      this.readyState = 0;
+      this.sent = [];
+      sockets.push(this);
+      const failing = sockets.length === 1;
+      setImmediate(() => {
+        if (failing) {
+          // Browsers fire `error` (a plain Event, no close code) before `close`.
+          this.readyState = 3;
+          this.onerror?.({ type: 'error' });
+          this.onclose?.({ code: 1006, reason: '', wasClean: false });
+        } else {
+          this.readyState = 1;
+          this.onopen?.();
+        }
+      });
+    }
+    send(data) {
+      this.sent.push(data);
+      if (JSON.parse(data).type === 'connection_init') {
+        setImmediate(() => this.onmessage?.({ data: JSON.stringify({ type: 'connection_ack' }) }));
+      }
+    }
+    close() { this.readyState = 3; }
+  }
+  const fatal = [];
+  let connected;
+  const done = new Promise(resolve => { connected = resolve; });
+  const client = createClient({
+    ...options,
+    webSocketImpl: FakeWebSocket,
+    retryWait: async () => {},
+    keepAlive: 0,
+    connectionAckWaitTimeout: 0,
+    onNonLazyError: error => { fatal.push(error); connected(); },
+    on: { connected: () => connected() },
+  });
+  await done;
+  await client.dispose();
+  assert.deepEqual(fatal, []);
+  assert.equal(sockets.length, 2);
+});
