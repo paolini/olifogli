@@ -11,8 +11,9 @@ const config = {
     // TODO Change (or review) the url to your MongoDB:
     url: process.env.MONGODB_URI || "mongodb://localhost:27017/olifogli",
 
-    // TODO Change this to your database name:
-    databaseName: (process.env.MONGODB_URI?.split('/').pop()?.split('?')[0]) || "olifogli",
+    // Undefined: the driver uses the database in the URL, exactly like the app
+    // (`client.db()` in app/lib/mongodb.ts), also when the URL has none.
+    databaseName: undefined,
 
     options: {
       //   connectTimeoutMS: 3600000, // increase connection timeout to 1 hour

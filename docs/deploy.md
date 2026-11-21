@@ -154,6 +154,16 @@ Per controllare lo stato:
 sudo docker compose exec app npx migrate-mongo status
 ```
 
+Le migrazioni già applicate in produzione e senza effetto su un database vuoto
+vengono cancellate dalla cartella (restano nella storia di git):
+`migrate-mongo` ignora le voci di `changelog` senza file. Un database rimasto
+indietro (una copia vecchia o un backup ripristinato) non le applicherebbe più:
+va prima aggiornato con una versione che le contiene ancora (fino alla 1.12.4
+per quelle fino a gennaio 2026). `20250812171500-add-indexes` resta perché crea
+indici necessari anche a un database nuovo. Il nome del database è quello
+dell'URL di `MONGODB_URI`, come per l'app (`databaseName` non impostato in
+`migrate-mongo-config.js`).
+
 Dopo il deploy collaudare login OAuth, navigazione dei fogli, upload dei PDF e
 ricezione degli aggiornamenti in tempo reale. I test automatici non sostituiscono
 questo collaudo con MongoDB, Redis e il provider OAuth reali.

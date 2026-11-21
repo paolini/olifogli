@@ -294,3 +294,6 @@ errore di rete dopo un risultato attivo memorizzato nella cache. Con
 `OLIMANAGER_WORKER_TEST_URI` impostato verifica anche presenza e indice TTL su
 un database MongoDB temporaneo, usando le stesse restrizioni locali delle altre
 suite del worker.
+
+`migrations.test.cjs` verifica che `migrate-mongo-config.js` non imposti
+`databaseName`, così le migrazioni usano il database dell'URL come l'app.
