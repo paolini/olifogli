@@ -3,7 +3,7 @@ import type { Context } from './types'
 import type { GraphQLRequestContext } from '@apollo/server'
 import type { SelectionSetNode } from 'graphql'
 import { randomUUID } from 'node:crypto'
-import { safeErrorCode, serverLog } from '../lib/logging'
+import { logDiagnostic, safeErrorCode, serverLog } from '../lib/logging'
 import { appLog } from '../lib/appLog'
 
 // Only schema-defined root field names; never client operation names or aliases.
@@ -34,6 +34,14 @@ function operationFields(context: GraphQLRequestContext<Context>): string[] {
 }
 
 export const graphqlLoggerPlugin: ApolloServerPlugin<Context> = {
+    // These failures happen outside requestDidStart, so willSendResponse never
+    // logs them: the client sees INTERNAL_SERVER_ERROR and the server nothing.
+    async contextCreationDidFail({ error }) {
+        logDiagnostic('graphql.context_creation_failed', error)
+    },
+    async unexpectedErrorProcessingRequest({ requestContext, error }) {
+        serverLog('error', 'graphql.unexpected_error', { code: safeErrorCode(error), fields: operationFields(requestContext) })
+    },
     async requestDidStart() {
         const start = Date.now()
         const requestId = randomUUID()

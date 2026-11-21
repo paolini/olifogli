@@ -202,7 +202,11 @@ ammessi per quell'evento.
 Senza `LOG_DIR` (tipicamente in sviluppo) anche i log applicativi vanno su
 stdout. Le richieste GraphQL non vengono più duplicate su stdout: sul log del
 server arriva solo `graphql.internal_error`, con l'identificativo della richiesta,
-quando una richiesta fallisce per un errore imprevisto.
+quando una richiesta fallisce per un errore imprevisto. Gli errori che avvengono
+prima dell'esecuzione della richiesta, e che quindi non compaiono come
+`graphql.request`, arrivano come `graphql.context_creation_failed` (creazione
+del contesto, per esempio la lettura del token di sessione) e
+`graphql.unexpected_error`.
 
 ### Pagina «logs» per gli amministratori
 
