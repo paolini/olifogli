@@ -28,6 +28,7 @@ export default function OmrWorkerStatus({ type }: { type: 'oliscan' | 'olisheet'
   const status = data?.omrWorkerStatus.find(worker => worker.type === type)
   const stuck = status?.instances.filter(instance => instance.stuck) || []
   const busy = status?.instances.filter(instance => instance.state === 'busy') || []
+  const versions = [...new Set(status?.instances.map(instance => instance.version).filter(Boolean) || [])]
 
   if (error) return <p role="status" className="my-2 text-amber-700">{label.name}: <b>stato non verificabile</b></p>
   if (!status) return <p role="status" className="my-2 text-gray-700">{label.name}: verifica in corso…</p>
@@ -38,6 +39,7 @@ export default function OmrWorkerStatus({ type }: { type: 'oliscan' | 'olisheet'
   return <div role="status" className="my-2">
     <p className="text-green-700">
       {label.name}: <b>attivo</b>
+      {versions.length > 0 && ` — ${versions.length === 1 ? 'versione' : 'versioni'} ${versions.join(', ')}`}
       {status.activeWorkers > 1 && ` (${status.activeWorkers} istanze)`}
       {busy.length > 0 ? ', elaborazione in corso.' : ', in attesa di lavori.'}
     </p>
