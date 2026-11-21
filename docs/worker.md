@@ -3,9 +3,9 @@
 Il worker Olifogli (`olifogli-worker.ts`) esegue i lavori lunghi accodati
 dall'interfaccia:
 
-| Lavoro (`operation`) | Pulsante | Richiede OAuth |
+| Lavoro (`operation`) | Azione | Richiede OAuth |
 |---|---|---|
-| `check_participants` | **Verifica Olimanager** | sì |
+| `check_participants` | **Verifica collegamenti olimanager** | sì |
 | `match_or_create_participants` | **Crea/abbina partecipanti su olimanager** | sì |
 | `update_results` | **Invia risultati su olimanager** | sì |
 | `import_participants` | **Importa partecipanti da Olimanager** (linguetta Fogli) | sì, solo per l'anteprima |
@@ -14,7 +14,9 @@ dall'interfaccia:
 
 L'aggiornamento degli extra fields resta sincrono. I vecchi resolver sincroni di
 creazione e invio risultati sono ancora disponibili per compatibilità, ma i
-pulsanti dell'interfaccia accodano lavori.
+pulsanti dell'interfaccia accodano lavori. Le azioni sui fogli (tutte tranne
+**Importa partecipanti da Olimanager**) si scelgono, per i fogli selezionati,
+dal menu a tendina «N fogli selezionati» in fondo all'elenco dei fogli.
 
 Il codice è in `app/lib/olimanagerJobs.ts` (coda, lease, ciclo di esecuzione) e
 nei moduli `app/lib/olimanager*.ts`; i resolver GraphQL sono in
@@ -233,7 +235,7 @@ e non sono contati tra i lavori attivi.
 
 ## Crittografia e decrittazione dei fogli
 
-**Cripta in background** e **Decripta in background** accodano lavori
+**Cripta** e **Decripta** accodano lavori
 `crypt_sheets` e `decrypt_sheets`. Non richiedono OAuth, un endpoint Olimanager
 o la finalizzazione dei fogli.
 

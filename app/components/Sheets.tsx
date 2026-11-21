@@ -177,6 +177,22 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         link.click();
     }
 
+    const selectedSheetsActions: { key: string, label: string, disabled: boolean, run: () => void }[] = [
+        { key: 'delete', label: 'Elimina', disabled: deletingSheets, run: deleteSelectedSheets },
+        { key: 'validate', label: 'Rivalida', disabled: validatingRows, run: validateSelectedSheets },
+        { key: 'lock', label: 'Finalizza', disabled: updatingSheets, run: lockSelectedSheets },
+        { key: 'unlock', label: 'Sblocca', disabled: updatingSheets, run: unlockSelectedSheets },
+        { key: 'olimanagerCheck', label: 'Verifica collegamenti olimanager', disabled: checkingOlimanager, run: async () => {
+            try {
+                await requestOlimanagerCheck({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
+            } catch { /* Apollo exposes the error above. */ }
+        } },
+        { key: 'olimanagerMatch', label: 'Crea/abbina partecipanti su olimanager', disabled: matchingOlimanager, run: handleOlimanagerCreateParticipantsForSheets },
+        { key: 'olimanagerResults', label: 'Invia risultati su olimanager', disabled: resultsLoading, run: handleOlimanagerBulkUpdateResults },
+        { key: 'crypt', label: 'Cripta', disabled: cryptSheetsLoading, run: cryptSelectedSheets },
+        { key: 'decrypt', label: 'Decripta', disabled: decryptSheetsLoading, run: decryptSelectedSheets },
+    ]
+
     if (creationId) return <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />
 
     return <>
@@ -248,37 +264,24 @@ export default function Sheets({ sheets, profile, workbookId, refetch }: {
         <Error error={resultsError} />
         { profile?.isAdmin && 
             <div className="flex items-center gap-3 my-2">
-                <Button variant="danger" disabled={selectedIds.length === 0 || deletingSheets} onClick={() => deleteSelectedSheets()}>
-                    ⚙ Elimina {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
-                </Button>
-                <Button disabled={selectedIds.length === 0 || validatingRows} onClick={() => validateSelectedSheets()}>
-                    ⚙ Rivalida {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
-                </Button>
-                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => lockSelectedSheets()}>
-                    ⚙ Finalizza {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
-                </Button>
-                <Button disabled={selectedIds.length === 0 || updatingSheets} onClick={() => unlockSelectedSheets()}>
-                    ⚙ Sblocca {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
-                </Button>
-                <Button disabled={selectedIds.length === 0 || checkingOlimanager} onClick={async () => {
-                    try {
-                        await requestOlimanagerCheck({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
-                    } catch { /* Apollo exposes the error above. */ }
-                }}>
-                    ⚙ Verifica collegamenti olimanager
-                </Button>
-                <Button disabled={selectedIds.length === 0 || matchingOlimanager} onClick={() => handleOlimanagerCreateParticipantsForSheets()}>
-                    ⚙ Crea/abbina partecipanti su olimanager
-                </Button>
-                <Button disabled={selectedIds.length === 0 || resultsLoading} onClick={() => handleOlimanagerBulkUpdateResults()}>
-                    ⚙ Invia risultati su olimanager
-                </Button>
-                <Button disabled={selectedIds.length === 0 || cryptSheetsLoading} onClick={() => cryptSelectedSheets()}>
-                    ⚙ Cripta
-                </Button>
-                <Button disabled={selectedIds.length === 0 || decryptSheetsLoading} onClick={() => decryptSelectedSheets()}>
-                    ⚙ Decripta
-                </Button>
+                <select
+                    className="p-1 border"
+                    value=""
+                    disabled={selectedIds.length === 0}
+                    onChange={e => {
+                        const action = selectedSheetsActions.find(a => a.key === e.target.value)
+                        if (action && !action.disabled) action.run()
+                    }}
+                >
+                    <option value="" disabled>
+                        {pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}
+                    </option>
+                    {selectedSheetsActions.map(action =>
+                        <option key={action.key} value={action.key} disabled={action.disabled}>
+                            {action.label}
+                        </option>
+                    )}
+                </select>
                 <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                     ⚙ Elimina raccolta
                 </Button>
