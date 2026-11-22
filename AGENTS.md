@@ -92,6 +92,63 @@ npm run codegen   # regenerate app/graphql/generated.ts
   when behavior changes. Refer to code names in backticks so they can be
   grepped.
 
+## Ideas under evaluation (not implemented)
+
+Analysed on 2026-11-22 from Olimanager `main` (`~/olimanager`, apps
+`api/olimanager/tickets/` and `api/olimanager/emails/`). The maintainer is still
+deciding whether they are useful: do not implement without asking. Check the
+deployed Olimanager first, it may differ from `main`.
+
+**Olimanager tickets in the address book** (`/olimanager/<olympiad>/<edition>`):
+mainly for staff and olympiad admins (OA).
+- Query `tickets { tickets { pk title status statusDisplay lastUpdatedAt
+  topic { name } user { email name surname } olympiad { id } } }`, no filters.
+  Staff see all tickets, OA those of their olympiads, everyone else only their
+  own. Zone admins (CD/RD) do not see the tickets of their RI.
+- A ticket belongs to an olympiad, not to an edition. Status `OPEN` = last
+  message not seen by staff, `IN_PROGRESS` = seen, not answered, `CLOSED` =
+  staff answered the last message (it goes back to `OPEN` if the user writes).
+  «Open» would mean `OPEN` + `IN_PROGRESS`.
+- `lastUpdatedAt` runs one query per ticket: measure it on many tickets.
+- Ticket page on Olimanager: `<frontend>/help/ticket/<pk>`. Messages are
+  Markdown, no attachments.
+- Planned in two steps:
+  1. Read only:
+     - open tickets per district and per person, matched by email, with a
+       «solo con ticket aperti» filter;
+     - a «I miei ticket» section on the home page for the other users;
+     - links to Olimanager.
+  2. Possibly reply from Olifogli:
+     - `createMessage(ticketPk, content)` is allowed to staff, OA and the
+       author; it sets `CLOSED`, or `OPEN` if the author writes;
+     - Olimanager emails the other people who already wrote in the ticket;
+     - `updateTicketStatus` (`IN_PROGRESS` only for staff/OA).
+- `createTicket` always uses the requesting user: an OA cannot open a ticket on
+  behalf of someone. The Django admin can do it, but sends no email. This would
+  need an Olimanager change, e.g. an optional recipient for staff/OA.
+
+**Bulk emails through Olimanager** (to all CD, RD or RI):
+- Allowed to edition admins (`SendBulkEmailPermission`):
+  1. `saveBulkDraft(editionId, filter, contestId, recipient, subject, body)`
+     returns the count and a preview;
+  2. `addBulkEmailAttachment`;
+  3. `finalizeBulkDraft` sends at once.
+
+  Emails go from the olympiad's sender address and are recorded in Olimanager.
+- Recipient groups: subscribed to the edition, not subscribed, or subscribed to
+  a contest. Recipient kinds: students, teachers, schools, venue and subvenue
+  admins. «All RI» = `SUBSCRIBED` + `TEACHERS`.
+- Not possible:
+  - CD and RD (zone admins are not a recipient kind);
+  - a per-zone filter;
+  - an arbitrary address list.
+- Each user has one draft per edition: saving from Olifogli overwrites a
+  draft the OA is editing in Olimanager.
+- Requests for Olimanager, if the idea goes ahead:
+  - CD/RD as recipient kinds;
+  - a zone filter;
+  - tickets opened on behalf of a user.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
