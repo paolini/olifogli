@@ -211,9 +211,9 @@ selezionabili.
 
 ## Rubrica di CD, RD e RI
 
-La pagina `/rubrica` (voce «rubrica» del menu utente), riservata agli
-amministratori, mostra per un'edizione scelta (olimpiade ed edizione) chi
-gestisce la gara sul territorio, distretto per distretto:
+La pagina `/rubrica` (voce «rubrica» del menu utente), aperta a tutti gli
+utenti, mostra per un'edizione scelta (olimpiade ed edizione) chi gestisce la
+gara sul territorio, distretto per distretto:
 
 - **CD**, coordinatori distrettuali: amministratori della zona con `isPrimary`;
 - **RD**, responsabili di distretto: gli altri amministratori della zona;
@@ -230,13 +230,41 @@ I dati sono letti al momento da Olimanager (query `olimanagerAddressBook`,
 avere lo scope `api`; non vengono salvati in Olifogli. Ogni consultazione
 registra l'evento `olimanager.address_book_viewed` nei log applicativi.
 
+### Cosa vede ciascun utente
+
+Olifogli non applica permessi propri sui contatti: ognuno vede ciò che
+Olimanager gli mostra. Per i dati che l'utente non può leggere Olimanager
+restituisce elenchi vuoti, non errori (`fail_silently` dei permessi di
+`strawberry_django`):
+
+- l'elenco dei distretti è pubblico;
+- CD e RD di un distretto (`Zone.admins`, `ZoneReadPermission`) sono visibili
+  agli amministratori del distretto e dell'olimpiade;
+- le iscrizioni dell'edizione (`OlympiadEdition.subscriptions`) sono visibili
+  solo agli amministratori dell'edizione. Se non ne arriva nessuna, la rubrica
+  legge le iscrizioni dei distretti di cui l'utente è RD (`Zone.subscriptions`);
+  Olimanager le limita però all'ultima edizione, quindi per le edizioni
+  precedenti gli RD non vedono gli RI e compare l'avviso
+  `CURRENT_EDITION_ONLY`.
+
+Per chi non è amministratore di Olifogli la rubrica nasconde i distretti in cui
+non vede nulla; se non resta niente compare «Olimanager non ti mostra nessun
+contatto per questa edizione».
+
+I fogli invece vengono da Olifogli: amministratori e supervisori vedono tutti
+quelli dell'edizione, gli altri solo quelli su cui hanno un permesso
+(`permissions.email`, come nell'elenco fogli). «nessun foglio» accanto a una
+scuola compare solo per amministratori e supervisori, perché per gli altri
+l'assenza può dipendere dai permessi.
+
+### Selezione, fogli ed esportazione
+
 L'ultima olimpiade ed edizione caricate con successo vengono ricordate per
 ciascun utente (campo `addressBookSelection` del documento in `users`, query
 `olimanagerAddressBookSelection`): alla riapertura la pagina le propone e carica
-subito la rubrica, se Olimanager elenca ancora quell'edizione.
-Con un'edizione caricata le due select sono nascoste e il nome dell'edizione
-fa da titolo; «Cambia edizione» le mostra di nuovo («Annulla» torna
-all'edizione caricata).
+subito la rubrica, se Olimanager elenca ancora quell'edizione. Con un'edizione
+caricata le due select sono nascoste e il nome dell'edizione fa da titolo;
+«Cambia edizione» le mostra di nuovo («Annulla» torna all'edizione caricata).
 
 Accanto a ogni scuola ci sono i link ai suoi fogli dei contest scolastici
 dell'edizione (`commonData.Codice_meccanografico`), e nell'intestazione del
@@ -251,8 +279,9 @@ l'edizione non ha alcun foglio compare un solo avviso.
 
 La pagina filtra per ruolo e per testo (nome, email, scuola, codice, città,
 distretto), copia negli appunti le email delle voci filtrate e le scarica in
-CSV (`rubrica.csv`, con i tipi di foglio della scuola nella colonna `fogli`). I numeri di telefono non sono disponibili: Olimanager non
-li espone agli amministratori dell'olimpiade.
+CSV (`rubrica.csv`, con i tipi di foglio della scuola nella colonna `fogli`). I
+numeri di telefono non sono disponibili: Olimanager non li espone agli
+amministratori dell'olimpiade.
 
 ## Importazione dei partecipanti
 

@@ -45,13 +45,14 @@ const subscription = (pk, code, province, contact = { name: 'Rita', surname: 'Ne
 });
 
 test('groups CD, RD and RI by district, with territorial exceptions and warnings', () => {
-  const book = plain(library().buildAddressBook(zones, [
+  const lib = library();
+  const book = plain(lib.finishAddressBook(lib.buildAddressBook(zones, [
     subscription(1, 'PIPS01', 'PI'),
     subscription(2, 'LUPS02', 'LU', { name: 'Ugo', surname: 'Gialli', user: null }),
     subscription(3, 'LUPS03', 'LU'), // extra school of Pisa
     subscription(4, 'GEPS04', 'GE'),
     subscription(5, 'PIPS05', 'PI', undefined, false),
-  ]));
+  ]), false));
   assert.deepEqual(book.districts.map(d => d.name), ['Lucca', 'Pisa', 'Senza distretto']);
   const [lucca, pisa, none] = book.districts;
   assert.deepEqual(pisa.coordinators, [{ name: 'Anna', surname: 'Rossi', email: 'anna@example.org' }]);
@@ -61,7 +62,7 @@ test('groups CD, RD and RI by district, with territorial exceptions and warnings
   assert.equal(none.id, null);
   assert.deepEqual(none.schools.map(s => s.code), ['GEPS04']);
   assert.deepEqual(book.warnings, [
-    'Distretto Distretto di Lucca: nessun coordinatore (CD).',
+    'Distretto Lucca: nessun coordinatore (CD).',
     'LUPS02: referente senza account/email.',
     'GEPS04: scuola (provincia GE) non riconducibile ad alcun distretto.',
   ]);
@@ -79,10 +80,48 @@ test('reads every page of the edition and rejects editions of other olympiads', 
     } } } };
   });
   const findSheets = async ids => { requests.push(ids); return []; };
-  const book = await lib.loadAddressBook({}, 'oli', 'ed', findSheets);
+  const book = await lib.loadAddressBook({}, 'oli', 'ed', { findSheets, hideEmpty: false });
   assert.deepEqual(plain(requests), [{ olympiad: 'oli' }, { edition: 'ed', after: null }, { edition: 'ed', after: 'p2' }, ['31', '32', '35']]);
   assert.equal(book.districts.reduce((n, d) => n + d.schools.length, 0), 2);
-  await assert.rejects(lib.loadAddressBook({}, 'oli', 'other', findSheets), /appartenere all’olimpiade/);
+  await assert.rejects(lib.loadAddressBook({}, 'oli', 'other', { findSheets, hideEmpty: false }), /appartenere all’olimpiade/);
+});
+
+// What Olimanager returns to a district admin of Pisa: no admins elsewhere and
+// no edition subscriptions, but the subscriptions of Pisa for the latest edition.
+function districtAdminLibrary(zoneSubscriptions, requests = []) {
+  const visibleZones = zones.map(zone => zone.id === 2 ? zone : { ...zone, admins: [] });
+  return library(async (req, query, variables) => {
+    requests.push(variables);
+    if (query.includes('olympiads { edition')) return { olympiads: { edition: { subscriptions: { edges: [], pageInfo: { hasNextPage: false, endCursor: null } } } } };
+    if (query.includes('$zone')) return { zones: { zones: [{ subscriptions: { edges: zoneSubscriptions.map(node => ({ node })), pageInfo: { hasNextPage: false, endCursor: null } } }] } };
+    if (query.includes('zones {')) return { zones: { zones: visibleZones } };
+    throw new Error('Unexpected query');
+  });
+}
+
+test('district admins read the subscriptions of their zones and see only their districts', async () => {
+  const requests = [];
+  const lib = districtAdminLibrary([
+    { ...subscription(1, 'PIPS01', 'PI'), edition: { id: 'ed' } },
+    { ...subscription(3, 'LUPS03', 'LU'), edition: { id: 'ed' } },
+  ], requests);
+  const sheets = async () => [{ _id: 's', name: 'PIPS01', schema: 'archimede_biennio', commonData: { olimanager_contest_id: '31', Codice_meccanografico: 'PIPS01' } }];
+  const book = plain(await lib.loadAddressBook({}, 'oli', 'ed', { findSheets: sheets, hideEmpty: true }));
+  assert.deepEqual(plain(requests.filter(v => 'zone' in v)), [{ zone: 2, after: null }]);
+  assert.deepEqual(book.districts.map(d => d.name), ['Pisa']);
+  assert.deepEqual(book.districts[0].schools.map(s => [s.code, s.sheets.length]), [['PIPS01', 1], ['LUPS03', 0]]);
+  assert.deepEqual(book.warnings, []);
+  // Olifogli admins also see the districts Olimanager shows empty.
+  const all = plain(await lib.loadAddressBook({}, 'oli', 'ed', { findSheets: sheets, hideEmpty: false }));
+  assert.deepEqual(all.districts.map(d => d.name), ['Lucca', 'Pisa']);
+  assert.equal(all.warnings[0], 'Distretto Lucca: nessun coordinatore (CD).');
+});
+
+test('zone subscriptions of another edition are not shown, with an explanation', async () => {
+  const lib = districtAdminLibrary([{ ...subscription(1, 'PIPS01', 'PI'), edition: { id: 'newer' } }]);
+  const book = plain(await lib.loadAddressBook({}, 'oli', 'ed', { findSheets: async () => [], hideEmpty: true }));
+  assert.deepEqual(book.districts[0].schools, []);
+  assert.deepEqual(book.warnings, [lib.CURRENT_EDITION_ONLY]);
 });
 
 test('sheets of the edition contests go to their school or district, sorted by type', () => {
@@ -130,11 +169,11 @@ test('entries are filtered by role and accent-insensitive words; emails deduplic
   assert.deepEqual(csv.map(row => row.fogli), ['', 'Archimede Biennio', '']);
 });
 
-function resolvers({ isAdmin = true, addressBookSelection, loadAddressBook = async () => ({ districts: [], warnings: [] }) } = {}) {
+function resolvers({ isAdmin = true, isSupervisor = false, addressBookSelection, loadAddressBook = async () => ({ districts: [], warnings: [] }) } = {}) {
   const updates = [];
   const logs = [];
   const finds = [];
-  const user = { _id: 'u1', isAdmin, addressBookSelection };
+  const user = { _id: 'u1', email: 'docente@example.org', isAdmin, isSupervisor, addressBookSelection };
   const lib = load('app/graphql/resolvers/olimanagerAddressBook.ts', {
     '@/app/lib/olimanagerAddressBook': { loadAddressBook },
     '@/app/lib/appLog': { appLog: (...args) => logs.push(args) },
@@ -145,7 +184,6 @@ function resolvers({ isAdmin = true, addressBookSelection, loadAddressBook = asy
     '@/app/lib/olimanagerVenueSheetConfig': config,
     './utils': {
       get_authenticated_user: async () => user,
-      check_admin: u => { if (!u.isAdmin) throw new Error('non autorizzato'); },
     },
   });
   return { lib, updates, logs, finds };
@@ -153,11 +191,12 @@ function resolvers({ isAdmin = true, addressBookSelection, loadAddressBook = asy
 const context = { req: {} };
 
 test('the resolver remembers the edition per user only after a successful load', async () => {
-  const ok = resolvers({ loadAddressBook: async (req, olympiadId, editionId, findSheets) => {
+  const ok = resolvers({ loadAddressBook: async (req, olympiadId, editionId, { findSheets, hideEmpty }) => {
     await findSheets(['31', '32']);
-    return { districts: [], warnings: [] };
+    return { districts: [], warnings: [], hideEmpty };
   } });
-  await ok.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context);
+  const result = await ok.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context);
+  assert.equal(result.hideEmpty, false);
   assert.deepEqual(plain(ok.finds[0][0]), { 'commonData.olimanager_contest_id': { $in: ['31', '32'] } });
   assert.deepEqual(plain(ok.updates), [[{ _id: 'u1' }, { $set: { addressBookSelection: { olympiadId: 'oli', editionId: 'ed' } } }]]);
   assert.equal(ok.logs[0][0], 'olimanager.address_book_viewed');
@@ -170,9 +209,19 @@ test('the resolver remembers the edition per user only after a successful load',
   assert.equal(await resolvers().lib.olimanagerAddressBookSelection(null, {}, context), null);
 });
 
-test('address book and saved selection are reserved to administrators', async () => {
-  const { lib, updates } = resolvers({ isAdmin: false });
-  await assert.rejects(lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context), /non autorizzato/);
-  await assert.rejects(lib.olimanagerAddressBookSelection(null, {}, context), /non autorizzato/);
-  assert.deepEqual(updates, []);
+test('every user may open the address book; others see only their sheets and no empty districts', async () => {
+  const load = async (req, olympiadId, editionId, { findSheets, hideEmpty }) => {
+    await findSheets(['31']);
+    return { districts: [], warnings: [], hideEmpty };
+  };
+  const user = resolvers({ isAdmin: false, loadAddressBook: load });
+  const result = await user.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context);
+  assert.equal(result.hideEmpty, true);
+  assert.deepEqual(plain(user.finds[0][0]), { 'commonData.olimanager_contest_id': { $in: ['31'] }, 'permissions.email': 'docente@example.org' });
+  assert.equal(user.updates.length, 1);
+
+  const supervisor = resolvers({ isAdmin: false, isSupervisor: true, loadAddressBook: load });
+  assert.equal((await supervisor.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context)).hideEmpty, true);
+  assert.deepEqual(plain(supervisor.finds[0][0]), { 'commonData.olimanager_contest_id': { $in: ['31'] } });
+  assert.equal(await resolvers({ isAdmin: false }).lib.olimanagerAddressBookSelection(null, {}, context), null);
 });

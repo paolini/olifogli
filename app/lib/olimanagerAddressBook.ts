@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import type { ObjectId } from 'bson'
 import { queryOlimanager } from './olimanager'
 import { venueSheetChoices } from './olimanagerVenueSheets'
 import { districtName } from './olimanagerVenueNames'
@@ -7,6 +8,9 @@ import { SHEET_CONTEST_KEY, VENUE_SHEET_SCHEMAS, isVenueSheetSchema } from './ol
 // Address book of the people who run an edition: for every district (zone of
 // the olympiad) its coordinator (CD, the primary zone admin), the other
 // district admins (RD) and the school contacts (RI) of the valid subscriptions.
+// Available to every user: Olimanager returns empty lists for data the user
+// may not read (zone admins outside their zones, edition subscriptions unless
+// edition admin), so each user sees only what Olimanager shows them.
 // Olifogli sheets of the edition's contests are attached to their school
 // (SCHOOL contests, by Codice_meccanografico) or district (ZONE contests, by
 // Distretto). Without that key the sheet name is used: sheets of the old
@@ -14,7 +18,7 @@ import { SHEET_CONTEST_KEY, VENUE_SHEET_SCHEMAS, isVenueSheetSchema } from './ol
 // district only in their name, and Olimanager-created sheets are named the same.
 
 export type AddressBookContact = { name: string, surname: string, email: string | null }
-export type AddressBookSheet = { _id: unknown, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }
+export type AddressBookSheet = { _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }
 export type AddressBookSchool = { code: string, name: string, city: string, province: string, contact: AddressBookContact | null, sheets: AddressBookSheet[] }
 export type AddressBookDistrict = { id: number | null, name: string, coordinators: AddressBookContact[], admins: AddressBookContact[], schools: AddressBookSchool[], sheets: AddressBookSheet[] }
 export type AddressBook = { districts: AddressBookDistrict[], warnings: string[] }
@@ -28,10 +32,11 @@ export type AddressBookSubscription = {
     isValid: boolean
     school: { pk: number, externalId: string | null, name: string, location: { city: { name: string, province: { id: string } } } | null }
     contact: { name: string, surname: string, user: { email: string } | null } | null
+    edition?: { id: string }
 }
 export type AddressBookContest = { id: number, name: string, scope: string }
 export type AddressBookSheetDocument = {
-    _id: unknown, name: string, schema: string, commonData: Record<string, string>,
+    _id: ObjectId, name: string, schema: string, commonData: Record<string, string>,
     nRows?: number, nValidRows?: number, closed?: boolean, locked?: boolean,
 }
 export type FindSheets = (contestIds: string[]) => Promise<AddressBookSheetDocument[]>
@@ -61,7 +66,6 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
         const admins = zone.admins.filter(a => a.user)
         const coordinators = admins.filter(a => a.isPrimary).map(a => contactOf(a.user!)).sort(byPerson)
         const others = admins.filter(a => !a.isPrimary).map(a => contactOf(a.user!)).sort(byPerson)
-        if (!coordinators.length) warnings.push(`Distretto ${zone.name}: nessun coordinatore (CD).`)
         districts.set(zone.id, { id: zone.id, name: districtName(zone), coordinators, admins: others, schools: [], sheets: [] })
     }
     const unassigned: AddressBookDistrict = { id: null, name: UNASSIGNED_DISTRICT, coordinators: [], admins: [], schools: [], sheets: [] }
@@ -94,6 +98,69 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
     return { districts: result, warnings }
 }
 
+// Final pass: with hideEmpty (users who are not Olifogli admins) drops the
+// districts where the user sees nothing; warns about districts without CD
+// only among those shown.
+export function finishAddressBook(book: AddressBook, hideEmpty: boolean): AddressBook {
+    const districts = hideEmpty
+        ? book.districts.filter(d => d.coordinators.length || d.admins.length || d.schools.length || d.sheets.length)
+        : book.districts
+    const missingCd = districts.filter(d => d.id !== null && !d.coordinators.length).map(d => `Distretto ${d.name}: nessun coordinatore (CD).`)
+    return { districts, warnings: [...missingCd, ...book.warnings] }
+}
+
+type FetchPage = (after: string | null) => Promise<Page | null | undefined>
+
+async function allPages(fetchPage: FetchPage): Promise<AddressBookSubscription[]> {
+    const subscriptions: AddressBookSubscription[] = []
+    let cursor: string | null = null
+    const cursors = new Set<string>()
+    for (;;) {
+        const page = await fetchPage(cursor)
+        if (!page) throw new Error('Edizione non disponibile su Olimanager.')
+        subscriptions.push(...page.edges.map(edge => edge.node))
+        if (!page.pageInfo.hasNextPage) return subscriptions
+        cursor = page.pageInfo.endCursor
+        if (!cursor || cursors.has(cursor)) throw new Error('Paginazione delle scuole Olimanager non valida.')
+        cursors.add(cursor)
+    }
+}
+
+const SUBSCRIPTION_FIELDS = 'isValid school { pk externalId name location { city { name province { id } } } } contact { name surname user { email } }'
+export const CURRENT_EDITION_ONLY = 'Olimanager mostra i referenti di istituto (RI) dei tuoi distretti solo per l’edizione corrente.'
+
+// Subscriptions of the edition. Olimanager lists them only to edition admins;
+// for the others it returns none, and district admins can read instead the
+// subscriptions of their zones, which Olimanager limits to the latest edition.
+async function loadSubscriptions(req: NextRequest, editionId: string, zones: AddressBookZone[], warnings: string[]) {
+    const subscriptions = await allPages(async after => (await queryOlimanager<{ olympiads: { edition: { subscriptions: Page } | null } }>(req, `query($edition: String!, $after: String) {
+        olympiads { edition(id: $edition) { subscriptions(first: 100, after: $after) {
+            edges { node { ${SUBSCRIPTION_FIELDS} } }
+            pageInfo { hasNextPage endCursor }
+        } } }
+    }`, { edition: editionId, after })).olympiads.edition?.subscriptions)
+    if (subscriptions.length) return subscriptions
+    const seen = new Set<number>()
+    let otherEdition = false
+    // Zone admins are readable exactly where the zone subscriptions are.
+    for (const zone of zones.filter(z => z.admins.length)) {
+        const zoneSubscriptions = await allPages(async after => (await queryOlimanager<{ zones: { zones: { subscriptions: Page }[] } }>(req, `query($zone: Int!, $after: String) {
+            zones { zones(filters: {id: $zone}) { subscriptions(first: 100, after: $after) {
+                edges { node { ${SUBSCRIPTION_FIELDS} edition { id } } }
+                pageInfo { hasNextPage endCursor }
+            } } }
+        }`, { zone: zone.id, after })).zones.zones[0]?.subscriptions)
+        for (const subscription of zoneSubscriptions) {
+            if (subscription.edition?.id !== editionId) { otherEdition = true; continue }
+            if (seen.has(subscription.school.pk)) continue
+            seen.add(subscription.school.pk)
+            subscriptions.push(subscription)
+        }
+    }
+    if (otherEdition && !subscriptions.length) warnings.push(CURRENT_EDITION_ONLY)
+    return subscriptions
+}
+
 // Attaches each sheet of an edition contest to its school or district; sheets
 // of schools or districts not in the address book are left out.
 export function attachSheets(book: AddressBook, contests: AddressBookContest[], sheets: AddressBookSheetDocument[]) {
@@ -119,7 +186,7 @@ export function attachSheets(book: AddressBook, contests: AddressBookContest[], 
     return book
 }
 
-export async function loadAddressBook(req: NextRequest, olympiadId: string, editionId: string, findSheets: FindSheets): Promise<AddressBook> {
+export async function loadAddressBook(req: NextRequest, olympiadId: string, editionId: string, { findSheets, hideEmpty }: { findSheets: FindSheets, hideEmpty: boolean }): Promise<AddressBook> {
     const choices = await venueSheetChoices(req)
     const edition = choices.find(o => o.id === olympiadId)?.editions.find(e => e.id === editionId)
     if (!edition) throw new Error('L’edizione deve appartenere all’olimpiade scelta.')
@@ -128,25 +195,11 @@ export async function loadAddressBook(req: NextRequest, olympiadId: string, edit
             id name provinces { id } extraSchools { pk } admins { isPrimary user { name surname email } }
         } }
     }`, { olympiad: olympiadId })
-    const subscriptions: AddressBookSubscription[] = []
-    let cursor: string | null = null
-    const cursors = new Set<string>()
-    for (;;) {
-        const result: { olympiads: { edition: { subscriptions: Page } | null } } = await queryOlimanager(req, `query($edition: String!, $after: String) {
-            olympiads { edition(id: $edition) { subscriptions(first: 100, after: $after) {
-                edges { node { isValid school { pk externalId name location { city { name province { id } } } } contact { name surname user { email } } } }
-                pageInfo { hasNextPage endCursor }
-            } } }
-        }`, { edition: editionId, after: cursor })
-        const page = result.olympiads.edition?.subscriptions
-        if (!page) throw new Error('Edizione non disponibile su Olimanager.')
-        subscriptions.push(...page.edges.map(edge => edge.node))
-        if (!page.pageInfo.hasNextPage) break
-        cursor = page.pageInfo.endCursor
-        if (!cursor || cursors.has(cursor)) throw new Error('Paginazione delle scuole Olimanager non valida.')
-        cursors.add(cursor)
-    }
+    const loadWarnings: string[] = []
+    const subscriptions = await loadSubscriptions(req, editionId, zones, loadWarnings)
     const book = buildAddressBook(zones, subscriptions)
     const sheets = edition.contests.length ? await findSheets(edition.contests.map(c => String(c.id))) : []
-    return attachSheets(book, edition.contests, sheets)
+    attachSheets(book, edition.contests, sheets)
+    book.warnings.unshift(...loadWarnings)
+    return finishAddressBook(book, hideEmpty)
 }

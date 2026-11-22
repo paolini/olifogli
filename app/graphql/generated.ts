@@ -448,7 +448,7 @@ export type OlimanagerAddressBookDistrict = {
   name: Scalars['String']['output'];
   /** Scuole con iscrizione valida all'edizione e relativo referente (RI). */
   schools: Array<OlimanagerAddressBookSchool>;
-  /** Fogli dei contest distrettuali dell'edizione di questo distretto. */
+  /** Fogli dei contest distrettuali dell'edizione di questo distretto (solo quelli accessibili all'utente). */
   sheets: Array<OlimanagerAddressBookSheet>;
 };
 
@@ -461,7 +461,7 @@ export type OlimanagerAddressBookSchool = {
   name: Scalars['String']['output'];
   /** Sigla della provincia. */
   province: Scalars['String']['output'];
-  /** Fogli dei contest scolastici dell'edizione con questo codice meccanografico. */
+  /** Fogli dei contest scolastici dell'edizione con questo codice meccanografico (solo quelli accessibili all'utente). */
   sheets: Array<OlimanagerAddressBookSheet>;
 };
 
@@ -673,9 +673,9 @@ export type Query = {
   olifogliWorkerStatus: OlifogliWorkerStatus;
   /** Numero di lavori Olimanager in attesa, in preparazione o in corso. */
   olimanagerActiveJobs: Scalars['Int']['output'];
-  /** Rubrica di CD, RD e RI di un'edizione, letta da Olimanager (solo amministratori). Ricorda la selezione per l'utente. */
+  /** Rubrica di CD, RD e RI di un'edizione, letta da Olimanager con i permessi dell'utente. Ricorda la selezione per l'utente. */
   olimanagerAddressBook: OlimanagerAddressBook;
-  /** Ultima selezione della rubrica dell'utente (solo amministratori). */
+  /** Ultima selezione della rubrica dell'utente. */
   olimanagerAddressBookSelection?: Maybe<OlimanagerAddressBookSelection>;
   /** Solo amministratori: ultima importazione dei partecipanti nel raccoglitore, con l'anteprima. */
   olimanagerImport?: Maybe<OlimanagerImport>;

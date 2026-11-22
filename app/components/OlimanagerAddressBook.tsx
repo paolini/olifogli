@@ -67,8 +67,8 @@ function SheetLinks({ sheets }: { sheets: Sheet[] }) {
 
 export default function OlimanagerAddressBook() {
     const profile = useProfile()
-    const choices = useOlimanagerVenueSheetChoicesQuery({ skip: !profile?.isAdmin })
-    const selection = useOlimanagerAddressBookSelectionQuery({ skip: !profile?.isAdmin, fetchPolicy: 'network-only' })
+    const choices = useOlimanagerVenueSheetChoicesQuery({ skip: !profile })
+    const selection = useOlimanagerAddressBookSelectionQuery({ skip: !profile, fetchPolicy: 'network-only' })
     const [load, addressBook] = useOlimanagerAddressBookLazyQuery({ fetchPolicy: 'network-only' })
     type Selection = { olympiadId: string, editionId: string }
     // Until the user picks something, the selection is the last edition consulted, if Olimanager still lists it.
@@ -99,7 +99,6 @@ export default function OlimanagerAddressBook() {
     }, [saved, load])
 
     if (!profile) return <Loading />
-    if (!profile.isAdmin) return <Error error="Pagina riservata agli amministratori." />
     if (choices.loading || selection.loading) return <Loading />
 
     const olympiads = choices.data?.olimanagerVenueSheetChoices || []
@@ -110,6 +109,8 @@ export default function OlimanagerAddressBook() {
     const showSelects = changing || !currentEdition
     const editionLabel = (e: { name: string, year?: number | null }) => `${e.name}${e.year ? ` (${e.year})` : ''}`
     const byDistrict = Map.groupBy(filtered, e => e.district)
+    // For other users a school without links may just be a sheet they cannot access.
+    const seesAllSheets = profile.isAdmin || profile.isSupervisor
     const hasSheets = (districts || []).some(d => d.sheets.length || d.schools.some(s => s.sheets.length))
     const shown = (districts || []).filter(d => byDistrict.has(d.name))
 
@@ -141,7 +142,7 @@ export default function OlimanagerAddressBook() {
 
     return <div className="space-y-3">
         <h1 className="text-xl font-bold">Rubrica di CD, RD e RI</h1>
-        <p>Coordinatori distrettuali (CD), responsabili di distretto (RD) e referenti di istituto (RI) delle scuole con iscrizione valida all’edizione, letti da Olimanager.</p>
+        <p>Coordinatori distrettuali (CD), responsabili di distretto (RD) e referenti di istituto (RI) delle scuole con iscrizione valida all’edizione, letti da Olimanager: compaiono solo i contatti che Olimanager ti permette di vedere, e solo i fogli a cui hai accesso.</p>
         <Error error={choices.error || selection.error || addressBook.error} />
         {!showSelects && <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-bold">{editionLabel(currentEdition)}</h2>
@@ -178,7 +179,7 @@ export default function OlimanagerAddressBook() {
                 <Button variant="secondary" disabled={!filtered.length} onClick={downloadCsv}>Scarica CSV</Button>
                 {copied && <span>{copied}</span>}
             </div>
-            {!hasSheets && <p>Nessun foglio Olifogli per i contest di questa edizione.</p>}
+            {!hasSheets && <p>Nessun foglio Olifogli {seesAllSheets ? '' : 'a cui hai accesso '}per i contest di questa edizione.</p>}
             {warnings.length > 0 && <details>
                 <summary className="cursor-pointer">{warnings.length} avvisi</summary>
                 <ul className="list-disc pl-6">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
@@ -203,12 +204,13 @@ export default function OlimanagerAddressBook() {
                             <td className="pr-3">{e.school}</td>
                             <td className="pr-3">{e.city}{e.province ? ` (${e.province})` : ''}</td>
                             <td className="pr-3"><Person entry={e} /></td>
-                            <td>{e.sheets.length ? <SheetLinks sheets={e.sheets} /> : hasSheets && <span className="text-red-600">nessun foglio</span>}</td>
+                            <td>{e.sheets.length ? <SheetLinks sheets={e.sheets} /> : hasSheets && seesAllSheets && <span className="text-red-600">nessun foglio</span>}</td>
                         </tr>)}</tbody>
                     </table>}
                 </section>
             })}
-            {!shown.length && <p>Nessuna voce corrisponde ai filtri.</p>}
+            {!districts.length && <p>Olimanager non ti mostra nessun contatto per questa edizione.</p>}
+            {districts.length > 0 && !shown.length && <p>Nessuna voce corrisponde ai filtri.</p>}
         </>}
     </div>
 }

@@ -474,7 +474,7 @@ type OlimanagerAddressBookSchool {
   """Sigla della provincia."""
   province: String!
   contact: OlimanagerContact
-  """Fogli dei contest scolastici dell'edizione con questo codice meccanografico."""
+  """Fogli dei contest scolastici dell'edizione con questo codice meccanografico (solo quelli accessibili all'utente)."""
   sheets: [OlimanagerAddressBookSheet!]!
 }
 
@@ -488,7 +488,7 @@ type OlimanagerAddressBookDistrict {
   admins: [OlimanagerContact!]!
   """Scuole con iscrizione valida all'edizione e relativo referente (RI)."""
   schools: [OlimanagerAddressBookSchool!]!
-  """Fogli dei contest distrettuali dell'edizione di questo distretto."""
+  """Fogli dei contest distrettuali dell'edizione di questo distretto (solo quelli accessibili all'utente)."""
   sheets: [OlimanagerAddressBookSheet!]!
 }
 
@@ -510,9 +510,9 @@ type OlimanagerVenueSheetsPreview {
 
 type Query {
   olimanagerVenueSheetChoices: [OlimanagerSheetOlympiad!]!
-  """Rubrica di CD, RD e RI di un'edizione, letta da Olimanager (solo amministratori). Ricorda la selezione per l'utente."""
+  """Rubrica di CD, RD e RI di un'edizione, letta da Olimanager con i permessi dell'utente. Ricorda la selezione per l'utente."""
   olimanagerAddressBook(olympiadId: String!, editionId: String!): OlimanagerAddressBook!
-  """Ultima selezione della rubrica dell'utente (solo amministratori)."""
+  """Ultima selezione della rubrica dell'utente."""
   olimanagerAddressBookSelection: OlimanagerAddressBookSelection
   olifogliWorkerStatus: OlifogliWorkerStatus!
   """Stato dei worker archiomr, uno per tipo (oliscan, olisheet)."""

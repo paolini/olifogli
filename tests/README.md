@@ -51,7 +51,10 @@ Entrambi simulano Olimanager e non creano dati reali.
 raggruppamento per distretto con eccezioni territoriali, l'esclusione delle
 iscrizioni invalidate, gli avvisi, la paginazione, il rifiuto di edizioni di
 un'altra olimpiade, i filtri della pagina, le email senza duplicati, le colonne
-del CSV, l'associazione dei fogli dell'edizione a scuole e distretti, il controllo degli amministratori e il salvataggio per utente
+del CSV e l'associazione dei fogli dell'edizione a scuole e distretti. Simula
+anche un RD: iscrizioni lette dai suoi distretti, distretti vuoti nascosti,
+avviso per le edizioni precedenti. Controlla che la rubrica sia aperta a tutti,
+con i fogli limitati ai permessi dell'utente, e il salvataggio per utente
 dell'ultima edizione, solo dopo un caricamento riuscito.
 
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
