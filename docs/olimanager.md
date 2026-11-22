@@ -185,11 +185,17 @@ di responsabile del foglio (`manager`) e a tutti i responsabili di distretto
 province ed eccezioni territoriali di Olimanager, anche per edizioni precedenti
 all'ultima.
 
-Per le venue l'anteprima assegna agli amministratori della venue il ruolo di
-responsabile (`manager`) e agli RD del suo distretto quello di aiutante
-(`editor`). Olimanager non registra il distretto di una venue: viene ricavato
-dal nome, che è quello del distretto eventualmente seguito da una parentesi
-(«Distretto di Pisa (Gara delle Prime)»).
+Per le venue il responsabile del foglio (`manager`) dipende dallo schema
+(`managers` in `VENUE_SHEET_SCHEMAS`):
+
+- `distrettuale`: il CD, cioè il responsabile principale della zone
+  (`isPrimary`); gli amministratori della venue non vengono considerati;
+- `gara_prime`: gli amministratori della venue.
+
+Gli altri responsabili della zone (gli RD) diventano aiutanti (`editor`).
+Olimanager non registra il distretto di una venue: viene ricavato dal nome, che
+è quello del distretto eventualmente seguito da una parentesi («Distretto di
+Pisa (Gara delle Prime)»).
 
 I fogli possono essere creati anche senza responsabili, aiutanti o osservatori.
 Referente o amministratore mancante, distretto assente o ambiguo e RD mancanti

@@ -177,6 +177,26 @@ test('zone contests: one sheet per top-level venue, named after its district; ve
   assert.throws(() => library().sheetsFromVenues([venue(1, 'Distretto di Pisa'), venue(2, 'Distretto di Pisa (bis)')], zones, 'gara_prime', 33), /Più venue/);
 });
 
+test('district contest: the CD (primary zone admin) manages, the other zone admins edit, whoever administers the venue', () => {
+  const admins = [{ user: { email: 'rd@example.org' }, isPrimary: false }, { user: { email: 'CD@example.org' }, isPrimary: true }];
+  const districts = [{ ...zones[0], admins }, { ...zones[0], id: 3, name: 'Distretto di Lucca', admins: [{ user: { email: 'rd2@example.org' }, isPrimary: false }] }];
+  const result = plain(library().sheetsFromVenues([
+    venue(1, 'Distretto di Pisa', ['rd@example.org', 'other@example.org']),
+    venue(2, 'Distretto di Lucca'),
+    venue(3, 'Distretto di Atlantide'),
+  ], districts, 'distrettuale', 27));
+  assert.deepEqual(result.sheets.map(s => [s.name, s.schema]), [['Pisa', 'distrettuale'], ['Lucca', 'distrettuale'], ['Atlantide', 'distrettuale']]);
+  // Venue admins are ignored: the RD stays editor even if he administers the venue.
+  assert.deepEqual(result.sheets[0].permissions, [{ email: 'cd@example.org', role: 'manager' }, { email: 'rd@example.org', role: 'editor' }]);
+  assert.deepEqual(result.sheets[1].permissions, [{ email: 'rd2@example.org', role: 'editor' }]);
+  assert.deepEqual(result.sheets[2].permissions, []);
+  assert.deepEqual(result.warnings, [
+    'Lucca: nessun responsabile principale (CD) del distretto; nessun responsabile assegnato.',
+    'Venue Distretto di Atlantide: non riconducibile ad alcun distretto.',
+    'Atlantide: nessun responsabile principale (CD) del distretto; nessun responsabile assegnato.',
+  ]);
+});
+
 test('zone contests read the venues of the contest, not the school subscriptions', async () => {
   const requests = [];
   const zoneChoices = [{ id: 'math', name: 'Matematica', editions: [{ id: 'new', name: '2026', contests: [{ id: 42, name: 'Gara delle prime', scope: 'ZONE' }] }] }];

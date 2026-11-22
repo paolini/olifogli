@@ -17,7 +17,7 @@ type Subscription = {
     school: { pk: number, externalId: string, name: string, location: { city: { name: string, province: { id: string } } } }
     contact: { user: { email: string } | null }
 }
-type Zone = { id: number, name: string, provinces: { id: string }[], extraSchools: { pk: number }[], admins: { user: { email: string } }[] }
+type Zone = { id: number, name: string, provinces: { id: string }[], extraSchools: { pk: number }[], admins: { user: { email: string }, isPrimary?: boolean }[] }
 type Page = { edges: { node: Subscription }[], pageInfo: { hasNextPage: boolean, endCursor: string | null } }
 type Venue = { id: number, name: string, parentVenue: { id: number } | null, admins: { user: { email: string } | null }[] }
 
@@ -85,8 +85,13 @@ export function sheetsFromVenues(venues: Venue[], zones: Zone[], schema: VenueSh
         const name = venueSheetName(venue, zones)
         if (seen.has(name)) throw new Error(`Più venue per lo stesso distretto: ${name}.`)
         seen.add(name)
-        const managers = emailsOf(venue.admins)
-        if (!managers.length) warnings.push(`Venue ${venue.name}: nessun amministratore; nessun responsabile assegnato.`)
+        const config = VENUE_SHEET_SCHEMAS[schema]
+        // The CD is the primary admin of the zone; the venue admins may differ.
+        const byZone = 'managers' in config && config.managers === 'zonePrimary'
+        const managers = byZone ? emailsOf((zone?.admins || []).filter(a => a.isPrimary)) : emailsOf(venue.admins)
+        if (!managers.length) warnings.push(byZone
+            ? `${name}: nessun responsabile principale (CD) del distretto; nessun responsabile assegnato.`
+            : `Venue ${venue.name}: nessun amministratore; nessun responsabile assegnato.`)
         const editors = emailsOf(zone?.admins || [])
         if (zone && !editors.length) warnings.push(`${name}: distretto ${zone.name} senza responsabili di distretto (RD).`)
         sheets.push({
@@ -112,7 +117,7 @@ export async function loadVenueSheets(req: NextRequest, olympiadId: string, edit
     }
     const { zones: { zones } } = await queryOlimanager<{ zones: { zones: Zone[] } }>(req, `query($olympiad: String!) {
         zones { zones(filters: {olympiad: {id: {exact: $olympiad}}}) {
-            id name provinces { id } extraSchools { pk } admins { user { email } }
+            id name provinces { id } extraSchools { pk } admins { user { email } isPrimary }
         } }
     }`, { olympiad: olympiadId })
     if (source === 'venues') {
