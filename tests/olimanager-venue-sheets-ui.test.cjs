@@ -113,6 +113,12 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
   assert.equal(rows[0].className, '');
   assert.equal(rows[0].querySelector('input').checked, false);
   assert.equal(rows[1].querySelector('input').checked, true);
+  // «Nascondi righe invariate» hides only the unchanged sheets, and shows them again.
+  const hide = [...container.querySelectorAll('label')].find(label => label.textContent.includes('Nascondi righe invariate')).querySelector('input');
+  await act(async () => hide.click());
+  assert.equal(container.querySelectorAll('tbody tr').length, ['unchanged', 'no-permissions'].includes(scenario) ? 1 : 2);
+  await act(async () => hide.click());
+  assert.equal(container.querySelectorAll('tbody tr').length, 2);
   if (scenario === 'assign-contest') {
     assert.match(rows[0].textContent, /associa al contest #31/);
     await act(async () => rows[0].querySelector('input').click());
