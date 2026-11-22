@@ -238,9 +238,20 @@ Con un'edizione caricata le due select sono nascoste e il nome dell'edizione
 fa da titolo; «Cambia edizione» le mostra di nuovo («Annulla» torna
 all'edizione caricata).
 
+Accanto a ogni scuola ci sono i link ai suoi fogli dei contest scolastici
+dell'edizione (`commonData.Codice_meccanografico`), e nell'intestazione del
+distretto quelli dei contest distrettuali (`commonData.Distretto`); in mancanza
+di queste chiavi vale il nome del foglio, come per i fogli `distrettuale` del
+vecchio flusso che hanno il distretto solo nel nome. Per ogni foglio sono
+indicate righe valide/righe e stato (aperto, chiuso, finalizzato, con le stesse
+icone dell'elenco fogli). Contano solo i fogli il cui `olimanager_contest_id` è
+un contest dell'edizione: i fogli di altre edizioni o senza contest non
+compaiono. Le scuole senza fogli sono segnalate con «nessun foglio»; se
+l'edizione non ha alcun foglio compare un solo avviso.
+
 La pagina filtra per ruolo e per testo (nome, email, scuola, codice, città,
 distretto), copia negli appunti le email delle voci filtrate e le scarica in
-CSV (`rubrica.csv`). I numeri di telefono non sono disponibili: Olimanager non
+CSV (`rubrica.csv`, con i tipi di foglio della scuola nella colonna `fogli`). I numeri di telefono non sono disponibili: Olimanager non
 li espone agli amministratori dell'olimpiade.
 
 ## Importazione dei partecipanti

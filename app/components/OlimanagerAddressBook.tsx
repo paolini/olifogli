@@ -2,7 +2,9 @@
 import { gql } from '@apollo/client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOlimanagerVenueSheetChoicesQuery, useOlimanagerAddressBookLazyQuery, useOlimanagerAddressBookSelectionQuery } from '../graphql/generated'
-import { ADDRESS_BOOK_ROLES, addressBookEntries, entryCsvRows, entryEmails, filterEntries, type AddressBookEntry, type AddressBookRole } from '../lib/addressBookEntries'
+import Link from 'next/link'
+import { Archive, Lock, Unlock } from 'lucide-react'
+import { ADDRESS_BOOK_ROLES, addressBookEntries, entryCsvRows, entryEmails, filterEntries, type AddressBookEntry, type AddressBookRole, type Sheet } from '../lib/addressBookEntries'
 import { unparseCsv } from '../lib/csv'
 import useProfile from '../lib/useProfile'
 import Button from './Button'
@@ -16,7 +18,8 @@ const ADDRESS_BOOK = gql`
                 id name
                 coordinators { name surname email }
                 admins { name surname email }
-                schools { code name city province contact { name surname email } }
+                sheets { _id name label nRows nValidRows closed locked }
+                schools { code name city province contact { name surname email } sheets { _id name label nRows nValidRows closed locked } }
             }
             warnings
         }
@@ -41,6 +44,25 @@ function Person({ entry }: { entry: AddressBookEntry }) {
         {fullName || <i>senza nome</i>}
         {entry.email ? <> &lt;<a className="text-blue-600 hover:underline" href={`mailto:${entry.email}`}>{entry.email}</a>&gt;</> : <i className="text-gray-500"> senza email</i>}
     </span>
+}
+
+// Same icons and colors as the state column of the sheet list (Sheets.tsx).
+function SheetState({ sheet }: { sheet: Sheet }) {
+    const [Icon, label, color] = sheet.locked ? [Lock, 'finalizzato', 'text-red-600']
+        : sheet.closed ? [Archive, 'chiuso', 'text-orange-500'] : [Unlock, 'aperto', 'text-green-600']
+    return <span title={label} role="img" aria-label={label} className="inline-flex align-text-bottom">
+        <Icon size={14} className={color} aria-hidden="true" />
+    </span>
+}
+
+// Link to a sheet with its state and valid/total rows.
+function SheetLinks({ sheets }: { sheets: Sheet[] }) {
+    return <>{sheets.map((sheet, i) => <span key={String(sheet._id)} className="whitespace-nowrap">
+        {i > 0 && ', '}
+        <SheetState sheet={sheet} />{' '}
+        <Link className="text-blue-600 hover:underline" href={`/sheet/${sheet._id}`} title={sheet.name}>{sheet.label}</Link>
+        {' '}<span title="righe valide / righe">{sheet.nValidRows}/{sheet.nRows}</span>
+    </span>)}</>
 }
 
 export default function OlimanagerAddressBook() {
@@ -88,6 +110,7 @@ export default function OlimanagerAddressBook() {
     const showSelects = changing || !currentEdition
     const editionLabel = (e: { name: string, year?: number | null }) => `${e.name}${e.year ? ` (${e.year})` : ''}`
     const byDistrict = Map.groupBy(filtered, e => e.district)
+    const hasSheets = (districts || []).some(d => d.sheets.length || d.schools.some(s => s.sheets.length))
     const shown = (districts || []).filter(d => byDistrict.has(d.name))
 
     function toggleRole(role: AddressBookRole) {
@@ -155,6 +178,7 @@ export default function OlimanagerAddressBook() {
                 <Button variant="secondary" disabled={!filtered.length} onClick={downloadCsv}>Scarica CSV</Button>
                 {copied && <span>{copied}</span>}
             </div>
+            {!hasSheets && <p>Nessun foglio Olifogli per i contest di questa edizione.</p>}
             {warnings.length > 0 && <details>
                 <summary className="cursor-pointer">{warnings.length} avvisi</summary>
                 <ul className="list-disc pl-6">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
@@ -166,18 +190,20 @@ export default function OlimanagerAddressBook() {
                 const schools = items.filter(e => e.role === 'RI')
                 return <section key={district.id ?? district.name} className="rounded border p-2">
                     <h2 className="text-lg font-bold">{district.name}</h2>
+                    {district.sheets.length > 0 && <p><b>Fogli:</b> <SheetLinks sheets={district.sheets} /></p>}
                     {coordinators.length > 0 && <p><b>CD:</b> {coordinators.map((e, i) => <span key={i}>{i > 0 && ', '}<Person entry={e} /></span>)}</p>}
                     {admins.length > 0 && <p><b>RD:</b> {admins.map((e, i) => <span key={i}>{i > 0 && ', '}<Person entry={e} /></span>)}</p>}
                     {schools.length > 0 && <table className="mt-1">
                         <thead><tr>
                             <th className="text-left">codice</th><th className="text-left">scuola</th>
-                            <th className="text-left">città</th><th className="text-left">RI</th>
+                            <th className="text-left">città</th><th className="text-left">RI</th><th className="text-left">fogli</th>
                         </tr></thead>
                         <tbody>{schools.map((e, i) => <tr key={i}>
                             <td className="pr-3 font-mono">{e.code}</td>
                             <td className="pr-3">{e.school}</td>
                             <td className="pr-3">{e.city}{e.province ? ` (${e.province})` : ''}</td>
-                            <td><Person entry={e} /></td>
+                            <td className="pr-3"><Person entry={e} /></td>
+                            <td>{e.sheets.length ? <SheetLinks sheets={e.sheets} /> : hasSheets && <span className="text-red-600">nessun foglio</span>}</td>
                         </tr>)}</tbody>
                     </table>}
                 </section>

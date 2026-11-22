@@ -2,14 +2,21 @@ import type { NextRequest } from 'next/server'
 import { queryOlimanager } from './olimanager'
 import { venueSheetChoices } from './olimanagerVenueSheets'
 import { districtName } from './olimanagerVenueNames'
+import { SHEET_CONTEST_KEY, VENUE_SHEET_SCHEMAS, isVenueSheetSchema } from './olimanagerVenueSheetConfig'
 
 // Address book of the people who run an edition: for every district (zone of
 // the olympiad) its coordinator (CD, the primary zone admin), the other
 // district admins (RD) and the school contacts (RI) of the valid subscriptions.
+// Olifogli sheets of the edition's contests are attached to their school
+// (SCHOOL contests, by Codice_meccanografico) or district (ZONE contests, by
+// Distretto). Without that key the sheet name is used: sheets of the old
+// creation flow (e.g. `distrettuale` from Distrettuale.row_to_sheet) carry the
+// district only in their name, and Olimanager-created sheets are named the same.
 
 export type AddressBookContact = { name: string, surname: string, email: string | null }
-export type AddressBookSchool = { code: string, name: string, city: string, province: string, contact: AddressBookContact | null }
-export type AddressBookDistrict = { id: number | null, name: string, coordinators: AddressBookContact[], admins: AddressBookContact[], schools: AddressBookSchool[] }
+export type AddressBookSheet = { _id: unknown, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }
+export type AddressBookSchool = { code: string, name: string, city: string, province: string, contact: AddressBookContact | null, sheets: AddressBookSheet[] }
+export type AddressBookDistrict = { id: number | null, name: string, coordinators: AddressBookContact[], admins: AddressBookContact[], schools: AddressBookSchool[], sheets: AddressBookSheet[] }
 export type AddressBook = { districts: AddressBookDistrict[], warnings: string[] }
 
 type User = { name: string, surname: string, email: string }
@@ -22,6 +29,12 @@ export type AddressBookSubscription = {
     school: { pk: number, externalId: string | null, name: string, location: { city: { name: string, province: { id: string } } } | null }
     contact: { name: string, surname: string, user: { email: string } | null } | null
 }
+export type AddressBookContest = { id: number, name: string, scope: string }
+export type AddressBookSheetDocument = {
+    _id: unknown, name: string, schema: string, commonData: Record<string, string>,
+    nRows?: number, nValidRows?: number, closed?: boolean, locked?: boolean,
+}
+export type FindSheets = (contestIds: string[]) => Promise<AddressBookSheetDocument[]>
 type Page = { edges: { node: AddressBookSubscription }[], pageInfo: { hasNextPage: boolean, endCursor: string | null } }
 
 export const UNASSIGNED_DISTRICT = 'Senza distretto'
@@ -49,9 +62,9 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
         const coordinators = admins.filter(a => a.isPrimary).map(a => contactOf(a.user!)).sort(byPerson)
         const others = admins.filter(a => !a.isPrimary).map(a => contactOf(a.user!)).sort(byPerson)
         if (!coordinators.length) warnings.push(`Distretto ${zone.name}: nessun coordinatore (CD).`)
-        districts.set(zone.id, { id: zone.id, name: districtName(zone), coordinators, admins: others, schools: [] })
+        districts.set(zone.id, { id: zone.id, name: districtName(zone), coordinators, admins: others, schools: [], sheets: [] })
     }
-    const unassigned: AddressBookDistrict = { id: null, name: UNASSIGNED_DISTRICT, coordinators: [], admins: [], schools: [] }
+    const unassigned: AddressBookDistrict = { id: null, name: UNASSIGNED_DISTRICT, coordinators: [], admins: [], schools: [], sheets: [] }
     for (const subscription of subscriptions) {
         if (!subscription.isValid) continue
         const school = subscription.school
@@ -61,6 +74,7 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
         const entry: AddressBookSchool = {
             code, name: school.name, city: school.location?.city?.name || '', province: school.location?.city?.province?.id || '',
             contact: contact ? { name: contact.name.trim(), surname: contact.surname.trim(), email: normalizedEmail(contact.user?.email) } : null,
+            sheets: [],
         }
         if (!entry.contact?.email) warnings.push(`${label}: referente senza account/email.`)
         const matches = zonesOfSchool(school, zones)
@@ -80,11 +94,35 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
     return { districts: result, warnings }
 }
 
-export async function loadAddressBook(req: NextRequest, olympiadId: string, editionId: string): Promise<AddressBook> {
-    const choices = await venueSheetChoices(req)
-    if (!choices.find(o => o.id === olympiadId)?.editions.some(e => e.id === editionId)) {
-        throw new Error('L’edizione deve appartenere all’olimpiade scelta.')
+// Attaches each sheet of an edition contest to its school or district; sheets
+// of schools or districts not in the address book are left out.
+export function attachSheets(book: AddressBook, contests: AddressBookContest[], sheets: AddressBookSheetDocument[]) {
+    const contestById = new Map(contests.map(c => [String(c.id), c]))
+    const schools = new Map(book.districts.flatMap(d => d.schools.filter(s => s.code).map(s => [s.code, s] as const)))
+    const districts = new Map(book.districts.filter(d => d.id !== null).map(d => [d.name, d]))
+    for (const sheet of sheets) {
+        const contest = contestById.get(sheet.commonData?.[SHEET_CONTEST_KEY]?.trim() || '')
+        if (!contest) continue
+        const entry: AddressBookSheet = {
+            _id: sheet._id, name: sheet.name,
+            label: isVenueSheetSchema(sheet.schema) ? VENUE_SHEET_SCHEMAS[sheet.schema].label : contest.name,
+            nRows: sheet.nRows || 0, nValidRows: sheet.nValidRows || 0, closed: !!sheet.closed, locked: !!sheet.locked,
+        }
+        const key = (field: string) => sheet.commonData?.[field]?.trim() || sheet.name.trim()
+        const owner = contest.scope === 'SCHOOL' ? schools.get(key('Codice_meccanografico'))
+            : contest.scope === 'ZONE' ? districts.get(key('Distretto')) : undefined
+        owner?.sheets.push(entry)
     }
+    for (const owner of [...book.districts, ...book.districts.flatMap(d => d.schools)]) {
+        owner.sheets.sort((a, b) => collator.compare(a.label, b.label) || collator.compare(a.name, b.name))
+    }
+    return book
+}
+
+export async function loadAddressBook(req: NextRequest, olympiadId: string, editionId: string, findSheets: FindSheets): Promise<AddressBook> {
+    const choices = await venueSheetChoices(req)
+    const edition = choices.find(o => o.id === olympiadId)?.editions.find(e => e.id === editionId)
+    if (!edition) throw new Error('L’edizione deve appartenere all’olimpiade scelta.')
     const { zones: { zones } } = await queryOlimanager<{ zones: { zones: AddressBookZone[] } }>(req, `query($olympiad: String!) {
         zones { zones(filters: {olympiad: {id: {exact: $olympiad}}}) {
             id name provinces { id } extraSchools { pk } admins { isPrimary user { name surname email } }
@@ -108,5 +146,7 @@ export async function loadAddressBook(req: NextRequest, olympiadId: string, edit
         if (!cursor || cursors.has(cursor)) throw new Error('Paginazione delle scuole Olimanager non valida.')
         cursors.add(cursor)
     }
-    return buildAddressBook(zones, subscriptions)
+    const book = buildAddressBook(zones, subscriptions)
+    const sheets = edition.contests.length ? await findSheets(edition.contests.map(c => String(c.id))) : []
+    return attachSheets(book, edition.contests, sheets)
 }

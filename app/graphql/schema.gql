@@ -454,6 +454,18 @@ type OlimanagerContact {
   email: String
 }
 
+"""Foglio Olifogli di un contest dell'edizione, collegato a una scuola o a un distretto."""
+type OlimanagerAddressBookSheet {
+  _id: ObjectId!
+  name: String!
+  """Tipo di foglio (es. «Archimede Biennio») o, se sconosciuto, nome del contest."""
+  label: String!
+  nRows: Int!
+  nValidRows: Int!
+  closed: Boolean!
+  locked: Boolean!
+}
+
 type OlimanagerAddressBookSchool {
   """Codice meccanografico, vuoto se assente in Olimanager."""
   code: String!
@@ -462,6 +474,8 @@ type OlimanagerAddressBookSchool {
   """Sigla della provincia."""
   province: String!
   contact: OlimanagerContact
+  """Fogli dei contest scolastici dell'edizione con questo codice meccanografico."""
+  sheets: [OlimanagerAddressBookSheet!]!
 }
 
 type OlimanagerAddressBookDistrict {
@@ -474,6 +488,8 @@ type OlimanagerAddressBookDistrict {
   admins: [OlimanagerContact!]!
   """Scuole con iscrizione valida all'edizione e relativo referente (RI)."""
   schools: [OlimanagerAddressBookSchool!]!
+  """Fogli dei contest distrettuali dell'edizione di questo distretto."""
+  sheets: [OlimanagerAddressBookSheet!]!
 }
 
 type OlimanagerAddressBook {
