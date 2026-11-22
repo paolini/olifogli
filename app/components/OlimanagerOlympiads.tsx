@@ -22,6 +22,8 @@ export const olympiadHref = (olympiadId: string) => `/olimanager/${encodeURIComp
 export const editionHref = (olympiadId: string, editionId: string) => `${olympiadHref(olympiadId)}/${encodeURIComponent(editionId)}`
 // The whole site is about the math olympiads: the year is enough.
 export const editionLabel = (edition: { name: string, year?: number | null }) => edition.year ? String(edition.year) : edition.name
+// The edition of year Y runs in the school year (Y-1)/Y.
+export const schoolYearLabel = (edition: { name: string, year?: number | null }) => edition.year ? `${edition.year - 1}/${edition.year}` : edition.name
 
 export function useOlympiads() {
     return useOlimanagerOlympiadsQuery()
@@ -74,11 +76,11 @@ export function OlimanagerEditions({ olympiadId }: { olympiadId: string }) {
         <p>Scegli l’edizione per la rubrica di coordinatori distrettuali (CD), responsabili di distretto (RD) e referenti di istituto (RI), con i fogli Olifogli dell’edizione.</p>
         <table className="table-auto">
             <thead><tr className="border-b">
-                <th className="text-left p-2 pr-8">Edizione</th>
+                <th className="text-left p-2 pr-8">Anno scolastico</th>
                 <th className="text-left p-2">Nome</th>
             </tr></thead>
             <tbody>{editions.map(edition => <tr key={edition.id}>
-                <td className="p-2 pr-8"><Link href={editionHref(olympiad.id, edition.id)} className="text-blue-600 hover:text-blue-800">{editionLabel(edition)}</Link></td>
+                <td className="p-2 pr-8"><Link href={editionHref(olympiad.id, edition.id)} className="text-blue-600 hover:text-blue-800">{schoolYearLabel(edition)}</Link></td>
                 <td className="p-2 text-gray-600">{edition.name}</td>
             </tr>)}</tbody>
         </table>

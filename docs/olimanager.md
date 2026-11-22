@@ -236,7 +236,9 @@ spiega che bisogna fare il login abilitando i trasferimenti, o rifarlo se il
 token è scaduto, con il pulsante «Rientra con lo scope api». Le
 pagine seguono i livelli:
 
-- `/olimanager/<olimpiade>`: le edizioni dell'olimpiade, dalla più recente;
+- `/olimanager/<olimpiade>`: le edizioni dell'olimpiade, dalla più recente,
+  indicate con l'anno scolastico (l'edizione 2027 è «2026/2027»,
+  `schoolYearLabel`);
 - `/olimanager/<olimpiade>/<edizione>`: la rubrica dell'edizione, con l'elenco
   dei distretti;
 - `/olimanager/<olimpiade>/<edizione>/<distretto>`: il dettaglio di un

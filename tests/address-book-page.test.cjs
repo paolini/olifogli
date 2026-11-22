@@ -126,9 +126,9 @@ for (const [expired, message] of [[false, /abilitando i trasferimenti/], [true, 
   });
 }
 
-test('the editions page lists the editions by year, latest first, with the olympiad in the breadcrumbs', async t => {
+test('the editions page lists the editions by school year, latest first, with the olympiad in the breadcrumbs', async t => {
   const page = await mount(t, ({ OlimanagerEditions }) => React.createElement(OlimanagerEditions, { olympiadId: 'olimat' }));
-  assert.deepEqual(page.links(), [['2027', '/olimanager/olimat/olimat27'], ['2026', '/olimanager/olimat/olimat26']]);
+  assert.deepEqual(page.links(), [['2026/2027', '/olimanager/olimat/olimat27'], ['2025/2026', '/olimanager/olimat/olimat26']]);
   assert.deepEqual(page.lastCrumbs(), [{ label: 'olimat', title: 'Olimpiadi della Matematica' }]);
 });
 
