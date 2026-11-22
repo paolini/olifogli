@@ -7,12 +7,11 @@ import { BulkActions, Person, RoleFilter, SheetLinks } from './AddressBookParts'
 // Results of the people search shown at most; the bulk actions use them all.
 const MAX_RESULTS = 200
 
-const districtHref = (district: District) => `/rubrica?distretto=${encodeURIComponent(districtKey(district))}`
-
 // First level of the address book: the districts, filtered by name, or the
 // people and schools matching a separate search.
-export default function AddressBookDistricts({ districts, roles, setRoles, districtFilter, setDistrictFilter, peopleSearch, setPeopleSearch }: {
+export default function AddressBookDistricts({ districts, districtHref, roles, setRoles, districtFilter, setDistrictFilter, peopleSearch, setPeopleSearch }: {
     districts: District[]
+    districtHref: (district: District) => string
     roles: Set<AddressBookRole>, setRoles: (roles: Set<AddressBookRole>) => void
     districtFilter: string, setDistrictFilter: (filter: string) => void
     peopleSearch: string, setPeopleSearch: (search: string) => void

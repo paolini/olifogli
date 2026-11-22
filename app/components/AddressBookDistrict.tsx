@@ -1,14 +1,13 @@
 'use client'
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { addressBookEntries, filterEntries, type AddressBookRole, type District } from '../lib/addressBookEntries'
 import { BulkActions, Person, RoleFilter, SheetLinks, Warnings } from './AddressBookParts'
 
 // Second level of the address book: the people and schools of one district.
-export default function AddressBookDistrict({ district, roles, setRoles, showBack, markMissingSheets }: {
+// Its name and the way back to the district list are in the header breadcrumbs.
+export default function AddressBookDistrict({ district, roles, setRoles, markMissingSheets }: {
     district: District
     roles: Set<AddressBookRole>, setRoles: (roles: Set<AddressBookRole>) => void
-    showBack: boolean // false when the user sees only this district
     markMissingSheets: boolean // «nessun foglio» is meaningful only for whoever sees all the sheets
 }) {
     const [search, setSearch] = useState('')
@@ -19,8 +18,6 @@ export default function AddressBookDistrict({ district, roles, setRoles, showBac
     const people = (list: typeof entries) => list.map((e, i) => <span key={i}>{i > 0 && ', '}<Person entry={e} /></span>)
 
     return <div className="space-y-3">
-        {showBack && <Link className="text-blue-600 hover:underline" href="/rubrica">← tutti i distretti</Link>}
-        <h2 className="text-2xl font-bold">{district.name}</h2>
         {district.sheets?.length ? <p><b>Fogli:</b> <SheetLinks sheets={district.sheets} /></p> : null}
         <Warnings warnings={district.warnings || []} />
         <div className="flex flex-wrap items-center gap-3">

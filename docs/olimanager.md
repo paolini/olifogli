@@ -259,13 +259,25 @@ l'assenza può dipendere dai permessi.
 
 ### Distretti e dettaglio
 
+Edizione e distretto sono nell'URL, per esempio
+`/rubrica?edizione=olimat26&distretto=12` (id dell'edizione e della zona;
+`none` per «Senza distretto»), così i link condivisi e il tasto indietro
+funzionano. Il titolo è nella barra di
+intestazione, come per raccoglitori e fogli: «Rubrica 〉 2026 〉 Roma».
+L'edizione è indicata solo con l'anno (il sito tratta solo le olimpiadi di
+matematica); nel dettaglio di un distretto la sua voce riporta all'elenco dei
+distretti, mentre «Rubrica» porta alla scelta dell'edizione
+(`/rubrica?scegli`, con il suggerimento «Cambia edizione»). Le breadcrumb
+accettano per questo un campo `title` facoltativo, mostrato al passaggio del
+mouse.
+
 La rubrica ha due livelli. La pagina principale elenca i distretti in una
 tabella: CD, numero di RD, scuole iscritte, scuole con almeno un foglio, righe
 valide/righe dei fogli del distretto e delle sue scuole, numero di avvisi e,
-nell'ultima colonna, i link ai fogli distrettuali. Il nome porta al dettaglio del distretto
-(`/rubrica?distretto=<id della zona>`, `none` per «Senza distretto»), con CD,
-RD, la tabella delle scuole con i loro RI e fogli e gli avvisi del distretto.
-Chi vede un solo distretto entra direttamente nel dettaglio.
+nell'ultima colonna, i link ai fogli distrettuali. Il nome porta al dettaglio
+del distretto, con CD, RD, la tabella delle scuole con i loro RI e fogli e gli
+avvisi del distretto. Chi vede un solo distretto entra direttamente nel
+dettaglio.
 
 Nella pagina principale ci sono due ricerche distinte:
 
@@ -289,12 +301,14 @@ generali solo quelli non legati a un distretto, come `CURRENT_EDITION_ONLY`.
 
 ### Selezione, fogli ed esportazione
 
-L'ultima olimpiade ed edizione caricate con successo vengono ricordate per
-ciascun utente (campo `addressBookSelection` del documento in `users`, query
-`olimanagerAddressBookSelection`): alla riapertura la pagina le propone e carica
-subito la rubrica, se Olimanager elenca ancora quell'edizione. Con un'edizione
-caricata le due select sono nascoste e il nome dell'edizione fa da titolo;
-«Cambia edizione» le mostra di nuovo («Annulla» torna all'edizione caricata).
+L'ultima edizione caricata con successo viene ricordata per ciascun utente
+(campo `addressBookSelection` del documento in `users`, query
+`olimanagerAddressBookSelection`), anche quando arriva da un link. Aprendo
+`/rubrica` senza edizione la pagina passa a quella salvata, se Olimanager la
+elenca ancora, e la carica subito; altrimenti mostra le select di olimpiade ed
+edizione. Nella scelta dell'edizione (`/rubrica?scegli`) le select partono
+dall'edizione salvata e «Annulla» torna a quella; le select compaiono anche se
+il caricamento fallisce o l'edizione dell'URL non esiste.
 
 Accanto a ogni scuola ci sono i link ai suoi fogli dei contest scolastici
 dell'edizione (`commonData.Codice_meccanografico`), e accanto al distretto

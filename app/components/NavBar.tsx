@@ -29,11 +29,11 @@ export default function Navbar() {
                 <span key={index} className="flex items-center">
                   <span className="mx-2">〉</span>
                   {breadcrumb.href ? (
-                    <Link href={breadcrumb.href} className="hover:text-blue-500">
+                    <Link href={breadcrumb.href} className="hover:text-blue-500" title={breadcrumb.title}>
                       {breadcrumb.label}
                     </Link>
                   ) : (
-                    <span className="text-gray-800">{breadcrumb.label}</span>
+                    <span className="text-gray-800" title={breadcrumb.title}>{breadcrumb.label}</span>
                   )}
                 </span>
               ))}

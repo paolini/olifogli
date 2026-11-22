@@ -5,6 +5,7 @@ import { createContext, useContext, useState, ReactNode } from 'react'
 export interface Breadcrumb {
   label: string
   href?: string
+  title?: string // tooltip, e.g. to explain where the link leads
 }
 
 interface BreadcrumbsContextType {

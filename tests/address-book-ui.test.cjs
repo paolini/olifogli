@@ -42,21 +42,23 @@ async function mount(t) {
   const base = { react: React, 'react/jsx-runtime': require('react/jsx-runtime') };
   const link = { __esModule: true, default: ({ href, children, ...rest }) => React.createElement('a', { href, ...rest }, children) };
   const entries = transpile('app/lib/addressBookEntries.ts', {});
+  const button = { __esModule: true, default: ({ children, variant, ...rest }) => React.createElement('button', rest, children) }; // eslint-disable-line no-unused-vars
   const parts = transpile('app/components/AddressBookParts.tsx', {
     ...base, 'next/link': link, '../lib/addressBookEntries': entries,
     'lucide-react': { Archive: () => null, Lock: () => null, Unlock: () => null },
     '../lib/csv': { unparseCsv: () => '' },
-    './Button': { __esModule: true, default: ({ children, variant, ...rest }) => React.createElement('button', rest, children) }, // eslint-disable-line no-unused-vars
+    './Button': button,
   }, { document: dom.window.document });
   const { default: AddressBookDistricts } = transpile('app/components/AddressBookDistricts.tsx', {
-    ...base, 'next/link': link, '../lib/addressBookEntries': entries, './AddressBookParts': parts,
+    ...base, 'next/link': link, '../lib/addressBookEntries': entries, './AddressBookParts': parts, './Button': button,
   });
   // Holds the filters like OlimanagerAddressBook does.
   function Harness() {
     const [roles, setRoles] = React.useState(new Set(entries.ADDRESS_BOOK_ROLES));
     const [districtFilter, setDistrictFilter] = React.useState('');
     const [peopleSearch, setPeopleSearch] = React.useState('');
-    return React.createElement(AddressBookDistricts, { districts, roles, setRoles, districtFilter, setDistrictFilter, peopleSearch, setPeopleSearch });
+    const districtHref = district => `/rubrica?edizione=ed&distretto=${entries.districtKey(district)}`;
+    return React.createElement(AddressBookDistricts, { districts, districtHref, roles, setRoles, districtFilter, setDistrictFilter, peopleSearch, setPeopleSearch });
   }
   const root = createRoot(dom.window.document.getElementById('root'));
   await act(async () => { root.render(React.createElement(Harness)); });
@@ -91,7 +93,7 @@ test('the district list shows one row per district with counts and links to the 
     ['Pisa', 'Rossi Anna', '1', '1', '1', '8/10', '', ''],
     ['Roma', 'Bianchi Carlo', '0', '1', '0', '5/5', '1', 'Gara distrettuale 5/5'],
   ]);
-  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/rubrica')), [['Pisa', '/rubrica?distretto=3'], ['Roma', '/rubrica?distretto=4']]);
+  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/rubrica')), [['Pisa', '/rubrica?edizione=ed&distretto=3'], ['Roma', '/rubrica?edizione=ed&distretto=4']]);
   assert.equal(page.counts(), '5 voci, 4 email');
 });
 
@@ -114,7 +116,7 @@ test('the people search ignores district names and lists people with a link to t
     ['RI', 'Neri Roma <roma.neri@example.org>'],
     ['RI', 'Verdi Ugo senza email'], // school in the city of Roma
   ]);
-  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/rubrica')).map(([, href]) => href), ['/rubrica?distretto=3', '/rubrica?distretto=3', '/rubrica?distretto=4']);
+  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/rubrica')).map(([, href]) => href), ['/rubrica?edizione=ed&distretto=3', '/rubrica?edizione=ed&distretto=3', '/rubrica?edizione=ed&distretto=4']);
   assert.equal(page.counts(), '3 voci, 2 email');
   assert.equal(page.document.querySelector('input[aria-label="Filtra distretti"]').disabled, true);
 });

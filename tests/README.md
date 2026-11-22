@@ -59,7 +59,11 @@ dell'ultima edizione, solo dopo un caricamento riuscito.
 `address-book-ui.test.cjs` monta in jsdom l'elenco dei distretti: righe con
 conteggi e link al dettaglio, filtro sui soli nomi dei distretti, ricerca di
 persone che ignora i nomi dei distretti e azioni di gruppo che seguono ricerca,
-distretti elencati e ruoli.
+distretti elencati e ruoli. `address-book-page.test.cjs` monta la pagina con il
+vero provider delle breadcrumb: passaggio all'edizione salvata, edizione
+dell'URL che prevale, breadcrumb di edizione e distretto senza aggiornamenti a
+ciclo, ingresso diretto con un solo distretto, edizione sconosciuta e scelta
+dell'edizione da «Rubrica» (`?scegli`), che parte dall'edizione salvata.
 
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare
