@@ -18,6 +18,6 @@ function LoggedInUserProfile({user}:{user: {email?: string|null|undefined}|undef
   return <p>
       {user?.email || "<no email>"}
       <br/>
-      <Button onClick={() => signOut()}>Logout</Button>
+      <Button onClick={() => signOut({ callbackUrl: '/' })}>Logout</Button>
   </p>
 }

@@ -5,7 +5,7 @@ import { OlimanagerEditions } from '@/app/components/OlimanagerOlympiads'
 
 export default function OlimanagerOlympiadPage() {
     const { olympiadId } = useParams<{ olympiadId: string }>()
-    return <Page>
+    return <Page requireApiScope>
         <OlimanagerEditions olympiadId={decodeURIComponent(olympiadId)} />
     </Page>
 }

@@ -9,7 +9,7 @@ import OlimanagerAddressBook from '@/app/components/OlimanagerAddressBook'
 // caricati e i filtri. Le pagine (elenco e distretto) non disegnano nulla.
 export default function OlimanagerEditionLayout({ children }: { children: ReactNode }) {
     const { olympiadId, editionId, district } = useParams<{ olympiadId: string, editionId: string, district?: string }>()
-    return <Page>
+    return <Page requireApiScope>
         <OlimanagerAddressBook olympiadId={decodeURIComponent(olympiadId)} editionId={decodeURIComponent(editionId)}
             district={district === undefined ? undefined : decodeURIComponent(district)} />
         {children}

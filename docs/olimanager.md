@@ -32,6 +32,19 @@ frontend Next.js.
 
 L'URI di callback è sempre `<NEXTAUTH_URL>/api/auth/callback/olimanager`.
 
+Il logout (`signOut({ callbackUrl: '/' })`) riporta sempre alla home, perché la
+pagina corrente può richiedere il login.
+
+Tutte le pagine tranne la home richiedono il login, e passano da `Page`
+(`app/components/Page.tsx`): senza sessione, per esempio aprendo un link
+ricevuto o se la sessione scade, la pagina non viene montata e al suo posto
+compare il modulo di login (`LoginForm`), che dopo il login riporta alla stessa
+pagina (`callbackUrl`). Le pagine che leggono Olimanager (`requireApiScope`)
+richiedono anche un token valido con lo scope `api` (`olimanagerApiReady`): se
+lo scope manca o il token è scaduto, un pulsante fa logout e di nuovo login con
+lo scope, tornando alla stessa pagina. Lo scope si sceglie infatti solo al
+login.
+
 ### Applicazione OAuth
 
 In Django deve esistere un'applicazione OAuth2
@@ -86,8 +99,9 @@ verificarle con un rilancio normale dopo averle copiate in `.env`.
 ### Scope `api` per i trasferimenti
 
 Il login richiede normalmente solo `openid email profile`. Per trasferire dati
-verso Olimanager si seleziona «richiesta scope api» accanto a LOGIN: quel login
-richiede anche lo scope `api`, senza assegnare ulteriori ruoli. Per cambiare la
+verso Olimanager (e per la sezione Olimanager) si usa il pulsante
+«LOGIN + OLIMANAGER», più piccolo, accanto a LOGIN: quel login richiede anche
+lo scope `api`, senza assegnare ulteriori ruoli. Per cambiare la
 scelta di una sessione già aperta occorre uscire e rifare il login.
 
 Abbinamenti, risultati ed extra fields usano il token OAuth della sessione
@@ -96,7 +110,9 @@ username o password. Restano necessari i privilegi amministrativi locali e i
 permessi richiesti da Olimanager per ciascuna operazione.
 
 La sessione pubblica espone solo `olimanagerApiScope` (true/false, oppure null
-per sessioni non verificabili), senza il token. I comandi di trasferimento
+per sessioni non verificabili) e `olimanagerApiReady` (token presente, con lo
+scope `api` e non scaduto, con gli stessi controlli del server), senza il token
+né la sua scadenza. I comandi di trasferimento
 restano visibili: scope e scadenza vengono controllati sul server quando si
 tenta un trasferimento, prima di elaborare le righe o contattare Olimanager. Se
 il controllo fallisce compare il messaggio con le istruzioni per rifare il login.
@@ -211,9 +227,11 @@ selezionabili.
 
 ## Sezione Olimanager e rubrica di CD, RD e RI
 
-Agli utenti entrati con lo scope `api` (`session.olimanagerApiScope`) la home
-mostra, dopo «Competizioni», la sezione «Olimanager» con la tabella delle
-olimpiadi (query `olimanagerOlympiads`, aperta a ogni utente autenticato). Le
+Dopo «Competizioni» la home mostra la sezione «Olimanager». Se Olimanager si
+può leggere (`session.olimanagerApiReady`) contiene la tabella delle olimpiadi
+(query `olimanagerOlympiads`, aperta a ogni utente autenticato); altrimenti
+spiega che bisogna fare il login abilitando i trasferimenti, o rifarlo se il
+token è scaduto, con il pulsante «Rientra con lo scope api». Le
 pagine seguono i livelli:
 
 - `/olimanager/<olimpiade>`: le edizioni dell'olimpiade, dalla più recente;

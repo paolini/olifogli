@@ -52,7 +52,7 @@ export default function UserMenu({ email, isAdmin, isSupervisor }: {
       {isAdmin && <li><Link href="/logs" className={itemClass} onClick={close}>logs</Link></li>}
       <li className={isAdmin || isSupervisor ? 'mt-1 border-t pt-1' : undefined}>
         <button type="button" className={`${itemClass} cursor-pointer border-0 bg-transparent`}
-          onClick={() => { close(); void signOut() }}>
+          onClick={() => { close(); void signOut({ callbackUrl: '/' }) }}>
           logout
         </button>
       </li>

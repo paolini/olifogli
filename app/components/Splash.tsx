@@ -1,9 +1,8 @@
-import { useSession, signIn } from "next-auth/react"
-import { useState } from 'react'
+import { useSession } from "next-auth/react"
 
 import Workbooks from './Workbooks'
 import { OlimanagerOlympiads } from './OlimanagerOlympiads'
-import Button from './Button'
+import { LoginForm } from './LoginForm'
 import useProfile from "../lib/useProfile"
 import GlobalMessage from './GlobalMessage'
 import { useConfig } from './ConfigProvider'
@@ -12,7 +11,6 @@ export default function Splash() {
   const { data: session } = useSession()
   const profile = useProfile()
   const { olimanagerUrl } = useConfig()
-  const [requestApiScope, setRequestApiScope] = useState(false)
 
   if (session === undefined) return null
 
@@ -21,17 +19,7 @@ export default function Splash() {
       Devi avere un account su <a className="underline" href={olimanagerUrl}>olimpiadi-scientifiche</a> per accedere.
     </p>
     <GlobalMessage name="public_login_message" description="⚙ informazioni presentate prima del login"/>
-    <div className="flex flex-wrap items-center">
-      <Button className="px-10 py-5 m-5 rounded" onClick={async () => {
-        await signIn('olimanager', undefined, {
-          scope: requestApiScope ? 'openid email profile api' : 'openid email profile',
-        })
-      }}><b>LOGIN</b></Button>
-      <label className="mx-4 flex items-center gap-2">
-        <input type="checkbox" checked={requestApiScope} onChange={event => setRequestApiScope(event.target.checked)} />
-        Non selezionare questo checkbox (richiesta api scope)
-      </label>
-    </div>
+    <LoginForm />
   </div>
 
   return <div>
@@ -47,8 +35,7 @@ export default function Splash() {
       collapsed={true}
     />
     <Workbooks />
-    {/* Reading Olimanager needs the api scope. */}
-    {session.olimanagerApiScope === true && <OlimanagerOlympiads />}
+    <OlimanagerOlympiads ready={session.olimanagerApiReady === true} expired={session.olimanagerApiScope === true} />
     <GlobalMessage name="home_footer_message"
       description="Messaggio a piè di pagina della home page"
     />

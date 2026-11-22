@@ -28,7 +28,7 @@ async function mount(t, props) {
   const dependencies = {
     react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
     'next/link': { __esModule: true, default: ({ href, children, ...rest }) => React.createElement('a', { href, ...rest }, children) },
-    'next-auth/react': { signOut: () => { signOuts.push(true); return Promise.resolve(); } },
+    'next-auth/react': { signOut: options => { signOuts.push(options); return Promise.resolve(); } },
     'lucide-react': { ChevronDown: () => null },
   };
   vm.runInNewContext(source, { exports, document: dom.window.document, require: name => dependencies[name] ?? require(name) });
@@ -70,12 +70,13 @@ test('supervisors see users and logout; other users only logout', async t => {
   assert.deepEqual(supervisor.items(), ['utenti', 'logout']);
 });
 
-test('a user without global roles sees only logout, which signs out', async t => {
+test('a user without global roles sees only logout, which signs out to the home page', async t => {
   const menu = await mount(t, {});
   await menu.toggle();
   assert.deepEqual(menu.items(), ['logout']);
   await act(async () => { menu.document.querySelector('#user-menu button').click(); });
-  assert.deepEqual(menu.signOuts, [true]);
+  // Back to the home page: the current page may need a login.
+  assert.deepEqual(JSON.parse(JSON.stringify(menu.signOuts)), [{ callbackUrl: '/' }]);
   assert.equal(menu.document.getElementById('user-menu'), null);
 });
 

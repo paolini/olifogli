@@ -26,7 +26,7 @@ const olympiads = [{ id: 'olimat', name: 'Olimpiadi della Matematica', editions:
 ] }];
 const district = (id, name) => ({ id, name, coordinators: [], admins: [], schools: [], sheets: [], warnings: [] });
 
-async function mount(t, render, { districts = [district(3, 'Pisa'), district(4, 'Roma')], addressBookError, olympiadsError } = {}) {
+async function mount(t, render, { districts = [district(3, 'Pisa'), district(4, 'Roma')], addressBookError, olympiadsError, profile = { isAdmin: true, isSupervisor: false } } = {}) {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://olifogli.invalid/' });
   const saved = new Map();
   for (const [key, value] of Object.entries({
@@ -38,29 +38,38 @@ async function mount(t, render, { districts = [district(3, 'Pisa'), district(4, 
   }
   const { createRoot } = require('react-dom/client');
   const base = { react: React, 'react/jsx-runtime': require('react/jsx-runtime') };
-  const calls = { addressBook: [], breadcrumbs: [] };
+  const calls = { addressBook: [], olympiads: [], breadcrumbs: [] };
   const crumbs = transpile('app/components/BreadcrumbsProvider.tsx', base);
   const shared = {
     ...base,
     '@apollo/client': { gql: () => null },
     'next/link': { __esModule: true, default: ({ href, children, ...rest }) => React.createElement('a', { href, ...rest }, children) },
     '../graphql/generated': {
-      useOlimanagerOlympiadsQuery: () => olympiadsError ? { loading: false, error: olympiadsError } : { loading: false, data: { olimanagerOlympiads: olympiads } },
+      useOlimanagerOlympiadsQuery: (options = {}) => {
+        calls.olympiads.push(options);
+        if (options.skip) return { loading: false };
+        return olympiadsError ? { loading: false, error: olympiadsError } : { loading: false, data: { olimanagerOlympiads: olympiads } };
+      },
       useOlimanagerAddressBookQuery: options => {
         calls.addressBook.push(options);
+        if (options.skip) return { loading: false };
         return addressBookError ? { loading: false, error: addressBookError } : { loading: false, data: { olimanagerAddressBook: { districts, warnings: [] } } };
       },
     },
     './Error': { __esModule: true, default: ({ error }) => error ? React.createElement('p', { role: 'alert' }, String(error.message || error)) : null },
     './Loading': { __esModule: true, default: () => React.createElement('p', null, 'loading') },
     './BreadcrumbsProvider': crumbs,
+    './LoginForm': transpile('app/components/LoginForm.tsx', {
+      ...base, './Button': { __esModule: true, default: ({ children, variant, ...rest }) => React.createElement('button', rest, children) }, // eslint-disable-line no-unused-vars
+      'next-auth/react': { signIn: async () => {}, signOut: async () => {} },
+    }),
+    '../lib/useProfile': { __esModule: true, default: () => profile },
   };
   const olympiadsModule = transpile('app/components/OlimanagerOlympiads.tsx', shared);
   const stubView = name => ({ __esModule: true, default: props => React.createElement('div', { 'data-view': name, 'data-href': props.districtHref?.(district(9, 'X')) }, props.district?.name ?? props.districts?.map(d => d.name).join(',')) });
   const { default: AddressBook } = transpile('app/components/OlimanagerAddressBook.tsx', {
     ...shared,
     '../lib/addressBookEntries': transpile('app/lib/addressBookEntries.ts', {}),
-    '../lib/useProfile': { __esModule: true, default: () => ({ isAdmin: true, isSupervisor: false }) },
     './AddressBookDistrict': stubView('district'),
     './AddressBookDistricts': stubView('districts'),
     './AddressBookParts': { Warnings: () => null },
@@ -95,16 +104,27 @@ async function mount(t, render, { districts = [district(3, 'Pisa'), district(4, 
 const olimat = { label: 'olimat', href: '/olimanager/olimat', title: 'Olimpiadi della Matematica' };
 
 test('the home section lists the olympiads, linked to their editions', async t => {
-  const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads));
+  const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads, { ready: true, expired: false }));
   assert.equal(page.document.querySelector('h1').textContent, 'Olimanager');
   assert.deepEqual(page.links(), [['Olimpiadi della Matematica', '/olimanager/olimat']]);
 });
 
 test('the home section shows Olimanager errors inside the section', async t => {
-  const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads), { olympiadsError: new Error('non raggiungibile') });
+  const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads, { ready: true, expired: false }), { olympiadsError: new Error('non raggiungibile') });
   assert.equal(page.document.querySelector('h1').textContent, 'Olimanager');
   assert.equal(page.document.querySelector('[role="alert"]').textContent, 'non raggiungibile');
 });
+
+for (const [expired, message] of [[false, /abilitando i trasferimenti/], [true, /sessione Olimanager è scaduta/]]) {
+  test(`without a usable Olimanager token the home section asks to log in (expired ${expired}), without querying`, async t => {
+    const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads, { ready: false, expired }));
+    assert.equal(page.document.querySelector('h1').textContent, 'Olimanager');
+    assert.match(page.document.querySelector('p').textContent, message);
+    assert.ok([...page.document.querySelectorAll('button')].some(b => b.textContent === 'Rientra con lo scope api'));
+    assert.equal(page.document.querySelector('table'), null);
+    assert.deepEqual(page.calls.olympiads, []);
+  });
+}
 
 test('the editions page lists the editions by year, latest first, with the olympiad in the breadcrumbs', async t => {
   const page = await mount(t, ({ OlimanagerEditions }) => React.createElement(OlimanagerEditions, { olympiadId: 'olimat' }));

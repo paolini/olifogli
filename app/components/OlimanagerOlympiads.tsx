@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { useOlimanagerOlympiadsQuery } from '../graphql/generated'
 import { useBreadcrumbs } from './BreadcrumbsProvider'
+import { OlimanagerLogin } from './LoginForm'
 import Error from './Error'
 import Loading from './Loading'
 
@@ -26,11 +27,19 @@ export function useOlympiads() {
     return useOlimanagerOlympiadsQuery()
 }
 
-// Home page section, shown only to users logged in with the api scope.
-export function OlimanagerOlympiads() {
-    const { data, loading, error } = useOlympiads()
+// Home page section: the olympiads when Olimanager can be read (ready: a valid
+// token with the api scope), otherwise how to log in to read it.
+export function OlimanagerOlympiads({ ready, expired }: { ready: boolean, expired: boolean }) {
     return <div className="p-4 space-y-4">
         <h1>Olimanager</h1>
+        {ready ? <OlympiadsTable />
+            : <OlimanagerLogin expired={expired} intro="Per vedere i dati di Olimanager (rubrica di CD, RD e RI)." />}
+    </div>
+}
+
+function OlympiadsTable() {
+    const { data, loading, error } = useOlympiads()
+    return <>
         {loading && <Loading />}
         <Error error={error} />
         {data && <table className="table-auto">
@@ -43,7 +52,7 @@ export function OlimanagerOlympiads() {
                 <td className="p-2 text-gray-600 font-mono">{olympiad.id}</td>
             </tr>)}</tbody>
         </table>}
-    </div>
+    </>
 }
 
 // The editions of an olympiad, latest first.

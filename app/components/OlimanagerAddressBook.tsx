@@ -62,6 +62,7 @@ export default function OlimanagerAddressBook({ olympiadId, editionId, district:
     }, [olympiadId, olympiadName, editionId, editionCrumb, districtCrumb, setBreadcrumbs])
     useEffect(() => () => setBreadcrumbs([]), [setBreadcrumbs])
 
+    // Page renders this only with a session: profile is just loading.
     if (!profile || (addressBook.loading && !districts)) return <Loading />
     if (addressBook.error || !districts) return <div className="p-2"><Error error={addressBook.error} /></div>
 

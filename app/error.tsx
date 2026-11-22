@@ -31,7 +31,7 @@ export default function Error({
         >
           Riprova
         </Button>
-        <Button variant="secondary" className="mx-8 p-4" onClick={() => signOut()}>logout</Button>
+        <Button variant="secondary" className="mx-8 p-4" onClick={() => signOut({ callbackUrl: '/' })}>logout</Button>
       </div>
     </div>
   )

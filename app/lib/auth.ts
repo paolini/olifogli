@@ -60,6 +60,7 @@ type SESSION = {
   user?: SESSION_USER | undefined
   expires: string
   olimanagerApiScope?: boolean | null
+  olimanagerApiReady?: boolean
 }
 
 if (!NEXTAUTH_SECRET) throw new Error("Missing environment variable: NEXTAUTH_SECRET")
@@ -153,6 +154,11 @@ export const authOptions: AuthOptions = {
       // OAuth credentials must remain in the encrypted, HttpOnly JWT cookie.
       session.olimanagerApiScope = typeof token.accessTokenHasApiScope === 'boolean'
         ? token.accessTokenHasApiScope : null
+      // Whether Olimanager can be read right now: same checks as
+      // checkOlimanagerToken, without exposing the token or its expiry.
+      session.olimanagerApiReady = typeof token.accessToken === 'string' && !!token.accessToken
+        && token.accessTokenHasApiScope === true
+        && !(typeof token.accessTokenExpiresAt === 'number' && token.accessTokenExpiresAt <= Date.now() / 1000)
       return session
     },
 

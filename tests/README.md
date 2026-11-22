@@ -63,7 +63,11 @@ Olimanager con il vero provider delle breadcrumb: tabella delle olimpiadi della
 home ed errori, edizioni dalla più recente, elenco dei distretti e distretto con
 breadcrumb senza aggiornamenti a ciclo, ingresso diretto con un solo distretto,
 olimpiade sconosciuta ed errori della rubrica. `login-scope.test.cjs` verifica
-anche che la sezione Olimanager della home compaia solo con lo scope `api`.
+anche che la home passi alla sezione Olimanager lo stato del token.
+`page-login.test.cjs` monta `Page` con una sessione simulata: senza sessione la
+pagina non viene montata e il login riporta alla stessa pagina, anche con lo
+scope `api`; le pagine Olimanager senza scope `api` o con il token scaduto
+propongono di rientrare con lo scope, tornando alla stessa pagina.
 
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare

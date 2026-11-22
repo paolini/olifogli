@@ -157,7 +157,7 @@ test('OAuth diagnostics identify expired tokens before any remote request withou
   }
 });
 
-test('OAuth session exposes only the scope flag while credentials and expiry remain private', async () => {
+test('OAuth session exposes only the scope and readiness flags while credentials and expiry remain private', async () => {
   const token = await authOptions.callbacks.jwt({
     token: {},
     account: { access_token: ACCESS_TOKEN, scope: 'openid api email', expires_at: 2000000000 },
@@ -166,6 +166,7 @@ test('OAuth session exposes only the scope flag while credentials and expiry rem
   assert.equal(token.accessTokenExpiresAt, 2000000000);
   const session = await authOptions.callbacks.session({ session: { user: {}, expires: 'synthetic-expiry' }, token });
   assert.equal(session.olimanagerApiScope, true);
+  assert.equal(session.olimanagerApiReady, true);
   assert.equal(Object.hasOwn(session, 'accessTokenHasApiScope'), false);
   assert.equal(Object.hasOwn(session, 'accessTokenExpiresAt'), false);
 });
@@ -229,8 +230,25 @@ test('public session reports granted or unknown scope without trusting requested
     const token = await authOptions.callbacks.jwt({ token: {}, account: { access_token: ACCESS_TOKEN, scope } });
     const session = await authOptions.callbacks.session({ session: { user: {}, expires: 'synthetic' }, token });
     assert.equal(session.olimanagerApiScope, scope === undefined ? null : false);
+    assert.equal(session.olimanagerApiReady, false);
     assert.ok(!JSON.stringify(session).includes(ACCESS_TOKEN));
   }
+});
+
+test('public session says whether Olimanager can be read now, with the checks of the server', async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const session = token => authOptions.callbacks.session({ session: { user: {}, expires: 'synthetic' }, token });
+  const ready = { accessToken: ACCESS_TOKEN, accessTokenHasApiScope: true };
+  assert.equal((await session({ ...ready, accessTokenExpiresAt: now + 3600 })).olimanagerApiReady, true);
+  assert.equal((await session({ ...ready, accessTokenExpiresAt: null })).olimanagerApiReady, true);
+  // Expired token: the scope was granted but Olimanager cannot be read any more.
+  const expired = await session({ ...ready, accessTokenExpiresAt: now - 1 });
+  assert.equal(expired.olimanagerApiScope, true);
+  assert.equal(expired.olimanagerApiReady, false);
+  assert.equal((await session({ ...ready, accessToken: '' })).olimanagerApiReady, false);
+  assert.equal((await session({ accessTokenHasApiScope: true })).olimanagerApiReady, false);
+  assert.equal((await session({ ...ready, accessTokenHasApiScope: null })).olimanagerApiReady, false);
+  assert.equal((await session({})).olimanagerApiReady, false);
 });
 
 test('worker delegation requires a granted api scope and a finite future expiry', async () => {
