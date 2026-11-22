@@ -490,10 +490,13 @@ type OlimanagerAddressBookDistrict {
   schools: [OlimanagerAddressBookSchool!]!
   """Fogli dei contest distrettuali dell'edizione di questo distretto (solo quelli accessibili all'utente)."""
   sheets: [OlimanagerAddressBookSheet!]!
+  """Avvisi sul distretto e sulle sue scuole (CD mancante, referenti senza email, scuole non assegnate)."""
+  warnings: [String!]!
 }
 
 type OlimanagerAddressBook {
   districts: [OlimanagerAddressBookDistrict!]!
+  """Avvisi generali, non legati a un distretto."""
   warnings: [String!]!
 }
 

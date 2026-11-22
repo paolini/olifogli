@@ -61,11 +61,10 @@ test('groups CD, RD and RI by district, with territorial exceptions and warnings
   assert.deepEqual(lucca.schools, [{ code: 'LUPS02', name: 'Scuola 2', city: 'Città 2', province: 'LU', contact: { name: 'Ugo', surname: 'Gialli', email: null }, sheets: [] }]);
   assert.equal(none.id, null);
   assert.deepEqual(none.schools.map(s => s.code), ['GEPS04']);
-  assert.deepEqual(book.warnings, [
-    'Distretto Lucca: nessun coordinatore (CD).',
-    'LUPS02: referente senza account/email.',
-    'GEPS04: scuola (provincia GE) non riconducibile ad alcun distretto.',
-  ]);
+  assert.deepEqual(book.warnings, []);
+  assert.deepEqual(lucca.warnings, ['Nessun coordinatore (CD).', 'LUPS02: referente senza account/email.']);
+  assert.deepEqual(pisa.warnings, []);
+  assert.deepEqual(none.warnings, ['GEPS04: scuola (provincia GE) non riconducibile ad alcun distretto.']);
 });
 
 test('reads every page of the edition and rejects editions of other olympiads', async () => {
@@ -111,10 +110,11 @@ test('district admins read the subscriptions of their zones and see only their d
   assert.deepEqual(book.districts.map(d => d.name), ['Pisa']);
   assert.deepEqual(book.districts[0].schools.map(s => [s.code, s.sheets.length]), [['PIPS01', 1], ['LUPS03', 0]]);
   assert.deepEqual(book.warnings, []);
+  assert.deepEqual(book.districts[0].warnings, []);
   // Olifogli admins also see the districts Olimanager shows empty.
   const all = plain(await lib.loadAddressBook({}, 'oli', 'ed', { findSheets: sheets, hideEmpty: false }));
   assert.deepEqual(all.districts.map(d => d.name), ['Lucca', 'Pisa']);
-  assert.equal(all.warnings[0], 'Distretto Lucca: nessun coordinatore (CD).');
+  assert.deepEqual(all.districts[0].warnings, ['Nessun coordinatore (CD).']);
 });
 
 test('zone subscriptions of another edition are not shown, with an explanation', async () => {
@@ -160,7 +160,8 @@ test('entries are filtered by role and accent-insensitive words; emails deduplic
     ] }];
   const entries = addressBookEntries(districts);
   assert.deepEqual(plain(entries.map(e => e.role)), ['CD', 'RI', 'RI']);
-  assert.equal(filterEntries(entries, new Set(['CD', 'RD', 'RI']), 'forli').length, 3);
+  // The district name (Forlì) is not searched: only the school in Forlì matches.
+  assert.deepEqual(plain(filterEntries(entries, new Set(['CD', 'RD', 'RI']), 'forli').map(e => e.code)), ['FOPS02']);
   assert.deepEqual(plain(filterEntries(entries, new Set(['RI']), 'liceo cesena').map(e => e.code)), ['FOPS01']);
   assert.deepEqual(plain(filterEntries(entries, new Set(['RD']), '')), []);
   assert.deepEqual(plain(entryEmails(entries)), ['anna@example.org']);
@@ -189,6 +190,22 @@ function resolvers({ isAdmin = true, isSupervisor = false, addressBookSelection,
   return { lib, updates, logs, finds };
 }
 const context = { req: {} };
+
+test('districts filtered by name only, URL keys and list counts', () => {
+  const { filterDistricts, districtKey, districtSummary } = load('app/lib/addressBookEntries.ts', {});
+  const sheet = (nRows, nValidRows) => ({ _id: 'x', name: 'x', label: 'x', nRows, nValidRows, closed: false, locked: false });
+  const districts = [
+    { id: 4, name: 'Roma', coordinators: [], admins: [], warnings: ['a', 'b'], sheets: [sheet(5, 4)],
+      schools: [{ code: 'A', name: 'A', city: 'Roma', province: 'RM', sheets: [sheet(10, 8), sheet(2, 2)] }, { code: 'B', name: 'B', city: 'Roma', province: 'RM' }] },
+    { id: 7, name: 'Forlì', coordinators: [{ name: 'Romano', surname: 'Romani', email: 'r@example.org' }], admins: [], schools: [] },
+    { id: null, name: 'Senza distretto', coordinators: [], admins: [], schools: [] },
+  ];
+  assert.deepEqual(plain(filterDistricts(districts, 'roma').map(d => d.id)), [4]);
+  assert.deepEqual(plain(filterDistricts(districts, 'FORLI').map(d => d.id)), [7]);
+  assert.equal(filterDistricts(districts, '').length, 3);
+  assert.deepEqual(districts.map(districtKey), ['4', '7', 'none']);
+  assert.deepEqual(plain(districtSummary(districts[0])), { schools: 2, schoolsWithSheets: 1, rows: 17, validRows: 14, warnings: 2 });
+});
 
 test('the resolver remembers the edition per user only after a successful load', async () => {
   const ok = resolvers({ loadAddressBook: async (req, olympiadId, editionId, { findSheets, hideEmpty }) => {

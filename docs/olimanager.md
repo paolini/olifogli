@@ -257,6 +257,36 @@ quelli dell'edizione, gli altri solo quelli su cui hanno un permesso
 scuola compare solo per amministratori e supervisori, perché per gli altri
 l'assenza può dipendere dai permessi.
 
+### Distretti e dettaglio
+
+La rubrica ha due livelli. La pagina principale elenca i distretti in una
+tabella: CD, numero di RD, scuole iscritte, scuole con almeno un foglio, righe
+valide/righe dei fogli del distretto e delle sue scuole, numero di avvisi e,
+nell'ultima colonna, i link ai fogli distrettuali. Il nome porta al dettaglio del distretto
+(`/rubrica?distretto=<id della zona>`, `none` per «Senza distretto»), con CD,
+RD, la tabella delle scuole con i loro RI e fogli e gli avvisi del distretto.
+Chi vede un solo distretto entra direttamente nel dettaglio.
+
+Nella pagina principale ci sono due ricerche distinte:
+
+- «Filtra distretti» guarda solo il nome del distretto;
+- «Cerca persone o scuole» guarda nome, email, scuola, codice e città, ma non il
+  nome del distretto (cercando «Roma» si trovano le persone e le scuole di
+  Roma, non il distretto); quando è compilata sostituisce la tabella dei
+  distretti con l'elenco dei risultati (al più 200 mostrati), ciascuno con il
+  link al suo distretto.
+
+Le caselle CD/RD/RI valgono per entrambe. «Copia email» e «Scarica CSV»
+agiscono sui risultati della ricerca di persone o, senza ricerca, sui ruoli
+scelti dei distretti elencati: con il solo CD e nessun filtro si ottengono le
+email di tutti i CD. Nel dettaglio di un distretto c'è una sola ricerca, e le
+stesse azioni valgono per le voci mostrate. Ruoli e filtri della pagina
+principale si conservano entrando in un distretto e tornando indietro.
+
+Gli avvisi (CD mancante, referenti senza email, scuole non assegnate) sono
+legati al distretto (`warnings` di `OlimanagerAddressBookDistrict`); restano
+generali solo quelli non legati a un distretto, come `CURRENT_EDITION_ONLY`.
+
 ### Selezione, fogli ed esportazione
 
 L'ultima olimpiade ed edizione caricate con successo vengono ricordate per
@@ -267,21 +297,19 @@ caricata le due select sono nascoste e il nome dell'edizione fa da titolo;
 «Cambia edizione» le mostra di nuovo («Annulla» torna all'edizione caricata).
 
 Accanto a ogni scuola ci sono i link ai suoi fogli dei contest scolastici
-dell'edizione (`commonData.Codice_meccanografico`), e nell'intestazione del
-distretto quelli dei contest distrettuali (`commonData.Distretto`); in mancanza
-di queste chiavi vale il nome del foglio, come per i fogli `distrettuale` del
-vecchio flusso che hanno il distretto solo nel nome. Per ogni foglio sono
-indicate righe valide/righe e stato (aperto, chiuso, finalizzato, con le stesse
-icone dell'elenco fogli). Contano solo i fogli il cui `olimanager_contest_id` è
-un contest dell'edizione: i fogli di altre edizioni o senza contest non
+dell'edizione (`commonData.Codice_meccanografico`), e accanto al distretto
+quelli dei contest distrettuali (`commonData.Distretto`); in mancanza di queste
+chiavi vale il nome del foglio, come per i fogli `distrettuale` del vecchio
+flusso che hanno il distretto solo nel nome. Per ogni foglio sono indicate
+righe valide/righe e stato (aperto, chiuso, finalizzato, con le stesse icone
+dell'elenco fogli). Contano solo i fogli il cui `olimanager_contest_id` è un
+contest dell'edizione: i fogli di altre edizioni o senza contest non
 compaiono. Le scuole senza fogli sono segnalate con «nessun foglio»; se
 l'edizione non ha alcun foglio compare un solo avviso.
 
-La pagina filtra per ruolo e per testo (nome, email, scuola, codice, città,
-distretto), copia negli appunti le email delle voci filtrate e le scarica in
-CSV (`rubrica.csv`, con i tipi di foglio della scuola nella colonna `fogli`). I
-numeri di telefono non sono disponibili: Olimanager non li espone agli
-amministratori dell'olimpiade.
+Il CSV (`rubrica.csv`) ha una riga per persona e ruolo, con i tipi di foglio
+della scuola nella colonna `fogli`. I numeri di telefono non sono disponibili:
+Olimanager non li espone agli amministratori dell'olimpiade.
 
 ## Importazione dei partecipanti
 

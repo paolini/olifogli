@@ -20,7 +20,7 @@ import { SHEET_CONTEST_KEY, VENUE_SHEET_SCHEMAS, isVenueSheetSchema } from './ol
 export type AddressBookContact = { name: string, surname: string, email: string | null }
 export type AddressBookSheet = { _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }
 export type AddressBookSchool = { code: string, name: string, city: string, province: string, contact: AddressBookContact | null, sheets: AddressBookSheet[] }
-export type AddressBookDistrict = { id: number | null, name: string, coordinators: AddressBookContact[], admins: AddressBookContact[], schools: AddressBookSchool[], sheets: AddressBookSheet[] }
+export type AddressBookDistrict = { id: number | null, name: string, coordinators: AddressBookContact[], admins: AddressBookContact[], schools: AddressBookSchool[], sheets: AddressBookSheet[], warnings: string[] }
 export type AddressBook = { districts: AddressBookDistrict[], warnings: string[] }
 
 type User = { name: string, surname: string, email: string }
@@ -59,16 +59,16 @@ export function zonesOfSchool<Z extends AddressBookZone>(school: AddressBookSubs
     return extra.length ? extra : zones.filter(zone => zone.provinces.some(p => p.id === school.location?.city?.province?.id))
 }
 
+// Warnings about a school go to the district it is listed under.
 export function buildAddressBook(zones: AddressBookZone[], subscriptions: AddressBookSubscription[]): AddressBook {
-    const warnings: string[] = []
     const districts = new Map<number | null, AddressBookDistrict>()
     for (const zone of zones) {
         const admins = zone.admins.filter(a => a.user)
         const coordinators = admins.filter(a => a.isPrimary).map(a => contactOf(a.user!)).sort(byPerson)
         const others = admins.filter(a => !a.isPrimary).map(a => contactOf(a.user!)).sort(byPerson)
-        districts.set(zone.id, { id: zone.id, name: districtName(zone), coordinators, admins: others, schools: [], sheets: [] })
+        districts.set(zone.id, { id: zone.id, name: districtName(zone), coordinators, admins: others, schools: [], sheets: [], warnings: [] })
     }
-    const unassigned: AddressBookDistrict = { id: null, name: UNASSIGNED_DISTRICT, coordinators: [], admins: [], schools: [], sheets: [] }
+    const unassigned: AddressBookDistrict = { id: null, name: UNASSIGNED_DISTRICT, coordinators: [], admins: [], schools: [], sheets: [], warnings: [] }
     for (const subscription of subscriptions) {
         if (!subscription.isValid) continue
         const school = subscription.school
@@ -80,14 +80,14 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
             contact: contact ? { name: contact.name.trim(), surname: contact.surname.trim(), email: normalizedEmail(contact.user?.email) } : null,
             sheets: [],
         }
-        if (!entry.contact?.email) warnings.push(`${label}: referente senza account/email.`)
         const matches = zonesOfSchool(school, zones)
+        const district = matches.length === 1 ? districts.get(matches[0].id)! : unassigned
+        if (!entry.contact?.email) district.warnings.push(`${label}: referente senza account/email.`)
         if (matches.length !== 1) {
-            warnings.push(matches.length
+            district.warnings.push(matches.length
                 ? `${label}: scuola riconducibile a più distretti (${matches.map(z => z.name).join(', ')}).`
                 : `${label}: scuola (provincia ${entry.province || '?'}) non riconducibile ad alcun distretto.`)
         }
-        const district = matches.length === 1 ? districts.get(matches[0].id)! : unassigned
         district.schools.push(entry)
     }
     const result = [...districts.values()].sort((a, b) => collator.compare(a.name, b.name))
@@ -95,7 +95,7 @@ export function buildAddressBook(zones: AddressBookZone[], subscriptions: Addres
     for (const district of result) {
         district.schools.sort((a, b) => collator.compare(a.city, b.city) || collator.compare(a.name, b.name) || collator.compare(a.code, b.code))
     }
-    return { districts: result, warnings }
+    return { districts: result, warnings: [] }
 }
 
 // Final pass: with hideEmpty (users who are not Olifogli admins) drops the
@@ -105,8 +105,10 @@ export function finishAddressBook(book: AddressBook, hideEmpty: boolean): Addres
     const districts = hideEmpty
         ? book.districts.filter(d => d.coordinators.length || d.admins.length || d.schools.length || d.sheets.length)
         : book.districts
-    const missingCd = districts.filter(d => d.id !== null && !d.coordinators.length).map(d => `Distretto ${d.name}: nessun coordinatore (CD).`)
-    return { districts, warnings: [...missingCd, ...book.warnings] }
+    for (const district of districts) {
+        if (district.id !== null && !district.coordinators.length) district.warnings.unshift('Nessun coordinatore (CD).')
+    }
+    return { districts, warnings: book.warnings }
 }
 
 type FetchPage = (after: string | null) => Promise<Page | null | undefined>

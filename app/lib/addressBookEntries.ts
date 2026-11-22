@@ -1,5 +1,6 @@
-// Client-side helpers of the address book page: one entry per person and role,
-// filtered by role and free text, for the email list and the CSV export.
+// Client-side helpers of the address book page: districts filtered by name,
+// one entry per person and role filtered by role and free text (the people
+// search, which ignores district names), the email list and the CSV export.
 
 export type AddressBookRole = 'CD' | 'RD' | 'RI'
 export const ADDRESS_BOOK_ROLES: AddressBookRole[] = ['CD', 'RD', 'RI']
@@ -7,7 +8,7 @@ export const ADDRESS_BOOK_ROLES: AddressBookRole[] = ['CD', 'RD', 'RI']
 type Contact = { name: string, surname: string, email?: string | null }
 export type Sheet = { _id: unknown, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }
 type School = { code: string, name: string, city: string, province: string, contact?: Contact | null, sheets?: Sheet[] }
-export type District = { id?: number | null, name: string, coordinators: Contact[], admins: Contact[], schools: School[], sheets?: Sheet[] }
+export type District = { id?: number | null, name: string, coordinators: Contact[], admins: Contact[], schools: School[], sheets?: Sheet[], warnings?: string[] }
 
 export type AddressBookEntry = {
     district: string, role: AddressBookRole, surname: string, name: string, email: string,
@@ -33,13 +34,36 @@ export function addressBookEntries(districts: District[]): AddressBookEntry[] {
 }
 
 const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+const wordsOf = (search: string) => normalize(search).split(/\s+/).filter(Boolean)
 
-// Every word of the search must appear in some field of the entry.
+// URL value of a district (`?distretto=`); `none` for the unassigned schools.
+export const districtKey = (district: { id?: number | null }) => district.id == null ? 'none' : String(district.id)
+
+// Districts whose name contains every word of the filter.
+export function filterDistricts<D extends District>(districts: D[], filter: string): D[] {
+    const words = wordsOf(filter)
+    return districts.filter(d => words.every(word => normalize(d.name).includes(word)))
+}
+
+// Counts shown in the district list.
+export function districtSummary(district: District) {
+    const sheets = [...(district.sheets || []), ...district.schools.flatMap(s => s.sheets || [])]
+    return {
+        schools: district.schools.length,
+        schoolsWithSheets: district.schools.filter(s => s.sheets?.length).length,
+        rows: sheets.reduce((n, s) => n + s.nRows, 0),
+        validRows: sheets.reduce((n, s) => n + s.nValidRows, 0),
+        warnings: district.warnings?.length || 0,
+    }
+}
+
+// Every word of the search must appear in some field of the entry; the
+// district name is left out, so that searching «Roma» finds people, not a district.
 export function filterEntries(entries: AddressBookEntry[], roles: Set<AddressBookRole>, search: string) {
-    const words = normalize(search).split(/\s+/).filter(Boolean)
+    const words = wordsOf(search)
     return entries.filter(entry => {
         if (!roles.has(entry.role)) return false
-        const text = normalize([entry.district, entry.role, entry.surname, entry.name, entry.email, entry.code, entry.school, entry.city, entry.province].join(' '))
+        const text = normalize([entry.role, entry.surname, entry.name, entry.email, entry.code, entry.school, entry.city, entry.province].join(' '))
         return words.every(word => text.includes(word))
     })
 }

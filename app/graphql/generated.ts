@@ -434,6 +434,7 @@ export type OlifogliWorkerStatus = {
 export type OlimanagerAddressBook = {
   __typename?: 'OlimanagerAddressBook';
   districts: Array<OlimanagerAddressBookDistrict>;
+  /** Avvisi generali, non legati a un distretto. */
   warnings: Array<Scalars['String']['output']>;
 };
 
@@ -450,6 +451,8 @@ export type OlimanagerAddressBookDistrict = {
   schools: Array<OlimanagerAddressBookSchool>;
   /** Fogli dei contest distrettuali dell'edizione di questo distretto (solo quelli accessibili all'utente). */
   sheets: Array<OlimanagerAddressBookSheet>;
+  /** Avvisi sul distretto e sulle sue scuole (CD mancante, referenti senza email, scuole non assegnate). */
+  warnings: Array<Scalars['String']['output']>;
 };
 
 export type OlimanagerAddressBookSchool = {
@@ -1172,7 +1175,7 @@ export type OlimanagerAddressBookQueryVariables = Exact<{
 }>;
 
 
-export type OlimanagerAddressBookQuery = { __typename?: 'Query', olimanagerAddressBook: { __typename?: 'OlimanagerAddressBook', warnings: Array<string>, districts: Array<{ __typename?: 'OlimanagerAddressBookDistrict', id?: number | null, name: string, coordinators: Array<{ __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null }>, admins: Array<{ __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null }>, sheets: Array<{ __typename?: 'OlimanagerAddressBookSheet', _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }>, schools: Array<{ __typename?: 'OlimanagerAddressBookSchool', code: string, name: string, city: string, province: string, contact?: { __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null } | null, sheets: Array<{ __typename?: 'OlimanagerAddressBookSheet', _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }> }> }> } };
+export type OlimanagerAddressBookQuery = { __typename?: 'Query', olimanagerAddressBook: { __typename?: 'OlimanagerAddressBook', warnings: Array<string>, districts: Array<{ __typename?: 'OlimanagerAddressBookDistrict', id?: number | null, name: string, warnings: Array<string>, coordinators: Array<{ __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null }>, admins: Array<{ __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null }>, sheets: Array<{ __typename?: 'OlimanagerAddressBookSheet', _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }>, schools: Array<{ __typename?: 'OlimanagerAddressBookSchool', code: string, name: string, city: string, province: string, contact?: { __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null } | null, sheets: Array<{ __typename?: 'OlimanagerAddressBookSheet', _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }> }> }> } };
 
 export type OlimanagerAddressBookSelectionQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1948,6 +1951,7 @@ export const OlimanagerAddressBookDocument = gql`
         closed
         locked
       }
+      warnings
       schools {
         code
         name
@@ -5424,6 +5428,7 @@ export type OlimanagerAddressBookDistrictResolvers<ContextType = any, ParentType
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   schools?: Resolver<Array<ResolversTypes['OlimanagerAddressBookSchool']>, ParentType, ContextType>;
   sheets?: Resolver<Array<ResolversTypes['OlimanagerAddressBookSheet']>, ParentType, ContextType>;
+  warnings?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

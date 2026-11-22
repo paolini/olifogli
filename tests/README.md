@@ -49,13 +49,17 @@ Entrambi simulano Olimanager e non creano dati reali.
 
 `olimanager-address-book.test.cjs` verifica la rubrica di CD, RD e RI: il
 raggruppamento per distretto con eccezioni territoriali, l'esclusione delle
-iscrizioni invalidate, gli avvisi, la paginazione, il rifiuto di edizioni di
-un'altra olimpiade, i filtri della pagina, le email senza duplicati, le colonne
+iscrizioni invalidate, gli avvisi per distretto, la paginazione, il rifiuto di
+edizioni di un'altra olimpiade, i filtri, le email senza duplicati, le colonne
 del CSV e l'associazione dei fogli dell'edizione a scuole e distretti. Simula
 anche un RD: iscrizioni lette dai suoi distretti, distretti vuoti nascosti,
 avviso per le edizioni precedenti. Controlla che la rubrica sia aperta a tutti,
 con i fogli limitati ai permessi dell'utente, e il salvataggio per utente
 dell'ultima edizione, solo dopo un caricamento riuscito.
+`address-book-ui.test.cjs` monta in jsdom l'elenco dei distretti: righe con
+conteggi e link al dettaglio, filtro sui soli nomi dei distretti, ricerca di
+persone che ignora i nomi dei distretti e azioni di gruppo che seguono ricerca,
+distretti elencati e ruoli.
 
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare
