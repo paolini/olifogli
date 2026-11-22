@@ -97,7 +97,40 @@ test('entries are filtered by role and accent-insensitive words; emails deduplic
   assert.deepEqual(Object.keys(entryCsvRows(entries)[0]), ['distretto', 'ruolo', 'cognome', 'nome', 'email', 'codice_meccanografico', 'scuola', 'città', 'provincia']);
 });
 
-test('the resolver is reserved to administrators', () => {
-  const source = readFileSync(path.join(__dirname, '../app/graphql/resolvers/olimanagerAddressBook.ts'), 'utf8');
-  assert.match(source, /check_admin\(user\)[\s\S]*loadAddressBook/);
+function resolvers({ isAdmin = true, addressBookSelection, loadAddressBook = async () => ({ districts: [], warnings: [] }) } = {}) {
+  const updates = [];
+  const logs = [];
+  const user = { _id: 'u1', isAdmin, addressBookSelection };
+  const lib = load('app/graphql/resolvers/olimanagerAddressBook.ts', {
+    '@/app/lib/olimanagerAddressBook': { loadAddressBook },
+    '@/app/lib/appLog': { appLog: (...args) => logs.push(args) },
+    '@/app/lib/mongodb': { getUsersCollection: async () => ({ updateOne: async (...args) => { updates.push(args); } }) },
+    './utils': {
+      get_authenticated_user: async () => user,
+      check_admin: u => { if (!u.isAdmin) throw new Error('non autorizzato'); },
+    },
+  });
+  return { lib, updates, logs };
+}
+const context = { req: {} };
+
+test('the resolver remembers the edition per user only after a successful load', async () => {
+  const ok = resolvers();
+  await ok.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context);
+  assert.deepEqual(plain(ok.updates), [[{ _id: 'u1' }, { $set: { addressBookSelection: { olympiadId: 'oli', editionId: 'ed' } } }]]);
+  assert.equal(ok.logs[0][0], 'olimanager.address_book_viewed');
+
+  const failing = resolvers({ loadAddressBook: async () => { throw new Error('remota'); } });
+  await assert.rejects(failing.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'x' }, context), /remota/);
+  assert.deepEqual(failing.updates, []);
+
+  assert.deepEqual(plain(await resolvers({ addressBookSelection: { olympiadId: 'oli', editionId: 'ed' } }).lib.olimanagerAddressBookSelection(null, {}, context)), { olympiadId: 'oli', editionId: 'ed' });
+  assert.equal(await resolvers().lib.olimanagerAddressBookSelection(null, {}, context), null);
+});
+
+test('address book and saved selection are reserved to administrators', async () => {
+  const { lib, updates } = resolvers({ isAdmin: false });
+  await assert.rejects(lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context), /non autorizzato/);
+  await assert.rejects(lib.olimanagerAddressBookSelection(null, {}, context), /non autorizzato/);
+  assert.deepEqual(updates, []);
 });

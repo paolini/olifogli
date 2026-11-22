@@ -20,6 +20,8 @@ export type User = {
     isSupervisor?: boolean // può vedere tutto, ma non modificare
     createdAt?: Date
     lastLogin?: Date
+    // Ultima edizione consultata nella rubrica di CD, RD e RI.
+    addressBookSelection?: { olympiadId: string, editionId: string }
 }
 
 /**

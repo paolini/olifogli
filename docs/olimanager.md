@@ -230,6 +230,14 @@ I dati sono letti al momento da Olimanager (query `olimanagerAddressBook`,
 avere lo scope `api`; non vengono salvati in Olifogli. Ogni consultazione
 registra l'evento `olimanager.address_book_viewed` nei log applicativi.
 
+L'ultima olimpiade ed edizione caricate con successo vengono ricordate per
+ciascun utente (campo `addressBookSelection` del documento in `users`, query
+`olimanagerAddressBookSelection`): alla riapertura la pagina le propone e carica
+subito la rubrica, se Olimanager elenca ancora quell'edizione.
+Con un'edizione caricata le due select sono nascoste e il nome dell'edizione
+fa da titolo; «Cambia edizione» le mostra di nuovo («Annulla» torna
+all'edizione caricata).
+
 La pagina filtra per ruolo e per testo (nome, email, scuola, codice, città,
 distretto), copia negli appunti le email delle voci filtrate e le scarica in
 CSV (`rubrica.csv`). I numeri di telefono non sono disponibili: Olimanager non

@@ -51,7 +51,8 @@ Entrambi simulano Olimanager e non creano dati reali.
 raggruppamento per distretto con eccezioni territoriali, l'esclusione delle
 iscrizioni invalidate, gli avvisi, la paginazione, il rifiuto di edizioni di
 un'altra olimpiade, i filtri della pagina, le email senza duplicati, le colonne
-del CSV e il controllo degli amministratori.
+del CSV, il controllo degli amministratori e il salvataggio per utente
+dell'ultima edizione, solo dopo un caricamento riuscito.
 
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare

@@ -1,7 +1,7 @@
 'use client'
 import { gql } from '@apollo/client'
-import { useMemo, useState } from 'react'
-import { useOlimanagerVenueSheetChoicesQuery, useOlimanagerAddressBookLazyQuery } from '../graphql/generated'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useOlimanagerVenueSheetChoicesQuery, useOlimanagerAddressBookLazyQuery, useOlimanagerAddressBookSelectionQuery } from '../graphql/generated'
 import { ADDRESS_BOOK_ROLES, addressBookEntries, entryCsvRows, entryEmails, filterEntries, type AddressBookEntry, type AddressBookRole } from '../lib/addressBookEntries'
 import { unparseCsv } from '../lib/csv'
 import useProfile from '../lib/useProfile'
@@ -23,6 +23,12 @@ const ADDRESS_BOOK = gql`
     }
 `
 
+const SELECTION = gql`
+    query OlimanagerAddressBookSelection {
+        olimanagerAddressBookSelection { olympiadId editionId }
+    }
+`
+
 const ROLE_LABELS: Record<AddressBookRole, string> = {
     CD: 'coordinatori distrettuali',
     RD: 'responsabili di distretto',
@@ -40,25 +46,47 @@ function Person({ entry }: { entry: AddressBookEntry }) {
 export default function OlimanagerAddressBook() {
     const profile = useProfile()
     const choices = useOlimanagerVenueSheetChoicesQuery({ skip: !profile?.isAdmin })
+    const selection = useOlimanagerAddressBookSelectionQuery({ skip: !profile?.isAdmin, fetchPolicy: 'network-only' })
     const [load, addressBook] = useOlimanagerAddressBookLazyQuery({ fetchPolicy: 'network-only' })
-    const [olympiadId, setOlympiadId] = useState('')
-    const [editionId, setEditionId] = useState('')
+    type Selection = { olympiadId: string, editionId: string }
+    // Until the user picks something, the selection is the last edition consulted, if Olimanager still lists it.
+    const [picked, setPicked] = useState<Selection | null>(null)
+    const saved = useMemo(() => {
+        const last = selection.data?.olimanagerAddressBookSelection
+        return last && choices.data?.olimanagerVenueSheetChoices.find(o => o.id === last.olympiadId)?.editions.some(e => e.id === last.editionId)
+            ? { olympiadId: last.olympiadId, editionId: last.editionId } : null
+    }, [selection.data, choices.data])
+    const { olympiadId, editionId } = picked || saved || { olympiadId: '', editionId: '' }
     const [roles, setRoles] = useState<Set<AddressBookRole>>(new Set(ADDRESS_BOOK_ROLES))
     const [search, setSearch] = useState('')
     const [copied, setCopied] = useState('')
+    // Once an edition is loaded (or loading) the selects are hidden until «Cambia edizione».
+    const [changing, setChanging] = useState(false)
 
     const districts = addressBook.data?.olimanagerAddressBook.districts
     const entries = useMemo(() => addressBookEntries(districts || []), [districts])
     const filtered = useMemo(() => filterEntries(entries, roles, search), [entries, roles, search])
     const emails = entryEmails(filtered)
 
+    // Load the saved edition as soon as it is known, once.
+    const restored = useRef(false)
+    useEffect(() => {
+        if (restored.current || !saved) return
+        restored.current = true
+        void load({ variables: saved })
+    }, [saved, load])
+
     if (!profile) return <Loading />
     if (!profile.isAdmin) return <Error error="Pagina riservata agli amministratori." />
-    if (choices.loading) return <Loading />
+    if (choices.loading || selection.loading) return <Loading />
 
     const olympiads = choices.data?.olimanagerVenueSheetChoices || []
     const editions = olympiads.find(o => o.id === olympiadId)?.editions || []
     const warnings = addressBook.data?.olimanagerAddressBook.warnings || []
+    const current = addressBook.loading || addressBook.data ? addressBook.variables : undefined
+    const currentEdition = olympiads.find(o => o.id === current?.olympiadId)?.editions.find(e => e.id === current?.editionId)
+    const showSelects = changing || !currentEdition
+    const editionLabel = (e: { name: string, year?: number | null }) => `${e.name}${e.year ? ` (${e.year})` : ''}`
     const byDistrict = Map.groupBy(filtered, e => e.district)
     const shown = (districts || []).filter(d => byDistrict.has(d.name))
 
@@ -91,21 +119,30 @@ export default function OlimanagerAddressBook() {
     return <div className="space-y-3">
         <h1 className="text-xl font-bold">Rubrica di CD, RD e RI</h1>
         <p>Coordinatori distrettuali (CD), responsabili di distretto (RD) e referenti di istituto (RI) delle scuole con iscrizione valida all’edizione, letti da Olimanager.</p>
-        <Error error={choices.error || addressBook.error} />
-        <div className="flex flex-wrap items-center gap-3">
-            <label>Olimpiade <select value={olympiadId} onChange={e => { setOlympiadId(e.target.value); setEditionId('') }}>
+        <Error error={choices.error || selection.error || addressBook.error} />
+        {!showSelects && <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold">{editionLabel(currentEdition)}</h2>
+            <Button variant="secondary" onClick={() => setChanging(true)}>Cambia edizione</Button>
+        </div>}
+        {showSelects && <div className="flex flex-wrap items-center gap-3">
+            <label>Olimpiade <select value={olympiadId} onChange={e => setPicked({ olympiadId: e.target.value, editionId: '' })}>
                 <option value="">Seleziona olimpiade</option>
                 {olympiads.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select></label>
-            <label>Edizione <select disabled={!olympiadId} value={editionId} onChange={e => setEditionId(e.target.value)}>
+            <label>Edizione <select disabled={!olympiadId} value={editionId} onChange={e => setPicked({ olympiadId, editionId: e.target.value })}>
                 <option value="">Seleziona edizione</option>
-                {editions.map(e => <option key={e.id} value={e.id}>{e.name}{e.year ? ` (${e.year})` : ''}</option>)}
+                {editions.map(e => <option key={e.id} value={e.id}>{editionLabel(e)}</option>)}
             </select></label>
             <Button disabled={!olympiadId || !editionId || addressBook.loading} onClick={async () => {
                 setCopied('')
+                setChanging(false)
                 await load({ variables: { olympiadId, editionId } })
             }}>Carica rubrica</Button>
-        </div>
+            {changing && currentEdition && <Button variant="secondary" onClick={() => {
+                setPicked(current ?? null)
+                setChanging(false)
+            }}>Annulla</Button>}
+        </div>}
         {addressBook.loading && <Loading />}
         {districts && !addressBook.loading && <>
             <div className="flex flex-wrap items-center gap-3">
