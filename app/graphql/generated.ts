@@ -468,13 +468,6 @@ export type OlimanagerAddressBookSchool = {
   sheets: Array<OlimanagerAddressBookSheet>;
 };
 
-/** Ultima olimpiade ed edizione consultate nella rubrica dall'utente. */
-export type OlimanagerAddressBookSelection = {
-  __typename?: 'OlimanagerAddressBookSelection';
-  editionId: Scalars['String']['output'];
-  olympiadId: Scalars['String']['output'];
-};
-
 /** Foglio Olifogli di un contest dell'edizione, collegato a una scuola o a un distretto. */
 export type OlimanagerAddressBookSheet = {
   __typename?: 'OlimanagerAddressBookSheet';
@@ -676,14 +669,14 @@ export type Query = {
   olifogliWorkerStatus: OlifogliWorkerStatus;
   /** Numero di lavori Olimanager in attesa, in preparazione o in corso. */
   olimanagerActiveJobs: Scalars['Int']['output'];
-  /** Rubrica di CD, RD e RI di un'edizione, letta da Olimanager con i permessi dell'utente. Ricorda la selezione per l'utente. */
+  /** Rubrica di CD, RD e RI di un'edizione, letta da Olimanager con i permessi dell'utente. */
   olimanagerAddressBook: OlimanagerAddressBook;
-  /** Ultima selezione della rubrica dell'utente. */
-  olimanagerAddressBookSelection?: Maybe<OlimanagerAddressBookSelection>;
   /** Solo amministratori: ultima importazione dei partecipanti nel raccoglitore, con l'anteprima. */
   olimanagerImport?: Maybe<OlimanagerImport>;
   olimanagerJobItems: Array<OlimanagerJobItem>;
   olimanagerJobs: Array<OlimanagerJob>;
+  /** Olimpiadi ed edizioni di Olimanager, per ogni utente autenticato con lo scope api. */
+  olimanagerOlympiads: Array<OlimanagerSheetOlympiad>;
   olimanagerVenueSheetChoices: Array<OlimanagerSheetOlympiad>;
   /** Stato dei worker archiomr, uno per tipo (oliscan, olisheet). */
   omrWorkerStatus: Array<OmrWorkerStatus>;
@@ -1177,11 +1170,6 @@ export type OlimanagerAddressBookQueryVariables = Exact<{
 
 export type OlimanagerAddressBookQuery = { __typename?: 'Query', olimanagerAddressBook: { __typename?: 'OlimanagerAddressBook', warnings: Array<string>, districts: Array<{ __typename?: 'OlimanagerAddressBookDistrict', id?: number | null, name: string, warnings: Array<string>, coordinators: Array<{ __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null }>, admins: Array<{ __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null }>, sheets: Array<{ __typename?: 'OlimanagerAddressBookSheet', _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }>, schools: Array<{ __typename?: 'OlimanagerAddressBookSchool', code: string, name: string, city: string, province: string, contact?: { __typename?: 'OlimanagerContact', name: string, surname: string, email?: string | null } | null, sheets: Array<{ __typename?: 'OlimanagerAddressBookSheet', _id: ObjectId, name: string, label: string, nRows: number, nValidRows: number, closed: boolean, locked: boolean }> }> }> } };
 
-export type OlimanagerAddressBookSelectionQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type OlimanagerAddressBookSelectionQuery = { __typename?: 'Query', olimanagerAddressBookSelection?: { __typename?: 'OlimanagerAddressBookSelection', olympiadId: string, editionId: string } | null };
-
 export type OlimanagerJobsQueryVariables = Exact<{
   sheetIds?: InputMaybe<Array<Scalars['ObjectId']['input']> | Scalars['ObjectId']['input']>;
 }>;
@@ -1209,6 +1197,11 @@ export type ResumeOlimanagerCheckMutationVariables = Exact<{
 
 
 export type ResumeOlimanagerCheckMutation = { __typename?: 'Mutation', resumeOlimanagerCheck: { __typename?: 'OlimanagerJob', _id: ObjectId, status: string } };
+
+export type OlimanagerOlympiadsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OlimanagerOlympiadsQuery = { __typename?: 'Query', olimanagerOlympiads: Array<{ __typename?: 'OlimanagerSheetOlympiad', id: string, name: string, editions: Array<{ __typename?: 'OlimanagerSheetEdition', id: string, name: string, year?: number | null }> }> };
 
 export type OlimanagerImportQueryVariables = Exact<{
   workbookId: Scalars['ObjectId']['input'];
@@ -2011,46 +2004,6 @@ export type OlimanagerAddressBookQueryHookResult = ReturnType<typeof useOlimanag
 export type OlimanagerAddressBookLazyQueryHookResult = ReturnType<typeof useOlimanagerAddressBookLazyQuery>;
 export type OlimanagerAddressBookSuspenseQueryHookResult = ReturnType<typeof useOlimanagerAddressBookSuspenseQuery>;
 export type OlimanagerAddressBookQueryResult = Apollo.QueryResult<OlimanagerAddressBookQuery, OlimanagerAddressBookQueryVariables>;
-export const OlimanagerAddressBookSelectionDocument = gql`
-    query OlimanagerAddressBookSelection {
-  olimanagerAddressBookSelection {
-    olympiadId
-    editionId
-  }
-}
-    `;
-
-/**
- * __useOlimanagerAddressBookSelectionQuery__
- *
- * To run a query within a React component, call `useOlimanagerAddressBookSelectionQuery` and pass it any options that fit your needs.
- * When your component renders, `useOlimanagerAddressBookSelectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useOlimanagerAddressBookSelectionQuery({
- *   variables: {
- *   },
- * });
- */
-export function useOlimanagerAddressBookSelectionQuery(baseOptions?: Apollo.QueryHookOptions<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>(OlimanagerAddressBookSelectionDocument, options);
-      }
-export function useOlimanagerAddressBookSelectionLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>(OlimanagerAddressBookSelectionDocument, options);
-        }
-export function useOlimanagerAddressBookSelectionSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>(OlimanagerAddressBookSelectionDocument, options);
-        }
-export type OlimanagerAddressBookSelectionQueryHookResult = ReturnType<typeof useOlimanagerAddressBookSelectionQuery>;
-export type OlimanagerAddressBookSelectionLazyQueryHookResult = ReturnType<typeof useOlimanagerAddressBookSelectionLazyQuery>;
-export type OlimanagerAddressBookSelectionSuspenseQueryHookResult = ReturnType<typeof useOlimanagerAddressBookSelectionSuspenseQuery>;
-export type OlimanagerAddressBookSelectionQueryResult = Apollo.QueryResult<OlimanagerAddressBookSelectionQuery, OlimanagerAddressBookSelectionQueryVariables>;
 export const OlimanagerJobsDocument = gql`
     query OlimanagerJobs($sheetIds: [ObjectId!]) {
   olimanagerJobs(sheetIds: $sheetIds) {
@@ -2236,6 +2189,51 @@ export function useResumeOlimanagerCheckMutation(baseOptions?: Apollo.MutationHo
 export type ResumeOlimanagerCheckMutationHookResult = ReturnType<typeof useResumeOlimanagerCheckMutation>;
 export type ResumeOlimanagerCheckMutationResult = Apollo.MutationResult<ResumeOlimanagerCheckMutation>;
 export type ResumeOlimanagerCheckMutationOptions = Apollo.BaseMutationOptions<ResumeOlimanagerCheckMutation, ResumeOlimanagerCheckMutationVariables>;
+export const OlimanagerOlympiadsDocument = gql`
+    query OlimanagerOlympiads {
+  olimanagerOlympiads {
+    id
+    name
+    editions {
+      id
+      name
+      year
+    }
+  }
+}
+    `;
+
+/**
+ * __useOlimanagerOlympiadsQuery__
+ *
+ * To run a query within a React component, call `useOlimanagerOlympiadsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOlimanagerOlympiadsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOlimanagerOlympiadsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useOlimanagerOlympiadsQuery(baseOptions?: Apollo.QueryHookOptions<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>(OlimanagerOlympiadsDocument, options);
+      }
+export function useOlimanagerOlympiadsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>(OlimanagerOlympiadsDocument, options);
+        }
+export function useOlimanagerOlympiadsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>(OlimanagerOlympiadsDocument, options);
+        }
+export type OlimanagerOlympiadsQueryHookResult = ReturnType<typeof useOlimanagerOlympiadsQuery>;
+export type OlimanagerOlympiadsLazyQueryHookResult = ReturnType<typeof useOlimanagerOlympiadsLazyQuery>;
+export type OlimanagerOlympiadsSuspenseQueryHookResult = ReturnType<typeof useOlimanagerOlympiadsSuspenseQuery>;
+export type OlimanagerOlympiadsQueryResult = Apollo.QueryResult<OlimanagerOlympiadsQuery, OlimanagerOlympiadsQueryVariables>;
 export const OlimanagerImportDocument = gql`
     query OlimanagerImport($workbookId: ObjectId!) {
   olimanagerImport(workbookId: $workbookId) {
@@ -5141,7 +5139,6 @@ export type ResolversTypes = {
   OlimanagerAddressBook: ResolverTypeWrapper<OlimanagerAddressBook>;
   OlimanagerAddressBookDistrict: ResolverTypeWrapper<OlimanagerAddressBookDistrict>;
   OlimanagerAddressBookSchool: ResolverTypeWrapper<OlimanagerAddressBookSchool>;
-  OlimanagerAddressBookSelection: ResolverTypeWrapper<OlimanagerAddressBookSelection>;
   OlimanagerAddressBookSheet: ResolverTypeWrapper<Omit<OlimanagerAddressBookSheet, '_id'> & { _id: ResolversTypes['ObjectId'] }>;
   OlimanagerContact: ResolverTypeWrapper<OlimanagerContact>;
   OlimanagerCreateResult: ResolverTypeWrapper<OlimanagerCreateResult>;
@@ -5217,7 +5214,6 @@ export type ResolversParentTypes = {
   OlimanagerAddressBook: OlimanagerAddressBook;
   OlimanagerAddressBookDistrict: OlimanagerAddressBookDistrict;
   OlimanagerAddressBookSchool: OlimanagerAddressBookSchool;
-  OlimanagerAddressBookSelection: OlimanagerAddressBookSelection;
   OlimanagerAddressBookSheet: Omit<OlimanagerAddressBookSheet, '_id'> & { _id: ResolversParentTypes['ObjectId'] };
   OlimanagerContact: OlimanagerContact;
   OlimanagerCreateResult: OlimanagerCreateResult;
@@ -5442,12 +5438,6 @@ export type OlimanagerAddressBookSchoolResolvers<ContextType = any, ParentType e
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type OlimanagerAddressBookSelectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerAddressBookSelection'] = ResolversParentTypes['OlimanagerAddressBookSelection']> = {
-  editionId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  olympiadId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type OlimanagerAddressBookSheetResolvers<ContextType = any, ParentType extends ResolversParentTypes['OlimanagerAddressBookSheet'] = ResolversParentTypes['OlimanagerAddressBookSheet']> = {
   _id?: Resolver<ResolversTypes['ObjectId'], ParentType, ContextType>;
   closed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -5633,10 +5623,10 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   olifogliWorkerStatus?: Resolver<ResolversTypes['OlifogliWorkerStatus'], ParentType, ContextType>;
   olimanagerActiveJobs?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   olimanagerAddressBook?: Resolver<ResolversTypes['OlimanagerAddressBook'], ParentType, ContextType, RequireFields<QueryOlimanagerAddressBookArgs, 'editionId' | 'olympiadId'>>;
-  olimanagerAddressBookSelection?: Resolver<Maybe<ResolversTypes['OlimanagerAddressBookSelection']>, ParentType, ContextType>;
   olimanagerImport?: Resolver<Maybe<ResolversTypes['OlimanagerImport']>, ParentType, ContextType, RequireFields<QueryOlimanagerImportArgs, 'workbookId'>>;
   olimanagerJobItems?: Resolver<Array<ResolversTypes['OlimanagerJobItem']>, ParentType, ContextType, RequireFields<QueryOlimanagerJobItemsArgs, 'jobId'>>;
   olimanagerJobs?: Resolver<Array<ResolversTypes['OlimanagerJob']>, ParentType, ContextType, Partial<QueryOlimanagerJobsArgs>>;
+  olimanagerOlympiads?: Resolver<Array<ResolversTypes['OlimanagerSheetOlympiad']>, ParentType, ContextType>;
   olimanagerVenueSheetChoices?: Resolver<Array<ResolversTypes['OlimanagerSheetOlympiad']>, ParentType, ContextType>;
   omrWorkerStatus?: Resolver<Array<ResolversTypes['OmrWorkerStatus']>, ParentType, ContextType>;
   rows?: Resolver<Array<ResolversTypes['Row']>, ParentType, ContextType, RequireFields<QueryRowsArgs, 'sheetId'>>;
@@ -5910,7 +5900,6 @@ export type Resolvers<ContextType = any> = {
   OlimanagerAddressBook?: OlimanagerAddressBookResolvers<ContextType>;
   OlimanagerAddressBookDistrict?: OlimanagerAddressBookDistrictResolvers<ContextType>;
   OlimanagerAddressBookSchool?: OlimanagerAddressBookSchoolResolvers<ContextType>;
-  OlimanagerAddressBookSelection?: OlimanagerAddressBookSelectionResolvers<ContextType>;
   OlimanagerAddressBookSheet?: OlimanagerAddressBookSheetResolvers<ContextType>;
   OlimanagerContact?: OlimanagerContactResolvers<ContextType>;
   OlimanagerCreateResult?: OlimanagerCreateResultResolvers<ContextType>;

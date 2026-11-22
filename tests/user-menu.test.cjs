@@ -59,21 +59,21 @@ test('the menu is closed until the email is pressed', async t => {
   assert.equal(menu.document.getElementById('user-menu'), null);
   await menu.toggle();
   assert.equal(menu.button().getAttribute('aria-expanded'), 'true');
-  assert.deepEqual(menu.items(), ['utenti', 'file', 'logs', 'rubrica', 'logout']);
+  assert.deepEqual(menu.items(), ['utenti', 'file', 'logs', 'logout']);
   await menu.toggle();
   assert.equal(menu.document.getElementById('user-menu'), null);
 });
 
-test('supervisors see users, address book and logout', async t => {
+test('supervisors see users and logout; other users only logout', async t => {
   const supervisor = await mount(t, { isSupervisor: true });
   await supervisor.toggle();
-  assert.deepEqual(supervisor.items(), ['utenti', 'rubrica', 'logout']);
+  assert.deepEqual(supervisor.items(), ['utenti', 'logout']);
 });
 
-test('a user without global roles sees address book and logout, which signs out', async t => {
+test('a user without global roles sees only logout, which signs out', async t => {
   const menu = await mount(t, {});
   await menu.toggle();
-  assert.deepEqual(menu.items(), ['rubrica', 'logout']);
+  assert.deepEqual(menu.items(), ['logout']);
   await act(async () => { menu.document.querySelector('#user-menu button').click(); });
   assert.deepEqual(menu.signOuts, [true]);
   assert.equal(menu.document.getElementById('user-menu'), null);

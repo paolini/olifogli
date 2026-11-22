@@ -53,17 +53,17 @@ iscrizioni invalidate, gli avvisi per distretto, la paginazione, il rifiuto di
 edizioni di un'altra olimpiade, i filtri, le email senza duplicati, le colonne
 del CSV e l'associazione dei fogli dell'edizione a scuole e distretti. Simula
 anche un RD: iscrizioni lette dai suoi distretti, distretti vuoti nascosti,
-avviso per le edizioni precedenti. Controlla che la rubrica sia aperta a tutti,
-con i fogli limitati ai permessi dell'utente, e il salvataggio per utente
-dell'ultima edizione, solo dopo un caricamento riuscito.
+avviso per le edizioni precedenti. Controlla che olimpiadi e rubrica siano
+aperte a tutti, con i fogli limitati ai permessi dell'utente.
 `address-book-ui.test.cjs` monta in jsdom l'elenco dei distretti: righe con
 conteggi e link al dettaglio, filtro sui soli nomi dei distretti, ricerca di
 persone che ignora i nomi dei distretti e azioni di gruppo che seguono ricerca,
-distretti elencati e ruoli. `address-book-page.test.cjs` monta la pagina con il
-vero provider delle breadcrumb: passaggio all'edizione salvata, edizione
-dell'URL che prevale, breadcrumb di edizione e distretto senza aggiornamenti a
-ciclo, ingresso diretto con un solo distretto, edizione sconosciuta e scelta
-dell'edizione da «Rubrica» (`?scegli`), che parte dall'edizione salvata.
+distretti elencati e ruoli. `address-book-page.test.cjs` monta le pagine
+Olimanager con il vero provider delle breadcrumb: tabella delle olimpiadi della
+home ed errori, edizioni dalla più recente, elenco dei distretti e distretto con
+breadcrumb senza aggiornamenti a ciclo, ingresso diretto con un solo distretto,
+olimpiade sconosciuta ed errori della rubrica. `login-scope.test.cjs` verifica
+anche che la sezione Olimanager della home compaia solo con lo scope `api`.
 
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare

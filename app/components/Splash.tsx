@@ -2,6 +2,7 @@ import { useSession, signIn } from "next-auth/react"
 import { useState } from 'react'
 
 import Workbooks from './Workbooks'
+import { OlimanagerOlympiads } from './OlimanagerOlympiads'
 import Button from './Button'
 import useProfile from "../lib/useProfile"
 import GlobalMessage from './GlobalMessage'
@@ -46,6 +47,8 @@ export default function Splash() {
       collapsed={true}
     />
     <Workbooks />
+    {/* Reading Olimanager needs the api scope. */}
+    {session.olimanagerApiScope === true && <OlimanagerOlympiads />}
     <GlobalMessage name="home_footer_message"
       description="Messaggio a piè di pagina della home page"
     />

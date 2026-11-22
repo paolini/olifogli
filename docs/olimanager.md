@@ -209,11 +209,30 @@ scritture i fogli vengono riletti: se permessi o contest sono cambiati dopo
 l'anteprima occorre ricaricarla. I fogli con corrispondenze duplicate sono segnalati e non
 selezionabili.
 
-## Rubrica di CD, RD e RI
+## Sezione Olimanager e rubrica di CD, RD e RI
 
-La pagina `/rubrica` (voce «rubrica» del menu utente), aperta a tutti gli
-utenti, mostra per un'edizione scelta (olimpiade ed edizione) chi gestisce la
-gara sul territorio, distretto per distretto:
+Agli utenti entrati con lo scope `api` (`session.olimanagerApiScope`) la home
+mostra, dopo «Competizioni», la sezione «Olimanager» con la tabella delle
+olimpiadi (query `olimanagerOlympiads`, aperta a ogni utente autenticato). Le
+pagine seguono i livelli:
+
+- `/olimanager/<olimpiade>`: le edizioni dell'olimpiade, dalla più recente;
+- `/olimanager/<olimpiade>/<edizione>`: la rubrica dell'edizione, con l'elenco
+  dei distretti;
+- `/olimanager/<olimpiade>/<edizione>/<distretto>`: il dettaglio di un
+  distretto (id della zona, `none` per «Senza distretto»).
+
+Il titolo è nella barra di intestazione, come per raccoglitori e fogli:
+«olimat 〉 2026 〉 Roma». L'olimpiade è indicata con il suo id, breve e
+mnemonico (il nome completo compare al passaggio del mouse: le breadcrumb
+accettano per questo un campo `title` facoltativo), l'edizione solo con l'anno
+(il sito tratta solo le olimpiadi di matematica). Ogni voce porta al suo
+livello. La rubrica sta nel layout dell'edizione
+(`app/olimanager/[olympiadId]/[editionId]/layout.tsx`), così dati caricati e
+filtri si conservano passando dall'elenco a un distretto e ritorno; tornando
+all'edizione in seguito i dati in cache compaiono subito e vengono aggiornati.
+
+La rubrica mostra chi gestisce la gara sul territorio, distretto per distretto:
 
 - **CD**, coordinatori distrettuali: amministratori della zona con `isPrimary`;
 - **RD**, responsabili di distretto: gli altri amministratori della zona;
@@ -259,27 +278,14 @@ l'assenza può dipendere dai permessi.
 
 ### Distretti e dettaglio
 
-Edizione e distretto sono nell'URL, per esempio
-`/rubrica?edizione=olimat26&distretto=12` (id dell'edizione e della zona;
-`none` per «Senza distretto»), così i link condivisi e il tasto indietro
-funzionano. Il titolo è nella barra di
-intestazione, come per raccoglitori e fogli: «Rubrica 〉 2026 〉 Roma».
-L'edizione è indicata solo con l'anno (il sito tratta solo le olimpiadi di
-matematica); nel dettaglio di un distretto la sua voce riporta all'elenco dei
-distretti, mentre «Rubrica» porta alla scelta dell'edizione
-(`/rubrica?scegli`, con il suggerimento «Cambia edizione»). Le breadcrumb
-accettano per questo un campo `title` facoltativo, mostrato al passaggio del
-mouse.
-
-La rubrica ha due livelli. La pagina principale elenca i distretti in una
-tabella: CD, numero di RD, scuole iscritte, scuole con almeno un foglio, righe
+L'elenco dei distretti è una tabella: CD, numero di RD, scuole iscritte, scuole con almeno un foglio, righe
 valide/righe dei fogli del distretto e delle sue scuole, numero di avvisi e,
 nell'ultima colonna, i link ai fogli distrettuali. Il nome porta al dettaglio
 del distretto, con CD, RD, la tabella delle scuole con i loro RI e fogli e gli
 avvisi del distretto. Chi vede un solo distretto entra direttamente nel
 dettaglio.
 
-Nella pagina principale ci sono due ricerche distinte:
+Nell'elenco ci sono due ricerche distinte:
 
 - «Filtra distretti» guarda solo il nome del distretto;
 - «Cerca persone o scuole» guarda nome, email, scuola, codice e città, ma non il
@@ -292,23 +298,19 @@ Le caselle CD/RD/RI valgono per entrambe. «Copia email» e «Scarica CSV»
 agiscono sui risultati della ricerca di persone o, senza ricerca, sui ruoli
 scelti dei distretti elencati: con il solo CD e nessun filtro si ottengono le
 email di tutti i CD. Nel dettaglio di un distretto c'è una sola ricerca, e le
-stesse azioni valgono per le voci mostrate. Ruoli e filtri della pagina
-principale si conservano entrando in un distretto e tornando indietro.
+stesse azioni valgono per le voci mostrate. Ruoli e filtri dell'elenco si
+conservano entrando in un distretto e tornando indietro.
 
 Gli avvisi (CD mancante, referenti senza email, scuole non assegnate) sono
 legati al distretto (`warnings` di `OlimanagerAddressBookDistrict`); restano
 generali solo quelli non legati a un distretto, come `CURRENT_EDITION_ONLY`.
 
-### Selezione, fogli ed esportazione
+### Fogli ed esportazione
 
-L'ultima edizione caricata con successo viene ricordata per ciascun utente
-(campo `addressBookSelection` del documento in `users`, query
-`olimanagerAddressBookSelection`), anche quando arriva da un link. Aprendo
-`/rubrica` senza edizione la pagina passa a quella salvata, se Olimanager la
-elenca ancora, e la carica subito; altrimenti mostra le select di olimpiade ed
-edizione. Nella scelta dell'edizione (`/rubrica?scegli`) le select partono
-dall'edizione salvata e «Annulla» torna a quella; le select compaiono anche se
-il caricamento fallisce o l'edizione dell'URL non esiste.
+Una versione di sviluppo della rubrica, mai rilasciata, ricordava l'ultima
+edizione di ogni utente: la migrazione
+`20261122000000-remove-address-book-selection` rimuove il campo
+`addressBookSelection` dai database in cui è stata usata.
 
 Accanto a ogni scuola ci sono i link ai suoi fogli dei contest scolastici
 dell'edizione (`commonData.Codice_meccanografico`), e accanto al distretto

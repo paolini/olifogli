@@ -29,7 +29,7 @@ const districts = [
 ];
 
 async function mount(t) {
-  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://rubrica.invalid/rubrica' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://olifogli.invalid/olimanager/olimat/ed' });
   const saved = new Map();
   for (const [key, value] of Object.entries({
     window: dom.window, document: dom.window.document, navigator: dom.window.navigator,
@@ -57,7 +57,7 @@ async function mount(t) {
     const [roles, setRoles] = React.useState(new Set(entries.ADDRESS_BOOK_ROLES));
     const [districtFilter, setDistrictFilter] = React.useState('');
     const [peopleSearch, setPeopleSearch] = React.useState('');
-    const districtHref = district => `/rubrica?edizione=ed&distretto=${entries.districtKey(district)}`;
+    const districtHref = district => `/olimanager/olimat/ed/${entries.districtKey(district)}`;
     return React.createElement(AddressBookDistricts, { districts, districtHref, roles, setRoles, districtFilter, setDistrictFilter, peopleSearch, setPeopleSearch });
   }
   const root = createRoot(dom.window.document.getElementById('root'));
@@ -93,7 +93,7 @@ test('the district list shows one row per district with counts and links to the 
     ['Pisa', 'Rossi Anna', '1', '1', '1', '8/10', '', ''],
     ['Roma', 'Bianchi Carlo', '0', '1', '0', '5/5', '1', 'Gara distrettuale 5/5'],
   ]);
-  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/rubrica')), [['Pisa', '/rubrica?edizione=ed&distretto=3'], ['Roma', '/rubrica?edizione=ed&distretto=4']]);
+  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/olimanager')), [['Pisa', '/olimanager/olimat/ed/3'], ['Roma', '/olimanager/olimat/ed/4']]);
   assert.equal(page.counts(), '5 voci, 4 email');
 });
 
@@ -116,7 +116,7 @@ test('the people search ignores district names and lists people with a link to t
     ['RI', 'Neri Roma <roma.neri@example.org>'],
     ['RI', 'Verdi Ugo senza email'], // school in the city of Roma
   ]);
-  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/rubrica')).map(([, href]) => href), ['/rubrica?edizione=ed&distretto=3', '/rubrica?edizione=ed&distretto=3', '/rubrica?edizione=ed&distretto=4']);
+  assert.deepEqual(page.links().filter(([, href]) => href.startsWith('/olimanager')).map(([, href]) => href), ['/olimanager/olimat/ed/3', '/olimanager/olimat/ed/3', '/olimanager/olimat/ed/4']);
   assert.equal(page.counts(), '3 voci, 2 email');
   assert.equal(page.document.querySelector('input[aria-label="Filtra distretti"]').disabled, true);
 });

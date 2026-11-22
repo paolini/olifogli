@@ -170,16 +170,15 @@ test('entries are filtered by role and accent-insensitive words; emails deduplic
   assert.deepEqual(csv.map(row => row.fogli), ['', 'Archimede Biennio', '']);
 });
 
-function resolvers({ isAdmin = true, isSupervisor = false, addressBookSelection, loadAddressBook = async () => ({ districts: [], warnings: [] }) } = {}) {
-  const updates = [];
+function resolvers({ isAdmin = true, isSupervisor = false, loadAddressBook = async () => ({ districts: [], warnings: [] }) } = {}) {
   const logs = [];
   const finds = [];
-  const user = { _id: 'u1', email: 'docente@example.org', isAdmin, isSupervisor, addressBookSelection };
+  const user = { _id: 'u1', email: 'docente@example.org', isAdmin, isSupervisor };
   const lib = load('app/graphql/resolvers/olimanagerAddressBook.ts', {
     '@/app/lib/olimanagerAddressBook': { loadAddressBook },
+    '@/app/lib/olimanagerVenueSheets': { venueSheetChoices: async () => choices },
     '@/app/lib/appLog': { appLog: (...args) => logs.push(args) },
     '@/app/lib/mongodb': {
-      getUsersCollection: async () => ({ updateOne: async (...args) => { updates.push(args); } }),
       getSheetsCollection: async () => ({ find: (...args) => { finds.push(args); return { toArray: async () => [] }; } }),
     },
     '@/app/lib/olimanagerVenueSheetConfig': config,
@@ -187,7 +186,7 @@ function resolvers({ isAdmin = true, isSupervisor = false, addressBookSelection,
       get_authenticated_user: async () => user,
     },
   });
-  return { lib, updates, logs, finds };
+  return { lib, logs, finds };
 }
 const context = { req: {} };
 
@@ -207,7 +206,7 @@ test('districts filtered by name only, URL keys and list counts', () => {
   assert.deepEqual(plain(districtSummary(districts[0])), { schools: 2, schoolsWithSheets: 1, rows: 17, validRows: 14, warnings: 2 });
 });
 
-test('the resolver remembers the edition per user only after a successful load', async () => {
+test('the address book resolver reads the sheets of the edition contests and logs the access', async () => {
   const ok = resolvers({ loadAddressBook: async (req, olympiadId, editionId, { findSheets, hideEmpty }) => {
     await findSheets(['31', '32']);
     return { districts: [], warnings: [], hideEmpty };
@@ -215,30 +214,26 @@ test('the resolver remembers the edition per user only after a successful load',
   const result = await ok.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context);
   assert.equal(result.hideEmpty, false);
   assert.deepEqual(plain(ok.finds[0][0]), { 'commonData.olimanager_contest_id': { $in: ['31', '32'] } });
-  assert.deepEqual(plain(ok.updates), [[{ _id: 'u1' }, { $set: { addressBookSelection: { olympiadId: 'oli', editionId: 'ed' } } }]]);
-  assert.equal(ok.logs[0][0], 'olimanager.address_book_viewed');
+  assert.deepEqual(plain(ok.logs), [['olimanager.address_book_viewed', { olympiadId: 'oli', editionId: 'ed' }, { userId: 'u1' }]]);
 
   const failing = resolvers({ loadAddressBook: async () => { throw new Error('remota'); } });
   await assert.rejects(failing.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'x' }, context), /remota/);
-  assert.deepEqual(failing.updates, []);
-
-  assert.deepEqual(plain(await resolvers({ addressBookSelection: { olympiadId: 'oli', editionId: 'ed' } }).lib.olimanagerAddressBookSelection(null, {}, context)), { olympiadId: 'oli', editionId: 'ed' });
-  assert.equal(await resolvers().lib.olimanagerAddressBookSelection(null, {}, context), null);
+  assert.deepEqual(failing.logs, []);
 });
 
-test('every user may open the address book; others see only their sheets and no empty districts', async () => {
+test('every user may open olympiads and address book; others see only their sheets and no empty districts', async () => {
   const load = async (req, olympiadId, editionId, { findSheets, hideEmpty }) => {
     await findSheets(['31']);
     return { districts: [], warnings: [], hideEmpty };
   };
   const user = resolvers({ isAdmin: false, loadAddressBook: load });
+  assert.deepEqual(plain(await user.lib.olimanagerOlympiads(null, {}, context)), choices);
   const result = await user.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context);
   assert.equal(result.hideEmpty, true);
   assert.deepEqual(plain(user.finds[0][0]), { 'commonData.olimanager_contest_id': { $in: ['31'] }, 'permissions.email': 'docente@example.org' });
-  assert.equal(user.updates.length, 1);
 
   const supervisor = resolvers({ isAdmin: false, isSupervisor: true, loadAddressBook: load });
   assert.equal((await supervisor.lib.olimanagerAddressBook(null, { olympiadId: 'oli', editionId: 'ed' }, context)).hideEmpty, true);
   assert.deepEqual(plain(supervisor.finds[0][0]), { 'commonData.olimanager_contest_id': { $in: ['31'] } });
-  assert.equal(await resolvers({ isAdmin: false }).lib.olimanagerAddressBookSelection(null, {}, context), null);
+  await assert.rejects(user.lib.olimanagerOlympiads(null, {}, {}), /Sessione HTTP/);
 });

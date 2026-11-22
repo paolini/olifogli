@@ -500,12 +500,6 @@ type OlimanagerAddressBook {
   warnings: [String!]!
 }
 
-"""Ultima olimpiade ed edizione consultate nella rubrica dall'utente."""
-type OlimanagerAddressBookSelection {
-  olympiadId: String!
-  editionId: String!
-}
-
 type OlimanagerVenueSheetsPreview {
   sheets: [OlimanagerVenueSheet!]!
   warnings: [String!]!
@@ -513,10 +507,10 @@ type OlimanagerVenueSheetsPreview {
 
 type Query {
   olimanagerVenueSheetChoices: [OlimanagerSheetOlympiad!]!
-  """Rubrica di CD, RD e RI di un'edizione, letta da Olimanager con i permessi dell'utente. Ricorda la selezione per l'utente."""
+  """Olimpiadi ed edizioni di Olimanager, per ogni utente autenticato con lo scope api."""
+  olimanagerOlympiads: [OlimanagerSheetOlympiad!]!
+  """Rubrica di CD, RD e RI di un'edizione, letta da Olimanager con i permessi dell'utente."""
   olimanagerAddressBook(olympiadId: String!, editionId: String!): OlimanagerAddressBook!
-  """Ultima selezione della rubrica dell'utente."""
-  olimanagerAddressBookSelection: OlimanagerAddressBookSelection
   olifogliWorkerStatus: OlifogliWorkerStatus!
   """Stato dei worker archiomr, uno per tipo (oliscan, olisheet)."""
   omrWorkerStatus: [OmrWorkerStatus!]!
