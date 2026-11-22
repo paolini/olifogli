@@ -169,8 +169,8 @@ h2 {
   transition-property: color, background-color, border-color;
   transition-duration: 200ms;
   border-bottom: 1px solid #d1d5db;
-  border-top-left-radius: 0.8rem;
-  border-top-right-radius: 0.8rem;
+  border-top-left-radius: 0.25rem; /* come `rounded` di Button */
+  border-top-right-radius: 0.25rem;
   margin-left: 5px;
 }
 

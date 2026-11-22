@@ -47,6 +47,12 @@ anche l'applicazione delle sole modifiche scelte, l'identificazione tramite
 codice meccanografico e i duplicati ambigui.
 Entrambi simulano Olimanager e non creano dati reali.
 
+`olimanager-address-book.test.cjs` verifica la rubrica di CD, RD e RI: il
+raggruppamento per distretto con eccezioni territoriali, l'esclusione delle
+iscrizioni invalidate, gli avvisi, la paginazione, il rifiuto di edizioni di
+un'altra olimpiade, i filtri della pagina, le email senza duplicati, le colonne
+del CSV e il controllo degli amministratori.
+
 `oauth-token.test.cjs` verifica che la risposta reale di NextAuth per la sessione
 non contenga l'access token OAuth. Usa cookie cifrati sintetici per verificare
 le chiamate GraphQL dal server, anche con cookie HTTPS suddivisi in chunk, e

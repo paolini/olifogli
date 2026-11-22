@@ -447,6 +447,40 @@ type OlimanagerImport {
   sheets: [OlimanagerImportSheet!]!
 }
 
+"""Persona della rubrica: CD e RD di un distretto o referente (RI) di una scuola."""
+type OlimanagerContact {
+  name: String!
+  surname: String!
+  email: String
+}
+
+type OlimanagerAddressBookSchool {
+  """Codice meccanografico, vuoto se assente in Olimanager."""
+  code: String!
+  name: String!
+  city: String!
+  """Sigla della provincia."""
+  province: String!
+  contact: OlimanagerContact
+}
+
+type OlimanagerAddressBookDistrict {
+  """Id della zona Olimanager; null per le scuole non riconducibili a un distretto."""
+  id: Int
+  name: String!
+  """Coordinatori distrettuali (CD): responsabili principali della zona."""
+  coordinators: [OlimanagerContact!]!
+  """Altri responsabili di distretto (RD)."""
+  admins: [OlimanagerContact!]!
+  """Scuole con iscrizione valida all'edizione e relativo referente (RI)."""
+  schools: [OlimanagerAddressBookSchool!]!
+}
+
+type OlimanagerAddressBook {
+  districts: [OlimanagerAddressBookDistrict!]!
+  warnings: [String!]!
+}
+
 type OlimanagerVenueSheetsPreview {
   sheets: [OlimanagerVenueSheet!]!
   warnings: [String!]!
@@ -454,6 +488,8 @@ type OlimanagerVenueSheetsPreview {
 
 type Query {
   olimanagerVenueSheetChoices: [OlimanagerSheetOlympiad!]!
+  """Rubrica di CD, RD e RI di un'edizione, letta da Olimanager (solo amministratori)."""
+  olimanagerAddressBook(olympiadId: String!, editionId: String!): OlimanagerAddressBook!
   olifogliWorkerStatus: OlifogliWorkerStatus!
   """Stato dei worker archiomr, uno per tipo (oliscan, olisheet)."""
   omrWorkerStatus: [OmrWorkerStatus!]!

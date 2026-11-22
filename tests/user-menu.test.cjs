@@ -59,7 +59,7 @@ test('the menu is closed until the email is pressed', async t => {
   assert.equal(menu.document.getElementById('user-menu'), null);
   await menu.toggle();
   assert.equal(menu.button().getAttribute('aria-expanded'), 'true');
-  assert.deepEqual(menu.items(), ['utenti', 'file', 'logs', 'logout']);
+  assert.deepEqual(menu.items(), ['utenti', 'file', 'logs', 'rubrica', 'logout']);
   await menu.toggle();
   assert.equal(menu.document.getElementById('user-menu'), null);
 });

@@ -209,6 +209,32 @@ scritture i fogli vengono riletti: se permessi o contest sono cambiati dopo
 l'anteprima occorre ricaricarla. I fogli con corrispondenze duplicate sono segnalati e non
 selezionabili.
 
+## Rubrica di CD, RD e RI
+
+La pagina `/rubrica` (voce «rubrica» del menu utente), riservata agli
+amministratori, mostra per un'edizione scelta (olimpiade ed edizione) chi
+gestisce la gara sul territorio, distretto per distretto:
+
+- **CD**, coordinatori distrettuali: amministratori della zona con `isPrimary`;
+- **RD**, responsabili di distretto: gli altri amministratori della zona;
+- **RI**, referenti di istituto: referente (`contact`) di ogni iscrizione valida
+  dell'edizione, con codice meccanografico, nome e città della scuola.
+
+Le scuole sono assegnate ai distretti come nella creazione dei fogli (province
+ed eccezioni territoriali); quelle senza distretto o con più distretti finiscono
+in «Senza distretto». Distretti senza CD, referenti senza email e scuole non
+assegnate producono avvisi.
+
+I dati sono letti al momento da Olimanager (query `olimanagerAddressBook`,
+`app/lib/olimanagerAddressBook.ts`) con la sessione OAuth dell'utente, che deve
+avere lo scope `api`; non vengono salvati in Olifogli. Ogni consultazione
+registra l'evento `olimanager.address_book_viewed` nei log applicativi.
+
+La pagina filtra per ruolo e per testo (nome, email, scuola, codice, città,
+distretto), copia negli appunti le email delle voci filtrate e le scarica in
+CSV (`rubrica.csv`). I numeri di telefono non sono disponibili: Olimanager non
+li espone agli amministratori dell'olimpiade.
+
 ## Importazione dei partecipanti
 
 Per i fogli creati dalle venue di un contest `ZONE` (schemi `distrettuale` e

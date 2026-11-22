@@ -50,6 +50,7 @@ export default function UserMenu({ email, isAdmin, isSupervisor }: {
       {(isAdmin || isSupervisor) && <li><Link href="/users" className={itemClass} onClick={close}>utenti</Link></li>}
       {isAdmin && <li><Link href="/files" className={itemClass} onClick={close}>file</Link></li>}
       {isAdmin && <li><Link href="/logs" className={itemClass} onClick={close}>logs</Link></li>}
+      {isAdmin && <li><Link href="/rubrica" className={itemClass} onClick={close}>rubrica</Link></li>}
       <li className={isAdmin || isSupervisor ? 'mt-1 border-t pt-1' : undefined}>
         <button type="button" className={`${itemClass} cursor-pointer border-0 bg-transparent`}
           onClick={() => { close(); void signOut() }}>

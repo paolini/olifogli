@@ -3,6 +3,7 @@ import omrWorkerStatus from './resolvers/omrWorkerStatus'
 import { workerFiles, workerFileGroupFiles, deleteWorkerFiles, deleteWorkerFileGroup } from './resolvers/workerFiles'
 import { appLogs, appLogAddedSubscription } from './resolvers/appLogs'
 import { olimanagerVenueSheetChoices, prepareOlimanagerVenueSheets } from './resolvers/olimanagerVenueSheets'
+import { olimanagerAddressBook } from './resolvers/olimanagerAddressBook'
 import olimanagerJobsSubscription from './resolvers/olimanagerJobsSubscription'
 import { olimanagerImport, requestOlimanagerImport, confirmOlimanagerImport, cancelOlimanagerImport } from './resolvers/olimanagerImport'
 import { requestOlimanagerCheck, requestOlimanagerMatch, requestOlimanagerResults, resumeOlimanagerCheck, olimanagerJobs, olimanagerActiveJobs, olimanagerJobItems } from './resolvers/olimanagerJobs'
@@ -73,6 +74,7 @@ import decryptSheets from './resolvers/decryptSheets'
 export const resolvers: Resolvers = {
   Query: {
     olimanagerVenueSheetChoices,
+    olimanagerAddressBook,
     olifogliWorkerStatus,
     omrWorkerStatus,
     olimanagerJobs,
