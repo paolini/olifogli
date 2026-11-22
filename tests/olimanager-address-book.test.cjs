@@ -22,9 +22,11 @@ const venueNames = load('app/lib/olimanagerVenueNames.ts', {});
 const config = load('app/lib/olimanagerVenueSheetConfig.ts', {});
 const contests = [{ id: 31, name: 'Archimede Biennio 2026', scope: 'SCHOOL' }, { id: 32, name: 'Archimede Triennio 2026', scope: 'SCHOOL' }, { id: 35, name: 'Gara distrettuale 2026', scope: 'ZONE' }];
 const choices = [{ id: 'oli', name: 'Olimpiadi', editions: [{ id: 'ed', name: '2026', year: 2026, contests }] }];
-function library(queryOlimanager = () => { throw new Error('Unexpected request'); }) {
+const logging = load('app/lib/logging.ts', {});
+function library(queryOlimanager = () => { throw new Error('Unexpected request'); }, serverLog = () => {}) {
   return load('app/lib/olimanagerAddressBook.ts', {
     './olimanager': { queryOlimanager },
+    './logging': { ...logging, serverLog },
     './olimanagerVenueSheets': { venueSheetChoices: async () => choices },
     './olimanagerVenueNames': venueNames,
     './olimanagerVenueSheetConfig': config,
@@ -115,6 +117,26 @@ test('district admins read the subscriptions of their zones and see only their d
   const all = plain(await lib.loadAddressBook({}, 'oli', 'ed', { findSheets: sheets, hideEmpty: false }));
   assert.deepEqual(all.districts.map(d => d.name), ['Lucca', 'Pisa']);
   assert.deepEqual(all.districts[0].warnings, ['Nessun coordinatore (CD).']);
+});
+
+test('failures are logged with the step and the error kind, without the message', async () => {
+  const logs = [];
+  const serverLog = (level, event, fields) => logs.push({ level, event, ...fields });
+  const failing = library(async (req, query) => {
+    if (query.includes('$zone')) throw Object.assign(new Error('PRIVATE message'), { name: 'OlimanagerGraphQLError', status: 502 });
+    if (query.includes('zones {')) return { zones: { zones: zones.map(zone => zone.id === 2 ? zone : { ...zone, admins: [] }) } };
+    return { olympiads: { edition: { subscriptions: { edges: [], pageInfo: { hasNextPage: false, endCursor: null } } } } };
+  }, serverLog);
+  await assert.rejects(failing.loadAddressBook({}, 'oli', 'ed', { findSheets: async () => [], hideEmpty: true }), /PRIVATE/);
+  await assert.rejects(failing.loadAddressBook({}, 'oli', 'other', { findSheets: async () => [], hideEmpty: true }), /appartenere/);
+  const looping = library(async (req, query) => query.includes('zones {') ? { zones: { zones } }
+    : { olympiads: { edition: { subscriptions: { edges: [], pageInfo: { hasNextPage: true, endCursor: null } } } } }, serverLog);
+  await assert.rejects(looping.loadAddressBook({}, 'oli', 'ed', { findSheets: async () => [], hideEmpty: true }), /Paginazione/);
+  assert.deepEqual(plain(logs), [
+    { level: 'error', event: 'olimanager.address_book_failed', stage: 'zone_subscriptions', error: 'OlimanagerGraphQLError', status: 502, reason: null },
+    { level: 'error', event: 'olimanager.address_book_failed', stage: 'editions', error: 'Error', status: null, reason: 'edition_not_found' },
+    { level: 'error', event: 'olimanager.address_book_failed', stage: 'edition_subscriptions', error: 'Error', status: null, reason: 'invalid_pagination' },
+  ]);
 });
 
 test('zone subscriptions of another edition are not shown, with an explanation', async () => {

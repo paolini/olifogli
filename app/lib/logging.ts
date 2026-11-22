@@ -91,10 +91,42 @@ type OlimanagerMetadata = {
     sameOrigin?: boolean | null
     status?: number
     redirected?: boolean
+    errors?: unknown
+}
+
+// GraphQL errors of an Olimanager response: field paths (list indices become
+// `#`) and codes only, never messages, which may quote personal data.
+function graphqlErrorFields(errors: unknown) {
+    const list = Array.isArray(errors) ? errors : []
+    const unique = (values: string[]) => [...new Set(values)].slice(0, 10)
+    const paths = list.map(error => {
+        const path = (error as { path?: unknown })?.path
+        if (!Array.isArray(path)) return '?'
+        return path.map(part => typeof part === 'number' ? '#'
+            : typeof part === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(part) ? part : '?').join('.')
+    })
+    const codes = list.map(error => {
+        const code = (error as { extensions?: { code?: unknown } })?.extensions?.code
+        return typeof code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : null
+    }).filter((code): code is string => !!code)
+    return { errorCount: list.length, paths: unique(paths), codes: unique(codes) }
+}
+
+// Name of an error class, only when it is a known one.
+const SAFE_ERROR_NAMES = new Set(['Error', 'TypeError', 'RangeError', 'SyntaxError', 'OlimanagerGraphQLError', 'MongoServerError', 'AbortError'])
+export function errorKind(error: unknown): string {
+    const name = error && typeof error === 'object' ? (error as { name?: unknown }).name : undefined
+    return typeof name === 'string' && SAFE_ERROR_NAMES.has(name) ? name : 'other'
+}
+
+// HTTP status carried by an Olimanager error, if any.
+export function errorStatus(error: unknown): number | null {
+    const status = error && typeof error === 'object' ? (error as { status?: unknown }).status : undefined
+    return typeof status === 'number' && Number.isInteger(status) ? status : null
 }
 
 export function logOlimanagerEvent(
-    event: 'oauth_login' | 'graphql_auth' | 'graphql_response',
+    event: 'oauth_login' | 'graphql_auth' | 'graphql_response' | 'graphql_errors',
     metadata: OlimanagerMetadata,
 ): void {
     const boolean = (value: unknown) => typeof value === 'boolean' ? value : null
@@ -122,7 +154,10 @@ export function logOlimanagerEvent(
         case 'graphql_response':
             fields = { status: number(metadata.status), redirected: boolean(metadata.redirected) }
             break
+        case 'graphql_errors':
+            fields = graphqlErrorFields(metadata.errors)
+            break
         default: return
     }
-    serverLog('info', `olimanager.${event}`, fields)
+    serverLog(event === 'graphql_errors' ? 'warn' : 'info', `olimanager.${event}`, fields)
 }

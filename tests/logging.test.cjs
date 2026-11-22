@@ -171,6 +171,28 @@ test('OAuth serializer allowlists metadata and strips secrets from origins and u
   assert.equal(JSON.parse(lines[2]).expiresInSeconds, null);
 });
 
+test('Olimanager GraphQL errors are logged as field paths and codes only', () => {
+  const { helper, lines } = loadLogging();
+  helper.logOlimanagerEvent('graphql_errors', { errors: [
+    { message: 'PRIVATE', path: ['zones', 'zones', 0, 'subscriptions'], extensions: { code: 'FORBIDDEN', detail: 'PRIVATE' } },
+    { message: 'PRIVATE', path: ['zones', 'PRIVATE value!'], extensions: { code: 'private code' } },
+    { message: 'PRIVATE' },
+  ] });
+  helper.logOlimanagerEvent('graphql_errors', { errors: 'PRIVATE' });
+  assert.ok(!lines.join('\n').includes('PRIVATE'));
+  const [first, second] = lines.map(line => JSON.parse(line));
+  assert.equal(first.level, 'warn');
+  assert.equal(first.event, 'olimanager.graphql_errors');
+  assert.equal(first.errorCount, 3);
+  assert.deepEqual(first.paths, ['zones.zones.#.subscriptions', 'zones.?', '?']);
+  assert.deepEqual(first.codes, ['FORBIDDEN']);
+  assert.equal(second.errorCount, 0);
+  assert.equal(helper.errorKind(new TypeError('PRIVATE')), 'TypeError');
+  assert.equal(helper.errorKind({ name: 'PRIVATE' }), 'other');
+  assert.equal(helper.errorStatus({ status: 403 }), 403);
+  assert.equal(helper.errorStatus({ status: 'PRIVATE' }), null);
+});
+
 test('application log calls cannot bypass the centralized serializers', () => {
   const { readdirSync } = require('node:fs');
   const root = path.resolve(__dirname, '..');

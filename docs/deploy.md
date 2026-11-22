@@ -208,6 +208,17 @@ prima dell'esecuzione della richiesta, e che quindi non compaiono come
 del contesto, per esempio la lettura del token di sessione) e
 `graphql.unexpected_error`.
 
+Per le chiamate a Olimanager il log del server riporta lo status HTTP di ogni
+risposta (`olimanager.graphql_response`) e, se la risposta contiene errori
+GraphQL, `olimanager.graphql_errors` con il numero di errori, i percorsi dei
+campi falliti (gli indici delle liste diventano `#`) e i codici, mai i messaggi.
+Se il caricamento della rubrica fallisce, `olimanager.address_book_failed`
+indica la fase (`stage`: `editions`, `zones`, `edition_subscriptions`,
+`zone_subscriptions`, `build`, `sheets`), il tipo di errore, lo status HTTP e,
+per i controlli di Olifogli, il motivo (`reason`: `edition_not_found`,
+`missing_page`, `invalid_pagination`). Si collegano a `graphql.internal_error`
+per orario.
+
 ### Pagina «logs» per gli amministratori
 
 La voce **logs** del menu che si apre cliccando l'email in alto a destra apre

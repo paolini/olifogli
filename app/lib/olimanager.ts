@@ -103,6 +103,7 @@ export async function queryOlimanager<T = unknown>(
   }
 
   if (parsedBody?.errors) {
+    logOlimanagerEvent('graphql_errors', { errors: parsedBody.errors })
     throw new Error(parsedBody.errors.map((e) => e.message).join(", "))
   }
 

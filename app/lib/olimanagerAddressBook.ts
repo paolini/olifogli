@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import type { ObjectId } from 'bson'
 import { queryOlimanager } from './olimanager'
+import { errorKind, errorStatus, serverLog } from './logging'
 import { venueSheetChoices } from './olimanagerVenueSheets'
 import { districtName } from './olimanagerVenueNames'
 import { SHEET_CONTEST_KEY, VENUE_SHEET_SCHEMAS, isVenueSheetSchema } from './olimanagerVenueSheetConfig'
@@ -113,17 +114,26 @@ export function finishAddressBook(book: AddressBook, hideEmpty: boolean): Addres
 
 type FetchPage = (after: string | null) => Promise<Page | null | undefined>
 
+// Failures of our own checks, with a reason that may be logged.
+type AddressBookFailure = 'edition_not_found' | 'missing_page' | 'invalid_pagination'
+class AddressBookError extends Error {
+    constructor(message: string, readonly reason: AddressBookFailure) { super(message) }
+}
+
+// Step of loadAddressBook in progress, logged when it fails.
+type Progress = { stage: 'editions' | 'zones' | 'edition_subscriptions' | 'zone_subscriptions' | 'build' | 'sheets' }
+
 async function allPages(fetchPage: FetchPage): Promise<AddressBookSubscription[]> {
     const subscriptions: AddressBookSubscription[] = []
     let cursor: string | null = null
     const cursors = new Set<string>()
     for (;;) {
         const page = await fetchPage(cursor)
-        if (!page) throw new Error('Edizione non disponibile su Olimanager.')
+        if (!page) throw new AddressBookError('Edizione non disponibile su Olimanager.', 'missing_page')
         subscriptions.push(...page.edges.map(edge => edge.node))
         if (!page.pageInfo.hasNextPage) return subscriptions
         cursor = page.pageInfo.endCursor
-        if (!cursor || cursors.has(cursor)) throw new Error('Paginazione delle scuole Olimanager non valida.')
+        if (!cursor || cursors.has(cursor)) throw new AddressBookError('Paginazione delle scuole Olimanager non valida.', 'invalid_pagination')
         cursors.add(cursor)
     }
 }
@@ -134,7 +144,8 @@ export const CURRENT_EDITION_ONLY = 'Olimanager mostra i referenti di istituto (
 // Subscriptions of the edition. Olimanager lists them only to edition admins;
 // for the others it returns none, and district admins can read instead the
 // subscriptions of their zones, which Olimanager limits to the latest edition.
-async function loadSubscriptions(req: NextRequest, editionId: string, zones: AddressBookZone[], warnings: string[]) {
+async function loadSubscriptions(req: NextRequest, editionId: string, zones: AddressBookZone[], warnings: string[], progress: Progress) {
+    progress.stage = 'edition_subscriptions'
     const subscriptions = await allPages(async after => (await queryOlimanager<{ olympiads: { edition: { subscriptions: Page } | null } }>(req, `query($edition: String!, $after: String) {
         olympiads { edition(id: $edition) { subscriptions(first: 100, after: $after) {
             edges { node { ${SUBSCRIPTION_FIELDS} } }
@@ -142,6 +153,7 @@ async function loadSubscriptions(req: NextRequest, editionId: string, zones: Add
         } } }
     }`, { edition: editionId, after })).olympiads.edition?.subscriptions)
     if (subscriptions.length) return subscriptions
+    progress.stage = 'zone_subscriptions'
     const seen = new Set<number>()
     let otherEdition = false
     // Zone admins are readable exactly where the zone subscriptions are.
@@ -188,18 +200,36 @@ export function attachSheets(book: AddressBook, contests: AddressBookContest[], 
     return book
 }
 
-export async function loadAddressBook(req: NextRequest, olympiadId: string, editionId: string, { findSheets, hideEmpty }: { findSheets: FindSheets, hideEmpty: boolean }): Promise<AddressBook> {
+// Failures are logged with the step and the error kind only: the message may
+// quote Olimanager data.
+export async function loadAddressBook(req: NextRequest, olympiadId: string, editionId: string, options: { findSheets: FindSheets, hideEmpty: boolean }): Promise<AddressBook> {
+    const progress: Progress = { stage: 'editions' }
+    try {
+        return await loadAddressBookSteps(req, olympiadId, editionId, options, progress)
+    } catch (error) {
+        serverLog('error', 'olimanager.address_book_failed', {
+            stage: progress.stage, error: errorKind(error), status: errorStatus(error),
+            reason: error instanceof AddressBookError ? error.reason : null,
+        })
+        throw error
+    }
+}
+
+async function loadAddressBookSteps(req: NextRequest, olympiadId: string, editionId: string, { findSheets, hideEmpty }: { findSheets: FindSheets, hideEmpty: boolean }, progress: Progress): Promise<AddressBook> {
     const choices = await venueSheetChoices(req)
     const edition = choices.find(o => o.id === olympiadId)?.editions.find(e => e.id === editionId)
-    if (!edition) throw new Error('L’edizione deve appartenere all’olimpiade scelta.')
+    if (!edition) throw new AddressBookError('L’edizione deve appartenere all’olimpiade scelta.', 'edition_not_found')
+    progress.stage = 'zones'
     const { zones: { zones } } = await queryOlimanager<{ zones: { zones: AddressBookZone[] } }>(req, `query($olympiad: String!) {
         zones { zones(filters: {olympiad: {id: {exact: $olympiad}}}) {
             id name provinces { id } extraSchools { pk } admins { isPrimary user { name surname email } }
         } }
     }`, { olympiad: olympiadId })
     const loadWarnings: string[] = []
-    const subscriptions = await loadSubscriptions(req, editionId, zones, loadWarnings)
+    const subscriptions = await loadSubscriptions(req, editionId, zones, loadWarnings, progress)
+    progress.stage = 'build'
     const book = buildAddressBook(zones, subscriptions)
+    progress.stage = 'sheets'
     const sheets = edition.contests.length ? await findSheets(edition.contests.map(c => String(c.id))) : []
     attachSheets(book, edition.contests, sheets)
     book.warnings.unshift(...loadWarnings)
