@@ -47,6 +47,9 @@ function render(params) {
       useSearchParams: () => new URLSearchParams(params),
     },
     './Button': { __esModule: true, default: ({ children }) => React.createElement('button', {}, children) },
+    // The header breadcrumbs, rendered in place as the NavBar shows them.
+    './BreadcrumbsProvider': { HeaderBreadcrumbs: ({ breadcrumbs }) => React.createElement('nav', {}, breadcrumbs.map((crumb, i) =>
+      crumb.href ? React.createElement('a', { key: i, href: crumb.href }, crumb.label) : React.createElement('b', { key: i }, crumb.label))) },
     './Error': { __esModule: true, default: () => null },
     './Loading': { __esModule: true, default: () => 'loading' },
     '../lib/util': {
@@ -92,6 +95,8 @@ test('scans are grouped by workbook, then by sheet, then by job', () => {
   assert.match(html, /completato/);
   assert.match(html, /errore/);
   assert.match(html, /<b>Liceo Galilei<\/b>/);
+  // The path is in the header breadcrumbs, each level linked but the current one.
+  assert.match(html, new RegExp(`<nav><a href="/files">file</a><a href="/files\\?kind=scan">Scansioni</a><a href="/files\\?kind=scan&workbook=${workbook}">Archimede 2026</a><b>Liceo Galilei</b></nav>`));
 });
 
 test('orphans list deleted jobs and files without a job', () => {

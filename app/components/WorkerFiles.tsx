@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import Button from './Button'
+import { HeaderBreadcrumbs, type Breadcrumb } from './BreadcrumbsProvider'
 import ErrorElement from './Error'
 import Loading from './Loading'
 import { myTimestamp, pluralize } from '../lib/util'
@@ -221,6 +222,9 @@ function EntryList({ entries, busy, onDelete }: {
   </>
 }
 
+// Header breadcrumb of the page; the folders follow it.
+const ROOT_CRUMB = { label: 'file', title: 'file dei worker' }
+
 export default function WorkerFiles() {
   const profile = useProfile()
   const router = useRouter()
@@ -232,10 +236,12 @@ export default function WorkerFiles() {
   const [deleteGroup, deleteGroupState] = useMutation(DELETE_GROUP)
   const [report, setReport] = useState<Deletion | null>(null)
 
-  if (profile === undefined) return <Loading />
-  if (!profile?.isAdmin) return <p>Pagina riservata agli amministratori.</p>
-  if (error) return <ErrorElement error={error} />
-  if (loading || !data) return <Loading />
+  // The root alone in the header until the files are loaded.
+  const withRoot = (content: ReactNode) => <><HeaderBreadcrumbs breadcrumbs={[ROOT_CRUMB]} />{content}</>
+  if (profile === undefined) return withRoot(<Loading />)
+  if (!profile?.isAdmin) return withRoot(<p>Pagina riservata agli amministratori.</p>)
+  if (error) return withRoot(<ErrorElement error={error} />)
+  if (loading || !data) return withRoot(<Loading />)
 
   const { areas, groups } = data.workerFiles
   const place: Place = {}
@@ -255,7 +261,7 @@ export default function WorkerFiles() {
   if (place.sheet) scope = scope.filter(group => sheetKey(group) === place.sheet)
   const job = place.job ? scope.find(group => groupKey(group) === place.job) : undefined
 
-  const crumbs: { label: string, place: Place }[] = [{ label: 'File dei worker', place: {} }]
+  const crumbs: { label: string, title?: string, place: Place }[] = [{ ...ROOT_CRUMB, place: {} }]
   if (place.kind) crumbs.push({ label: KIND_LABELS[place.kind] ?? place.kind, place: { kind: place.kind } })
   if (place.workbook) crumbs.push({ label: scope[0] ? workbookLabel(scope[0]) : 'raccoglitore',
     place: { kind: place.kind, workbook: place.workbook } })
@@ -318,16 +324,9 @@ export default function WorkerFiles() {
   }
 
   return <div className="mx-2">
-    <h1>file dei worker</h1>
-    <nav aria-label="Percorso" className="my-2 text-lg">
-      {crumbs.map((crumb, i) => <span key={i}>
-        {i > 0 && <span className="mx-1 text-gray-500">›</span>}
-        {i < crumbs.length - 1
-          ? <Link href={href(crumb.place)} className="text-blue-600 hover:underline">{crumb.label}</Link>
-          : <b>{crumb.label}</b>}
-      </span>)}
-      {} <Button className="ml-4" onClick={async () => { await refetch() }}>Aggiorna</Button>
-    </nav>
+    <HeaderBreadcrumbs breadcrumbs={crumbs.map(({ label, title, place }, i): Breadcrumb =>
+      ({ label, title, href: i < crumbs.length - 1 ? href(place) : undefined }))} />
+    <div className="my-2"><Button onClick={async () => { await refetch() }}>Aggiorna</Button></div>
     {areas.filter(area => !area.available).map(area =>
       <p key={area.area} className="text-red-600">{area.label}: directory non disponibile</p>)}
     {deleteGroupState.error && <ErrorElement error={deleteGroupState.error} />}

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 
 export interface Breadcrumb {
   label: string
@@ -31,4 +31,21 @@ export function useBreadcrumbs() {
     throw new Error('useBreadcrumbs must be used within a BreadcrumbsProvider')
   }
   return context
+}
+
+// Sets the header breadcrumbs while mounted. The effect depends on their
+// text, not on the array, so a new array with the same crumbs does not loop.
+export function HeaderBreadcrumbs({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
+  const { setBreadcrumbs } = useBreadcrumbs()
+  const key = JSON.stringify(breadcrumbs)
+  useEffect(() => {
+    setBreadcrumbs(JSON.parse(key))
+    return () => setBreadcrumbs([])
+  }, [key, setBreadcrumbs])
+  return null
+}
+
+// The title of a simple page, shown as the only breadcrumb.
+export function PageBreadcrumb({ label, title }: Breadcrumb) {
+  return <HeaderBreadcrumbs breadcrumbs={[{ label, title }]} />
 }

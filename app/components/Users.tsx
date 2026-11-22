@@ -144,7 +144,6 @@ export default function Users() {
     }
 
     return <>
-        <h1>utenti</h1>
         <table>
             <thead>
                 <tr>

@@ -111,8 +111,6 @@ export default function AppLogs() {
     && (!needle || entry.event.toLowerCase().includes(needle) || (entry.userEmail ?? '').toLowerCase().includes(needle)))
 
   return <div className="mx-2">
-    <h1>log applicativi</h1>
-
     {!logs.available && <p className="my-2 text-yellow-700">
       <code>LOG_DIR</code> non è configurata: la storia non è disponibile, ma i nuovi eventi compaiono qui sotto.
     </p>}

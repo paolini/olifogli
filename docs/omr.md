@@ -177,7 +177,7 @@ risultano sempre non attivi.
 La voce **file** del menu che si apre cliccando l'email in alto a destra apre
 la pagina `/files` (`app/components/WorkerFiles.tsx`), visibile solo agli amministratori.
 Mostra i file delle quattro directory condivise come un browser a cartelle, con
-il percorso in alto:
+il percorso nella barra di intestazione (`file › Scansioni › …`):
 
 - al primo livello ci sono **Scansioni**, **Fogli generati** e **Orfani**;
 - scansioni e fogli generati sono divisi per raccoglitore, poi per foglio
