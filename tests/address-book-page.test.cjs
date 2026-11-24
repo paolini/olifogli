@@ -105,22 +105,22 @@ const olimat = { label: 'olimat', href: '/olimanager/olimat', title: 'Olimpiadi 
 
 test('the home section lists the olympiads, linked to their editions', async t => {
   const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads, { ready: true, expired: false }));
-  assert.equal(page.document.querySelector('h1').textContent, 'Olimanager');
+  assert.equal(page.document.querySelector('h1').textContent, 'Olimpiadi scientifiche');
   assert.deepEqual(page.links(), [['Olimpiadi della Matematica', '/olimanager/olimat']]);
 });
 
 test('the home section shows Olimanager errors inside the section', async t => {
   const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads, { ready: true, expired: false }), { olympiadsError: new Error('non raggiungibile') });
-  assert.equal(page.document.querySelector('h1').textContent, 'Olimanager');
+  assert.equal(page.document.querySelector('h1').textContent, 'Olimpiadi scientifiche');
   assert.equal(page.document.querySelector('[role="alert"]').textContent, 'non raggiungibile');
 });
 
-for (const [expired, message] of [[false, /abilitando i trasferimenti/], [true, /sessione Olimanager è scaduta/]]) {
+for (const [expired, message] of [[false, /login con interfaccia oli-sci/], [true, /sessione delle olimpiadi scientifiche è scaduta/]]) {
   test(`without a usable Olimanager token the home section asks to log in (expired ${expired}), without querying`, async t => {
     const page = await mount(t, ({ OlimanagerOlympiads }) => React.createElement(OlimanagerOlympiads, { ready: false, expired }));
-    assert.equal(page.document.querySelector('h1').textContent, 'Olimanager');
+    assert.equal(page.document.querySelector('h1').textContent, 'Olimpiadi scientifiche');
     assert.match(page.document.querySelector('p').textContent, message);
-    assert.ok([...page.document.querySelectorAll('button')].some(b => b.textContent === 'Rientra con lo scope api'));
+    assert.ok([...page.document.querySelectorAll('button')].some(b => b.textContent === 'Rientra con interfaccia oli-sci'));
     assert.equal(page.document.querySelector('table'), null);
     assert.deepEqual(page.calls.olympiads, []);
   });

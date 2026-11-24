@@ -33,9 +33,9 @@ export function useOlympiads() {
 // token with the api scope), otherwise how to log in to read it.
 export function OlimanagerOlympiads({ ready, expired }: { ready: boolean, expired: boolean }) {
     return <div className="p-4 space-y-4">
-        <h1>Olimanager</h1>
+        <h1>Olimpiadi scientifiche</h1>
         {ready ? <OlympiadsTable />
-            : <OlimanagerLogin expired={expired} intro="Per vedere i dati di Olimanager (rubrica di CD, RD e RI)." />}
+            : <OlimanagerLogin expired={expired} intro="Per vedere i dati delle olimpiadi scientifiche (rubrica di CD, RD e RI)." />}
     </div>
 }
 
@@ -70,7 +70,7 @@ export function OlimanagerEditions({ olympiadId }: { olympiadId: string }) {
 
     if (loading) return <Loading />
     if (error) return <div className="p-2"><Error error={error} /></div>
-    if (!olympiad) return <div className="p-2"><Error error="Olimpiade non trovata in Olimanager." /></div>
+    if (!olympiad) return <div className="p-2"><Error error="Olimpiade non trovata." /></div>
     const editions = [...olympiad.editions].sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
     return <div className="p-2 space-y-3">
         <p>Scegli l’edizione per la rubrica di coordinatori distrettuali (CD), responsabili di distretto (RD) e referenti di istituto (RI), con i fogli Olifogli dell’edizione.</p>

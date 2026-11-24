@@ -59,7 +59,7 @@ async function mountSplash(t, session) {
   return { container, calls };
 }
 
-test('LOGIN asks only for the identity, LOGIN + OLIMANAGER for the api scope too', async (t) => {
+test('LOGIN asks only for the identity, LOGIN CON INTERFACCIA OLI-SCI for the api scope too', async (t) => {
   const { container, calls } = await mountSplash(t, null);
   assert.equal(container.querySelector('input[type="checkbox"]'), null);
   const button = label => [...container.querySelectorAll('button')].find(b => b.textContent === label);
@@ -67,10 +67,10 @@ test('LOGIN asks only for the identity, LOGIN + OLIMANAGER for the api scope too
   assert.equal(calls.at(-1)[0], 'olimanager');
   assert.equal(calls.at(-1)[1], undefined); // the home page needs no way back
   assert.equal(calls.at(-1)[2].scope, 'openid email profile');
-  await act(async () => button('LOGIN + OLIMANAGER').click());
+  await act(async () => button('LOGIN CON INTERFACCIA OLI-SCI').click());
   assert.equal(calls.at(-1)[1], undefined);
   assert.equal(calls.at(-1)[2].scope, 'openid email profile api');
-  assert.match(container.textContent, /garantisce l’accesso alle funzionalità Olimanager/);
+  assert.match(container.textContent, /permette a CD e RD di vedere le informazioni aggiornate sul loro distretto/);
 });
 
 // The section is always there for logged in users: the olympiads when

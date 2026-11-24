@@ -93,16 +93,16 @@ test('without a session the page is not mounted and the login brings back to it'
 
 test('the login of a page can request the api scope too', async t => {
   const page = await mount(t, { status: 'unauthenticated', requireApiScope: true });
-  await page.click('LOGIN + OLIMANAGER');
+  await page.click('LOGIN CON INTERFACCIA OLI-SCI');
   assert.deepEqual(plain(page.calls), [['signIn', 'olimanager', { callbackUrl: URL_OF_PAGE }, { scope: 'openid email profile api' }]]);
 });
 
-for (const [olimanagerApiScope, message] of [[false, /abilitando i trasferimenti/], [null, /abilitando i trasferimenti/], [true, /sessione Olimanager è scaduta/]]) {
+for (const [olimanagerApiScope, message] of [[false, /login con interfaccia oli-sci/], [null, /login con interfaccia oli-sci/], [true, /sessione delle olimpiadi scientifiche è scaduta/]]) {
   test(`an Olimanager page that cannot read Olimanager (scope ${olimanagerApiScope}) asks to log in again, back to the page`, async t => {
     const page = await mount(t, { status: 'authenticated', session: { user: {}, olimanagerApiScope, olimanagerApiReady: false }, requireApiScope: true });
     assert.equal(page.content(), null);
     assert.match(page.text(), message);
-    await page.click('Rientra con lo scope api');
+    await page.click('Rientra con interfaccia oli-sci');
     assert.deepEqual(plain(page.calls), [
       ['signOut', { redirect: false }],
       ['signIn', 'olimanager', { callbackUrl: URL_OF_PAGE }, { scope: 'openid email profile api' }],

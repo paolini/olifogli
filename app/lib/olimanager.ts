@@ -25,13 +25,13 @@ function checkOlimanagerToken(token: JWT | null): void {
     throw new OlimanagerGraphQLError(401, 'Sessione OAuth Olimanager assente. Esci e accedi nuovamente.')
   }
   if (typeof token.accessTokenExpiresAt === 'number' && token.accessTokenExpiresAt <= Date.now() / 1000) {
-    throw new OlimanagerGraphQLError(401, 'Il token Olimanager è scaduto. Esci e accedi nuovamente con «Abilita trasferimenti a Olimanager (scope api)».')
+    throw new OlimanagerGraphQLError(401, 'La sessione delle olimpiadi scientifiche è scaduta. Esci e accedi nuovamente con «LOGIN CON INTERFACCIA OLI-SCI».')
   }
   if (token.accessTokenHasApiScope === false) {
-    throw new OlimanagerGraphQLError(403, 'Questa sessione non ha lo scope api. Esci e accedi nuovamente selezionando «Abilita trasferimenti a Olimanager (scope api)».')
+    throw new OlimanagerGraphQLError(403, 'Questa sessione non ha lo scope api. Esci e accedi nuovamente con «LOGIN CON INTERFACCIA OLI-SCI».')
   }
   if (token.accessTokenHasApiScope !== true) {
-    throw new OlimanagerGraphQLError(403, 'Lo scope api della sessione non è verificabile. Esci e accedi nuovamente selezionando «Abilita trasferimenti a Olimanager (scope api)».')
+    throw new OlimanagerGraphQLError(403, 'Lo scope api della sessione non è verificabile. Esci e accedi nuovamente con «LOGIN CON INTERFACCIA OLI-SCI».')
   }
 }
 

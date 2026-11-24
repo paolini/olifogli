@@ -100,8 +100,11 @@ verificarle con un rilancio normale dopo averle copiate in `.env`.
 
 Il login richiede normalmente solo `openid email profile`. Per trasferire dati
 verso Olimanager (e per la sezione Olimanager) si usa il pulsante
-«LOGIN + OLIMANAGER», più piccolo, accanto a LOGIN: quel login richiede anche
-lo scope `api`, senza assegnare ulteriori ruoli. Per cambiare la
+«LOGIN CON INTERFACCIA OLI-SCI», più piccolo, accanto a LOGIN, con la
+didascalia «permette a CD e RD di vedere le informazioni aggiornate sul loro
+distretto»: quel login richiede anche lo scope `api`, senza assegnare ulteriori
+ruoli. Nei testi per gli utenti non si usa il nome in codice «Olimanager»: il
+servizio è noto come «olimpiadi scientifiche» («oli-sci»). Per cambiare la
 scelta di una sessione già aperta occorre uscire e rifare il login.
 
 Abbinamenti, risultati ed extra fields usano il token OAuth della sessione
@@ -235,11 +238,11 @@ selezionabili.
 
 ## Sezione Olimanager e rubrica di CD, RD e RI
 
-Dopo «Competizioni» la home mostra la sezione «Olimanager». Se Olimanager si
-può leggere (`session.olimanagerApiReady`) contiene la tabella delle olimpiadi
+Dopo «Competizioni» la home mostra la sezione «Olimpiadi scientifiche». Se
+Olimanager si può leggere (`session.olimanagerApiReady`) contiene la tabella delle olimpiadi
 (query `olimanagerOlympiads`, aperta a ogni utente autenticato); altrimenti
-spiega che bisogna fare il login abilitando i trasferimenti, o rifarlo se il
-token è scaduto, con il pulsante «Rientra con lo scope api». Le
+spiega che bisogna fare il login con interfaccia oli-sci, o rifarlo se il
+token è scaduto, con il pulsante «Rientra con interfaccia oli-sci». Le
 pagine seguono i livelli:
 
 - `/olimanager/<olimpiade>`: le edizioni dell'olimpiade, dalla più recente,
