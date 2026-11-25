@@ -105,5 +105,8 @@ test('Archimede browser validation needs no correction keys; server validation r
   assert.equal(context.contest_year, 2026);
   assert.equal(context.permutation_object, undefined);
   assert.equal(context.absent({ [instance.variant_field]: '000' }), true);
-  assert.throws(() => instance.validationContext({}, publicData), /Permutation object is empty/);
+  // On the server the missing keys become the row error instead of rejecting the write.
+  const server = instance.validationContext({ Codice_meccanografico: 'PIPS000001' }, publicData);
+  assert.equal(server.permutation_object, undefined);
+  assert.match(server.permutation_error, /Permutation object is empty/);
 });

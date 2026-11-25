@@ -12,6 +12,9 @@ export type ValidationContext = {
     contest_year: number,
     contest_id: number,
     permutation_object?: PermutationsObject,
+    // Why permutation_object is missing: reported as the row error, so rows can
+    // still be saved before the workbook is configured.
+    permutation_error?: string,
     answers_object?: {
         correct: Record<string, string>,
         points: {

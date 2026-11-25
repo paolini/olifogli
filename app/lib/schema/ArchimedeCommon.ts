@@ -5,7 +5,7 @@ import Competition from './Competition'
 import { Field, ChoiceAnswerField, DateField, OptionsField, VariantField, ScoreField, NumericField} from './fields'
 import { ValidationContext } from './Context'
 import { rowsByStudentCode, studentCodeKey, withRepeatedStudentCodesFlagged, type ScanMatch } from './scanMatching'
-import { buildPermutationObject } from './PERMUTATIONS'
+import { setPermutationObject } from './PERMUTATIONS'
 
 export default class ArchimedeCommon extends Competition {
     constructor(name: string, description: string, expectedMinAge: number=Number.NEGATIVE_INFINITY, expectedMaxAge: number=Number.POSITIVE_INFINITY) {
@@ -156,7 +156,7 @@ export default class ArchimedeCommon extends Competition {
 
     validationContext(sheetCommonData: Data, workbookCommonData: Data): ValidationContext {
         const context = super.validationContext(sheetCommonData, workbookCommonData)
-        context.permutation_object = buildPermutationObject(workbookCommonData)
+        setPermutationObject(context, workbookCommonData)
 
         const FIELD_NAME = "Codice_meccanografico"
         const schoolExternalId = sheetCommonData[FIELD_NAME]

@@ -112,9 +112,13 @@ la validazione delle righe e, per le gare, il calcolo del punteggio
 Archimede e Gara delle prime calcolano il punteggio con le chiavi di correzione
 e le permutazioni delle impostazioni `permutations_*` del raccoglitore, lette da
 `buildPermutationObject` (`app/lib/schema/PERMUTATIONS.ts`) nel
-`validationContext` dello schema. Senza queste impostazioni, o se sono
-incomplete o incoerenti, il contesto di validazione segnala l'errore di
-configurazione (`checkPermutationObject`): devono esserci tutti e quattro i
+`validationContext` dello schema (`setPermutationObject`). Senza queste
+impostazioni, o se sono incomplete o incoerenti, le righe vengono comunque
+salvate, ma ogni riga non assente ha l'errore «errore di configurazione della
+raccolta: …» e nessun punteggio (`permutation_error`, riportato da
+`Competition.calculateRowData`). Dopo aver corretto le impostazioni, le righe
+già salvate vanno rivalidate (`validateRows`). Controlli
+(`checkPermutationObject`): devono esserci tutti e quattro i
 punteggi (`permutations_points_correct`, `_wrong`, `_empty`, `_invalid`), ogni
 `permutations_questions_*` deve essere una permutazione di 1…n con lo stesso n,
 ogni `permutations_answers_*` una permutazione di `ABCDE` e ogni

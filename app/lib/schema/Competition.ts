@@ -46,7 +46,7 @@ export default class Competition extends Schema {
         const answer_items = this.extractAnswerItems(data)
         try {
             const permutations = context.permutation_object
-            if (!permutations) throw new Error("permutation_object mancante nel context, configurazione della raccolta errata?")
+            if (!permutations) throw new Error(context.permutation_error ?? "permutation_object mancante nel context, configurazione della raccolta errata?")
             const {score, error, extended_answers} = decodePermutations(variant, answer_items.map(item => item.answer), permutations, this.variant_years);
             
             if (error) {

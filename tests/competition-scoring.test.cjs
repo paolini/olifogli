@@ -61,9 +61,12 @@ test('regression #57: Gara delle prime computes the score from the workbook keys
   assert.equal(mixed.data.score, '21');
 });
 
-test('Gara delle prime without permutation settings reports the configuration error', () => {
+test('without permutation settings the row is saved with the configuration error', () => {
   const GaraPrime = load('app/lib/schema/GaraPrime.ts').default;
-  assert.throws(() => new GaraPrime().validationContext({}, { contest_year: '2026' }), /Permutation object is empty/);
+  const row = { ...student, codice_meccanografico: 'PIPS000001', variant: '1', ...answers('A'.repeat(18)) };
+  const result = score(new GaraPrime(), row, {}, { contest_year: '2026' });
+  assert.match(result.error, /^errore di configurazione della raccolta: Permutation object is empty/);
+  assert.equal(result.data.score, '');
 });
 
 test('Archimede biennio scores all-correct answers with the standard variant', () => {
@@ -115,9 +118,12 @@ test('answer anomalies recognize X in raw and corrected values only', () => {
   }
 });
 
+const scoredRow = { ...student, classYear: '1', variant: '211', ...answers(archimedeKeys.permutations_correct_2) };
+
 test('regression #66: a missing points setting is a configuration error, not a -Infinity score', () => {
-  assert.throws(() => archimede().validationContext(sheetData, workbook({ permutations_points_wrong: undefined })),
-    /permutations_points_wrong/);
+  const result = score(archimede(), scoredRow, sheetData, workbook({ permutations_points_wrong: undefined }));
+  assert.match(result.error, /errore di configurazione della raccolta: .*permutations_points_wrong/);
+  assert.equal(result.data.score, '');
 });
 
 for (const [setting, value, message] of [
@@ -127,8 +133,10 @@ for (const [setting, value, message] of [
   ['permutations_correct_2', 'ABC', /ha 3 risposte invece di 16/],
   ['permutations_correct_3', 'ABCDEABCDEABCDEZ', /caratteri diversi/],
 ]) {
-  test(`regression #66: inconsistent ${setting} is rejected when the context is built`, () => {
-    assert.throws(() => archimede().validationContext(sheetData, workbook({ [setting]: value })), message);
+  test(`regression #66: inconsistent ${setting} is a configuration error of every scored row`, () => {
+    const result = score(archimede(), scoredRow, sheetData, workbook({ [setting]: value }));
+    assert.match(result.error, /^errore di configurazione della raccolta: /);
+    assert.match(result.error, message);
   });
 }
 

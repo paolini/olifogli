@@ -30,6 +30,16 @@ export type PermutationsObject = {
  * settings of the workbook. Shared by every schema scored with permutations
  * (Archimede, Gara delle prime).
  */
+// A configuration error does not reject the write: it becomes the row error
+// (`Competition.calculateRowData`), as before the 28686fe refactoring.
+export function setPermutationObject(context: { permutation_object?: PermutationsObject, permutation_error?: string }, commonData: Data) {
+    try {
+        context.permutation_object = buildPermutationObject(commonData)
+    } catch (e) {
+        context.permutation_error = (e as Error).message
+    }
+}
+
 export function buildPermutationObject(commonData: Data): PermutationsObject {
     // ATTENZIONE: internamente gli array sono 0-based
     // tranne correct che infatti usa le stringhe '2','3','4','5'.

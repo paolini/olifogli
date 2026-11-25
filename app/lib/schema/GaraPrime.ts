@@ -4,7 +4,7 @@ import Competition from './Competition'
 import { Field, ChoiceAnswerField, DateField, VariantField, ScoreField, NumericField } from './fields'
 import { ValidationContext } from './Context'
 import { rowsByStudentCode, studentCodeKey, withRepeatedStudentCodesFlagged, type ScanMatch } from './scanMatching'
-import { buildPermutationObject } from './PERMUTATIONS'
+import { setPermutationObject } from './PERMUTATIONS'
 
 export default class GaraPrime extends Competition {
     constructor() {
@@ -157,7 +157,7 @@ export default class GaraPrime extends Competition {
     
     validationContext(sheet_data: Data, workbook_data: Data): ValidationContext {
         const context = super.validationContext(sheet_data, workbook_data)
-        context.permutation_object = buildPermutationObject(workbook_data)
+        setPermutationObject(context, workbook_data)
         const FIELD_NAME = "codice_meccanografico"
         context.school_external_id = (data: Data) => {
             const x =data[FIELD_NAME]
