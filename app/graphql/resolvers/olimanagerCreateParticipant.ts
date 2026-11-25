@@ -182,6 +182,7 @@ async function syncDataWithOlimanager(
       const context = schema.validationContext(sheet.commonData, workbook.commonData)
       const contestId = context.contest_id;
       const schoolExternalId = context.school_external_id(row.data)
+      if (!schoolExternalId?.trim()) throw new Error('Codice meccanografico mancante.')
 
       const name = row.data.name
       const surname = row.data.surname

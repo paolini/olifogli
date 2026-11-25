@@ -120,6 +120,13 @@ test('answer anomalies recognize X in raw and corrected values only', () => {
 
 const scoredRow = { ...student, classYear: '1', variant: '211', ...answers(archimedeKeys.permutations_correct_2) };
 
+test('Archimede scores rows of a sheet without Codice_meccanografico; the school code is just empty', () => {
+  const schema = archimede();
+  const context = schema.validationContext({}, workbook());
+  assert.equal(context.school_external_id({}), '');
+  assert.equal(schema.computeDerivedData(schema.clean(scoredRow), context).data.score, '80');
+});
+
 test('regression #66: a missing points setting is a configuration error, not a -Infinity score', () => {
   const result = score(archimede(), scoredRow, sheetData, workbook({ permutations_points_wrong: undefined }));
   assert.match(result.error, /errore di configurazione della raccolta: .*permutations_points_wrong/);

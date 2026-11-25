@@ -159,8 +159,9 @@ export default class ArchimedeCommon extends Competition {
         setPermutationObject(context, workbookCommonData)
 
         const FIELD_NAME = "Codice_meccanografico"
-        const schoolExternalId = sheetCommonData[FIELD_NAME]
-        if (!schoolExternalId) throw new Error(`campo "${FIELD_NAME}" mancante nei dati della scuola`)
+        // Needed only by the Olimanager jobs, which reject an empty code: rows
+        // can be saved on a sheet without it.
+        const schoolExternalId = sheetCommonData[FIELD_NAME] || ''
         context.school_external_id = (data: Data) => schoolExternalId
 
         return context;
