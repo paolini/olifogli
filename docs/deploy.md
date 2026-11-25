@@ -115,6 +115,18 @@ non produce immagini (vedi [README](../README.md#rami-ci-e-staging)). I worker
 `oliscan` e `olisheet` di archiomr seguono le stesse convenzioni: in produzione
 `:main`, sullo staging `:staging` (vedi [omr.md](omr.md)).
 
+Ogni immagine pubblicata ha anche il tag `sha-<commit>` (hash completo). Se
+`main` punta a un commit che `staging` ha già costruito, la CI non ricostruisce:
+aggiunge i tag `:main`, `:latest` e `:<versione>` all'immagine
+`sha-<commit>` esistente (`docker buildx imagetools create`), in pochi secondi.
+È possibile perché l'immagine non dipende dall'ambiente (vedi sopra). L'immagine
+ritaggata conserva le etichette OCI della build di staging (per esempio
+`org.opencontainers.image.version=staging`). Rieseguire il workflow su `main`
+quindi non ricostruisce: per forzare una nuova build, per esempio dopo un
+aggiornamento dell'immagine base `node`, serve un nuovo commit. La CI non usa
+la cache di build: a ogni rilascio cambiano i sorgenti e la versione in
+`package*.json`, quindi si riutilizzava poco e salvare la cache costava minuti.
+
 Il job `build` usa l'environment GitHub `docker-publish`, configurato in
 `Settings → Environments` con accesso consentito soltanto ai branch `main` e
 `staging` (nessun tag). Il secret `DOCKERHUB_TOKEN` va salvato in questo

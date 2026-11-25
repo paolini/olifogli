@@ -2,6 +2,8 @@ name: Docker Image CI
 
 # develop: solo test. staging: immagine :staging e deploy sul server di staging.
 # main: immagini :main, :latest e :<versione>, senza deploy. Vedi README.md.
+# Ogni immagine ha anche il tag sha-<commit>: main ritagga l'immagine già
+# costruita da staging per lo stesso commit invece di ricostruirla.
 on:
   push:
     branches:
@@ -48,6 +50,7 @@ jobs:
         images: paolini/olifogli
         tags: |
           type=ref,event=branch
+          type=sha,format=long
           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           type=raw,value=${{ env.VERSION }},enable=${{ github.ref == 'refs/heads/main' }}
     - name: Set up Docker Buildx
@@ -57,16 +60,34 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+    # The image does not depend on the environment (docs/deploy.md): the one
+    # staging built from this commit is the one main would build.
+    - name: Find an image of the same commit
+      id: existing
+      if: github.ref == 'refs/heads/main'
+      run: |
+        if docker buildx imagetools inspect "paolini/olifogli:sha-${GITHUB_SHA}" > /dev/null 2>&1; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Tag the existing image
+      if: steps.existing.outputs.found == 'true'
+      env:
+        TAGS: ${{ steps.meta.outputs.tags }}
+      run: |
+        args=()
+        while read -r tag; do [ -n "$tag" ] && args+=(-t "$tag"); done <<< "$TAGS"
+        docker buildx imagetools create "${args[@]}" "paolini/olifogli:sha-${GITHUB_SHA}"
+    # No build cache: every release changes package*.json (version) and the
+    # sources, so little was reused while exporting the cache took minutes.
     - name: Build and push
       id: docker_build
+      if: steps.existing.outputs.found != 'true'
       uses: docker/build-push-action@v7
       with:
         push: true
         context: .
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
 
   deploy_staging:
     runs-on: ubuntu-latest

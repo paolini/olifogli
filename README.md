@@ -159,7 +159,7 @@ parte a ogni push su uno di questi tre rami:
 |---|---|
 | `develop` | Solo test, lint e audit delle dipendenze: niente immagine, niente deploy |
 | `staging` | Test, immagine `paolini/olifogli:staging` e deploy sul server di staging |
-| `main` | Test e immagini `:main`, `:latest` e `:<versione di package.json>`; il deploy in produzione è manuale ([docs/deploy.md](docs/deploy.md#aggiornamento-dellapplicazione)) |
+| `main` | Test e immagini `:main`, `:latest` e `:<versione di package.json>`, ritaggando l'immagine di staging se il commit è lo stesso; il deploy in produzione è manuale ([docs/deploy.md](docs/deploy.md#aggiornamento-dellapplicazione)) |
 
 Il repository archiomr, che contiene i worker `oliscan` e `olisheet`, segue le
 stesse convenzioni (vedi [docs/omr.md](docs/omr.md)).
