@@ -319,6 +319,15 @@ rispetto all'anno della gara non blocca: `Field.editingWarning` restituisce un
 avviso, mostrato sotto la cella durante la modifica (solo con l'anno a quattro
 cifre) e poi nel `title` della cella evidenziata come `anomalous`.
 
+Anche `AnswerField` segnala come `anomalous` le risposte `X` (non valutabili),
+per invitare a verificare eventuali errori di acquisizione della scansione.
+Il controllo riconosce sia `X` sia i valori con correzione allegata, come
+`X [AXA]` o `X [42]`. L'avviso non blocca il salvataggio e non cambia il
+punteggio. Ogni risposta `X` contribuisce al contatore delle anomalie quando
+la riga supera la validazione dei campi, come le date di nascita inconsuete;
+le celle sono evidenziate anche nelle righe non valide. Per aggiornare i
+contatori delle righe già presenti occorre eseguire `validateRows`.
+
 Negli schemi di gara, `affectsScore` identifica risposte, codice compito e
 assenza. Una modifica confermata a questi campi avvia subito il salvataggio; le
 modifiche arrivate durante una richiesta vengono inviate dopo la sua conferma. Il

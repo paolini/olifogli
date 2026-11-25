@@ -222,6 +222,18 @@ export class OptionsField extends Field {
 }
 
 export class AnswerField extends Field {
+    anomalous(value: string, context: RowValidationContext): boolean {
+        // Scored answers retain the original answer before the bracketed correction.
+        const answer = value?.match(/^(.*)\s\[(.*)\]$/)?.[1] ?? value
+        return answer === 'X'
+    }
+
+    editingWarning(value: string, context: RowValidationContext): string {
+        return this.anomalous(value, context)
+            ? 'Risposta non valutabile (X): verificare che sia stata acquisita correttamente'
+            : ''
+    }
+
     checkValid(value: string, context: RowValidationContext): string {
         if (context.absent) {
             if (value !== '') return 'se lo studente è assente, il campo deve essere vuoto'

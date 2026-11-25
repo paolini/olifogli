@@ -2,6 +2,18 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { mountTable } = require('./helpers/table-fixture.cjs');
 
+test('X answers are highlighted after saving and lose the anomaly when corrected', async t => {
+  const f = await mountTable(t, { competition: true });
+  await f.click(f.cell('r01'));
+  await f.key('x');
+  assert.equal(f.cell('r01').textContent, 'X');
+  assert.match(f.cell('r01').className, /\banomalous\b/);
+  assert.match(f.cell('r01').title, /acquisita correttamente/);
+  await f.click(f.cell('r01'));
+  await f.key('a');
+  assert.doesNotMatch(f.cell('r01').className, /\banomalous\b/);
+});
+
 test('answer edits recalculate the score on the server without waiting for autosave', async t => {
   const f = await mountTable(t, { competition: true });
   assert.equal(f.cell('score').textContent, '80');

@@ -86,6 +86,35 @@ const workbook = (overrides = {}) => {
   return data;
 };
 
+test('X answers count as anomalies before and after scoring without invalidating the row', () => {
+  const schema = archimede();
+  const row = { ...student, classYear: '1', variant: '211',
+    ...answers(archimedeKeys.permutations_correct_2), r01: 'X', r02: 'X' };
+  const result = score(schema, row, sheetData, workbook());
+  assert.equal(result.error, '');
+  assert.equal(result.anomalies, 2);
+  assert.equal(result.data.score, String(70 + 2 * Number(archimedeKeys.permutations_points_invalid)));
+  assert.equal(score(schema, result.data, sheetData, workbook()).anomalies, 2);
+  const invalid = score(schema, { ...row, surname: '' }, sheetData, workbook());
+  assert.ok(invalid.error);
+  assert.equal(invalid.anomalies, 0);
+});
+
+test('answer anomalies recognize X in raw and corrected values only', () => {
+  const { ChoiceAnswerField, NumericAnswerField } = load('app/lib/schema/fields.ts');
+  const context = { absent: false, context: {} };
+  for (const field of [new ChoiceAnswerField('r01', {}), new NumericAnswerField('r02', {})]) {
+    for (const value of ['X', 'X [A]', 'X [AXA]', 'X [42]']) {
+      assert.equal(field.anomalous(value, context), true);
+      assert.match(field.editingWarning(value, context), /acquisita correttamente/);
+    }
+    for (const value of ['', '-', 'A', '42', 'A [X]', '42 [42]']) {
+      assert.equal(field.anomalous(value, context), false);
+      assert.equal(field.editingWarning(value, context), '');
+    }
+  }
+});
+
 test('regression #66: a missing points setting is a configuration error, not a -Infinity score', () => {
   assert.throws(() => archimede().validationContext(sheetData, workbook({ permutations_points_wrong: undefined })),
     /permutations_points_wrong/);
