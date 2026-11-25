@@ -242,8 +242,10 @@ cancellare sul server, per esempio con
 | `SHEETGENSPOOL_DIR` | `/app/sheetgenspool` | Richieste di generazione, condivisa con `olisheet` |
 | `SHEETGENDATA_DIR` | `/app/sheetgendata` | PDF generati, condivisa con `olisheet` |
 
-I worker usano lo stesso MongoDB e accettano entrambi `MONGO_URI` oppure
-`MONGODB_URI`. Senza MongoDB `oliscan` salva i risultati in
+I worker devono usare lo stesso MongoDB dell’applicazione, configurato con
+`MONGODB_URI`. Non usare il vecchio nome `MONGO_URI`: le immagini recenti
+non lo leggono e `oliscan` lavora senza database, senza aggiornare lo stato
+dei lavori né il segnale di vita. Senza MongoDB `oliscan` salva i risultati in
 `{DATA_DIR}/{jobId}/results.jsonl` (JSON valido, un oggetto per riga), utile solo
 per le prove.
 
@@ -255,7 +257,7 @@ Altre variabili dei worker:
 | `UMASK` | `000` | `umask` per file e cartelle creati (vedi [Permessi dei file](#permessi-dei-file)) |
 | `KEEP_TMP_FOLDERS` | `false` | Se vera, conserva `tmp/{jobId}` dopo l'elaborazione, per il debug |
 | `ADJUST_COLORSPACE` | attiva | Correzione del colore di `oliscan`; si disattiva con `false`, `0`, `no`, `off` o con il valore vuoto |
-| `DB_NAME` | `olifogli` | Database MongoDB |
+| `DB_NAME` | `olifogli` | Database dei worker: deve coincidere con quello usato da Olifogli; nei worker il nome nell’URI non sostituisce questa variabile |
 
 ## Sviluppo locale
 
@@ -273,29 +275,30 @@ provarli servono una copia di archiomr e Docker.
    SHEETGENDATA_DIR=/percorso/olifogli/sheetgenworker/sheetgendata
    ```
 
-2. Costruisci le immagini da archiomr; il Compose di archiomr le chiama
-   `paolini/oliscan` e `paolini/olisheet`. In alternativa si possono usare le
-   immagini pubblicate su `harbor.cs.dm.unipi.it/olifogli/`.
+2. Costruisci le immagini da archiomr. Il Compose le etichetta come
+   `harbor.cs.dm.unipi.it/olifogli/oliscan:latest` e
+   `harbor.cs.dm.unipi.it/olifogli/olisheet:latest`. In alternativa usa le
+   immagini pubblicate nello stesso registro.
 
    ```sh
    cd ../archiomr && docker compose build oliscan olisheet
    ```
 
-3. Avvia i worker collegandoli alle directory e al MongoDB locale. Nei container
+3. Dalla directory di Olifogli, avvia i worker collegandoli alle directory e al MongoDB locale. Nei container
    la directory di lavoro è `/app`, e i default sono `/app/spool`, `/app/data`,
    `/app/sheetgenspool` e `/app/sheetgendata`:
 
    ```sh
    docker run --rm --network host \
-     -e MONGO_URI="mongodb://127.0.0.1:27017/?directConnection=true" \
+     -e MONGODB_URI="mongodb://127.0.0.1:27017/olifogli?directConnection=true" \
      -v "$PWD/worker/spool:/app/spool" -v "$PWD/worker/data:/app/data" \
-     paolini/oliscan:latest
+     harbor.cs.dm.unipi.it/olifogli/oliscan:latest
 
    docker run --rm --network host \
-     -e MONGO_URI="mongodb://127.0.0.1:27017/?directConnection=true" \
+     -e MONGODB_URI="mongodb://127.0.0.1:27017/olifogli?directConnection=true" \
      -v "$PWD/sheetgenworker/sheetgenspool:/app/sheetgenspool" \
      -v "$PWD/sheetgenworker/sheetgendata:/app/sheetgendata" \
-     paolini/olisheet:latest
+     harbor.cs.dm.unipi.it/olifogli/olisheet:latest
    ```
 
    Il database è `olifogli` per impostazione predefinita (variabile `DB_NAME`

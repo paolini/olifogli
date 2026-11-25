@@ -56,9 +56,14 @@ OLIMANAGER_OAUTH_CLIENT_ID=<client id dell'applicazione OAuth>
 OLIMANAGER_OAUTH_CLIENT_SECRET=<client secret dell'applicazione OAuth>
 ```
 
+Nei Compose di esempio `MONGODB_URI` è impostata direttamente nei servizi,
+non letta da `.env`. Per cambiare database modificare tutti i servizi interessati;
+per `oliscan` e `olisheet` impostare anche `DB_NAME` se il nome non è `olifogli`
+(vedi [omr.md](omr.md#configurazione)). Non usare `MONGO_URI`.
+
 | Variabile | Usata da | Descrizione |
 |---|---|---|
-| `MONGODB_URI` | app, ws-server, worker | Connessione MongoDB; deve essere un replica set |
+| `MONGODB_URI` | app, ws-server, olifogli-worker, migrate, oliscan, olisheet | Connessione allo stesso MongoDB in replica set; usare questo nome anche per i worker archiomr |
 | `REDIS_URL` | app, ws-server, worker | Connessione Redis (default `redis://127.0.0.1:6379`) |
 | `NEXTAUTH_SECRET` | app, ws-server, worker | Segreto delle sessioni; deve essere identico in tutti i servizi. Se manca o è un valore di esempio (`...`, `dummysecret`, …; vedi `app/lib/sessionSecret.ts`) i servizi non partono |
 | `NEXTAUTH_URL` | app, ws-server | URL pubblico dell'applicazione |
@@ -328,6 +333,43 @@ applicata solo quando il comando viene eseguito: monitorarne gli errori e lascia
 il cron attivo anche quando l'applicazione è ferma. Alla prima esecuzione vengono
 eliminati anche i vecchi file giornalieri scaduti; i file più recenti del vecchio
 formato possono ancora contenere dati personali.
+
+### Pulizia delle righe cancellate
+
+Le righe eliminate dall'applicazione restano nella collezione `deleted_rows`.
+Per eliminarle definitivamente dopo un periodo scelto, eseguire sul server:
+
+```bash
+# Anteprima: conta le righe cancellate da più di 30 giorni
+docker compose -f docker-compose-production.yml exec -T app npm run rows:cleanup -- --days 30 --dry-run
+# Cancellazione definitiva delle righe scadute
+docker compose -f docker-compose-production.yml exec -T app npm run rows:cleanup -- --days 30
+```
+
+Nel Compose multiapp usare `app1` al posto di `app`. Fuori da Docker il comando
+è `npm run rows:cleanup -- --days 30`; legge `MONGODB_URI` dall'ambiente o da
+`.env`, senza sovrascrivere le variabili già esportate.
+
+`--days N` è obbligatorio e deve essere un intero positivo: non è prevista una
+durata predefinita. Il valore 30 è solo un esempio da sostituire con il periodo
+di conservazione scelto. Lo script `scripts/cleanup-deleted-rows.cjs` elimina
+solo i documenti con `deletedOn` di tipo data BSON **strettamente precedente**
+all'istante di avvio meno N periodi di 24 ore. Quelli senza una data valida
+restano invariati e richiedono una verifica separata. L'anteprima non scrive;
+l'esecuzione effettiva stampa il numero realmente cancellato, la soglia e la
+durata, senza dati personali. Gli errori producono un codice di uscita non zero.
+
+La pulizia riguarda solo `deleted_rows`: non modifica righe attive, contatori,
+`deleted_sheets`, file OMR o backup. Le copie nei backup richiedono una propria
+politica di conservazione. Dopo la pulizia le righe non sono recuperabili dal
+database corrente.
+
+Non c'è un timer nell'applicazione. Per una pulizia giornaliera si può aggiungere
+al cron del server, adattando percorso e durata:
+
+```cron
+15 3 * * * cd /srv/olifogli && /usr/bin/docker compose -f docker-compose-production.yml run --rm --no-deps -T app npm run rows:cleanup -- --days 30
+```
 
 ### Log dei container
 
