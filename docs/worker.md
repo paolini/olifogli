@@ -17,7 +17,12 @@ creazione e invio risultati sono ancora disponibili per compatibilità, ma i
 pulsanti dell'interfaccia accodano lavori. Le azioni sui fogli (tutte tranne
 **Importa partecipanti da Olimanager**) si scelgono, per i fogli selezionati,
 dal menu a tendina «agisci su N fogli selezionati» nel riquadro «⚙ admin» in
-fondo all'elenco dei fogli.
+fondo all'elenco dei fogli. La selezione resta quando si cambiano i filtri, così
+si possono cercare e aggiungere fogli con filtri diversi; la casella
+nell'intestazione seleziona o deseleziona tutti i fogli filtrati, anche quelli
+oltre il limite mostrato. Le azioni, e le impostazioni in blocco di dati comuni
+e permessi, agiscono su tutti i fogli selezionati: le conferme indicano quanti
+non sono visibili.
 
 Il codice è in `app/lib/olimanagerJobs.ts` (coda, lease, ciclo di esecuzione) e
 nei moduli `app/lib/olimanager*.ts`; i resolver GraphQL sono in

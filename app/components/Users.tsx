@@ -98,7 +98,9 @@ export default function Users() {
         })
     }
 
-    function Th({ field, header }: { field: string, header: string }) {
+    // Chiamata come funzione e non come componente: un componente definito qui
+    // dentro verrebbe rimontato a ogni render, ricreando il campo del filtro.
+    function renderTh(field: string, header: string) {
         const isFiltered = !!columnFilters[field]
         return <th key={field} style={{ position: 'relative' }}>
             <span className="flex items-center justify-between gap-2">
@@ -147,9 +149,9 @@ export default function Users() {
         <table>
             <thead>
                 <tr>
-                    <Th field="email" header="email" />
-                    <Th field="name" header="nome" />
-                    <Th field="role" header="ruolo" />
+                    {renderTh("email", "email")}
+                    {renderTh("name", "nome")}
+                    {renderTh("role", "ruolo")}
                 </tr>
             </thead>
             <tbody>

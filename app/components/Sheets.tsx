@@ -139,11 +139,20 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
     })
     const columns = Array.from(columnsSet)
 
-    // Gestione selezione
-    const allSelected = selectedIds.length === filteredSheets.length && filteredSheets.length > 0;
+    // Gestione selezione. La selezione sopravvive ai cambi di filtro: si può
+    // selezionare con un filtro, cambiarlo e aggiungere altri fogli. Le azioni
+    // agiscono su tutti i fogli selezionati, anche se non visibili; le conferme
+    // segnalano quanti sono.
+    const selectedIdSet = new Set(selectedIds)
+    const selectedSheets = allSheets.filter(sheet => selectedIdSet.has(sheet._id.toString()))
+    const selectedSheetIds = selectedSheets.map(sheet => sheet._id.toString())
+    const displayedIdSet = new Set(displayedSheets.map(sheet => sheet._id.toString()))
+    const hiddenSelectedCount = selectedSheetIds.filter(id => !displayedIdSet.has(id)).length
+    const allSelected = filteredSheets.length > 0 && filteredSheets.every(s => selectedIdSet.has(s._id.toString()));
     const toggleAll = () => {
-        if (allSelected) setSelectedIds([])
-        else setSelectedIds(filteredSheets.map(s => s._id.toString()))
+        const filteredIds = filteredSheets.map(s => s._id.toString())
+        if (allSelected) setSelectedIds(prev => prev.filter(id => !filteredIds.includes(id)))
+        else setSelectedIds(prev => Array.from(new Set([...prev, ...filteredIds])))
     }
     // removed old single-toggle helper (now handled in handleCheckboxClick)
 
@@ -177,8 +186,6 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
         link.click();
     }
 
-    const selectedSheets = filteredSheets.filter(sheet => selectedIds.includes(sheet._id.toString()))
-
     const selectedSheetsActions: { key: string, label: string, disabled: boolean, run: () => void }[] = [
         { key: 'delete', label: 'Elimina', disabled: deletingSheets, run: deleteSelectedSheets },
         { key: 'validate', label: 'Rivalida', disabled: validatingRows, run: validateSelectedSheets },
@@ -186,7 +193,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
         { key: 'unlock', label: 'Sblocca', disabled: updatingSheets, run: unlockSelectedSheets },
         { key: 'olimanagerCheck', label: 'Verifica collegamenti olimanager', disabled: checkingOlimanager, run: async () => {
             try {
-                await requestOlimanagerCheck({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
+                await requestOlimanagerCheck({ variables: { sheetIds: selectedSheetIds.map(id => new ObjectId(id)) } })
             } catch { /* Apollo exposes the error above. */ }
         } },
         { key: 'olimanagerMatch', label: 'Crea/abbina partecipanti su olimanager', disabled: matchingOlimanager, run: handleOlimanagerCreateParticipantsForSheets },
@@ -237,7 +244,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
                             commonDataHeaders={columns}
                             creationDisabled={creationId !== null} 
                             startCreation={sheetId => setCreationId(sheetId)} 
-                            selected={selectedIds.includes(sheet._id.toString())}
+                            selected={selectedIdSet.has(sheet._id.toString())}
                             onCheckboxClick={(e) => handleCheckboxClick(sheet._id, e)}
                         />
                     ))}
@@ -271,14 +278,14 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
                     <select
                         className="p-1 border"
                         value=""
-                        disabled={selectedIds.length === 0}
+                        disabled={selectedSheetIds.length === 0}
                         onChange={e => {
                             const action = selectedSheetsActions.find(a => a.key === e.target.value)
                             if (action && !action.disabled) action.run()
                         }}
                     >
                         <option value="" disabled>
-                            {pluralize(selectedIds.length, 'agisci su un foglio selezionato', 'agisci su % fogli selezionati')}
+                            {pluralize(selectedSheetIds.length, 'agisci su un foglio selezionato', 'agisci su % fogli selezionati')}
                         </option>
                         {selectedSheetsActions.map(action =>
                             <option key={action.key} value={action.key} disabled={action.disabled}>
@@ -291,14 +298,22 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
                     </Button>
                 </div>
                 <Error error={updateSheetsError} />
-                { selectedIds.length > 0 && <>
-                    <BulkCommonDataSetter sheets={selectedSheets} onApply={applyBulkCommonData} />
-                    <BulkPermissionSetter sheets={selectedSheets} onApply={applyBulkPermission} />
+                { selectedSheetIds.length > 0 && <>
+                    <BulkCommonDataSetter sheets={selectedSheets} hiddenCount={hiddenSelectedCount} onApply={applyBulkCommonData} />
+                    <BulkPermissionSetter sheets={selectedSheets} hiddenCount={hiddenSelectedCount} onApply={applyBulkPermission} />
                 </>}
                 { adminActions && <div className="mt-2 flex flex-wrap items-start gap-2">{adminActions}</div> }
             </fieldset>
         }
     </>
+
+    function hiddenSelectedNote() {
+        if (hiddenSelectedCount === 0) return ''
+        return '\n\nAttenzione: ' + pluralize(hiddenSelectedCount,
+            'un foglio selezionato non è visibile',
+            '% fogli selezionati non sono visibili') +
+            ' (nascosti dai filtri o oltre quelli mostrati).'
+    }
 
     function clearFilter(field: string) {
         setColumnFilters(f => ({ ...f, [field]: '' }))
@@ -349,16 +364,16 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
     }
 
     async function deleteSelectedSheets() {
-      if (!confirm(`Sei sicuro di voler eliminare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
-      await deleteSheets({ variables: { ids: selectedIds.map(id => new ObjectId(id)) } })
+      if (!confirm(`Sei sicuro di voler eliminare ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}?` + hiddenSelectedNote())) return
+      await deleteSheets({ variables: { ids: selectedSheetIds.map(id => new ObjectId(id)) } })
       setSelectedIds([])
       refetch()
     }
 
     async function validateSelectedSheets() {
-      if (!confirm(`Sei sicuro di voler validare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
+      if (!confirm(`Sei sicuro di voler validare ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}?` + hiddenSelectedNote())) return
 
-      for (const id of selectedIds) {
+      for (const id of selectedSheetIds) {
         const result = await validateRows({ variables: { sheetId: new ObjectId(id) } })
 
       }
@@ -367,8 +382,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
     }
 
     async function lockSelectedSheets() {
-        if (!confirm(`Sei sicuro di voler finalizzare ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
-        const updates = selectedIds.map(id => ({
+        if (!confirm(`Sei sicuro di voler finalizzare ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}?` + hiddenSelectedNote())) return
+        const updates = selectedSheetIds.map(id => ({
             _id: new ObjectId(id),
             locked: true
         }))
@@ -377,8 +392,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
     }
 
     async function unlockSelectedSheets() {
-        if (!confirm(`Sei sicuro di voler sbloccare (definalizzare) ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')}?`)) return
-        const updates = selectedIds.map(id => ({
+        if (!confirm(`Sei sicuro di voler sbloccare (definalizzare) ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}?` + hiddenSelectedNote())) return
+        const updates = selectedSheetIds.map(id => ({
             _id: new ObjectId(id),
             locked: false
         }))
@@ -388,7 +403,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
 
     async function cryptSelectedSheets() {
         if (!profile?.isAdmin) return
-        if (!confirm(`Applicare crittografia sui ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')} selezionati?`)) return
+        if (!confirm(`Applicare la crittografia a ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}?` + hiddenSelectedNote())) return
         const password = prompt('Password per crittografia') || ''
         const confirmPassword = prompt('Conferma password') || ''
         if (password !== confirmPassword) {
@@ -397,7 +412,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
         }
         if (!password) return
         try {
-            await cryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
+            await cryptSheetsMutation({ variables: { sheetIds: selectedSheetIds.map(id => new ObjectId(id)), password } })
             alert('Crittografia accodata al worker. Puoi seguirne lo stato nelle operazioni in background.')
         } catch (e) {
             alert(e instanceof globalThis.Error ? e.message : 'Errore durante la richiesta di crittografia')
@@ -407,7 +422,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
 
     async function decryptSelectedSheets() {
         if (!profile?.isAdmin) return
-        if (!confirm(`Rimuovere crittografia dai ${pluralize(selectedIds.length, 'foglio selezionato', 'fogli selezionati')} selezionati?`)) return
+        if (!confirm(`Rimuovere la crittografia da ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}?` + hiddenSelectedNote())) return
         const pw1 = prompt('Password per decrittazione') || ''
         if (!pw1) return
         const pw2 = prompt('Ripeti la password per conferma') || ''
@@ -417,7 +432,7 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
         }
         const password = pw1
         try {
-            await decryptSheetsMutation({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)), password } })
+            await decryptSheetsMutation({ variables: { sheetIds: selectedSheetIds.map(id => new ObjectId(id)), password } })
             alert('Decrittazione accodata al worker. Puoi seguirne lo stato nelle operazioni in background.')
         } catch (e) {
             alert(e instanceof globalThis.Error ? e.message : 'Errore durante la richiesta di decrittazione')
@@ -473,16 +488,16 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
     }
 
     async function handleOlimanagerCreateParticipantsForSheets() {
-        if (!confirm(`Creare/abbinare partecipanti su Olimanager per i ${selectedIds.length} fogli selezionati? Il lavoro proseguirà in background.`)) return
+        if (!confirm(`Creare/abbinare partecipanti su Olimanager per ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}? Il lavoro proseguirà in background.` + hiddenSelectedNote())) return
         try {
-            await requestOlimanagerMatch({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
+            await requestOlimanagerMatch({ variables: { sheetIds: selectedSheetIds.map(id => new ObjectId(id)) } })
         } catch { /* Apollo exposes the error above. */ }
     }
 
     async function handleOlimanagerBulkUpdateResults() {
-        if (!confirm(`Inviare i risultati a Olimanager per i ${selectedIds.length} fogli selezionati? Il lavoro proseguirà in background.`)) return
+        if (!confirm(`Inviare i risultati a Olimanager per ${pluralize(selectedSheetIds.length, 'foglio selezionato', 'fogli selezionati')}? Il lavoro proseguirà in background.` + hiddenSelectedNote())) return
         try {
-            await requestOlimanagerResults({ variables: { sheetIds: selectedIds.map(id => new ObjectId(id)) } })
+            await requestOlimanagerResults({ variables: { sheetIds: selectedSheetIds.map(id => new ObjectId(id)) } })
         } catch { /* Apollo exposes the error above. */ }
     }
 
@@ -571,8 +586,9 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
     </tr>
 }
 
-function BulkCommonDataSetter({sheets, onApply}:{
+function BulkCommonDataSetter({sheets, hiddenCount, onApply}:{
     sheets: Partial<Sheet>[],
+    hiddenCount: number,
     onApply: (field: string, value: string) => Promise<void>
 }) {
     const [field, setField] = useState('')
@@ -627,12 +643,13 @@ function BulkCommonDataSetter({sheets, onApply}:{
         </table>
         <Button disabled={loading || !field.trim()} onClick={handleApply}>
             ⚙ Applica
-        </Button> su {sheets.length} fogli
+        </Button> su {pluralize(sheets.length, 'foglio', 'fogli')}<HiddenCount count={hiddenCount} />
     </div>
 }
 
-function BulkPermissionSetter({sheets, onApply}:{
+function BulkPermissionSetter({sheets, hiddenCount, onApply}:{
     sheets: Partial<Sheet>[],
+    hiddenCount: number,
     onApply: (email: string, role: 'manager'|'editor'|'viewer') => Promise<void>
 }) {
     const [email, setEmail] = useState('')
@@ -685,6 +702,11 @@ function BulkPermissionSetter({sheets, onApply}:{
         </table>
         <Button disabled={loading || !email.trim()} onClick={handleApply}>
             ⚙ Concedi
-        </Button> su {sheets.length} fogli
+        </Button> su {pluralize(sheets.length, 'foglio', 'fogli')}<HiddenCount count={hiddenCount} />
     </div>
+}
+
+function HiddenCount({ count }: { count: number }) {
+    if (count === 0) return null
+    return <> ({pluralize(count, 'uno non visibile', '% non visibili')})</>
 }
