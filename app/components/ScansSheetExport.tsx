@@ -143,7 +143,7 @@ export default function ScansPdfExport({sheet}:{
         )}
         <div>
             Per generare i fogli risposte in PDF, seleziona le righe desiderate nel foglio e attiva 
-            il pulsante &quot;genera fogli risposte&quot;.
+            il pulsante &quot;Genera fogli-risposta a lettura ottica&quot;.
             In fondo al PDF viene sempre aggiunto un foglio bianco da fotocopiare
             per i partecipanti non registrati.
         </div>

@@ -140,7 +140,7 @@ const actions: Record<string, Action> = {
     handler: handleDeleteSelectedRows
   },
   'scan': {
-    label: 'Genera fogli risposte',
+    label: 'Genera fogli-risposta a lettura ottica',
     hidden: ctx => !ctx.edit,
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || !ctx.userHasSheetAdminPrivileges,
     handler: handleGenerateScanSheet
