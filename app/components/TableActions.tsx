@@ -140,7 +140,7 @@ const actions: Record<string, Action> = {
     handler: handleDeleteSelectedRows
   },
   'scan': {
-    label: 'Genera fogli-risposta a lettura ottica',
+    label: 'Genera fogli-risposta per la selezione',
     hidden: ctx => !ctx.edit,
     disabled: ctx => ctx.tableState.selectedLineKeys.size === 0 || !ctx.userHasSheetAdminPrivileges,
     handler: handleGenerateScanSheet
@@ -260,7 +260,7 @@ function handleGenerateScanSheet(ctx: TableActionContext) {
       .map(line => line.row?._id as ObjectId)
 
   if (selectedRowIds.length === 0) {
-      alert('Nessuna riga valida selezionata per la generazione dei fogli risposte.')
+      alert('Nessuna riga valida selezionata per la generazione dei fogli-risposta.')
       return
   }
 
@@ -272,7 +272,7 @@ function handleGenerateScanSheet(ctx: TableActionContext) {
 
   ctx.mutations.requestScanSheetGeneration({variables: {sheetId, selectedRowIds}})
 
-  alert(`Hai richiesto la generazione di ${selectedRowIds.length === 1 ? 'un foglio' : `${selectedRowIds.length} fogli`} risposte. Vai sulla linguetta "Scansioni" per scaricare i PDF generati.`)
+  alert(`Hai richiesto la generazione di ${selectedRowIds.length === 1 ? 'un foglio-risposta' : `${selectedRowIds.length} fogli-risposta`}. Vai sulla scheda GESTIONE LETTURA OTTICA per scaricare i PDF generati.`)
 }
 
 async function handleGenerateStudentIds(ctx: TableActionContext) {

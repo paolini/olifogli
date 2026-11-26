@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { useSubscription } from "@apollo/client";
-import { ScanSheetJob, Sheet, useDeleteScanSheetJobMutation, useRequestScanSheetGenerationMutation, useScanSheetJobsQuery } from "../graphql/generated"
+import { Row, ScanSheetJob, Sheet, useDeleteScanSheetJobMutation, useRequestScanSheetGenerationMutation, useScanSheetJobsQuery } from "../graphql/generated"
 import Error from "./Error"
 import { ObjectId } from "bson"
 import Loading from "./Loading"
@@ -39,14 +39,15 @@ const SCAN_SHEET_JOB_UPDATED_SUBSCRIPTION = gql`
 function jobContent(job: Pick<ScanSheetJob, 'nRows' | 'nBlankSheets'>) {
     const { nRows, nBlankSheets } = job
     if (nRows == null || nBlankSheets == null) return '—'
-    const blank = nBlankSheets === 1 ? '1 foglio bianco' : `${nBlankSheets} fogli bianchi`
-    if (nRows === 0) return nBlankSheets === 1 ? 'Solo foglio bianco' : `Solo ${blank}`
+    const blank = nBlankSheets === 1 ? '1 foglio vuoto' : `${nBlankSheets} fogli vuoti`
+    if (nRows === 0) return nBlankSheets === 1 ? 'Solo foglio vuoto' : `Solo ${blank}`
     const students = nRows === 1 ? '1 studente' : `${nRows} studenti`
     return nBlankSheets === 0 ? students : `${students} + ${blank}`
 }
 
-export default function ScansPdfExport({sheet}:{
+export default function ScansPdfExport({sheet, rows}:{
     sheet: Sheet
+    rows: Row[]
 }) {
     const { data: jobsData, loading: jobsLoading, error: jobsError, refetch: refetchJobs } = useScanSheetJobsQuery({
         variables: { sheetId: new ObjectId(sheet._id) },
@@ -62,6 +63,21 @@ export default function ScansPdfExport({sheet}:{
     const [deleteJob, { loading: deleteLoading, error: deleteError }] = useDeleteScanSheetJobMutation()
     const [requestGeneration, { loading: requestLoading, error: requestError }] = useRequestScanSheetGenerationMutation()
 
+    async function handleAllRows() {
+        const nRows = rows.length
+        const nWithoutId = rows.filter(row => !row.data?.id).length
+        const question = nRows === 1
+            ? 'Generare il foglio-risposta per l\'unico studente del foglio?'
+            : `Generare i fogli-risposta per tutti i ${nRows} studenti del foglio?`
+        const warning = nWithoutId === 0 ? ''
+            : nWithoutId === 1 ? '\n\nAttenzione: uno studente non ha un ID studente valido.'
+            : `\n\nAttenzione: ${nWithoutId} studenti non hanno un ID studente valido.`
+        if (!window.confirm(question + warning)) return
+        // senza selectedRowIds il server prende tutte le righe del foglio
+        await requestGeneration({ variables: { sheetId: new ObjectId(sheet._id) } })
+        await refetchJobs()
+    }
+
     async function handleBlankSheet() {
         // nessuna riga: il PDF contiene solo il foglio bianco che viene sempre aggiunto in fondo
         await requestGeneration({ variables: { sheetId: new ObjectId(sheet._id), selectedRowIds: [] } })
@@ -69,20 +85,42 @@ export default function ScansPdfExport({sheet}:{
     }
 
     async function handleDelete(jobId: ObjectId) {
-        if (!window.confirm('Eliminare il PDF dei fogli risposte?')) return
+        if (!window.confirm('Eliminare il PDF dei fogli-risposta?')) return
         await deleteJob({ variables: { jobId } })
         await refetchJobs()
     }
 
     return <div>
-        <h2>PDF fogli generati</h2>
-        <OmrWorkerStatus type="olisheet" />
-        
+        {canManage && <>
+            <h2>Generazione fogli-risposta a lettura ottica</h2>
+            <OmrWorkerStatus type="olisheet" />
+            <Error error={requestError} />
+            <div className="flex items-center gap-2 mt-2">
+                <Button disabled={requestLoading || rows.length === 0} onClick={handleAllRows}>
+                    Genera fogli-risposta
+                </Button>
+                <span>Per generare i fogli per tutti gli studenti</span>
+            </div>
+            <p className="my-2">
+                Se si desidera generare i fogli-risposta solo per alcuni studenti, nella
+                pagina INSERIMENTO DATI selezionare gli studenti interessati e scegliere
+                la voce di menu &laquo;Genera fogli-risposta per la selezione&raquo;.
+            </p>
+            <div className="flex items-center gap-2">
+                <Button disabled={requestLoading} onClick={handleBlankSheet}>
+                    Genera foglio vuoto
+                </Button>
+                <span>(Per avere alcune copie di riserva)</span>
+            </div>
+            <div className="my-8"/>
+        </>}
+
+        <h2>Fogli-risposta generati</h2>
+        {!canManage && <OmrWorkerStatus type="olisheet" />}
         {jobsLoading && <Loading />}
         <Error error={jobsError} />
         <Error error={subscriptionError} />
         <Error error={deleteError} />
-        <Error error={requestError} />
         {jobsData?.scanSheetJobs && jobsData.scanSheetJobs.length > 0 ? (
             <table className="border-collapse border border-gray-300 w-auto">
                 <thead>
@@ -139,18 +177,11 @@ export default function ScansPdfExport({sheet}:{
                 </tbody>
             </table>
         ) : (
-            !jobsLoading && <p className="text-gray-500">Non hai generato nessun foglio PDF.</p>
+            !jobsLoading && <p className="text-gray-500">Non è ancora stato generato nessun foglio-risposta.</p>
         )}
-        <div>
-            Per generare i fogli risposte in PDF, seleziona le righe desiderate nel foglio e attiva 
-            il pulsante &quot;Genera fogli-risposta a lettura ottica&quot;.
-            In fondo al PDF viene sempre aggiunto un foglio bianco da fotocopiare
+        <p className="mt-2">
+            In fondo a ogni PDF viene sempre aggiunto un foglio vuoto da fotocopiare
             per i partecipanti non registrati.
-        </div>
-        {canManage && <div className="mt-2">
-            <Button disabled={requestLoading} onClick={handleBlankSheet}>
-                Genera foglio bianco
-            </Button>
-        </div>}
+        </p>
     </div>
 }

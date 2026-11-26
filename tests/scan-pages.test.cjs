@@ -57,7 +57,7 @@ function page(file, { profile = null, pdfJobs = null } = {}) {
     if (Object.hasOwn(dependencies, id)) return dependencies[id];
     throw new Error('Unexpected dependency: ' + id);
   } });
-  const html = renderToStaticMarkup(React.createElement(exports.default, { sheet, data_rows: [] }));
+  const html = renderToStaticMarkup(React.createElement(exports.default, { sheet, data_rows: [], rows: [] }));
   return { subscriptions, queries, refreshed, sheet, job, html };
 }
 
@@ -101,12 +101,14 @@ test('generated PDFs can be deleted only by sheet managers and admins', () => {
     { profile: { email: 'other@example.com', isAdmin: true } }).html.includes('elimina'));
 });
 
-test('only sheet managers and admins can request a blank sheet', () => {
+test('only sheet managers and admins can request answer sheets', () => {
   const file = 'app/components/ScansSheetExport.tsx';
-  assert.ok(!page(file).html.includes('Genera foglio bianco'));
-  assert.ok(!page(file, { profile: { email: 'other@example.com', isAdmin: false } }).html.includes('Genera foglio bianco'));
-  assert.ok(page(file, { profile: { email: 'manager@example.com', isAdmin: false } }).html.includes('Genera foglio bianco'));
-  assert.ok(page(file, { profile: { email: 'other@example.com', isAdmin: true } }).html.includes('Genera foglio bianco'));
+  for (const label of ['Genera fogli-risposta<', 'Genera foglio vuoto']) {
+    assert.ok(!page(file).html.includes(label));
+    assert.ok(!page(file, { profile: { email: 'other@example.com', isAdmin: false } }).html.includes(label));
+    assert.ok(page(file, { profile: { email: 'manager@example.com', isAdmin: false } }).html.includes(label));
+    assert.ok(page(file, { profile: { email: 'other@example.com', isAdmin: true } }).html.includes(label));
+  }
 });
 
 test('generated PDFs show how many student and blank pages they contain', () => {
@@ -117,8 +119,8 @@ test('generated PDFs show how many student and blank pages they contain', () => 
     { ...job, _id: new ObjectId(), nRows: 0, nBlankSheets: 1 },
     { ...job, _id: new ObjectId() },
   ] });
-  assert.ok(html.includes('32 studenti + 1 foglio bianco'));
-  assert.ok(html.includes('1 studente + 1 foglio bianco'));
-  assert.ok(html.includes('Solo foglio bianco'));
+  assert.ok(html.includes('32 studenti + 1 foglio vuoto'));
+  assert.ok(html.includes('1 studente + 1 foglio vuoto'));
+  assert.ok(html.includes('Solo foglio vuoto'));
   assert.ok(html.includes('—'));
 });

@@ -316,7 +316,7 @@ function SheetBody({sheet,profile}: {
                 <button 
                     className={`tab-button ${tab === 'scans' ? 'tab-button-active' : 'tab-button-inactive'}`}
                     onClick={() => setTab('scans')}>
-                    IMPORTA SCANSIONI
+                    GESTIONE LETTURA OTTICA
                 </button>
             }
         </div>
@@ -373,7 +373,7 @@ function SheetBody({sheet,profile}: {
         }
         { tab === 'scans' && <div className="mx-2">
             <GlobalMessage name={`scan_info_${sheet.schema}`} title="istruzioni" collapsed={true} />
-            <ScansSheetExport sheet={sheet} />
+            <ScansSheetExport sheet={sheet} rows={data.rows} />
             <div className="my-8"/>
             <ScansImport sheet={sheet} data_rows={data.rows} />
           </div>

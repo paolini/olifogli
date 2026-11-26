@@ -82,7 +82,7 @@ innocuo e si può cancellare.
 
 ### Scansioni
 
-1. L'utente carica il PDF dalla linguetta **Importa scansioni** del foglio (serve il
+1. L'utente carica il PDF dalla linguetta **Gestione lettura ottica** del foglio (serve il
    permesso di modificare le righe). `POST /api/upload`
    (`app/api/upload/route.ts`) crea il `scan_job` e pubblica il file per
    `oliscan`.
@@ -111,12 +111,21 @@ le righe selezionate, o tutte, in un file JSONL per `olisheet`, una riga JSON pe
 studente con `sheet_name` e i dati della riga. Il PDF generato si scarica da
 `/scansheet/{jobId}/pdf`.
 
+La linguetta **Gestione lettura ottica** del foglio ha tre sezioni, nell'ordine
+delle operazioni: **Generazione fogli-risposta a lettura ottica** (solo per i
+responsabili del foglio), **Fogli-risposta generati** e **Caricamento
+scansioni**. Nella prima, il pulsante **Genera fogli-risposta** chiama la
+mutation senza `selectedRowIds`, quindi per tutte le righe del foglio. Per
+generare i fogli solo per alcuni studenti si selezionano le righe nella
+linguetta **Inserimento dati** e si sceglie la voce di menu **Genera
+fogli-risposta per la selezione**.
+
 `olisheet` produce una pagina per record. In fondo al file JSONL Olifogli
 aggiunge sempre un record senza dati personali, con il solo `sheet_name`: è il
-foglio bianco da fotocopiare per i partecipanti non registrati. Con
+foglio vuoto da fotocopiare per i partecipanti non registrati. Con
 `selectedRowIds: []` il file contiene solo questo record e il PDF solo il foglio
-bianco: è quello che fa il pulsante **Genera foglio bianco** della linguetta
-**Scansioni**. Le versioni di `olisheet` precedenti all'accordo aggiungevano da
+vuoto: è quello che fa il pulsante **Genera foglio vuoto** della linguetta
+**Gestione lettura ottica**. Le versioni di `olisheet` precedenti all'accordo aggiungevano da
 sé un'ulteriore pagina completamente vuota. Il lavoro in `scan_sheet_jobs` registra
 `nRows` (pagine con gli studenti) e `nBlankSheets` (pagine bianche, per ora
 sempre 1); la tabella dei PDF generati li mostra nella colonna «Contenuto». I
@@ -160,8 +169,10 @@ ogni tipo restituisce se è attivo, il numero di istanze attive, l'ultimo segnal
 e, per ogni istanza attiva, versione, stato e lavoro in corso.
 
 Il componente `OmrWorkerStatus` mostra lo stato, aggiornato ogni 10 secondi, in
-cima alla sezione **Caricamento scansioni** (`oliscan`) e alla sezione **PDF
-fogli generati** (`olisheet`) della linguetta **Scansioni** del foglio. Accanto
+cima alla sezione **Caricamento scansioni** (`oliscan`) e alla sezione
+**Generazione fogli-risposta a lettura ottica** (`olisheet`; per chi non è
+responsabile del foglio, alla sezione **Fogli-risposta generati**) della
+linguetta **Gestione lettura ottica** del foglio. Accanto
 allo stato attivo mostra la versione riportata nello heartbeat; se le istanze
 attive hanno versioni diverse, le elenca tutte senza duplicati. Se il
 worker non è attivo avvisa che i file resteranno in coda. Se un'istanza è
