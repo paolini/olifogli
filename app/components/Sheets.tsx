@@ -12,7 +12,7 @@ import { useMutation } from '@apollo/client';
 import Link from 'next/link';
 import SchoolSheetsCreation from './SheetsCreation';
 import { useRouter } from 'next/navigation';
-import { Lock, Archive, Unlock, X } from 'lucide-react';
+import { Lock, Archive, Unlock, X, TriangleAlert } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import SheetsFilter, { filterSheets } from './SheetsFilter';
 import { myTimestamp, pluralize } from '../lib/util';
@@ -83,6 +83,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
     const { filterState, columnFilters, setColumnFilters, sort, setSort } = useSheetsFilterWithQuerystring();
     // Filtro aperto con un clic e ancora vuoto; i filtri non vuoti restano sempre aperti.
     const [filterMenuOpen, setFilterMenuOpen] = useState<string|null>(null)
+    // Modulo per le impostazioni in blocco aperto dal menu delle azioni.
+    const [bulkPanel, setBulkPanel] = useState<'commonData'|'permission'|null>(null)
 
     type Sheet = GetSheetsQuery['sheets'][number]
 
@@ -200,6 +202,8 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
         { key: 'olimanagerResults', label: 'Invia risultati su olimanager', disabled: resultsLoading, run: handleOlimanagerBulkUpdateResults },
         { key: 'crypt', label: 'Cripta', disabled: cryptSheetsLoading, run: cryptSelectedSheets },
         { key: 'decrypt', label: 'Decripta', disabled: decryptSheetsLoading, run: decryptSelectedSheets },
+        { key: 'commonData', label: 'Modifica dati comuni…', disabled: false, run: () => setBulkPanel('commonData') },
+        { key: 'permission', label: 'Concedi permesso…', disabled: false, run: () => setBulkPanel('permission') },
     ]
 
     if (creationId) return <SchoolSheetsCreation sheetId={creationId} workbookId={workbookId} done={() => {setCreationId(null);refetch()}} />
@@ -293,16 +297,26 @@ export default function Sheets({ sheets, profile, workbookId, refetch, adminActi
                             </option>
                         )}
                     </select>
+                    { hiddenSelectedCount > 0 &&
+                        <span className="flex items-center gap-1 text-orange-600" title="Nascosti dai filtri o oltre i fogli mostrati">
+                            <TriangleAlert size={16} />
+                            {pluralize(hiddenSelectedCount, 'un foglio selezionato non è visibile', '% fogli selezionati non sono visibili')}
+                        </span>
+                    }
+                </div>
+                <Error error={updateSheetsError} />
+                { selectedSheetIds.length > 0 && bulkPanel === 'commonData' &&
+                    <BulkCommonDataSetter sheets={selectedSheets} hiddenCount={hiddenSelectedCount} onApply={applyBulkCommonData} onClose={() => setBulkPanel(null)} />
+                }
+                { selectedSheetIds.length > 0 && bulkPanel === 'permission' &&
+                    <BulkPermissionSetter sheets={selectedSheets} hiddenCount={hiddenSelectedCount} onApply={applyBulkPermission} onClose={() => setBulkPanel(null)} />
+                }
+                <div className="mt-2 flex flex-wrap items-start gap-2">
+                    {adminActions}
                     <Button variant="danger" disabled={filteredSheets.length > 0 || deletingWorkbook} onClick={onDelete}>
                         ⚙ Elimina raccolta
                     </Button>
                 </div>
-                <Error error={updateSheetsError} />
-                { selectedSheetIds.length > 0 && <>
-                    <BulkCommonDataSetter sheets={selectedSheets} hiddenCount={hiddenSelectedCount} onApply={applyBulkCommonData} />
-                    <BulkPermissionSetter sheets={selectedSheets} hiddenCount={hiddenSelectedCount} onApply={applyBulkPermission} />
-                </>}
-                { adminActions && <div className="mt-2 flex flex-wrap items-start gap-2">{adminActions}</div> }
             </fieldset>
         }
     </>
@@ -586,10 +600,11 @@ function SheetRow({sheet, profile, creationDisabled, startCreation, commonDataHe
     </tr>
 }
 
-function BulkCommonDataSetter({sheets, hiddenCount, onApply}:{
+function BulkCommonDataSetter({sheets, hiddenCount, onApply, onClose}:{
     sheets: Partial<Sheet>[],
     hiddenCount: number,
-    onApply: (field: string, value: string) => Promise<void>
+    onApply: (field: string, value: string) => Promise<void>,
+    onClose: () => void
 }) {
     const [field, setField] = useState('')
     const [value, setValue] = useState('')
@@ -602,13 +617,14 @@ function BulkCommonDataSetter({sheets, hiddenCount, onApply}:{
         try {
             await onApply(field, value)
             alert(`Campo "${field}" impostato su ${sheets.length} fogli`)
+            onClose()
         } finally {
             setLoading(false)
         }
     }
 
-    return <div className="p-4 border rounded bg-gray-50">
-        <h2 className="font-bold mb-2">⚙ Modifica dati comuni</h2>
+    return <div className="p-4 border rounded bg-gray-50 mt-2">
+        <BulkPanelHeader title="⚙ Modifica dati comuni" onClose={onClose} />
         <div className="mb-2">
             <label className="flex items-center gap-2">
                 <input type="checkbox" checked={useTextarea} onChange={e => setUseTextarea(e.target.checked)} />
@@ -647,10 +663,11 @@ function BulkCommonDataSetter({sheets, hiddenCount, onApply}:{
     </div>
 }
 
-function BulkPermissionSetter({sheets, hiddenCount, onApply}:{
+function BulkPermissionSetter({sheets, hiddenCount, onApply, onClose}:{
     sheets: Partial<Sheet>[],
     hiddenCount: number,
-    onApply: (email: string, role: 'manager'|'editor'|'viewer') => Promise<void>
+    onApply: (email: string, role: 'manager'|'editor'|'viewer') => Promise<void>,
+    onClose: () => void
 }) {
     const [email, setEmail] = useState('')
     const [role, setRole] = useState<'manager'|'editor'|'viewer'>('editor')
@@ -669,15 +686,14 @@ function BulkPermissionSetter({sheets, hiddenCount, onApply}:{
         try {
             await onApply(e, role)
             alert(`Permesso "${ROLE_LABELS[role]}" assegnato a ${e} su ${sheets.length} fogli`)
-            setEmail('')
-            setRole('editor')
+            onClose()
         } finally {
             setLoading(false)
         }
     }
 
-    return <div className="p-4 border rounded bg-gray-50 mt-3">
-        <h2 className="font-bold mb-2">⚙ Concedi permesso in blocco</h2>
+    return <div className="p-4 border rounded bg-gray-50 mt-2">
+        <BulkPanelHeader title="⚙ Concedi permesso in blocco" onClose={onClose} />
         <table className="commondata">
             <tbody>
             <tr>
@@ -709,4 +725,13 @@ function BulkPermissionSetter({sheets, hiddenCount, onApply}:{
 function HiddenCount({ count }: { count: number }) {
     if (count === 0) return null
     return <> ({pluralize(count, 'uno non visibile', '% non visibili')})</>
+}
+
+function BulkPanelHeader({ title, onClose }: { title: string, onClose: () => void }) {
+    return <div className="flex items-center justify-between mb-2">
+        <h2 className="font-bold">{title}</h2>
+        <button className="p-1 border rounded" title="Chiudi" onClick={onClose}>
+            <X size={14} />
+        </button>
+    </div>
 }
