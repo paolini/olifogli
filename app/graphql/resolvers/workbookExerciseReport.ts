@@ -12,10 +12,10 @@ import Competition from '@/app/lib/schema/Competition'
 
 export default async function workbookExerciseReport(
     _: unknown, 
-    { workbookId, schema, commonData, state }: QueryWorkbookExerciseReportArgs, 
+    { workbookId, schema, commonData, state, macroarea, indirizzo, classYear }: QueryWorkbookExerciseReportArgs, 
     context: Context
 ): Promise<ExerciseReport[]> {
-    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context, { macroarea, indirizzo })
     const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
 
     const reports: ExerciseReport[] = []
@@ -27,14 +27,14 @@ export default async function workbookExerciseReport(
         const sheets = allSheets.filter(s => s.schema === schema)
         reports.push({
             schema,
-            ...await generateExerciseReport(sheets, schema)
+            ...await generateExerciseReport(sheets, schema, classYear || null)
         })
     }
 
     return reports
 }
 
-async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): Promise<{totalStudents: number, exerciseDistribution: ExerciseDistributionItem[]}> {
+async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string, classYear: string | null): Promise<{totalStudents: number, exerciseDistribution: ExerciseDistributionItem[]}> {
     const rowsCollection = await getRowsCollection()
     const sheetIds = sheets.map(s => s._id)
     const theSchema = schemas[schema]
@@ -48,7 +48,8 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
     const rows = await rowsCollection.find({
         sheetId: { $in: sheetIds },
         error: "", // righe valide
-        "data.score": { $exists: true, $ne: "" } // togli studenti assenti
+        "data.score": { $exists: true, $ne: "" }, // togli studenti assenti
+        ...classYear ? { 'data.classYear': classYear } : {},
     }).toArray()
 
     type Counts = {

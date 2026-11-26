@@ -9,10 +9,10 @@ import { schemas } from '@/app/lib/schema'
 
 export default async function workbookRankingReport(
     _: unknown,
-    { workbookId, schema, commonData, state, limit, orderBy, orderDirection }: QueryWorkbookRankingReportArgs,
+    { workbookId, schema, commonData, state, macroarea, indirizzo, limit, orderBy, orderDirection }: QueryWorkbookRankingReportArgs,
     context: Context
 ): Promise<RankingReport[]> {
-    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || null, context)
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || null, context, { macroarea, indirizzo })
     const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
     const reports: RankingReport[] = []
 

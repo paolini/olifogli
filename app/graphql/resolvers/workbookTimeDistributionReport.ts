@@ -8,10 +8,10 @@ import { schemas } from '@/app/lib/schema'
 
 export default async function workbookTimeDistributionReport(
     _: unknown, 
-    { workbookId, schema, commonData, state }: QueryWorkbookTimeDistributionReportArgs, 
+    { workbookId, schema, commonData, state, macroarea, indirizzo }: QueryWorkbookTimeDistributionReportArgs, 
     context: Context
 ): Promise<TimeDistributionReport[]> {
-    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context, { macroarea, indirizzo })
     const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
 
     const reports: TimeDistributionReport[] = []

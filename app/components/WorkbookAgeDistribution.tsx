@@ -16,7 +16,7 @@ import type { TooltipItem } from 'chart.js'
 import Error from './Error'
 import Loading from './Loading'
 import { AgeDistributionReport, SheetState, useGetSheetsQuery, useGetWorkbookAgeDistributionReportQuery } from '../graphql/generated'
-import SheetsFilter, { filterSheets } from './SheetsFilter'
+import SheetsFilter, { filterSheets, reportFilterVariables } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
 import { schemas } from '../lib/schema'
@@ -32,8 +32,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetWorkbookAgeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
-        workbookAgeDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
+    query GetWorkbookAgeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String) {
+        workbookAgeDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, macroarea: $macroarea, indirizzo: $indirizzo) {
             schema
             items {
                 age
@@ -62,7 +62,7 @@ export default function WorkbookAgeDistribution({ workbookId }: { workbookId: Ob
     const filteredSheets = filterSheets(filterState, sheets)
 
     const { loading, error, data, refetch: refetchReport } = useGetWorkbookAgeDistributionReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
+        variables: { workbookId, ...reportFilterVariables(filterState) },
     })
 
     useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })

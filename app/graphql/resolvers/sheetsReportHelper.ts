@@ -3,6 +3,7 @@ import { get_authenticated_user } from './utils'
 import { getSheetsCollection } from '@/app/lib/mongodb'
 import { ObjectId, Document } from 'mongodb'
 import { Sheet } from '@/app/lib/models'
+import { classifySchoolCode, sheetSchoolCode } from '@/app/lib/schoolCode'
 
 export default async function sheetsReportHelper(
     sheetIds: ObjectId[], 
@@ -31,7 +32,8 @@ export async function getAllSheets(
     schema: string | null,
     commonData: Record<string, string> | null,
     state: string | null,
-    context: Context
+    context: Context,
+    school: { macroarea?: string | null, indirizzo?: string | null } = {},
 ): Promise<Sheet[]> {
     const user = await get_authenticated_user(context)
     if (!user) throw new Error("Not authenticated")
@@ -64,6 +66,14 @@ export async function getAllSheets(
     const allSheets = await sheetsCollection.find(sheetFilter).toArray()
 
     // console.log(`Found ${allSheets.length} sheets matching filter`) // DEBUG
-    
-    return allSheets
+
+    // Macroarea e indirizzo si ricavano dal codice meccanografico, non sono
+    // salvati nel foglio: il filtro avviene qui e non nella query.
+    const { macroarea, indirizzo } = school
+    if (!macroarea && !indirizzo) return allSheets
+    return allSheets.filter(sheet => {
+        const classification = classifySchoolCode(sheetSchoolCode(sheet))
+        return (!macroarea || classification.macroarea === macroarea)
+            && (!indirizzo || classification.indirizzo === indirizzo)
+    })
 }

@@ -778,6 +778,8 @@ export type QueryWorkbookArgs = {
 
 export type QueryWorkbookAgeDistributionReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
   schema?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<SheetState>;
   workbookId: Scalars['ObjectId']['input'];
@@ -785,7 +787,10 @@ export type QueryWorkbookAgeDistributionReportArgs = {
 
 
 export type QueryWorkbookDistributionReportArgs = {
+  classYear?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
   schema?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<SheetState>;
   workbookId: Scalars['ObjectId']['input'];
@@ -793,7 +798,10 @@ export type QueryWorkbookDistributionReportArgs = {
 
 
 export type QueryWorkbookExerciseReportArgs = {
+  classYear?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
   schema?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<SheetState>;
   workbookId: Scalars['ObjectId']['input'];
@@ -802,7 +810,9 @@ export type QueryWorkbookExerciseReportArgs = {
 
 export type QueryWorkbookRankingReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<Scalars['String']['input']>;
   orderDirection?: InputMaybe<Scalars['Int']['input']>;
   schema?: InputMaybe<Scalars['String']['input']>;
@@ -813,6 +823,8 @@ export type QueryWorkbookRankingReportArgs = {
 
 export type QueryWorkbookTimeDistributionReportArgs = {
   commonData?: InputMaybe<Scalars['Data']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
   schema?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<SheetState>;
   workbookId: Scalars['ObjectId']['input'];
@@ -1569,6 +1581,8 @@ export type GetWorkbookAgeDistributionReportQueryVariables = Exact<{
   schema?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   state?: InputMaybe<SheetState>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -1587,6 +1601,9 @@ export type GetWorkbookDistributionReportQueryVariables = Exact<{
   schema?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   state?: InputMaybe<SheetState>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
+  classYear?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -1597,6 +1614,9 @@ export type GetWorkbookExerciseReportQueryVariables = Exact<{
   schema?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   state?: InputMaybe<SheetState>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
+  classYear?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -1607,6 +1627,8 @@ export type GetWorkbookRankingReportQueryVariables = Exact<{
   schema?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   state?: InputMaybe<SheetState>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Scalars['String']['input']>;
   orderDirection?: InputMaybe<Scalars['Int']['input']>;
@@ -1627,6 +1649,8 @@ export type GetWorkbookTimeDistributionReportQueryVariables = Exact<{
   schema?: InputMaybe<Scalars['String']['input']>;
   commonData?: InputMaybe<Scalars['Data']['input']>;
   state?: InputMaybe<SheetState>;
+  macroarea?: InputMaybe<Scalars['String']['input']>;
+  indirizzo?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -4087,12 +4111,14 @@ export type GetWorkbookLazyQueryHookResult = ReturnType<typeof useGetWorkbookLaz
 export type GetWorkbookSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookSuspenseQuery>;
 export type GetWorkbookQueryResult = Apollo.QueryResult<GetWorkbookQuery, GetWorkbookQueryVariables>;
 export const GetWorkbookAgeDistributionReportDocument = gql`
-    query GetWorkbookAgeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+    query GetWorkbookAgeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String) {
   workbookAgeDistributionReport(
     workbookId: $workbookId
     schema: $schema
     commonData: $commonData
     state: $state
+    macroarea: $macroarea
+    indirizzo: $indirizzo
   ) {
     schema
     items {
@@ -4128,6 +4154,8 @@ export const GetWorkbookAgeDistributionReportDocument = gql`
  *      schema: // value for 'schema'
  *      commonData: // value for 'commonData'
  *      state: // value for 'state'
+ *      macroarea: // value for 'macroarea'
+ *      indirizzo: // value for 'indirizzo'
  *   },
  * });
  */
@@ -4180,12 +4208,15 @@ export type UpdateWorkbookMutationHookResult = ReturnType<typeof useUpdateWorkbo
 export type UpdateWorkbookMutationResult = Apollo.MutationResult<UpdateWorkbookMutation>;
 export type UpdateWorkbookMutationOptions = Apollo.BaseMutationOptions<UpdateWorkbookMutation, UpdateWorkbookMutationVariables>;
 export const GetWorkbookDistributionReportDocument = gql`
-    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String, $classYear: String) {
   workbookDistributionReport(
     workbookId: $workbookId
     schema: $schema
     commonData: $commonData
     state: $state
+    macroarea: $macroarea
+    indirizzo: $indirizzo
+    classYear: $classYear
   ) {
     schema
     totalStudents
@@ -4215,6 +4246,9 @@ export const GetWorkbookDistributionReportDocument = gql`
  *      schema: // value for 'schema'
  *      commonData: // value for 'commonData'
  *      state: // value for 'state'
+ *      macroarea: // value for 'macroarea'
+ *      indirizzo: // value for 'indirizzo'
+ *      classYear: // value for 'classYear'
  *   },
  * });
  */
@@ -4235,12 +4269,15 @@ export type GetWorkbookDistributionReportLazyQueryHookResult = ReturnType<typeof
 export type GetWorkbookDistributionReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookDistributionReportSuspenseQuery>;
 export type GetWorkbookDistributionReportQueryResult = Apollo.QueryResult<GetWorkbookDistributionReportQuery, GetWorkbookDistributionReportQueryVariables>;
 export const GetWorkbookExerciseReportDocument = gql`
-    query GetWorkbookExerciseReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+    query GetWorkbookExerciseReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String, $classYear: String) {
   workbookExerciseReport(
     workbookId: $workbookId
     schema: $schema
     commonData: $commonData
     state: $state
+    macroarea: $macroarea
+    indirizzo: $indirizzo
+    classYear: $classYear
   ) {
     schema
     totalStudents
@@ -4276,6 +4313,9 @@ export const GetWorkbookExerciseReportDocument = gql`
  *      schema: // value for 'schema'
  *      commonData: // value for 'commonData'
  *      state: // value for 'state'
+ *      macroarea: // value for 'macroarea'
+ *      indirizzo: // value for 'indirizzo'
+ *      classYear: // value for 'classYear'
  *   },
  * });
  */
@@ -4296,12 +4336,14 @@ export type GetWorkbookExerciseReportLazyQueryHookResult = ReturnType<typeof use
 export type GetWorkbookExerciseReportSuspenseQueryHookResult = ReturnType<typeof useGetWorkbookExerciseReportSuspenseQuery>;
 export type GetWorkbookExerciseReportQueryResult = Apollo.QueryResult<GetWorkbookExerciseReportQuery, GetWorkbookExerciseReportQueryVariables>;
 export const GetWorkbookRankingReportDocument = gql`
-    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $orderBy: String, $orderDirection: Int) {
+    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String, $limit: Int, $orderBy: String, $orderDirection: Int) {
   workbookRankingReport(
     workbookId: $workbookId
     schema: $schema
     commonData: $commonData
     state: $state
+    macroarea: $macroarea
+    indirizzo: $indirizzo
     limit: $limit
     orderBy: $orderBy
     orderDirection: $orderDirection
@@ -4345,6 +4387,8 @@ export const GetWorkbookRankingReportDocument = gql`
  *      schema: // value for 'schema'
  *      commonData: // value for 'commonData'
  *      state: // value for 'state'
+ *      macroarea: // value for 'macroarea'
+ *      indirizzo: // value for 'indirizzo'
  *      limit: // value for 'limit'
  *      orderBy: // value for 'orderBy'
  *      orderDirection: // value for 'orderDirection'
@@ -4424,12 +4468,14 @@ export type GetSheetsLazyQueryHookResult = ReturnType<typeof useGetSheetsLazyQue
 export type GetSheetsSuspenseQueryHookResult = ReturnType<typeof useGetSheetsSuspenseQuery>;
 export type GetSheetsQueryResult = Apollo.QueryResult<GetSheetsQuery, GetSheetsQueryVariables>;
 export const GetWorkbookTimeDistributionReportDocument = gql`
-    query GetWorkbookTimeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
+    query GetWorkbookTimeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String) {
   workbookTimeDistributionReport(
     workbookId: $workbookId
     schema: $schema
     commonData: $commonData
     state: $state
+    macroarea: $macroarea
+    indirizzo: $indirizzo
   ) {
     schema
     timeDistribution {
@@ -4461,6 +4507,8 @@ export const GetWorkbookTimeDistributionReportDocument = gql`
  *      schema: // value for 'schema'
  *      commonData: // value for 'commonData'
  *      state: // value for 'state'
+ *      macroarea: // value for 'macroarea'
+ *      indirizzo: // value for 'indirizzo'
  *   },
  * });
  */

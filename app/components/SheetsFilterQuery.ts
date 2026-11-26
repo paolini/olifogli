@@ -27,6 +27,9 @@ export function useSheetsFilterWithQuerystring(defaults: { schema?: string } = {
     const schemaFilter = searchParams.get('schemaFilter') || '';
     const distrettoFilter = searchParams.get('distrettoFilter') || '';
     const statoFilter = searchParams.get('statoFilter') || '';
+    const macroareaFilter = searchParams.get('macroareaFilter') || '';
+    const indirizzoFilter = searchParams.get('indirizzoFilter') || '';
+    const classYearFilter = searchParams.get('classYearFilter') || '';
     const sortField = searchParams.get('sortField');
     const sort: Sort = sortField ? { field: sortField, direction: Number(searchParams.get('sortDirection') || 1) } : null;
     const urlColumnFilters = readColumnFilters(searchParams);
@@ -104,6 +107,12 @@ export function useSheetsFilterWithQuerystring(defaults: { schema?: string } = {
         setDistrettoFilter: (next: SetStateAction<string>) => setFilter('distrettoFilter', distrettoFilter, next),
         statoFilter,
         setStatoFilter: (next: SetStateAction<string>) => setFilter('statoFilter', statoFilter, next),
+        macroareaFilter,
+        setMacroareaFilter: (next: SetStateAction<string>) => setFilter('macroareaFilter', macroareaFilter, next),
+        indirizzoFilter,
+        setIndirizzoFilter: (next: SetStateAction<string>) => setFilter('indirizzoFilter', indirizzoFilter, next),
+        classYearFilter,
+        setClassYearFilter: (next: SetStateAction<string>) => setFilter('classYearFilter', classYearFilter, next),
     };
 
     return { filterState, columnFilters, setColumnFilters, sort, setSort };

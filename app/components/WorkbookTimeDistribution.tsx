@@ -19,7 +19,7 @@ import Loading from './Loading'
 import { gql } from '@apollo/client'
 import { useGetSheetsQuery, TimeDistributionReport, TimeDistributionItem, SheetState, useGetWorkbookTimeDistributionReportQuery } from '../graphql/generated'
 import { schemas } from '../lib/schema'
-import SheetsFilter, { filterSheets } from './SheetsFilter'
+import SheetsFilter, { filterSheets, reportFilterVariables } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
 
@@ -36,8 +36,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetWorkbookTimeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
-        workbookTimeDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
+    query GetWorkbookTimeDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String) {
+        workbookTimeDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, macroarea: $macroarea, indirizzo: $indirizzo) {
             schema
             timeDistribution {
                 hour
@@ -62,7 +62,7 @@ export default function WorkbookTimeDistribution({ workbookId }: { workbookId: O
     const filteredSheets = filterSheets(filterState, sheets)
 
     const { loading, error, data, refetch: refetchReport } = useGetWorkbookTimeDistributionReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
+        variables: { workbookId, ...reportFilterVariables(filterState) },
     })
 
     useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })

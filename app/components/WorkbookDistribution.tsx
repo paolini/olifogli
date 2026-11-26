@@ -21,7 +21,7 @@ import Error from './Error'
 import Loading from './Loading'
 import { DistributionReport, useGetSheetsQuery, useGetWorkbookDistributionReportQuery, SheetState, Sheet } from '../graphql/generated'
 import { schemas } from '../lib/schema'
-import SheetsFilter, { filterSheets } from './SheetsFilter'
+import SheetsFilter, { filterSheets, reportFilterVariables } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
 import { zhCN } from 'date-fns/locale'
@@ -41,8 +41,8 @@ ChartJS.register(
 )
 
 const _ = gql`
-    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
-        workbookDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
+    query GetWorkbookDistributionReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String, $classYear: String) {
+        workbookDistributionReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, macroarea: $macroarea, indirizzo: $indirizzo, classYear: $classYear) {
             schema
             totalStudents
             scoreDistribution {
@@ -68,7 +68,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
     const [showPercentiles, setShowPercentiles] = useState(false)
 
     const { loading, error, data, refetch: refetchReport } = useGetWorkbookDistributionReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
+        variables: { workbookId, ...reportFilterVariables(filterState), classYear: filterState.classYearFilter || null },
     })
 
     useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })
@@ -81,7 +81,7 @@ export default function WorkbookDistribution({ workbookId }: { workbookId: Objec
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
-            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} showClassYear />
             <div className="flex items-center space-x-4">
                 <label className="flex items-center space-x-2">
                     <input

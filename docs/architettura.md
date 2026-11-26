@@ -377,6 +377,18 @@ i dati dei fogli accessibili:
   (`app/components/WorkbookVariablesHelp.tsx`): aggiornare l'elenco quando se ne
   aggiunge una.
 
+I filtri sopra i report (`SheetsFilter.tsx`) sono salvati nell'URL
+(`SheetsFilterQuery.ts`) e valgono per tutte le linguette: schema, distretto,
+stato del foglio e, se almeno un foglio ha un codice meccanografico
+riconosciuto, macroarea (NO, NE, C, S, IS) e indirizzo (LS, AL, TP, NI).
+Macroarea e indirizzo non sono salvati nel foglio: `classifySchoolCode`
+(`app/lib/schoolCode.ts`) li ricava dalla sigla della provincia e dal tipo di
+scuola del codice, preso da `commonData.Codice_meccanografico` o, in mancanza,
+dal nome del foglio; `getAllSheets` li applica dopo la query. Distribuzione dei
+punteggi e dei quesiti hanno anche il filtro per anno di corso, che seleziona
+le righe (`data.classYear`) e non i fogli: il conteggio di fogli e righe accanto
+ai filtri non ne tiene conto.
+
 ## Autenticazione
 
 - Provider: Olimanager, OAuth2/OIDC con authorization code e PKCE, tramite

@@ -8,7 +8,7 @@ import Loading from './Loading'
 import { SheetState, useGetSheetsQuery, useGetWorkbookRankingReportLazyQuery, useGetWorkbookRankingReportQuery } from '../graphql/generated'
 import type { RankingReport } from '../graphql/generated'
 import { schemas } from '../lib/schema'
-import SheetsFilter, { filterSheets } from './SheetsFilter'
+import SheetsFilter, { filterSheets, reportFilterVariables } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
 import { unparseCsv } from '../lib/csv'
@@ -17,8 +17,8 @@ import Button from './Button'
 import { score_to_color_style } from '../lib/schema/fields'
 
 const _ = gql`
-    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $limit: Int, $orderBy: String, $orderDirection: Int) {
-        workbookRankingReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, limit: $limit, orderBy: $orderBy, orderDirection: $orderDirection) {
+    query GetWorkbookRankingReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String, $limit: Int, $orderBy: String, $orderDirection: Int) {
+        workbookRankingReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, macroarea: $macroarea, indirizzo: $indirizzo, limit: $limit, orderBy: $orderBy, orderDirection: $orderDirection) {
             schema
             totalStudents
             ranking {
@@ -54,7 +54,7 @@ export default function WorkbookRanking({ workbookId }: { workbookId: ObjectId }
     const filteredSheets = filterSheets(filterState, sheets);
 
     const { loading, error, data, refetch: refetchRanking } = useGetWorkbookRankingReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null, limit, orderBy: sortRanking?.field, orderDirection: sortRanking?.direction },
+        variables: { workbookId, ...reportFilterVariables(filterState), limit, orderBy: sortRanking?.field, orderDirection: sortRanking?.direction },
         skip: !filterState?.schemaFilter,
     });
     

@@ -16,7 +16,7 @@ import Loading from './Loading'
 import { gql } from '@apollo/client'
 import { useGetSheetsQuery, ExerciseReport, useGetWorkbookExerciseReportQuery, SheetState } from '../graphql/generated'
 import { schemas } from '../lib/schema'
-import SheetsFilter, { filterSheets } from './SheetsFilter'
+import SheetsFilter, { filterSheets, reportFilterVariables } from './SheetsFilter'
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
 
@@ -38,8 +38,8 @@ const CORRECTNESS_LABELS = {
 }
 
 const _ = gql`
-    query GetWorkbookExerciseReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState) {
-        workbookExerciseReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state) {
+    query GetWorkbookExerciseReport($workbookId: ObjectId!, $schema: String, $commonData: Data, $state: SheetState, $macroarea: String, $indirizzo: String, $classYear: String) {
+        workbookExerciseReport(workbookId: $workbookId, schema: $schema, commonData: $commonData, state: $state, macroarea: $macroarea, indirizzo: $indirizzo, classYear: $classYear) {
             schema
             totalStudents
             exerciseDistribution {
@@ -68,7 +68,7 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
     const filteredSheets = filterSheets(filterState, sheets)
 
     const { loading, error, data, refetch: refetchReport } = useGetWorkbookExerciseReportQuery({
-        variables: { workbookId, schema: filterState?.schemaFilter || null, commonData: filterState?.distrettoFilter ? { Distretto: filterState.distrettoFilter } : null, state: (filterState?.statoFilter as SheetState) || null },
+        variables: { workbookId, ...reportFilterVariables(filterState), classYear: filterState.classYearFilter || null },
     })
 
     useWorkbookUpdated(workbookId, () => { refetchSheets(); refetchReport() })
@@ -81,7 +81,7 @@ export default function WorkbookExerciseDistribution({ workbookId }: { workbookI
 
     return (
         <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
-            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+            <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} showClassYear />
             {reports?.map(report => (
                 <ExerciseDistributionSection key={report.schema} report={report} />
             ))}

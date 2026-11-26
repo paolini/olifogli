@@ -6,6 +6,21 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const { ObjectId } = require('mongodb');
 
+// Real modules needed by the code under test.
+function loadTs(relative, dependencies = {}) {
+  const exports = {};
+  const code = ts.transpileModule(readFileSync(path.join(__dirname, '..', relative), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  vm.runInNewContext(code, { exports, require: name => {
+    if (name in dependencies) return dependencies[name];
+    if (name.startsWith('react')) return require(name);
+    throw new Error(`Unexpected import: ${name}`);
+  } });
+  return exports;
+}
+const schoolCode = loadTs('app/lib/schoolCode.ts');
+
 const source = ts.transpileModule(readFileSync(path.join(__dirname, '../app/graphql/resolvers/workbookAgeDistributionReport.ts'), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
@@ -30,6 +45,7 @@ function fixture(rows, sheets = [{ _id: new ObjectId(), schema: 'archimede_bienn
     vm.runInNewContext(helperSource, { exports: helpers, require(name) {
       if (name === 'mongodb') return { ObjectId };
       if (name === './utils') return { get_authenticated_user: async context => context.user };
+      if (name === '@/app/lib/schoolCode') return schoolCode;
       if (name === '@/app/lib/mongodb') return { getSheetsCollection: async () => ({
         find: query => ({ toArray: async () => sheets.map(sheet => ({ workbookId, ...sheet })).filter(sheet => matches(sheet, query)) }),
       }) };
@@ -179,7 +195,13 @@ test('the statistics page renders both charts with separate labels and counts', 
         return { data: { workbookAgeDistributionReport: reports }, refetch() {} };
       },
     };
-    if (name === './SheetsFilter') return { default: () => null, filterSheets: (_, sheets) => sheets };
+    if (name === './SheetsFilter') return {
+      default: () => null,
+      filterSheets: (_, sheets) => sheets,
+      reportFilterVariables: loadTs('app/components/SheetsFilter.tsx', {
+        '../graphql/generated': {}, '../lib/schema': { schemas: {} }, '../lib/util': {}, '../lib/schoolCode': schoolCode,
+      }).reportFilterVariables,
+    };
     if (name === './SheetsFilterQuery') return { useSheetsFilterWithQuerystring: () => ({ filterState: {
       schemaFilter: 'archimede_biennio', distrettoFilter: 'Pisa', statoFilter: 'closed_not_locked',
     } }) };

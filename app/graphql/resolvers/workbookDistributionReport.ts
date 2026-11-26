@@ -8,10 +8,10 @@ import { schemas } from '@/app/lib/schema'
 
 export default async function workbookDistributionReport(
     _: unknown, 
-    { workbookId, schema, commonData, state }: QueryWorkbookDistributionReportArgs, 
+    { workbookId, schema, commonData, state, macroarea, indirizzo, classYear }: QueryWorkbookDistributionReportArgs, 
     context: Context
 ): Promise<DistributionReport[]> {
-    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context)
+    const allSheets = await getAllSheets(new ObjectId(workbookId), schema || null, commonData || {}, state || '', context, { macroarea, indirizzo })
     const allSchemas = Array.from(new Set(allSheets.map(s => s.schema)))
     const reports: DistributionReport[] = []
     
@@ -20,7 +20,7 @@ export default async function workbookDistributionReport(
             const sheets = allSheets.filter(s => s.schema === schema)
             reports.push({
                 schema,
-                ...await generateDistributionReport(sheets)
+                ...await generateDistributionReport(sheets, classYear || null)
             })
         }
     }
@@ -28,14 +28,15 @@ export default async function workbookDistributionReport(
     return reports
 }
 
-async function generateDistributionReport(sheets: WithId<Sheet>[]) {
+async function generateDistributionReport(sheets: WithId<Sheet>[], classYear: string | null) {
     const rowsCollection = await getRowsCollection() // Ottieni la collezione delle righe
     const sheetIds = sheets.map(s => s._id)
     
     // Recupera tutte le righe dai fogli
     const rows = await rowsCollection.find({
         sheetId: { $in: sheetIds },
-        error: ""
+        error: "",
+        ...classYear ? { 'data.classYear': classYear } : {},
     }).toArray()
 
     // Prepara le entry con punteggio
