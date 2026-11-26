@@ -207,10 +207,13 @@ test('the statistics page renders both charts with separate labels and counts', 
     } }) };
     if (name === './useWorkbookUpdated') return { useWorkbookUpdated() {} };
     if (name === '../lib/schema') return { schemas: { archimede_biennio: { header: 'Biennio' } } };
+    if (name === '../lib/schoolCode') return schoolCode;
+    if (name === '../lib/schoolsByIndirizzo') return loadTs('app/lib/schoolsByIndirizzo.ts', { './schoolCode': schoolCode });
     if (name === './Error' || name === './Loading') return { default: () => null };
     throw new Error(`Unexpected import: ${name}`);
   } });
   const markup = renderToStaticMarkup(React.createElement(exports.default, { workbookId: new ObjectId() }));
+  assert.match(markup, /Scuole e alunni per indirizzo/);
   assert.match(markup, /Distribuzione per età/);
   assert.match(markup, /Distribuzione per anno di corso/);
   assert.equal(charts.length, 2);

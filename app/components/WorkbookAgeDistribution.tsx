@@ -20,6 +20,8 @@ import SheetsFilter, { filterSheets, reportFilterVariables } from './SheetsFilte
 import { useSheetsFilterWithQuerystring } from './SheetsFilterQuery'
 import { useWorkbookUpdated } from './useWorkbookUpdated'
 import { schemas } from '../lib/schema'
+import { INDIRIZZI } from '../lib/schoolCode'
+import { schoolsByIndirizzo } from '../lib/schoolsByIndirizzo'
 
 // Register Chart.js components
 ChartJS.register(
@@ -77,9 +79,43 @@ export default function WorkbookAgeDistribution({ workbookId }: { workbookId: Ob
 
     return <div className="p-4 space-y-6" style={{ width: 'fit-content', maxWidth: '100%' }}>
         <SheetsFilter filterState={filterState} sheets={sheets} filteredSheets={filteredSheets} />
+        <SchoolsByIndirizzoSection sheets={filteredSheets} />
         {reports?.map(report => (
             <AgeDistributionSection key={report.schema} report={report} />
         ))}
+    </div>
+}
+
+function SchoolsByIndirizzoSection({ sheets }: { sheets: Parameters<typeof schoolsByIndirizzo>[0] }) {
+    const rows = schoolsByIndirizzo(sheets)
+    return <div className="border rounded-lg p-4 space-y-4">
+        <h3 className="text-xl font-semibold">Scuole e alunni per indirizzo</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>indirizzo</th>
+                    <th>scuole</th>
+                    <th>alunni biennio</th>
+                    <th>alunni triennio</th>
+                    <th>alunni totali</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(row => {
+                    const isTotal = row.indirizzo === 'totale'
+                    return <tr key={row.indirizzo} className={isTotal ? 'font-bold' : ''}>
+                        <td>{row.indirizzo === 'totale' ? 'Totale' : `${row.indirizzo}: ${INDIRIZZI[row.indirizzo]}`}</td>
+                        <td className="text-right">{row.schools}</td>
+                        <td className="text-right">{row.biennio}</td>
+                        <td className="text-right">{row.triennio}</td>
+                        <td className="text-right">{row.total}</td>
+                    </tr>
+                })}
+            </tbody>
+        </table>
+        <p className="text-sm text-gray-600">
+            Indirizzo ricavato dal codice meccanografico; si contano le righe valide dei fogli.
+        </p>
     </div>
 }
 

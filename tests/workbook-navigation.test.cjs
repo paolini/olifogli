@@ -93,13 +93,13 @@ async function fixture(t, query = '') {
 test('selecting age and class year updates the URL and survives reload without filter mount overwriting it', async t => {
   const f = await fixture(t, 'distrettoFilter=Pisa&statoFilter=locked');
   assert.equal(f.replacements.length, 0);
-  await f.click('Età e anno di corso');
+  await f.click('Partecipanti');
   assert.equal(f.params().get('tab'), 'età');
   assert.equal(f.params().get('distrettoFilter'), 'Pisa');
   assert.equal(f.params().get('statoFilter'), 'locked');
-  assert.equal(f.active(), 'Età e anno di corso');
+  assert.equal(f.active(), 'Partecipanti');
   await f.reload();
-  assert.equal(f.active(), 'Età e anno di corso');
+  assert.equal(f.active(), 'Partecipanti');
   assert.equal(f.params().get('tab'), 'età');
 });
 

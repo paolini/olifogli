@@ -113,7 +113,7 @@ export default function Workbook({ workbookId }: { workbookId: ObjectId }) {
                 onClick={() => setActiveTab('età')}
                 className={`tab-button ${activeTab === 'età' ? 'tab-button-active' : 'tab-button-inactive'}`}
             >
-                Età e anno di corso
+                Partecipanti
             </button>
             { profile?.isAdmin &&
             <button

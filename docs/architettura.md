@@ -372,6 +372,10 @@ i dati dei fogli accessibili:
 - **Risultati**: classifica per punteggio, separata per Archimede Biennio e
   Triennio;
 - **Distribuzione**: grafico della distribuzione dei punteggi;
+- **Partecipanti**: scuole e alunni per indirizzo (`schoolsByIndirizzo`: le
+  scuole per codice meccanografico, contate una volta anche con fogli di
+  biennio e triennio; gli alunni sono le righe valide, `nValidRows`) e
+  distribuzioni per età e anno di corso;
 - **Configurazione**: campi `commonData` del raccoglitore ed eliminazione. Sotto
   l'editor, «Variabili riconosciute» descrive le variabili lette dal codice
   (`app/components/WorkbookVariablesHelp.tsx`): aggiornare l'elenco quando se ne
