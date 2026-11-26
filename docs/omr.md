@@ -286,34 +286,31 @@ provarli servono una copia di archiomr e Docker.
    SHEETGENDATA_DIR=/percorso/olifogli/sheetgenworker/sheetgendata
    ```
 
-2. Costruisci le immagini da archiomr. Il Compose le etichetta come
-   `harbor.cs.dm.unipi.it/olifogli/oliscan:latest` e
-   `harbor.cs.dm.unipi.it/olifogli/olisheet:latest`. In alternativa usa le
-   immagini pubblicate nello stesso registro.
+   Crea le directory prima di avviare i worker: altrimenti le crea Docker,
+   come root.
+
+2. Dalla directory di Olifogli avvia i worker. Il `docker-compose.yml` del
+   repository li definisce nel profilo `omr`, con le immagini `:main`
+   pubblicate su `harbor.cs.dm.unipi.it/olifogli`:
 
    ```sh
-   cd ../archiomr && docker compose build oliscan olisheet
+   docker compose --profile omr up -d oliscan olisheet
+   docker compose --profile omr logs -f oliscan olisheet
    ```
 
-3. Dalla directory di Olifogli, avvia i worker collegandoli alle directory e al MongoDB locale. Nei container
-   la directory di lavoro è `/app`, e i default sono `/app/spool`, `/app/data`,
-   `/app/sheetgenspool` e `/app/sheetgendata`:
+   Compose legge le quattro directory da `.env` e le monta nei percorsi
+   predefiniti dei container (`/app/spool`, `/app/data`, `/app/sheetgenspool`,
+   `/app/sheetgendata`). I worker usano la rete dell'host e si collegano a
+   `mongodb://127.0.0.1:27017/olifogli?directConnection=true`: va bene il
+   MongoDB di questo Compose o qualunque altro replica set in ascolto su quella
+   porta. Si fermano con `docker compose --profile omr stop oliscan olisheet`.
 
-   ```sh
-   docker run --rm --network host \
-     -e MONGODB_URI="mongodb://127.0.0.1:27017/olifogli?directConnection=true" \
-     -v "$PWD/worker/spool:/app/spool" -v "$PWD/worker/data:/app/data" \
-     harbor.cs.dm.unipi.it/olifogli/oliscan:latest
-
-   docker run --rm --network host \
-     -e MONGODB_URI="mongodb://127.0.0.1:27017/olifogli?directConnection=true" \
-     -v "$PWD/sheetgenworker/sheetgenspool:/app/sheetgenspool" \
-     -v "$PWD/sheetgenworker/sheetgendata:/app/sheetgendata" \
-     harbor.cs.dm.unipi.it/olifogli/olisheet:latest
-   ```
+   Per provare una versione non pubblicata, costruisci le immagini in archiomr
+   (`docker compose build oliscan olisheet`, etichetta `:latest`) e cambia il
+   tag nel Compose.
 
    Il database è `olifogli` per impostazione predefinita (variabile `DB_NAME`
-   dei worker). Con `-e CHECK_INTERVAL=-1` il worker elabora i file presenti ed
+   dei worker). Con `CHECK_INTERVAL=-1` il worker elabora i file presenti ed
    esce.
 
 I file creati dai container appartengono a root ma, con la `UMASK` di default,

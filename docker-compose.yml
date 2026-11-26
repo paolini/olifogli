@@ -27,3 +27,28 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Worker OMR di archiomr (vedi docs/omr.md), avviati solo con
+  # "docker compose --profile omr up -d". Le directory vengono da .env, le
+  # stesse che usa Olifogli. La rete dell'host permette di usare qualunque
+  # MongoDB in ascolto su 127.0.0.1:27017, anche fuori da questo Compose.
+  oliscan:
+    image: harbor.cs.dm.unipi.it/olifogli/oliscan:main
+    profiles: [omr]
+    network_mode: host
+    environment:
+      - MONGODB_URI=mongodb://127.0.0.1:27017/olifogli?directConnection=true
+      - SPOOL_DIR=/app/spool
+      - DATA_DIR=/app/data
+    volumes:
+      - ${SCANS_SPOOL_DIR:?impostare SCANS_SPOOL_DIR in .env}:/app/spool
+      - ${SCANS_DATA_DIR:?impostare SCANS_DATA_DIR in .env}:/app/data
+  olisheet:
+    image: harbor.cs.dm.unipi.it/olifogli/olisheet:main
+    profiles: [omr]
+    network_mode: host
+    environment:
+      - MONGODB_URI=mongodb://127.0.0.1:27017/olifogli?directConnection=true
+    volumes:
+      - ${SHEETGENSPOOL_DIR:?impostare SHEETGENSPOOL_DIR in .env}:/app/sheetgenspool
+      - ${SHEETGENDATA_DIR:?impostare SHEETGENDATA_DIR in .env}:/app/sheetgendata
