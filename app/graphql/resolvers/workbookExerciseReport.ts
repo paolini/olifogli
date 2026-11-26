@@ -58,7 +58,7 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
         empty: number;
         invalid: number;
         correct_answer: string;
-        answers: Record<string, number>; // conteggio per ogni risposta data (es. A, B, C, D, E)
+        answers: Record<string, number>; // conteggio per ogni risposta data, giusta o sbagliata (es. A, B, C, D, E)
     }
 
     // Prepara le entry con conteggi per esercizio
@@ -101,10 +101,9 @@ async function generateExerciseReport(sheets: WithId<Sheet>[], schema: string): 
                 counts.empty++
             } else if (given === 'X') {
                 counts.invalid++
-            } else if (given === correct) {
-                counts.correct++
             } else {
-                counts.wrong++
+                if (given === correct) counts.correct++
+                else counts.wrong++
                 counts.answers[given] = (counts.answers[given] || 0) + 1
             }
         }

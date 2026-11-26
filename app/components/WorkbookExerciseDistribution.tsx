@@ -229,15 +229,17 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
     })
 
     const data = answers.map(a => a.count)
+    // Verde la risposta esatta, rosse le sbagliate (stessi colori del grafico per quesito).
+    const colors = answers.map(a => a.answer === item.correct_answer ? '#10b981' : '#ef4444')
 
     const chartData = {
         labels: labels as string[],
         datasets: [
             {
-                label: 'Risposte sbagliate',
+                label: 'Risposte',
                 data: data,
-                backgroundColor: '#3b82f6',
-                borderColor: '#2563eb',
+                backgroundColor: colors,
+                borderColor: colors,
                 borderWidth: 1
             }
         ]
@@ -258,7 +260,8 @@ function AnswerDistributionChart({ item }: { item: ExerciseReport['exerciseDistr
                     label: function(context: any) {
                         const value = context.parsed.y
                         const percentage = item.correct + item.wrong + item.empty + item.invalid > 0 ? ((value / (item.correct + item.wrong + item.empty + item.invalid)) * 100).toFixed(1) : '0.0'
-                        return `${context.dataset.label}: ${value} risposte (${percentage}%)`
+                        const kind = answers[context.dataIndex].answer === item.correct_answer ? 'giusta' : 'sbagliata'
+                        return `${kind}: ${value} risposte (${percentage}%)`
                     }
                 }
             }
