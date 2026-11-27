@@ -44,7 +44,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
     const [applying, setApplying] = useState(false)
     const [loadingPreview, setLoadingPreview] = useState(false)
     const [previewReady, setPreviewReady] = useState(false)
-    const [hideUnchanged, setHideUnchanged] = useState(false)
+    const [hideUnchanged, setHideUnchanged] = useState(true)
     const olympiads = choices.data?.olimanagerVenueSheetChoices
     const config = workbook.data?.workbook?.commonData || {}
     const initialSelection: Selection = { olympiadId: String(config.olimanager_olympiad_id || ''), editionId: String(config.olimanager_edition_id || ''), schema: '', contestId: '' }
@@ -158,7 +158,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
                         </label></li>}
                         {p.changes.map(c => <li key={c.email}><label>
                             <input type="checkbox" disabled={busy} checked={selectedChanges.has(changeKey(p.key, c.email))} onChange={e => selectChanges([changeKey(p.key, c.email)], e.target.checked)} />{' '}
-                            {c.email}: {c.previousRole && c.role ? `${roleLabel(c.previousRole)} → ${roleLabel(c.role)}` : c.role ? `aggiungi (${roleLabel(c.role)})` : `rimuovi (${roleLabel(c.previousRole!)})`}
+                            {c.email}: {c.previousRole && c.role ? `${roleLabel(c.previousRole)} → ${roleLabel(c.role)}` : c.role ? <><span className="text-blue-600">aggiungi</span> ({roleLabel(c.role)})</> : <><span className="text-red-600">rimuovi</span> ({roleLabel(c.previousRole!)})</>}
                         </label></li>)}
                     </ul> : '—'}</td>
                     <td className={ACTION_COLORS[p.action]}>{p.action === 'conflict' ? p.reason : { create: 'nuovo', update: 'aggiorna', unchanged: 'invariato' }[p.action]}</td>
