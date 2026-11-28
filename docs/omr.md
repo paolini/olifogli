@@ -172,7 +172,9 @@ Il componente `OmrWorkerStatus` mostra lo stato, aggiornato ogni 10 secondi, in
 cima alla sezione **Caricamento scansioni** (`oliscan`) e alla sezione
 **Generazione fogli-risposta a lettura ottica** (`olisheet`; per chi non è
 responsabile del foglio, alla sezione **Fogli-risposta generati**) della
-linguetta **Gestione lettura ottica** del foglio. Accanto
+linguetta **Gestione lettura ottica** del foglio. Lo stato attivo (verde) e
+la verifica in corso sono visibili solo agli amministratori, con ⚙ davanti;
+gli avvisi sono visibili a tutti. Accanto
 allo stato attivo mostra la versione riportata nello heartbeat; se le istanze
 attive hanno versioni diverse, le elenca tutte senza duplicati. Se il
 worker non è attivo avvisa che i file resteranno in coda. Se un'istanza è

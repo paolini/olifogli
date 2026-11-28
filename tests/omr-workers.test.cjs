@@ -73,7 +73,7 @@ test('OMR worker status requires authentication', async () => {
   assert.equal((await resolve(null, {}, {})).length, 0);
 });
 
-function render(type, state) {
+function render(type, state, isAdmin = true) {
   const { gql } = require('@apollo/client');
   const Component = load('app/components/OmrWorkerStatus.tsx', {
     'react/jsx-runtime': require('react/jsx-runtime'),
@@ -81,6 +81,7 @@ function render(type, state) {
       assert.equal(options.pollInterval, 10000);
       return state;
     } },
+    '../lib/useProfile': { __esModule: true, default: () => ({ isAdmin }) },
   }).default;
   return renderToStaticMarkup(React.createElement(Component, { type }));
 }
@@ -100,4 +101,16 @@ test('indicator shows checking, offline, active, busy, stuck and unknown states'
   assert.match(render('olisheet', data(off, stuck)), /più di 30 minuti.*bloccato/);
   const unknown = render('oliscan', { error: new Error('Offline'), ...data(idle, idle) });
   assert.match(unknown, /stato non verificabile/); assert.doesNotMatch(unknown, /<b>attivo/);
+});
+
+test('indicator hides the active and checking states from non-admins', () => {
+  const data = (status) => ({ data: { omrWorkerStatus: [{ type: 'oliscan', ...status }] } });
+  const idle = { running: true, activeWorkers: 1, instances: [{ state: 'idle', stuck: false }] };
+  assert.match(render('oliscan', data(idle)), /⚙ Lettore scansioni.*attivo/);
+  assert.equal(render('oliscan', data(idle), false), '');
+  assert.equal(render('oliscan', {}, false), '');
+  const stuck = { running: true, activeWorkers: 1, instances: [{ state: 'busy', stuck: true }] };
+  const stuckHtml = render('oliscan', data(stuck), false);
+  assert.match(stuckHtml, /bloccato/); assert.doesNotMatch(stuckHtml, /<b>attivo/);
+  assert.match(render('oliscan', data({ running: false, activeWorkers: 0, instances: [] }), false), /non attivo/);
 });
