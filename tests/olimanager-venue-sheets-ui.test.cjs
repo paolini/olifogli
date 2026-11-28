@@ -102,6 +102,13 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
   const counts = { 'assign-contest': '1 fogli da creare; 1 da aggiornare; 0 invariati; 0 in conflitto', 'other-contest': '1 fogli da creare; 0 da aggiornare; 0 invariati; 1 in conflitto' }[scenario]
     || (unchanged ? '1 fogli da creare; 0 da aggiornare; 1 invariati; 0 in conflitto' : '1 fogli da creare; 1 da aggiornare; 0 invariati; 0 in conflitto');
   assert.match(container.textContent, new RegExp(counts));
+  // «Nascondi righe invariate» starts checked: unchanged sheets are hidden until it is unchecked.
+  const hide = [...container.querySelectorAll('label')].find(label => label.textContent.includes('Nascondi righe invariate')).querySelector('input');
+  const hiddenCount = ['unchanged', 'no-permissions'].includes(scenario) ? 1 : 2;
+  assert.equal(hide.checked, true);
+  assert.equal(container.querySelectorAll('tbody tr').length, hiddenCount);
+  await act(async () => hide.click());
+  assert.equal(container.querySelectorAll('tbody tr').length, 2);
   const rows = container.querySelectorAll('tbody tr');
   assert.equal(rows[0].querySelector('input').disabled, ['unchanged', 'no-permissions', 'other-contest'].includes(scenario));
   if (scenario === 'other-contest') assert.match(rows[0].textContent, /associato al contest #99/);
@@ -114,9 +121,8 @@ for (const scenario of ['unchanged', 'permissions', 'not-selected', 'stale', 'ke
   assert.equal(rows[0].querySelector('input').checked, false);
   assert.equal(rows[1].querySelector('input').checked, true);
   // «Nascondi righe invariate» hides only the unchanged sheets, and shows them again.
-  const hide = [...container.querySelectorAll('label')].find(label => label.textContent.includes('Nascondi righe invariate')).querySelector('input');
   await act(async () => hide.click());
-  assert.equal(container.querySelectorAll('tbody tr').length, ['unchanged', 'no-permissions'].includes(scenario) ? 1 : 2);
+  assert.equal(container.querySelectorAll('tbody tr').length, hiddenCount);
   await act(async () => hide.click());
   assert.equal(container.querySelectorAll('tbody tr').length, 2);
   if (scenario === 'assign-contest') {
