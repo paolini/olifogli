@@ -218,9 +218,9 @@ meccanografico (`venueSheetPlan`):
   duplicato.
 
 Mostra permessi attuali e proposti, accessi aggiunti e rimossi e cambi di ruolo.
-L'anteprima non propone cancellazioni di fogli. «Nascondi righe invariate»
-toglie dalla tabella i fogli invariati, per vedere solo quelli da creare,
-aggiornare o in conflitto.
+L'anteprima non propone cancellazioni di fogli. All'inizio la tabella
+mostra solo i fogli da creare, aggiornare o in conflitto; «Mostra righe
+invariate» aggiunge anche i fogli invariati.
 
 Solo i nuovi fogli sono preselezionati: per i fogli esistenti ciascuna aggiunta,
 rimozione e modifica di ruolo ha una propria casella, inizialmente

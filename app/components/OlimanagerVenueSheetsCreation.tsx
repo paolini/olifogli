@@ -44,7 +44,7 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
     const [applying, setApplying] = useState(false)
     const [loadingPreview, setLoadingPreview] = useState(false)
     const [previewReady, setPreviewReady] = useState(false)
-    const [hideUnchanged, setHideUnchanged] = useState(true)
+    const [showUnchanged, setShowUnchanged] = useState(false)
     const olympiads = choices.data?.olimanagerVenueSheetChoices
     const config = workbook.data?.workbook?.commonData || {}
     const initialSelection: Selection = { olympiadId: String(config.olimanager_olympiad_id || ''), editionId: String(config.olimanager_edition_id || ''), schema: '', contestId: '' }
@@ -139,9 +139,9 @@ export default function OlimanagerVenueSheetsCreation({ workbookId, done }: { wo
                 setSelected(new Set(e.target.checked ? actionable.filter(p => p.action === 'create').map(p => p.key) : []))
                 setSelectedChanges(new Set(e.target.checked ? actionable.flatMap(changeKeys) : []))
             }} /> Seleziona tutte le creazioni e tutte le modifiche (incluse le rimozioni)</label>
-            <label className="ml-6"><input type="checkbox" checked={hideUnchanged} onChange={e => setHideUnchanged(e.target.checked)} /> Nascondi righe invariate</label>
+            <label className="ml-6"><input type="checkbox" checked={showUnchanged} onChange={e => setShowUnchanged(e.target.checked)} /> Mostra righe invariate</label>
             <table><thead><tr><th></th><th>Sede</th><th>Distretto</th><th>Permessi attuali</th><th>Permessi Olimanager</th><th>Modifiche</th><th>Stato</th></tr></thead><tbody>
-                {plan.filter(p => !hideUnchanged || p.action !== 'unchanged').map(p => { const s = p.candidate; return <tr key={p.key}>
+                {plan.filter(p => showUnchanged || p.action !== 'unchanged').map(p => { const s = p.candidate; return <tr key={p.key}>
                     <td><input type="checkbox" aria-label={`Seleziona ${s.name} ${s.schema}`} disabled={busy || p.action === 'unchanged' || p.action === 'conflict'} checked={isChecked(p)} ref={node => { if (node) node.indeterminate = p.action === 'update' && checkedCount(p) > 0 && !isChecked(p) }} onChange={e => {
                         if (p.action === 'update') selectChanges(changeKeys(p), e.target.checked)
                         else setSelected(prev => {
