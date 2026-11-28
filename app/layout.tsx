@@ -35,6 +35,7 @@ export default function RootLayout({
     <html lang="it">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={serverBackgroundColor ? { '--server-background': serverBackgroundColor } as React.CSSProperties : undefined}
       >
           <ConfigProvider serverName={serverName} serverBackgroundColor={serverBackgroundColor} appInstance={appInstance} olimanagerUrl={process.env.OLIMANAGER_URL}>
             <SessionProviderWrapper>

@@ -4,6 +4,8 @@
 
 :root {
   --nav-background: rgb(230, 230, 230);
+  /* SERVER_BACKGROUND_COLOR: set on <body> by app/layout.tsx when configured */
+  --server-background: var(--nav-background);
   --tr-background: rgb(174, 233, 241);
   --line-highlight: #dff8ff; /*rgb(240,240,240);*/
   --background: #ffffff;
@@ -160,7 +162,7 @@ h2 {
   gap: 0;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--tabs-border);
-  background-color: var(--nav-background);
+  background-color: var(--server-background);
 }
 
 .tab-button {

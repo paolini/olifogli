@@ -77,7 +77,7 @@ per `oliscan` e `olisheet` impostare anche `DB_NAME` se il nome non è `olifogli
 | `LOG_DIR` | app | Se impostata, i log GraphQL vengono scritti anche su file |
 | `LOG_RETENTION_DAYS` | `logs:cleanup` | Giorni di conservazione dei log (default 30) |
 | `WS_SERVER_PORT` | ws-server | Porta del server WebSocket (default 4001) |
-| `SERVER_NAME`, `SERVER_BACKGROUND_COLOR` | app | Nome e colore della barra superiore, per distinguere gli ambienti |
+| `SERVER_NAME`, `SERVER_BACKGROUND_COLOR` | app | Nome e colore della barra superiore (il colore anche dello sfondo delle linguette), per distinguere gli ambienti |
 | `APP_INSTANCE` | app | Etichetta dell'istanza mostrata al passaggio del mouse sul nome (`app`, oppure `app1`, `app2`, … nella variante multiapp) |
 
 L'immagine non contiene file `.env`: i valori fittizi necessari a `next build`
