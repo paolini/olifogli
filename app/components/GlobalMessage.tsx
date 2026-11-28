@@ -40,6 +40,7 @@ export default function GlobalMessage({name, title, description, collapsed, clas
     const [isCollapsed, setIsCollapsed] = useState(!!collapsed)
     const key = name // key è riservato come nome di una proprietà di un elemento React
     const handleToggleCollapse = () => setIsCollapsed((prev) => !prev)
+    const collapsible = typeof collapsed !== 'undefined'
 
     const { data, loading, error } = useQuery(GET_SETTING, {
         variables: { key }
@@ -85,7 +86,7 @@ export default function GlobalMessage({name, title, description, collapsed, clas
     }
 
     return (
-        <div className={`mx-4 my-4 max-w-4xl message ${className}`}>
+        <div className={`mx-4 my-4 max-w-4xl message ${className || ''}`}>
             {editing ? (
                 <div className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm">
                     <div className="mb-4">
@@ -113,67 +114,40 @@ export default function GlobalMessage({name, title, description, collapsed, clas
                     {updateError && <Error error={updateError} />}
                 </div>
             ) : (
-                <>
-                    {(message || profile?.isAdmin) && (
-                        <>
-                            {isCollapsed ? (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-700 font-semibold text-base">{title}</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleCollapse}
-                                        className="ml-1 p-1 rounded-full hover:bg-indigo-100 focus:outline-none border border-gray-300"
-                                        title="Apri"
-                                    >
-                                        <span className="text-indigo-600 text-lg" role="img" aria-label="Apri">▼</span>
-                                    </button>
-                                </div>
+                <div>
+                    {(title || profile?.isAdmin) && (
+                        <div className="flex items-center gap-2">
+                            {collapsible ? (
+                                <button
+                                    type="button"
+                                    onClick={handleToggleCollapse}
+                                    aria-expanded={!isCollapsed}
+                                    className="flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-indigo-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded"
+                                >
+                                    <span aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
+                                    <span>{title}</span>
+                                </button>
                             ) : (
-                                <div className="relative border border-gray-300 rounded-lg pt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md">
-                                    {title && (
-                                        <div className="absolute left-6 -top-3 z-10 flex items-center gap-2 border">
-                                            <span
-                                                className="px-4 py-1 text-gray-700 font-semibold text-base bg-white"
-                                                style={{
-                                                    borderTop: 'none',
-                                                    borderBottom: 'none',
-                                                    position: 'relative',
-                                                    top: 0
-                                                }}
-                                            >
-                                                {title}
-                                            </span>
-                                            {typeof collapsed !== 'undefined' && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleToggleCollapse}
-                                                    className="ml-1 p-1 rounded-full hover:bg-indigo-100 focus:outline-none border border-gray-300"
-                                                    title="Chiudi"
-                                                >
-                                                    <span className="text-indigo-600 text-lg" role="img" aria-label="Chiudi">▲</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                    <div className="prose prose-sm max-w-none">
-                                        {message ? <ReactMarkdown>{message}</ReactMarkdown> : <span className="text-gray-400 italic">Admin: premi sulla matita per inserire un messaggio globale {title && `(${title})`}{description && ` — ${description}`}</span>}
-                                    </div>
-                                    {profile?.isAdmin && (
-                                        <button
-                                            type="button"
-                                            onClick={startEdit}
-                                            className="absolute top-2 right-2 px-1 rounded hover:bg-indigo-100 focus:outline-none"
-                                            title={message ? 'Modifica messaggio' : 'Aggiungi messaggio'}
-                                        >
-                                            {/* Icona matita Unicode */}
-                                            <span className="text-indigo-600 text-sm" role="img" aria-label="Modifica">✏️</span>
-                                        </button>
-                                    )}
-                                </div>
+                                title && <span className="text-gray-700 font-semibold">{title}</span>
                             )}
-                        </>
+                            {profile?.isAdmin && !isCollapsed && (
+                                <button
+                                    type="button"
+                                    onClick={startEdit}
+                                    className="ml-auto cursor-pointer border-0 bg-transparent px-1 rounded hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                                    title={message ? 'Modifica messaggio' : 'Aggiungi messaggio'}
+                                >
+                                    <span className="text-indigo-700" role="img" aria-label="Modifica">{'\u270F\uFE0E'}</span>
+                                </button>
+                            )}
+                        </div>
                     )}
-                </>
+                    {!isCollapsed && (
+                        <div className={`prose prose-sm max-w-none ${title ? 'mt-1 pl-4 pt-1 border-t border-gray-200' : ''}`}>
+                            {message ? <ReactMarkdown>{message}</ReactMarkdown> : <span className="text-gray-400 italic">Admin: premi sulla matita per inserire un messaggio globale {title && `(${title})`}{description && ` — ${description}`}</span>}
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     )
